@@ -1,3 +1,4 @@
+
 import { ethers } from "ethers";
 import { supabase } from "@/integrations/supabase/client";
 import { contractConfig, factoryABI } from "@/utils/contractConfig";
@@ -83,11 +84,11 @@ export const saveScienceGentToSupabase = async (
     };
     
     // Insert or update ScienceGent using the address as the conflict key
+    console.log("Upserting sciencegent with address:", scienceGentData.address);
     const { error: upsertError } = await supabase
       .from('sciencegents')
       .upsert(scienceGent, { 
-        onConflict: 'address',
-        ignoreDuplicates: false
+        onConflict: 'address' // Explicitly specify which column has the unique constraint
       });
     
     if (upsertError) {
@@ -104,11 +105,11 @@ export const saveScienceGentToSupabase = async (
       updated_at: new Date().toISOString()
     };
     
+    console.log("Upserting sciencegent_stats with address:", scienceGentData.address);
     const { error: statsError } = await supabase
       .from('sciencegent_stats')
       .upsert(statsData, { 
-        onConflict: 'sciencegent_address',
-        ignoreDuplicates: false
+        onConflict: 'sciencegent_address' // Explicitly specify which column has the unique constraint
       });
     
     if (statsError) {
