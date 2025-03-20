@@ -43,13 +43,14 @@ export const fetchCapabilityById = async (id: string): Promise<Capability | null
 // Function to insert or update a capability in Supabase
 export const upsertCapability = async (capability: Capability): Promise<void> => {
   // Convert Capability to Supabase format
-  const supabaseRecord: Partial<SupabaseCapability> = {
+  const supabaseRecord: SupabaseCapability = {
     id: capability.id,
     name: capability.name,
     domain: capability.domain,
     description: capability.description,
     price: capability.price,
     creator: capability.creator,
+    created_at: capability.createdAt,
     docs: capability.docs,
     usage_count: capability.stats.usageCount,
     rating: capability.stats.rating,
