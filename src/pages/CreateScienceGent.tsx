@@ -1,12 +1,11 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Check, 
   ChevronRight, 
   Beaker, 
-  Brain, A
-  rrowRight, 
+  Brain, 
+  ArrowRight, 
   Sparkle,
   FileText,
   Image,
@@ -46,7 +45,6 @@ const CreateScienceGent = () => {
     initialLiquidity: ''
   });
 
-  // Scroll to top on component mount
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
@@ -104,17 +102,13 @@ const CreateScienceGent = () => {
   };
 
   const handleLaunch = () => {
-    // Mock submission success - in a real app, this would call the blockchain
     setCurrentStep(6);
     
-    // Redirect to the details page after a short delay
     setTimeout(() => {
-      // In a real app, this would be the actual address of the created ScienceGent
       navigate('/sciencegent/0x123456789abcdef');
     }, 5000);
   };
 
-  // Mock capabilities data
   const mockCapabilities = [
     { id: 'mol-viz', name: 'Molecule Visualization', domain: 'Chemistry', fee: 0.05 },
     { id: 'spec-analysis', name: 'Spectroscopy Analysis', domain: 'Chemistry', fee: 0.08 },
@@ -124,7 +118,6 @@ const CreateScienceGent = () => {
     { id: 'drug-dock', name: 'Drug Docking', domain: 'Drug Discovery', fee: 0.15 }
   ];
 
-  // Calculate total capability fees
   const calculateTotalCapabilityFees = () => {
     return formData.selectedCapabilities.reduce((total, id) => {
       const capability = mockCapabilities.find(cap => cap.id === id);
@@ -132,10 +125,8 @@ const CreateScienceGent = () => {
     }, 0);
   };
 
-  // Calculate launch fee (1000 DSI tokens)
   const launchFee = 1000;
 
-  // Render the steps
   const renderStep = () => {
     switch (currentStep) {
       case 1:
