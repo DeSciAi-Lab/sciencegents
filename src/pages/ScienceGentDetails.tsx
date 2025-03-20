@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+
+import React, { useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { 
   ArrowRight, 
@@ -15,54 +16,23 @@ import {
   Send, 
   TrendingUp,
   Sparkles,
-  ArrowUpDown
+  ArrowUpDown,
+  RefreshCcw
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
+import { Skeleton } from '@/components/ui/skeleton';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import Reveal from '@/components/animations/Reveal';
+import useScienceGentDetails, { LoadingStatus } from '@/hooks/useScienceGentDetails';
 
-// Mock ScienceGent data for demo
-const mockGentData = {
-  id: '1',
-  name: 'SpectrumAI',
-  address: '0x1a2b3c4d5e6f7g8h9i0j',
-  description: 'SpectrumAI is a specialized AI agent for spectroscopy analysis, molecular visualization, and chemical reaction prediction. It helps researchers analyze spectral data, visualize molecular structures, and predict chemical reactions with high accuracy.',
-  profilePic: null,
-  website: 'https://spectrumai.example',
-  socials: {
-    twitter: 'https://twitter.com/spectrumai',
-    github: 'https://github.com/spectrumai'
-  },
-  marketCap: 450000,
-  tokenPrice: 0.00235,
-  priceChange24h: 3.7,
-  totalLiquidity: 85000,
-  age: '3 months',
-  roi: 18.7,
-  maturityProgress: 42,
-  domain: 'Chemistry',
-  capabilities: [
-    { name: 'Molecule Visualization', id: 'mol-viz', domain: 'Chemistry' },
-    { name: 'Spectroscopy Analysis', id: 'spec-analysis', domain: 'Chemistry' },
-    { name: 'Reaction Simulation', id: 'react-sim', domain: 'Chemistry' }
-  ],
-  stats: {
-    volume24h: 12500,
-    transactions: 867,
-    holders: 124
-  },
-  creator: '0x9a8b7c6d5e4f3g2h1i0j',
-  created: '2023-11-15T12:00:00Z'
-};
-
-// Mock chat messages
+// Mock chat messages for the AI interface
 const initialMessages = [
   {
     id: '1',
     sender: 'ai',
-    content: 'Hello! I am SpectrumAI, your chemistry research assistant. How can I help you today?',
+    content: 'Hello! I am an AI assistant. How can I help you today?',
     timestamp: new Date().toISOString()
   }
 ];
@@ -75,10 +45,7 @@ const ScienceGentDetails = () => {
   const [isLoadingResponse, setIsLoadingResponse] = useState(false);
   const [copiedText, setCopiedText] = useState('');
   
-  // Scroll to top on component mount
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, []);
+  const { scienceGent, status, isRefreshing, refreshData } = useScienceGentDetails(address);
 
   // Reset copied text after 2 seconds
   useEffect(() => {
@@ -89,6 +56,11 @@ const ScienceGentDetails = () => {
       return () => clearTimeout(timer);
     }
   }, [copiedText]);
+
+  // Scroll to top on component mount
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
 
   const handleCopy = (text: string, type: string) => {
     navigator.clipboard.writeText(text);
@@ -115,7 +87,7 @@ const ScienceGentDetails = () => {
       const aiResponse = {
         id: (Date.now() + 1).toString(),
         sender: 'ai',
-        content: `As SpectrumAI, I can help analyze that. Based on chemical principles, the spectroscopy data you're asking about could indicate the presence of carbonyl groups. Would you like me to provide a more detailed analysis of potential molecular structures?`,
+        content: `I can help with that. Let me analyze your question and provide some information about ${scienceGent?.name || 'this topic'}.`,
         timestamp: new Date().toISOString()
       };
       
@@ -126,11 +98,14 @@ const ScienceGentDetails = () => {
 
   // Format address for display
   const formatAddress = (address: string) => {
+    if (!address) return '';
     return `${address.substring(0, 6)}...${address.slice(-4)}`;
   };
 
   // Format currency for display
   const formatCurrency = (value: number) => {
+    if (!value && value !== 0) return '$0.00';
+    
     if (value >= 1000000) {
       return `$${(value / 1000000).toFixed(2)}M`;
     } else if (value >= 1000) {
@@ -139,6 +114,56 @@ const ScienceGentDetails = () => {
     return `$${value.toFixed(2)}`;
   };
 
+  // Handle loading states
+  if (status === LoadingStatus.Loading) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Navbar />
+        <main className="flex-grow pt-24 pb-16">
+          <div className="container mx-auto px-6">
+            <div className="mb-8">
+              <Skeleton className="h-16 w-1/3 mb-4" />
+              <Skeleton className="h-8 w-1/2" />
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              <div className="lg:col-span-2">
+                <Skeleton className="h-64 w-full mb-6" />
+                <Skeleton className="h-64 w-full" />
+              </div>
+              <div>
+                <Skeleton className="h-64 w-full mb-6" />
+                <Skeleton className="h-64 w-full" />
+              </div>
+            </div>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  // Handle not found
+  if (status === LoadingStatus.NotFound || status === LoadingStatus.Error) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Navbar />
+        <main className="flex-grow pt-24 pb-16 flex items-center justify-center">
+          <div className="text-center">
+            <h1 className="text-3xl font-bold mb-4">ScienceGent Not Found</h1>
+            <p className="text-muted-foreground mb-6">
+              The ScienceGent you're looking for could not be found or there was an error loading it.
+            </p>
+            <Button onClick={() => window.history.back()}>
+              Go Back
+            </Button>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  // Main content when data is loaded
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
@@ -151,33 +176,33 @@ const ScienceGentDetails = () => {
               <div className="flex flex-col md:flex-row gap-6 items-start md:items-center">
                 <div className="flex items-center gap-4">
                   <div className="w-16 h-16 rounded-full flex items-center justify-center text-white font-bold bg-gradient-to-br from-science-400 to-science-600">
-                    {mockGentData.profilePic ? (
+                    {scienceGent?.profile_pic ? (
                       <img 
-                        src={mockGentData.profilePic} 
-                        alt={mockGentData.name} 
+                        src={scienceGent.profile_pic} 
+                        alt={scienceGent.name} 
                         className="w-full h-full object-cover rounded-full" 
                       />
                     ) : (
-                      mockGentData.name.substring(0, 2).toUpperCase()
+                      scienceGent?.name.substring(0, 2).toUpperCase()
                     )}
                   </div>
                   
                   <div>
                     <div className="flex items-center gap-2">
-                      <h1 className="text-2xl font-bold">{mockGentData.name}</h1>
+                      <h1 className="text-2xl font-bold">{scienceGent?.name}</h1>
                       <div className="flex items-center gap-1 text-xs font-medium text-science-700 bg-science-50 px-2 py-1 rounded-full">
                         <Beaker size={12} />
-                        <span>{mockGentData.domain}</span>
+                        <span>{scienceGent?.domain || "General"}</span>
                       </div>
                     </div>
                     
                     <div className="flex items-center gap-3 mt-1">
                       <div className="flex items-center gap-1.5">
                         <button
-                          onClick={() => handleCopy(mockGentData.address, 'address')}
+                          onClick={() => handleCopy(scienceGent?.address, 'address')}
                           className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1"
                         >
-                          {formatAddress(mockGentData.address)}
+                          {formatAddress(scienceGent?.address)}
                           {copiedText === 'address' ? (
                             <span className="text-green-600 text-xs">Copied!</span>
                           ) : (
@@ -186,9 +211,9 @@ const ScienceGentDetails = () => {
                         </button>
                       </div>
                       
-                      {mockGentData.website && (
+                      {scienceGent?.website && (
                         <a 
-                          href={mockGentData.website} 
+                          href={scienceGent.website} 
                           target="_blank" 
                           rel="noopener noreferrer"
                           className="text-sm text-muted-foreground hover:text-science-600 flex items-center gap-1"
@@ -204,9 +229,22 @@ const ScienceGentDetails = () => {
                 <div className="flex-grow" />
                 
                 <div className="flex flex-wrap gap-3">
-                  <Button variant="outline" className="gap-1.5 border-science-200">
-                    <Info size={16} />
-                    <span>Token Info</span>
+                  <Button 
+                    variant="outline" 
+                    className="gap-1.5 border-science-200"
+                    onClick={refreshData}
+                    disabled={isRefreshing}
+                  >
+                    <RefreshCcw size={16} className={isRefreshing ? "animate-spin" : ""} />
+                    <span>{isRefreshing ? "Refreshing..." : "Refresh Data"}</span>
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    className="gap-1.5 border-science-200"
+                    onClick={() => window.open(`https://sepolia.etherscan.io/address/${scienceGent?.address}`, '_blank')}
+                  >
+                    <ExternalLink size={16} />
+                    <span>View on Etherscan</span>
                   </Button>
                   <Button className="bg-science-600 hover:bg-science-700 text-white gap-1.5">
                     <MessageSquare size={16} />
@@ -265,7 +303,8 @@ const ScienceGentDetails = () => {
                     <div className="glass-card p-6">
                       <h2 className="text-lg font-semibold mb-3">About</h2>
                       <p className="text-muted-foreground">
-                        {mockGentData.description}
+                        {scienceGent?.description || 
+                          `${scienceGent?.name} is a ScienceGent deployed on the DeSciAi platform. This AI agent has specialized scientific capabilities and an associated token that can be traded on the platform.`}
                       </p>
                     </div>
                   </Reveal>
@@ -273,31 +312,37 @@ const ScienceGentDetails = () => {
                   <Reveal delay={200}>
                     <div className="glass-card p-6">
                       <h2 className="text-lg font-semibold mb-4">Featured Capabilities</h2>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        {mockGentData.capabilities.map((cap, index) => (
-                          <div 
-                            key={cap.id}
-                            className="p-4 bg-white rounded-xl border border-border hover:border-science-200 transition-colors"
-                          >
-                            <div className="w-10 h-10 rounded-full bg-science-50 flex items-center justify-center text-science-700 mb-3">
-                              <Beaker size={18} />
+                      {scienceGent?.capabilities && scienceGent.capabilities.length > 0 ? (
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          {scienceGent.capabilities.slice(0, 3).map((cap, index) => (
+                            <div 
+                              key={cap.id}
+                              className="p-4 bg-white rounded-xl border border-border hover:border-science-200 transition-colors"
+                            >
+                              <div className="w-10 h-10 rounded-full bg-science-50 flex items-center justify-center text-science-700 mb-3">
+                                <Beaker size={18} />
+                              </div>
+                              <h3 className="font-medium mb-1">{cap.name}</h3>
+                              <p className="text-xs text-muted-foreground">{cap.domain}</p>
                             </div>
-                            <h3 className="font-medium mb-1">{cap.name}</h3>
-                            <p className="text-xs text-muted-foreground">{cap.domain}</p>
-                          </div>
-                        ))}
-                      </div>
-                      <div className="mt-4 text-right">
-                        <Button 
-                          variant="ghost" 
-                          size="sm"
-                          onClick={() => setActiveTab('capabilities')}
-                          className="text-science-700 hover:text-science-800 hover:bg-science-50 gap-1"
-                        >
-                          <span>View All Capabilities</span>
-                          <ArrowRight size={16} />
-                        </Button>
-                      </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-muted-foreground">No capabilities have been added yet.</p>
+                      )}
+                      {scienceGent?.capabilities && scienceGent.capabilities.length > 3 && (
+                        <div className="mt-4 text-right">
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => setActiveTab('capabilities')}
+                            className="text-science-700 hover:text-science-800 hover:bg-science-50 gap-1"
+                          >
+                            <span>View All Capabilities</span>
+                            <ArrowRight size={16} />
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   </Reveal>
                   
@@ -306,10 +351,10 @@ const ScienceGentDetails = () => {
                       <h2 className="text-lg font-semibold mb-4">Maturity Progress</h2>
                       <div className="mb-2 flex justify-between text-sm">
                         <span className="text-muted-foreground">Progress towards migration</span>
-                        <span className="font-medium">{mockGentData.maturityProgress}%</span>
+                        <span className="font-medium">{scienceGent?.maturity_progress || 0}%</span>
                       </div>
                       <Progress 
-                        value={mockGentData.maturityProgress} 
+                        value={scienceGent?.maturity_progress || 0} 
                         className="h-2 bg-secondary" 
                       />
                       <div className="mt-4 text-sm text-muted-foreground">
@@ -326,7 +371,7 @@ const ScienceGentDetails = () => {
                     <div className="mb-4 flex items-center justify-between">
                       <h2 className="text-lg font-semibold flex items-center gap-2">
                         <Brain size={18} className="text-science-600" />
-                        Chat with {mockGentData.name}
+                        Chat with {scienceGent?.name}
                       </h2>
                       <Button variant="ghost" size="sm" className="text-xs">
                         Clear Chat
@@ -393,42 +438,50 @@ const ScienceGentDetails = () => {
                   <div className="glass-card p-6">
                     <div className="flex items-center justify-between mb-6">
                       <h2 className="text-lg font-semibold">Capabilities</h2>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        className="text-xs border-science-200"
-                      >
-                        <Sparkles size={14} className="mr-1 text-science-600" />
-                        Add Capability
-                      </Button>
+                      {!scienceGent?.is_migrated && (
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          className="text-xs border-science-200"
+                        >
+                          <Sparkles size={14} className="mr-1 text-science-600" />
+                          Add Capability
+                        </Button>
+                      )}
                     </div>
                     
                     <div className="space-y-4">
-                      {mockGentData.capabilities.map((cap) => (
-                        <div 
-                          key={cap.id}
-                          className="p-4 border border-border rounded-xl hover:border-science-200 transition-colors"
-                        >
-                          <div className="flex items-start justify-between">
-                            <div className="flex gap-3">
-                              <div className="w-10 h-10 rounded-full bg-science-50 flex items-center justify-center text-science-700">
-                                <Beaker size={18} />
+                      {scienceGent?.capabilities && scienceGent.capabilities.length > 0 ? (
+                        scienceGent.capabilities.map((cap) => (
+                          <div 
+                            key={cap.id}
+                            className="p-4 border border-border rounded-xl hover:border-science-200 transition-colors"
+                          >
+                            <div className="flex items-start justify-between">
+                              <div className="flex gap-3">
+                                <div className="w-10 h-10 rounded-full bg-science-50 flex items-center justify-center text-science-700">
+                                  <Beaker size={18} />
+                                </div>
+                                <div>
+                                  <h3 className="font-medium">{cap.name}</h3>
+                                  <p className="text-xs text-muted-foreground">{cap.domain}</p>
+                                </div>
                               </div>
-                              <div>
-                                <h3 className="font-medium">{cap.name}</h3>
-                                <p className="text-xs text-muted-foreground">{cap.domain}</p>
-                              </div>
+                              <Button 
+                                variant="ghost" 
+                                size="sm"
+                                className="text-xs text-muted-foreground hover:text-foreground"
+                              >
+                                View Details
+                              </Button>
                             </div>
-                            <Button 
-                              variant="ghost" 
-                              size="sm"
-                              className="text-xs text-muted-foreground hover:text-foreground"
-                            >
-                              View Details
-                            </Button>
                           </div>
+                        ))
+                      ) : (
+                        <div className="text-center py-8">
+                          <p className="text-muted-foreground">No capabilities have been added yet.</p>
                         </div>
-                      ))}
+                      )}
                     </div>
                   </div>
                 </Reveal>
@@ -442,23 +495,23 @@ const ScienceGentDetails = () => {
                 <div className="glass-card p-6 mb-6">
                   <div className="flex justify-between items-start mb-4">
                     <h2 className="text-lg font-semibold">Token Price</h2>
-                    <div className={`text-xs font-medium px-2 py-0.5 rounded-full ${mockGentData.priceChange24h >= 0 ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
-                      {mockGentData.priceChange24h >= 0 ? '+' : ''}{mockGentData.priceChange24h}% (24h)
+                    <div className={`text-xs font-medium px-2 py-0.5 rounded-full ${(scienceGent?.price_change_24h || 0) >= 0 ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
+                      {(scienceGent?.price_change_24h || 0) >= 0 ? '+' : ''}{scienceGent?.price_change_24h || 0}% (24h)
                     </div>
                   </div>
                   
                   <div className="text-3xl font-bold mb-4">
-                    ${mockGentData.tokenPrice.toFixed(6)}
+                    ${(scienceGent?.token_price || 0).toFixed(6)}
                   </div>
                   
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <p className="text-xs text-muted-foreground mb-1">Market Cap</p>
-                      <p className="font-medium">{formatCurrency(mockGentData.marketCap)}</p>
+                      <p className="font-medium">{formatCurrency(scienceGent?.market_cap || 0)}</p>
                     </div>
                     <div>
                       <p className="text-xs text-muted-foreground mb-1">Liquidity</p>
-                      <p className="font-medium">{formatCurrency(mockGentData.totalLiquidity)}</p>
+                      <p className="font-medium">{formatCurrency(scienceGent?.total_liquidity || 0)}</p>
                     </div>
                   </div>
                 </div>
@@ -498,7 +551,7 @@ const ScienceGentDetails = () => {
                     <div className="p-3 rounded-lg border border-border">
                       <div className="flex justify-between text-sm mb-2">
                         <span className="text-muted-foreground">To</span>
-                        <span className="text-xs text-muted-foreground">Balance: 150 {mockGentData.name}</span>
+                        <span className="text-xs text-muted-foreground">Balance: 0 {scienceGent?.symbol}</span>
                       </div>
                       <div className="flex justify-between items-center">
                         <input
@@ -508,9 +561,9 @@ const ScienceGentDetails = () => {
                         />
                         <div className="flex items-center gap-2 bg-secondary px-3 py-1.5 rounded-lg text-sm font-medium">
                           <div className="w-5 h-5 rounded-full bg-gradient-to-br from-science-400 to-science-600 text-white flex items-center justify-center text-xs font-bold">
-                            {mockGentData.name.substring(0, 2).toUpperCase()}
+                            {scienceGent?.symbol?.substring(0, 2).toUpperCase() || "??"}
                           </div>
-                          <span>{mockGentData.name.substring(0, 4).toUpperCase()}</span>
+                          <span>{scienceGent?.symbol || "????"}</span>
                           <ChevronDown size={16} className="text-muted-foreground" />
                         </div>
                       </div>
@@ -547,7 +600,7 @@ const ScienceGentDetails = () => {
                         </div>
                         <span>24h Volume</span>
                       </div>
-                      <span className="font-medium">{formatCurrency(mockGentData.stats.volume24h)}</span>
+                      <span className="font-medium">{formatCurrency(scienceGent?.stats?.volume_24h || 0)}</span>
                     </div>
                     
                     <div className="flex justify-between items-center">
@@ -557,7 +610,7 @@ const ScienceGentDetails = () => {
                         </div>
                         <span>Transactions</span>
                       </div>
-                      <span className="font-medium">{mockGentData.stats.transactions}</span>
+                      <span className="font-medium">{scienceGent?.stats?.transactions || 0}</span>
                     </div>
                     
                     <div className="flex justify-between items-center">
@@ -565,10 +618,10 @@ const ScienceGentDetails = () => {
                         <div className="w-8 h-8 rounded-full bg-science-50 flex items-center justify-center text-science-700">
                           <TrendingUp size={16} />
                         </div>
-                        <span>Capability ROI</span>
+                        <span>Total Supply</span>
                       </div>
-                      <span className={`font-medium ${mockGentData.roi >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        {mockGentData.roi >= 0 ? '+' : ''}{mockGentData.roi}%
+                      <span className="font-medium">
+                        {scienceGent?.total_supply ? Number(scienceGent.total_supply).toLocaleString() : 0}
                       </span>
                     </div>
                     
@@ -579,7 +632,7 @@ const ScienceGentDetails = () => {
                         </div>
                         <span>Capabilities</span>
                       </div>
-                      <span className="font-medium">{mockGentData.capabilities.length}</span>
+                      <span className="font-medium">{scienceGent?.capabilities?.length || 0}</span>
                     </div>
                   </div>
                 </div>

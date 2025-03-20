@@ -57,6 +57,152 @@ export type Database = {
         }
         Relationships: []
       }
+      sciencegent_capabilities: {
+        Row: {
+          added_at: string | null
+          capability_id: string
+          id: string
+          sciencegent_address: string
+        }
+        Insert: {
+          added_at?: string | null
+          capability_id: string
+          id?: string
+          sciencegent_address: string
+        }
+        Update: {
+          added_at?: string | null
+          capability_id?: string
+          id?: string
+          sciencegent_address?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sciencegent_capabilities_capability_id_fkey"
+            columns: ["capability_id"]
+            isOneToOne: false
+            referencedRelation: "capabilities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sciencegent_capabilities_sciencegent_address_fkey"
+            columns: ["sciencegent_address"]
+            isOneToOne: false
+            referencedRelation: "sciencegents"
+            referencedColumns: ["address"]
+          },
+        ]
+      }
+      sciencegent_stats: {
+        Row: {
+          holders: number | null
+          id: string
+          sciencegent_address: string
+          transactions: number | null
+          updated_at: string | null
+          volume_24h: number | null
+        }
+        Insert: {
+          holders?: number | null
+          id?: string
+          sciencegent_address: string
+          transactions?: number | null
+          updated_at?: string | null
+          volume_24h?: number | null
+        }
+        Update: {
+          holders?: number | null
+          id?: string
+          sciencegent_address?: string
+          transactions?: number | null
+          updated_at?: string | null
+          volume_24h?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sciencegent_stats_sciencegent_address_fkey"
+            columns: ["sciencegent_address"]
+            isOneToOne: false
+            referencedRelation: "sciencegents"
+            referencedColumns: ["address"]
+          },
+        ]
+      }
+      sciencegents: {
+        Row: {
+          address: string
+          created_at: string | null
+          created_on_chain_at: string | null
+          creator_address: string | null
+          description: string | null
+          domain: string | null
+          id: string
+          is_migrated: boolean | null
+          last_synced_at: string | null
+          market_cap: number | null
+          maturity_progress: number | null
+          name: string
+          price_change_24h: number | null
+          profile_pic: string | null
+          socials: Json | null
+          symbol: string
+          token_price: number | null
+          total_liquidity: number | null
+          total_supply: number | null
+          updated_at: string | null
+          virtual_eth: number | null
+          website: string | null
+        }
+        Insert: {
+          address: string
+          created_at?: string | null
+          created_on_chain_at?: string | null
+          creator_address?: string | null
+          description?: string | null
+          domain?: string | null
+          id?: string
+          is_migrated?: boolean | null
+          last_synced_at?: string | null
+          market_cap?: number | null
+          maturity_progress?: number | null
+          name: string
+          price_change_24h?: number | null
+          profile_pic?: string | null
+          socials?: Json | null
+          symbol: string
+          token_price?: number | null
+          total_liquidity?: number | null
+          total_supply?: number | null
+          updated_at?: string | null
+          virtual_eth?: number | null
+          website?: string | null
+        }
+        Update: {
+          address?: string
+          created_at?: string | null
+          created_on_chain_at?: string | null
+          creator_address?: string | null
+          description?: string | null
+          domain?: string | null
+          id?: string
+          is_migrated?: boolean | null
+          last_synced_at?: string | null
+          market_cap?: number | null
+          maturity_progress?: number | null
+          name?: string
+          price_change_24h?: number | null
+          profile_pic?: string | null
+          socials?: Json | null
+          symbol?: string
+          token_price?: number | null
+          total_liquidity?: number | null
+          total_supply?: number | null
+          updated_at?: string | null
+          virtual_eth?: number | null
+          website?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

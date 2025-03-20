@@ -1,8 +1,8 @@
-
 import { ethers } from "ethers";
 import { contractConfig, factoryABI, dsiTokenABI } from "@/utils/contractConfig";
 import { ScienceGentFormData } from "@/types/sciencegent";
 import { toast } from "@/components/ui/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 /**
  * Fetches the current launch fee from the ScienceGentsFactory contract
@@ -123,7 +123,7 @@ export const approveDSIForFactory = async (launchFee: string): Promise<string> =
 };
 
 /**
- * Creates a new ScienceGent token on the blockchain
+ * Creates a new ScienceGent token on the blockchain and saves it to Supabase
  */
 export const createScienceGent = async (formData: ScienceGentFormData): Promise<string> => {
   try {
@@ -137,6 +137,7 @@ export const createScienceGent = async (formData: ScienceGentFormData): Promise<
     
     const provider = new ethers.providers.Web3Provider(window.ethereum);
     const signer = provider.getSigner();
+    const signerAddress = await signer.getAddress();
     
     const factoryContract = new ethers.Contract(
       contractConfig.addresses.ScienceGentsFactory,
@@ -174,6 +175,63 @@ export const createScienceGent = async (formData: ScienceGentFormData): Promise<
       
       if (event && event.args) {
         tokenAddress = event.args[0]; // Token address is typically the first parameter
+      }
+    }
+    
+    if (tokenAddress) {
+      // Save to Supabase
+      try {
+        // Save basic info to Supabase immediately
+        const { error } = await supabase
+          .from('sciencegents')
+          .insert({
+            address: tokenAddress,
+            name: formData.name,
+            symbol: formData.symbol,
+            description: formData.description || "",
+            website: formData.website || "",
+            socials: {
+              twitter: formData.twitter || "",
+              github: formData.github || ""
+            },
+            total_supply: parseFloat(formData.totalSupply),
+            virtual_eth: parseFloat(formData.initialLiquidity),
+            creator_address: signerAddress,
+            created_on_chain_at: new Date().toISOString(),
+            last_synced_at: new Date().toISOString()
+          });
+          
+        if (error) {
+          console.error("Error saving ScienceGent to Supabase:", error);
+        } else {
+          console.log("ScienceGent saved to Supabase successfully:", tokenAddress);
+          
+          // Also create initial stats
+          await supabase
+            .from('sciencegent_stats')
+            .insert({
+              sciencegent_address: tokenAddress,
+              volume_24h: 0,
+              transactions: 0, 
+              holders: 0
+            });
+            
+          // Also save capabilities if any
+          if (formData.selectedCapabilities.length > 0) {
+            const capabilityRows = formData.selectedCapabilities.map(capabilityId => ({
+              sciencegent_address: tokenAddress,
+              capability_id: capabilityId,
+              added_at: new Date().toISOString()
+            }));
+            
+            await supabase
+              .from('sciencegent_capabilities')
+              .insert(capabilityRows);
+          }
+        }
+      } catch (dbError) {
+        console.error("Error saving to database:", dbError);
+        // Don't throw here, we still want to return the token address
       }
     }
     
