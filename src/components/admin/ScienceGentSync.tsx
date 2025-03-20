@@ -1,9 +1,8 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { RefreshCcw, Check, AlertTriangle } from 'lucide-react';
-import { syncAllScienceGents } from '@/services/scienceGentDataService';
+import { syncAllScienceGentsFromBlockchain } from '@/services/scienceGent';
 import { toast } from '@/components/ui/use-toast';
 
 const ScienceGentSync = () => {
@@ -15,10 +14,8 @@ const ScienceGentSync = () => {
     try {
       setIsSyncing(true);
       
-      // Call the sync function
-      const result = await syncAllScienceGents();
+      const result = await syncAllScienceGentsFromBlockchain();
       
-      // Update state with results
       setLastSyncResult(result);
       setLastSyncTime(new Date().toISOString());
       

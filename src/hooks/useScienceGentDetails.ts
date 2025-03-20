@@ -4,8 +4,8 @@ import {
   fetchScienceGentFromSupabase, 
   fetchScienceGentFromBlockchain, 
   fetchTokenStatsFromBlockchain,
-  saveScienceGentToSupabase
-} from '@/services/scienceGentDataService';
+  saveScienceGentToSupabase 
+} from '@/services/scienceGent';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 
