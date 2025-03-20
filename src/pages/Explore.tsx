@@ -1,133 +1,87 @@
 
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Filter, ArrowUpDown, PlusCircle } from 'lucide-react';
+import { Search, Filter, ArrowUpDown, PlusCircle, RefreshCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import ScienceGentCard from '@/components/ui/ScienceGentCard';
 import Reveal from '@/components/animations/Reveal';
-
-// Mock ScienceGent data
-const mockScienceGents = [
-  {
-    id: '1',
-    name: 'SpectrumAI',
-    address: '0x1a2b3c4d5e6f7g8h9i0j',
-    marketCap: 450000,
-    tokenPrice: 0.00235,
-    age: '3 months',
-    roi: 18.7,
-    domain: 'Chemistry',
-    featured: true
-  },
-  {
-    id: '2',
-    name: 'GenomicsGPT',
-    address: '0x2b3c4d5e6f7g8h9i0j1a',
-    marketCap: 780000,
-    tokenPrice: 0.00412,
-    age: '5 months',
-    roi: 24.5,
-    domain: 'Genomics',
-    featured: true
-  },
-  {
-    id: '3',
-    name: 'QuantumSolver',
-    address: '0x3c4d5e6f7g8h9i0j1a2b',
-    marketCap: 620000,
-    tokenPrice: 0.00327,
-    age: '2 months',
-    roi: 12.3,
-    domain: 'Physics',
-    featured: true
-  },
-  {
-    id: '4',
-    name: 'MaterialsAI',
-    address: '0x4d5e6f7g8h9i0j1a2b3c',
-    marketCap: 320000,
-    tokenPrice: 0.00189,
-    age: '4 months',
-    roi: 8.5,
-    domain: 'Materials Science',
-    featured: false
-  },
-  {
-    id: '5',
-    name: 'ProteinFoldAI',
-    address: '0x5e6f7g8h9i0j1a2b3c4d',
-    marketCap: 520000,
-    tokenPrice: 0.00275,
-    age: '6 months',
-    roi: 15.2,
-    domain: 'Protein Analysis',
-    featured: false
-  },
-  {
-    id: '6',
-    name: 'DrugDiscoveryGPT',
-    address: '0x6f7g8h9i0j1a2b3c4d5e',
-    marketCap: 680000,
-    tokenPrice: 0.00362,
-    age: '7 months',
-    roi: 22.8,
-    domain: 'Drug Discovery',
-    featured: false
-  }
-];
+import { 
+  fetchScienceGents, 
+  filterScienceGents, 
+  sortScienceGents,
+  type ScienceGentListItem
+} from '@/services/scienceGentExploreService';
+import { Skeleton } from '@/components/ui/skeleton';
+import { syncAllScienceGents } from '@/services/scienceGentDataService';
+import { toast } from '@/components/ui/use-toast';
 
 const Explore = () => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
-  const [filteredGents, setFilteredGents] = useState(mockScienceGents);
+  const [scienceGents, setScienceGents] = useState<ScienceGentListItem[]>([]);
+  const [filteredGents, setFilteredGents] = useState<ScienceGentListItem[]>([]);
   const [activeFilter, setActiveFilter] = useState('all');
-  const [sortBy, setSortBy] = useState('marketCap');
-  const [sortOrder, setSortOrder] = useState('desc');
+  const [sortBy, setSortBy] = useState<keyof ScienceGentListItem>('marketCap');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSyncing, setIsSyncing] = useState(false);
 
-  // Scroll to top on component mount
+  // Fetch science gents on initial load
   useEffect(() => {
-    window.scrollTo(0, 0);
+    fetchData();
   }, []);
 
-  // Filter and sort ScienceGents
+  // Apply filters and sorting when data, filter, or sort options change
   useEffect(() => {
-    let result = [...mockScienceGents];
-    
-    // Apply domain filter
-    if (activeFilter !== 'all') {
-      result = result.filter(gent => gent.domain.toLowerCase() === activeFilter.toLowerCase());
+    const filtered = filterScienceGents(scienceGents, searchQuery, activeFilter);
+    const sorted = sortScienceGents(filtered, sortBy, sortOrder);
+    setFilteredGents(sorted);
+  }, [scienceGents, searchQuery, activeFilter, sortBy, sortOrder]);
+
+  // Fetch data from Supabase
+  const fetchData = async () => {
+    try {
+      setIsLoading(true);
+      const data = await fetchScienceGents();
+      setScienceGents(data);
+    } catch (error) {
+      console.error("Error fetching ScienceGents:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load ScienceGents",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
     }
-    
-    // Apply search query
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      result = result.filter(gent => 
-        gent.name.toLowerCase().includes(query) || 
-        gent.address.toLowerCase().includes(query)
-      );
+  };
+
+  // Trigger a sync with blockchain
+  const handleSync = async () => {
+    try {
+      setIsSyncing(true);
+      await syncAllScienceGents();
+      await fetchData(); // Refresh data after sync
+      toast({
+        title: "Sync Complete",
+        description: "ScienceGents have been synced from the blockchain"
+      });
+    } catch (error) {
+      console.error("Sync failed:", error);
+      toast({
+        title: "Sync Failed",
+        description: "Failed to sync ScienceGents from the blockchain",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSyncing(false);
     }
-    
-    // Apply sorting
-    result.sort((a, b) => {
-      // @ts-ignore
-      const valueA = a[sortBy];
-      // @ts-ignore
-      const valueB = b[sortBy];
-      
-      if (sortOrder === 'asc') {
-        return valueA > valueB ? 1 : -1;
-      } else {
-        return valueA < valueB ? 1 : -1;
-      }
-    });
-    
-    setFilteredGents(result);
-  }, [searchQuery, activeFilter, sortBy, sortOrder]);
+  };
 
   // Toggle sort order
-  const toggleSort = (key: string) => {
+  const toggleSort = (key: keyof ScienceGentListItem) => {
     if (sortBy === key) {
       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
     } else {
@@ -144,8 +98,48 @@ const Explore = () => {
     { value: 'physics', label: 'Physics' },
     { value: 'materials science', label: 'Materials Science' },
     { value: 'protein analysis', label: 'Protein Analysis' },
-    { value: 'drug discovery', label: 'Drug Discovery' }
+    { value: 'drug discovery', label: 'Drug Discovery' },
+    { value: 'general', label: 'General' }
   ];
+
+  // Generate skeleton cards for loading state
+  const renderSkeletons = () => {
+    return Array(6).fill(0).map((_, index) => (
+      <div key={`skeleton-${index}`} className="p-6 border rounded-lg">
+        <div className="flex items-start justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <Skeleton className="w-10 h-10 rounded-full" />
+            <div>
+              <Skeleton className="h-5 w-32 mb-1" />
+              <Skeleton className="h-3 w-24" />
+            </div>
+          </div>
+          <Skeleton className="h-5 w-20" />
+        </div>
+        <div className="grid grid-cols-2 gap-4 mb-4">
+          <div>
+            <Skeleton className="h-3 w-20 mb-1" />
+            <Skeleton className="h-5 w-16" />
+          </div>
+          <div>
+            <Skeleton className="h-3 w-20 mb-1" />
+            <Skeleton className="h-5 w-16" />
+          </div>
+          <div>
+            <Skeleton className="h-3 w-20 mb-1" />
+            <Skeleton className="h-5 w-16" />
+          </div>
+          <div>
+            <Skeleton className="h-3 w-20 mb-1" />
+            <Skeleton className="h-5 w-16" />
+          </div>
+        </div>
+        <div className="flex justify-end">
+          <Skeleton className="h-5 w-24" />
+        </div>
+      </div>
+    ));
+  };
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -163,13 +157,23 @@ const Explore = () => {
                 </p>
               </div>
               
-              <Button 
-                onClick={() => navigate('/create-sciencegent')}
-                className="mt-4 md:mt-0 bg-science-600 hover:bg-science-700 text-white"
-              >
-                <PlusCircle className="mr-2 h-4 w-4" />
-                Create ScienceGent
-              </Button>
+              <div className="flex gap-3 mt-4 md:mt-0">
+                <Button 
+                  onClick={handleSync}
+                  variant="outline"
+                  disabled={isSyncing}
+                >
+                  <RefreshCcw className={`mr-2 h-4 w-4 ${isSyncing ? 'animate-spin' : ''}`} />
+                  {isSyncing ? 'Syncing...' : 'Sync'}
+                </Button>
+                <Button 
+                  onClick={() => navigate('/create-sciencegent')}
+                  className="bg-science-600 hover:bg-science-700 text-white"
+                >
+                  <PlusCircle className="mr-2 h-4 w-4" />
+                  Create ScienceGent
+                </Button>
+              </div>
             </div>
           </Reveal>
           
@@ -253,7 +257,11 @@ const Explore = () => {
           </Reveal>
           
           {/* Results */}
-          {filteredGents.length > 0 ? (
+          {isLoading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {renderSkeletons()}
+            </div>
+          ) : filteredGents.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredGents.map((gent, index) => (
                 <Reveal key={gent.id} delay={150 + (index * 50)} direction="up">
@@ -266,17 +274,30 @@ const Explore = () => {
               <div className="text-center py-12">
                 <h3 className="text-xl font-medium mb-2">No ScienceGents found</h3>
                 <p className="text-muted-foreground mb-6">
-                  No matches for your current search criteria.
+                  {searchQuery || activeFilter !== 'all' 
+                    ? "No matches for your current search criteria."
+                    : "There are no ScienceGents in the database yet. Try syncing from the blockchain or creating a new one."}
                 </p>
-                <Button 
-                  onClick={() => {
-                    setSearchQuery('');
-                    setActiveFilter('all');
-                  }}
-                  variant="outline"
-                >
-                  Reset Filters
-                </Button>
+                <div className="flex gap-4 justify-center">
+                  {(searchQuery || activeFilter !== 'all') && (
+                    <Button 
+                      onClick={() => {
+                        setSearchQuery('');
+                        setActiveFilter('all');
+                      }}
+                      variant="outline"
+                    >
+                      Reset Filters
+                    </Button>
+                  )}
+                  <Button 
+                    onClick={handleSync}
+                    disabled={isSyncing}
+                  >
+                    <RefreshCcw className={`mr-2 h-4 w-4 ${isSyncing ? 'animate-spin' : ''}`} />
+                    {isSyncing ? 'Syncing...' : 'Sync from Blockchain'}
+                  </Button>
+                </div>
               </div>
             </Reveal>
           )}

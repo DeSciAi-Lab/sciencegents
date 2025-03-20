@@ -35,6 +35,13 @@ interface TokenStats {
   migrationEligible: boolean;
 }
 
+interface CapabilityDetail {
+  id: string;
+  description: string;
+  feeInETH: string;
+  creator: string;
+}
+
 // Function to save a ScienceGent to Supabase
 export const saveScienceGentToSupabase = async (
   scienceGentData: ScienceGentData,
@@ -219,6 +226,72 @@ const saveCapabilitiesToSupabase = async (
   }
 };
 
+// Fetch capability details from blockchain and save to Supabase
+const syncCapabilityDetailsToSupabase = async (capabilityId: string, provider: ethers.providers.Web3Provider) => {
+  try {
+    console.log(`Syncing capability ${capabilityId} to Supabase`);
+    
+    const factoryContract = new ethers.Contract(
+      contractConfig.addresses.ScienceGentsFactory,
+      factoryABI,
+      provider
+    );
+    
+    // Get capability details from contract
+    const [description, feeInETH, creator] = await factoryContract.getCapabilityDetails(capabilityId);
+    
+    // Check if capability exists in Supabase
+    const { data: existingCapability, error: checkError } = await supabase
+      .from('capabilities')
+      .select('id')
+      .eq('id', capabilityId)
+      .maybeSingle();
+      
+    if (checkError) {
+      console.error(`Error checking if capability ${capabilityId} exists:`, checkError);
+      throw checkError;
+    }
+    
+    // Format capability data
+    const capabilityData = {
+      id: capabilityId,
+      name: capabilityId, // Use ID as name initially, can be updated by user later
+      description,
+      price: parseFloat(ethers.utils.formatEther(feeInETH)),
+      creator,
+      domain: "General", // Default domain
+      last_synced_at: new Date().toISOString()
+    };
+    
+    // Update or insert capability
+    let upsertError = null;
+    if (existingCapability) {
+      console.log(`Updating existing capability ${capabilityId}`);
+      const { error } = await supabase
+        .from('capabilities')
+        .update(capabilityData)
+        .eq('id', capabilityId);
+      upsertError = error;
+    } else {
+      console.log(`Inserting new capability ${capabilityId}`);
+      const { error } = await supabase
+        .from('capabilities')
+        .insert(capabilityData);
+      upsertError = error;
+    }
+    
+    if (upsertError) {
+      console.error(`Error upserting capability ${capabilityId}:`, upsertError);
+      throw upsertError;
+    }
+    
+    return true;
+  } catch (error) {
+    console.error(`Error syncing capability ${capabilityId}:`, error);
+    return false;
+  }
+};
+
 // Function to fetch ScienceGent details from the blockchain
 export const fetchScienceGentFromBlockchain = async (address: string): Promise<ScienceGentData | null> => {
   try {
@@ -240,6 +313,14 @@ export const fetchScienceGentFromBlockchain = async (address: string): Promise<S
     
     // Get token capabilities
     const capabilities = await factoryContract.getTokenAssignedCapabilities(address);
+    
+    // Sync capabilities to Supabase
+    if (capabilities.length > 0) {
+      console.log(`Syncing ${capabilities.length} capabilities for token ${address}`);
+      for (const capabilityId of capabilities) {
+        await syncCapabilityDetailsToSupabase(capabilityId, provider);
+      }
+    }
     
     // Create ScienceGentData object
     const scienceGentData: ScienceGentData = {
