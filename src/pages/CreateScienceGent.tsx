@@ -17,10 +17,12 @@ import CapabilitySelection from '@/components/create-sciencegent/steps/Capabilit
 import LiquiditySettings from '@/components/create-sciencegent/steps/LiquiditySettings';
 import ReviewAndLaunch from '@/components/create-sciencegent/steps/ReviewAndLaunch';
 import SuccessScreen from '@/components/create-sciencegent/steps/SuccessScreen';
+import { CreationStatus } from '@/hooks/useScienceGentCreation';
 
 const CreateScienceGent = () => {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
+  const [tokenAddress, setTokenAddress] = useState<string | null>(null);
   const [formData, setFormData] = useState<ScienceGentFormData>({
     name: '',
     symbol: '',
@@ -37,7 +39,7 @@ const CreateScienceGent = () => {
 
   useEffect(() => {
     window.scrollTo(0, 0);
-  }, []);
+  }, [currentStep]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -75,15 +77,15 @@ const CreateScienceGent = () => {
   };
 
   const handleLaunch = () => {
-    setCurrentStep(6);
-    
-    setTimeout(() => {
-      navigate('/sciencegent/0x123456789abcdef');
-    }, 5000);
+    nextStep(); // Move to success step
   };
 
   const navigateToDetails = () => {
-    navigate('/sciencegent/0x123456789abcdef');
+    if (tokenAddress) {
+      navigate(`/sciencegent/${tokenAddress}`);
+    } else {
+      navigate('/sciencegents');
+    }
   };
 
   const renderStep = () => {
@@ -119,7 +121,10 @@ const CreateScienceGent = () => {
         );
       case 5:
         return (
-          <ReviewAndLaunch formData={formData} />
+          <ReviewAndLaunch 
+            formData={formData}
+            onSubmit={handleLaunch}
+          />
         );
       case 6:
         return (
@@ -175,15 +180,7 @@ const CreateScienceGent = () => {
                       <ChevronRight className="ml-2 h-4 w-4" />
                     </Button>
                   ) : (
-                    currentStep === 5 && (
-                      <Button 
-                        className="bg-science-600 hover:bg-science-700 text-white"
-                        onClick={handleLaunch}
-                      >
-                        <span>Launch ScienceGent</span>
-                        <Sparkle className="ml-2 h-4 w-4" />
-                      </Button>
-                    )
+                    currentStep === 5 && null // Removed the button from here as it's now inside ReviewAndLaunch
                   )}
                 </div>
               )}

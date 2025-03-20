@@ -3,14 +3,33 @@ import React from 'react';
 import { FileText, DollarSign } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
+import { Button } from '@/components/ui/button';
 import { ScienceGentFormData } from '@/types/sciencegent';
-import { LAUNCH_FEE, calculateTotalCapabilityFees, mockCapabilities } from '../utils';
+import { calculateTotalCapabilityFees, mockCapabilities } from '../utils';
+import TransactionStatus from '../TransactionStatus';
+import { useScienceGentCreation, CreationStatus } from '@/hooks/useScienceGentCreation';
 
 interface ReviewAndLaunchProps {
   formData: ScienceGentFormData;
+  onSubmit: () => void;
 }
 
-const ReviewAndLaunch: React.FC<ReviewAndLaunchProps> = ({ formData }) => {
+const ReviewAndLaunch: React.FC<ReviewAndLaunchProps> = ({ formData, onSubmit }) => {
+  const { 
+    status, 
+    error, 
+    tokenAddress, 
+    launchFee,
+    createToken
+  } = useScienceGentCreation();
+  
+  const isSubmitting = status !== CreationStatus.Idle && status !== CreationStatus.Error;
+  
+  const handleLaunch = async () => {
+    await createToken(formData);
+    onSubmit(); // Call the parent's onSubmit to move to success screen
+  };
+  
   return (
     <Card className="w-full">
       <CardHeader>
@@ -72,7 +91,7 @@ const ReviewAndLaunch: React.FC<ReviewAndLaunchProps> = ({ formData }) => {
             <div className="space-y-2">
               <div className="flex justify-between p-3 bg-muted rounded-lg">
                 <span className="text-muted-foreground">Launch Fee</span>
-                <span className="font-medium">{LAUNCH_FEE} DSI</span>
+                <span className="font-medium">{launchFee} DSI</span>
               </div>
               
               <div className="flex justify-between p-3 bg-muted rounded-lg">
@@ -89,7 +108,7 @@ const ReviewAndLaunch: React.FC<ReviewAndLaunchProps> = ({ formData }) => {
               
               <div className="flex justify-between p-3 bg-science-50 text-science-800 rounded-lg">
                 <span className="font-medium">Total Cost Now</span>
-                <span className="font-bold">{LAUNCH_FEE} DSI</span>
+                <span className="font-bold">{launchFee} DSI</span>
               </div>
               
               <p className="text-xs text-muted-foreground mt-1">
@@ -107,6 +126,22 @@ const ReviewAndLaunch: React.FC<ReviewAndLaunchProps> = ({ formData }) => {
                 <li>Your token will need to collect sufficient trading fees to migrate to an external DEX</li>
               </ul>
             </div>
+          </div>
+          
+          <TransactionStatus 
+            status={status} 
+            error={error}
+            tokenAddress={tokenAddress}
+          />
+          
+          <div className="flex justify-end">
+            <Button 
+              className="bg-science-600 hover:bg-science-700 text-white"
+              onClick={handleLaunch}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? 'Processing...' : 'Launch ScienceGent'}
+            </Button>
           </div>
         </div>
       </CardContent>
