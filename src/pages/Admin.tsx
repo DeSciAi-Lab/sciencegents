@@ -32,19 +32,38 @@ const AdminPage = () => {
         return;
       }
       
-      // Request account access
-      await window.ethereum.request({ method: 'eth_requestAccounts' });
+      try {
+        // Request account access
+        await window.ethereum.request({ method: 'eth_requestAccounts' });
+      } catch (walletError) {
+        toast({
+          title: "Wallet Connection Failed",
+          description: "You need to connect your wallet to sync capabilities.",
+          variant: "destructive"
+        });
+        setSyncing(false);
+        return;
+      }
       
       // Sync capabilities
       const result = await syncCapabilitiesWithBlockchain();
       
       // Update state and show success toast
       setSyncResult(result);
-      toast({
-        title: "Sync Completed",
-        description: `Added ${result.added} new capabilities, updated ${result.updated} existing ones. Total: ${result.total}`,
-        variant: "default"
-      });
+      
+      if (result.added === 0 && result.updated === 0) {
+        toast({
+          title: "No Changes Detected",
+          description: `All ${result.total} capabilities are already up to date.`,
+          variant: "default"
+        });
+      } else {
+        toast({
+          title: "Sync Completed",
+          description: `Added ${result.added} new capabilities, updated ${result.updated} existing ones. Total: ${result.total}`,
+          variant: "default"
+        });
+      }
     } catch (error) {
       console.error('Error syncing capabilities:', error);
       toast({

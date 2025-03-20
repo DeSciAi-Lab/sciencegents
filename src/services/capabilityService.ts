@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { Capability, SupabaseCapability, mapSupabaseToCapability } from "@/types/capability";
 import { ethers } from "ethers";
@@ -72,7 +71,15 @@ export const upsertCapability = async (capability: Capability): Promise<void> =>
 // Function to get all registered capability IDs from the blockchain
 export const fetchCapabilityIdsFromBlockchain = async (): Promise<string[]> => {
   try {
+    if (!window.ethereum) {
+      throw new Error("No wallet detected. Please install MetaMask or another Web3 provider.");
+    }
+    
     const provider = new ethers.providers.Web3Provider(window.ethereum);
+    
+    // Ensure the user is connected
+    await provider.listAccounts();
+    
     const factory = new ethers.Contract(
       contractConfig.addresses.ScienceGentsFactory,
       factoryABI,
@@ -90,7 +97,15 @@ export const fetchCapabilityIdsFromBlockchain = async (): Promise<string[]> => {
 // Function to get capability details from the blockchain
 export const fetchCapabilityDetailsFromBlockchain = async (id: string): Promise<Partial<Capability>> => {
   try {
+    if (!window.ethereum) {
+      throw new Error("No wallet detected. Please install MetaMask or another Web3 provider.");
+    }
+    
     const provider = new ethers.providers.Web3Provider(window.ethereum);
+    
+    // Ensure the user is connected
+    await provider.listAccounts();
+    
     const factory = new ethers.Contract(
       contractConfig.addresses.ScienceGentsFactory,
       factoryABI,
