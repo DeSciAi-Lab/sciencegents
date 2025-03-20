@@ -83,20 +83,43 @@ export const saveScienceGentToSupabase = async (
       last_synced_at: new Date().toISOString()
     };
     
-    // Insert or update ScienceGent using the address as the conflict key
-    console.log("Upserting sciencegent with address:", scienceGentData.address);
-    const { error: upsertError } = await supabase
+    console.log("Checking if ScienceGent exists:", scienceGentData.address);
+    
+    // First check if the ScienceGent exists
+    const { data: existingScienceGent, error: checkError } = await supabase
       .from('sciencegents')
-      .upsert(scienceGent, { 
-        onConflict: 'address' // Explicitly specify which column has the unique constraint
-      });
+      .select('id')
+      .eq('address', scienceGentData.address)
+      .maybeSingle();
+    
+    if (checkError) {
+      console.error("Error checking if ScienceGent exists:", checkError);
+      throw checkError;
+    }
+    
+    // If it exists, update, otherwise insert
+    let upsertError = null;
+    if (existingScienceGent) {
+      console.log("Updating existing ScienceGent:", scienceGentData.address);
+      const { error } = await supabase
+        .from('sciencegents')
+        .update(scienceGent)
+        .eq('address', scienceGentData.address);
+      upsertError = error;
+    } else {
+      console.log("Inserting new ScienceGent:", scienceGentData.address);
+      const { error } = await supabase
+        .from('sciencegents')
+        .insert(scienceGent);
+      upsertError = error;
+    }
     
     if (upsertError) {
       console.error("Error upserting ScienceGent:", upsertError);
       throw upsertError;
     }
     
-    // Initialize or update stats using sciencegent_address as the conflict key
+    // Initialize or update stats
     const statsData = {
       sciencegent_address: scienceGentData.address,
       volume_24h: 0, // This would require tracking transactions
@@ -105,12 +128,36 @@ export const saveScienceGentToSupabase = async (
       updated_at: new Date().toISOString()
     };
     
-    console.log("Upserting sciencegent_stats with address:", scienceGentData.address);
-    const { error: statsError } = await supabase
+    console.log("Checking if ScienceGent stats exists:", scienceGentData.address);
+    
+    // Check if stats already exist
+    const { data: existingStats, error: checkStatsError } = await supabase
       .from('sciencegent_stats')
-      .upsert(statsData, { 
-        onConflict: 'sciencegent_address' // Explicitly specify which column has the unique constraint
-      });
+      .select('id')
+      .eq('sciencegent_address', scienceGentData.address)
+      .maybeSingle();
+    
+    if (checkStatsError) {
+      console.error("Error checking if ScienceGent stats exists:", checkStatsError);
+      throw checkStatsError;
+    }
+    
+    // If stats exist, update, otherwise insert
+    let statsError = null;
+    if (existingStats) {
+      console.log("Updating existing ScienceGent stats:", scienceGentData.address);
+      const { error } = await supabase
+        .from('sciencegent_stats')
+        .update(statsData)
+        .eq('sciencegent_address', scienceGentData.address);
+      statsError = error;
+    } else {
+      console.log("Inserting new ScienceGent stats:", scienceGentData.address);
+      const { error } = await supabase
+        .from('sciencegent_stats')
+        .insert(statsData);
+      statsError = error;
+    }
     
     if (statsError) {
       console.error("Error upserting ScienceGent stats:", statsError);
