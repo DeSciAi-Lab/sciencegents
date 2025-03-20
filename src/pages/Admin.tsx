@@ -8,11 +8,12 @@ import FeatureCard from '@/components/admin/FeatureCard';
 import ScienceGentSync from '@/components/admin/ScienceGentSync';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
-import useAdminAuth from '@/hooks/useAdminAuth';
+import { useAdminAuth } from '@/hooks/useAdminAuth';
+import { RefreshCcw, Layers, Settings } from 'lucide-react';
 
 const Admin: React.FC = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
-  const { isAdmin, isLoading } = useAdminAuth();
+  const { isAdmin, isLoading, adminWalletAddress } = useAdminAuth();
 
   if (isLoading) {
     return <AdminSkeleton />;
@@ -51,27 +52,32 @@ const Admin: React.FC = () => {
                 <FeatureCard 
                   title="Sync ScienceGents"
                   description="Synchronize ScienceGent tokens from the blockchain"
-                  icon="RefreshCcw"
-                  onClick={() => setActiveTab("sciencegents")}
+                  icon={RefreshCcw}
+                  comingSoon={false}
+                  onAction={() => setActiveTab("sciencegents")}
+                  actionLabel="Go to Sync"
                 />
                 <FeatureCard 
                   title="Manage Capabilities"
                   description="Add, edit, and review capabilities"
-                  icon="Layers"
-                  onClick={() => setActiveTab("capabilities")}
+                  icon={Layers}
+                  comingSoon={false}
+                  onAction={() => setActiveTab("capabilities")}
+                  actionLabel="Go to Capabilities"
                 />
                 <FeatureCard 
                   title="Platform Settings"
                   description="Configure platform parameters and fees"
-                  icon="Settings"
-                  onClick={() => setActiveTab("settings")}
+                  icon={Settings}
+                  comingSoon={true}
+                  actionLabel="Coming Soon"
                 />
               </div>
             </TabsContent>
             
             <TabsContent value="capabilities">
               <div className="grid grid-cols-1 gap-6">
-                <CapabilityManagementCard />
+                <CapabilityManagementCard adminWalletAddress={adminWalletAddress} />
               </div>
             </TabsContent>
             

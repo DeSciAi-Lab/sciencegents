@@ -17,7 +17,7 @@ const FeatureCard: React.FC<FeatureCardProps> = ({
   title,
   description,
   icon: Icon,
-  comingSoon = true,
+  comingSoon = false,
   onAction,
   actionLabel = "Coming Soon"
 }) => {

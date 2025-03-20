@@ -3,7 +3,10 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '@/components/ui/use-toast';
 
-export const useAdminAuth = (adminWalletAddress: string) => {
+// Hardcoded admin wallet address - in a real app, this would come from an environment variable
+const ADMIN_WALLET_ADDRESS = '0x86A683C6B0e8d7A962B7A040Ed0e6d993F1d9F83';
+
+const useAdminAuth = () => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [accessDenied, setAccessDenied] = useState(false);
@@ -48,10 +51,10 @@ export const useAdminAuth = (adminWalletAddress: string) => {
         
         const currentWallet = accounts[0].toLowerCase();
         console.log('Connected wallet:', currentWallet);
-        console.log('Admin wallet:', adminWalletAddress.toLowerCase());
+        console.log('Admin wallet:', ADMIN_WALLET_ADDRESS.toLowerCase());
         
         // Strict equality check against admin wallet address
-        if (currentWallet !== adminWalletAddress.toLowerCase()) {
+        if (currentWallet !== ADMIN_WALLET_ADDRESS.toLowerCase()) {
           console.error('Connected wallet is not admin wallet');
           setAccessDenied(true);
           setIsAdmin(false);
@@ -102,7 +105,7 @@ export const useAdminAuth = (adminWalletAddress: string) => {
         const currentWallet = accounts[0].toLowerCase();
         
         // Check if new account is admin
-        if (currentWallet !== adminWalletAddress.toLowerCase()) {
+        if (currentWallet !== ADMIN_WALLET_ADDRESS.toLowerCase()) {
           setIsAdmin(false);
           setAccessDenied(true);
           toast({
@@ -126,7 +129,10 @@ export const useAdminAuth = (adminWalletAddress: string) => {
         }
       };
     }
-  }, [adminWalletAddress, navigate]);
+  }, [navigate]);
 
-  return { isAdmin, isLoading, accessDenied };
+  return { isAdmin, isLoading, accessDenied, adminWalletAddress: ADMIN_WALLET_ADDRESS };
 };
+
+export { useAdminAuth };
+export default useAdminAuth;
