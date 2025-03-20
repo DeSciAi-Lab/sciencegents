@@ -8,12 +8,14 @@ import Footer from '@/components/layout/Footer';
 import { syncCapabilitiesWithBlockchain, isAdminWallet } from '@/services/capabilityService';
 import { toast } from '@/components/ui/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
+import { refreshCapabilities } from '@/data/capabilities';
 
 const AdminPage = () => {
   const [syncing, setSyncing] = useState(false);
   const [syncResult, setSyncResult] = useState<{ added: number; updated: number; total: number } | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [accessDenied, setAccessDenied] = useState(false);
   const navigate = useNavigate();
 
   // Admin wallet address
@@ -24,9 +26,38 @@ const AdminPage = () => {
       setIsLoading(true);
       
       try {
-        const hasAdminAccess = await isAdminWallet();
+        // Check if wallet is connected
+        if (!window.ethereum) {
+          console.error('No Ethereum wallet detected');
+          setAccessDenied(true);
+          setIsLoading(false);
+          return;
+        }
         
-        if (!hasAdminAccess) {
+        // Get current wallet address
+        const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+        
+        if (!accounts || accounts.length === 0) {
+          console.error('No wallet connected');
+          setAccessDenied(true);
+          setIsLoading(false);
+          toast({
+            title: "Wallet Not Connected",
+            description: "Please connect your wallet to access the admin page.",
+            variant: "destructive"
+          });
+          return;
+        }
+        
+        const currentWallet = accounts[0].toLowerCase();
+        console.log('Connected wallet:', currentWallet);
+        console.log('Admin wallet:', ADMIN_WALLET_ADDRESS);
+        
+        // Strict equality check against admin wallet address
+        if (currentWallet !== ADMIN_WALLET_ADDRESS) {
+          console.error('Connected wallet is not admin wallet');
+          setAccessDenied(true);
+          setIsLoading(false);
           toast({
             title: "Access Denied",
             description: "You don't have permission to access the admin page.",
@@ -37,8 +68,10 @@ const AdminPage = () => {
         }
         
         setIsAdmin(true);
+        setAccessDenied(false);
       } catch (error) {
         console.error('Error checking admin access:', error);
+        setAccessDenied(true);
         toast({
           title: "Authentication Error",
           description: "An error occurred while checking admin access.",
@@ -55,14 +88,33 @@ const AdminPage = () => {
     // Listen for account changes
     if (window.ethereum) {
       const handleAccountsChanged = async (accounts: string[]) => {
-        const hasAdminAccess = await isAdminWallet();
-        if (!hasAdminAccess) {
+        if (!accounts || accounts.length === 0) {
+          setIsAdmin(false);
+          setAccessDenied(true);
+          toast({
+            title: "Wallet Disconnected",
+            description: "Admin access has been revoked.",
+            variant: "destructive"
+          });
+          navigate('/');
+          return;
+        }
+        
+        const currentWallet = accounts[0].toLowerCase();
+        
+        // Check if new account is admin
+        if (currentWallet !== ADMIN_WALLET_ADDRESS) {
+          setIsAdmin(false);
+          setAccessDenied(true);
           toast({
             title: "Access Revoked",
             description: "Admin access has been revoked due to wallet change.",
             variant: "destructive"
           });
           navigate('/');
+        } else {
+          setIsAdmin(true);
+          setAccessDenied(false);
         }
       };
       
@@ -83,9 +135,9 @@ const AdminPage = () => {
     setSyncResult(null);
     
     try {
-      // Check if admin wallet is connected
-      const hasAdminAccess = await isAdminWallet();
-      if (!hasAdminAccess) {
+      // Strict check if connected wallet is admin
+      const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+      if (!accounts || accounts.length === 0 || accounts[0].toLowerCase() !== ADMIN_WALLET_ADDRESS) {
         toast({
           title: "Access Denied",
           description: "Only the admin wallet can perform this operation.",
@@ -100,6 +152,9 @@ const AdminPage = () => {
       
       // Update state and show success toast
       setSyncResult(result);
+      
+      // Force refresh capabilities data
+      await refreshCapabilities();
       
       if (result.added === 0 && result.updated === 0) {
         toast({
@@ -144,7 +199,7 @@ const AdminPage = () => {
     );
   }
 
-  if (!isAdmin) {
+  if (accessDenied || !isAdmin) {
     return (
       <div className="min-h-screen flex flex-col">
         <Navbar />
@@ -153,9 +208,12 @@ const AdminPage = () => {
             <div className="flex flex-col items-center justify-center h-64">
               <Lock className="h-16 w-16 text-muted-foreground mb-4" />
               <h2 className="text-2xl font-bold mb-2">Access Denied</h2>
-              <p className="text-muted-foreground">
-                You don't have permission to access this page.
+              <p className="text-muted-foreground mb-6">
+                Only the admin wallet (0x86A6...9F83) can access this page.
               </p>
+              <Button onClick={() => navigate('/')} variant="outline">
+                Return to Homepage
+              </Button>
             </div>
           </div>
         </main>

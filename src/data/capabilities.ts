@@ -1,4 +1,3 @@
-
 import { fetchCapabilitiesFromSupabase, fetchCapabilityById } from "@/services/capabilityService";
 import { Capability } from "@/types/capability";
 
@@ -95,22 +94,54 @@ export const getCapabilityById = async (id: string): Promise<Capability | undefi
   }
 };
 
-// Function to get all capabilities from Supabase
-export const getAllCapabilities = async (): Promise<Capability[]> => {
+// Cache control for capabilities to ensure fresh data
+let lastFetchTime = 0;
+let cachedCapabilities: Capability[] | null = null;
+const CACHE_TTL = 10 * 1000; // 10 seconds cache lifetime
+
+// Function to get all capabilities from Supabase with improved caching
+export const getAllCapabilities = async (forceRefresh = false): Promise<Capability[]> => {
   try {
-    console.log("Getting all capabilities...");
+    const now = Date.now();
+    
+    // Return cached data if it's still fresh and we're not forcing a refresh
+    if (!forceRefresh && cachedCapabilities && (now - lastFetchTime) < CACHE_TTL) {
+      console.log("Using cached capabilities data");
+      return cachedCapabilities;
+    }
+    
+    console.log("Getting fresh capabilities data...");
     const supabaseCapabilities = await fetchCapabilitiesFromSupabase();
+    
     if (supabaseCapabilities.length > 0) {
       console.log(`Got ${supabaseCapabilities.length} capabilities from Supabase`);
+      // Update cache
+      cachedCapabilities = supabaseCapabilities;
+      lastFetchTime = now;
       return supabaseCapabilities;
     } else {
       console.log("No capabilities found in Supabase, using fallback");
+      // Update cache with fallback data
+      cachedCapabilities = capabilities;
+      lastFetchTime = now;
       return capabilities;
     }
   } catch (error) {
     console.error('Error fetching capabilities from Supabase:', error);
     console.log("Using fallback capabilities");
-    // Fallback to mock data
+    
+    // If we have cached data, still use it even on error
+    if (cachedCapabilities) {
+      return cachedCapabilities;
+    }
+    
+    // Otherwise fallback to mock data
     return capabilities;
   }
+};
+
+// Function to refresh capabilities data (to be called after adding new capability)
+export const refreshCapabilities = async (): Promise<Capability[]> => {
+  console.log("Forcing capabilities refresh...");
+  return getAllCapabilities(true);
 };

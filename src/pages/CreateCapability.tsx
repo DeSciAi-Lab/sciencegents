@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Upload, Beaker, FileText, DollarSign, Info, Check } from 'lucide-react';
@@ -23,8 +22,8 @@ import Reveal from '@/components/animations/Reveal';
 import { ethers } from 'ethers';
 import { contractConfig, factoryABI } from '@/utils/contractConfig';
 import { useToast } from '@/components/ui/use-toast';
+import { refreshCapabilities } from '@/data/capabilities';
 
-// Form validation schema
 const formSchema = z.object({
   name: z.string().min(3, 'Name must be at least 3 characters.').max(50, 'Name must be less than 50 characters.'),
   id: z.string().min(3, 'ID must be at least 3 characters.').max(30, 'ID must be less than 30 characters.').regex(/^[a-z0-9-]+$/, 'ID must contain only lowercase letters, numbers, and hyphens.'),
@@ -44,7 +43,6 @@ const CreateCapability = () => {
   const [preview, setPreview] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  // Form setup with validation
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -57,7 +55,6 @@ const CreateCapability = () => {
     },
   });
 
-  // Domain options
   const domains = [
     { value: 'Chemistry', label: 'Chemistry' },
     { value: 'Physics', label: 'Physics' },
@@ -68,14 +65,12 @@ const CreateCapability = () => {
     { value: 'Genomics', label: 'Genomics' },
   ];
 
-  // Handle file upload
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, setFile: React.Dispatch<React.SetStateAction<File | null>>) => {
     if (e.target.files && e.target.files.length > 0) {
       setFile(e.target.files[0]);
     }
   };
 
-  // Check if wallet is connected
   const checkIfWalletIsConnected = async () => {
     if (!window.ethereum) {
       toast({
@@ -87,7 +82,6 @@ const CreateCapability = () => {
     }
 
     try {
-      // Request account access
       const accounts = await window.ethereum.request({ method: 'eth_accounts' });
       
       if (accounts.length === 0) {
@@ -99,7 +93,6 @@ const CreateCapability = () => {
         return false;
       }
 
-      // Check if on Sepolia network
       const chainId = await window.ethereum.request({ method: 'eth_chainId' });
       if (chainId !== contractConfig.network.chainId) {
         toast({
@@ -126,7 +119,6 @@ const CreateCapability = () => {
     }
   };
 
-  // Handle form submission
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     console.log('Form values:', values);
     console.log('Documentation:', documentation);
@@ -141,21 +133,17 @@ const CreateCapability = () => {
         return;
       }
 
-      // Get provider and signer
       const provider = new ethers.providers.Web3Provider(window.ethereum);
       const signer = provider.getSigner();
       
-      // Connect to the contract
       const factoryContract = new ethers.Contract(
         contractConfig.addresses.ScienceGentsFactory,
         factoryABI,
         signer
       );
 
-      // Convert ETH fee to Wei
       const feeInWei = ethers.utils.parseEther(values.fee);
       
-      // Call the registerGlobalCapability function
       toast({
         title: "Registering Capability",
         description: "Please confirm the transaction in MetaMask...",
@@ -168,7 +156,6 @@ const CreateCapability = () => {
         values.creatorAddress
       );
 
-      // Wait for transaction to be mined
       toast({
         title: "Transaction Submitted",
         description: "Waiting for confirmation...",
@@ -176,13 +163,14 @@ const CreateCapability = () => {
       
       await tx.wait();
       
+      await refreshCapabilities();
+      
       toast({
         title: "Capability Registered Successfully!",
         description: "Your capability has been added to the platform.",
         variant: "default",
       });
 
-      // Navigate to the capability page
       navigate(`/capability/${values.id}`);
     } catch (error) {
       console.error('Error registering capability:', error);
@@ -196,7 +184,6 @@ const CreateCapability = () => {
     }
   };
 
-  // Toggle preview
   const togglePreview = () => {
     setPreview(!preview);
   };
@@ -225,7 +212,6 @@ const CreateCapability = () => {
           </Reveal>
           
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Form column */}
             <div className="lg:col-span-2">
               <Reveal delay={100}>
                 <div className="glass-card p-6">
@@ -468,7 +454,6 @@ const CreateCapability = () => {
               </Reveal>
             </div>
             
-            {/* Info column */}
             <div>
               <Reveal delay={150}>
                 <div className="glass-card p-6 mb-6">
