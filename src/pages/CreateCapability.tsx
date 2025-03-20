@@ -20,6 +20,9 @@ import * as z from 'zod';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import Reveal from '@/components/animations/Reveal';
+import { ethers } from 'ethers';
+import { contractConfig, factoryABI } from '@/utils/contractConfig';
+import { useToast } from '@/components/ui/use-toast';
 
 // Form validation schema
 const formSchema = z.object({
@@ -35,9 +38,11 @@ const formSchema = z.object({
 
 const CreateCapability = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [documentation, setDocumentation] = useState<File | null>(null);
   const [integrationGuide, setIntegrationGuide] = useState<File | null>(null);
   const [preview, setPreview] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   // Form setup with validation
   const form = useForm<z.infer<typeof formSchema>>({
@@ -70,16 +75,125 @@ const CreateCapability = () => {
     }
   };
 
+  // Check if wallet is connected
+  const checkIfWalletIsConnected = async () => {
+    if (!window.ethereum) {
+      toast({
+        title: "MetaMask Not Installed",
+        description: "Please install MetaMask to register a capability.",
+        variant: "destructive"
+      });
+      return false;
+    }
+
+    try {
+      // Request account access
+      const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+      
+      if (accounts.length === 0) {
+        toast({
+          title: "Wallet Not Connected",
+          description: "Please connect your wallet to register a capability.",
+          variant: "destructive"
+        });
+        return false;
+      }
+
+      // Check if on Sepolia network
+      const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+      if (chainId !== contractConfig.network.chainId) {
+        toast({
+          title: "Wrong Network",
+          description: "Please switch to the Sepolia Test Network.",
+          variant: "destructive"
+        });
+        
+        try {
+          await window.ethereum.request({
+            method: 'wallet_switchEthereumChain',
+            params: [{ chainId: contractConfig.network.chainId }],
+          });
+        } catch (error) {
+          console.error('Failed to switch network:', error);
+          return false;
+        }
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error checking wallet connection:', error);
+      return false;
+    }
+  };
+
   // Handle form submission
-  const onSubmit = (values: z.infer<typeof formSchema>) => {
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
     console.log('Form values:', values);
     console.log('Documentation:', documentation);
     console.log('Integration Guide:', integrationGuide);
     
-    // Simulate success and navigate to the capability page
-    setTimeout(() => {
+    try {
+      setIsSubmitting(true);
+      
+      const walletConnected = await checkIfWalletIsConnected();
+      if (!walletConnected) {
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Get provider and signer
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const signer = provider.getSigner();
+      
+      // Connect to the contract
+      const factoryContract = new ethers.Contract(
+        contractConfig.addresses.ScienceGentsFactory,
+        factoryABI,
+        signer
+      );
+
+      // Convert ETH fee to Wei
+      const feeInWei = ethers.utils.parseEther(values.fee);
+      
+      // Call the registerGlobalCapability function
+      toast({
+        title: "Registering Capability",
+        description: "Please confirm the transaction in MetaMask...",
+      });
+
+      const tx = await factoryContract.registerGlobalCapability(
+        values.id,
+        values.description,
+        feeInWei,
+        values.creatorAddress
+      );
+
+      // Wait for transaction to be mined
+      toast({
+        title: "Transaction Submitted",
+        description: "Waiting for confirmation...",
+      });
+      
+      await tx.wait();
+      
+      toast({
+        title: "Capability Registered Successfully!",
+        description: "Your capability has been added to the platform.",
+        variant: "default",
+      });
+
+      // Navigate to the capability page
       navigate(`/capability/${values.id}`);
-    }, 1500);
+    } catch (error) {
+      console.error('Error registering capability:', error);
+      toast({
+        title: "Registration Failed",
+        description: error.message || "Failed to register capability. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // Toggle preview
@@ -343,8 +457,9 @@ const CreateCapability = () => {
                         <Button 
                           type="submit"
                           className="bg-science-600 hover:bg-science-700 text-white"
+                          disabled={isSubmitting}
                         >
-                          Create Capability
+                          {isSubmitting ? 'Creating...' : 'Create Capability'}
                         </Button>
                       </div>
                     </form>
