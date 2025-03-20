@@ -312,7 +312,7 @@ export const syncAllScienceGents = async () => {
     console.log("Starting sync of all ScienceGents");
     
     if (!window.ethereum) {
-      throw new Error("No Ethereum provider found");
+      throw new Error("No Ethereum wallet found");
     }
     
     const provider = new ethers.providers.Web3Provider(window.ethereum);
@@ -324,7 +324,7 @@ export const syncAllScienceGents = async () => {
     
     // Get total token count
     const tokenCount = await factoryContract.getTokenCount();
-    console.log(`Found ${tokenCount} tokens to sync`);
+    console.log(`Found ${tokenCount.toString()} tokens to sync`);
     
     // Process in batches to avoid timeout
     const batchSize = 10;
@@ -332,10 +332,13 @@ export const syncAllScienceGents = async () => {
     let errorCount = 0;
     
     for (let offset = 0; offset < tokenCount; offset += batchSize) {
-      const limit = Math.min(batchSize, tokenCount - offset);
+      const limit = Math.min(batchSize, tokenCount.toNumber() - offset);
       
-      // Get tokens with pagination
-      const { tokens } = await factoryContract.getTokensWithPagination(offset, limit);
+      // Use getTokensWithPagination to get tokens in batches
+      const result = await factoryContract.getTokensWithPagination(offset, limit);
+      const tokens = result.tokens;
+      
+      console.log(`Processing batch of ${tokens.length} tokens (offset: ${offset}, limit: ${limit})`);
       
       // Process each token
       for (const tokenAddress of tokens) {
@@ -348,6 +351,7 @@ export const syncAllScienceGents = async () => {
             // Save to Supabase
             await saveScienceGentToSupabase(scienceGentData, tokenStats);
             syncCount++;
+            console.log(`Successfully synced token ${tokenAddress} (${syncCount}/${tokens.length})`);
           }
         } catch (error) {
           console.error(`Error syncing token ${tokenAddress}:`, error);

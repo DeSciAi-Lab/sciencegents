@@ -100,6 +100,59 @@ export const factoryABI = [
     ],
     "stateMutability": "view",
     "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getTokenCount",
+    "outputs": [
+      { "internalType": "uint256", "name": "", "type": "uint256" }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "uint256", "name": "offset", "type": "uint256" },
+      { "internalType": "uint256", "name": "limit", "type": "uint256" }
+    ],
+    "name": "getTokensWithPagination",
+    "outputs": [
+      { "internalType": "address[]", "name": "tokens", "type": "address[]" },
+      { "internalType": "uint256", "name": "total", "type": "uint256" }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "address", "name": "token", "type": "address" }
+    ],
+    "name": "getTokenDetails",
+    "outputs": [
+      { "internalType": "string", "name": "name", "type": "string" },
+      { "internalType": "string", "name": "symbol", "type": "string" },
+      { "internalType": "uint256", "name": "totalSupply", "type": "uint256" },
+      { "internalType": "address", "name": "creator", "type": "address" },
+      { "internalType": "bool", "name": "tradingEnabled", "type": "bool" },
+      { "internalType": "bool", "name": "isMigrated", "type": "bool" },
+      { "internalType": "uint256", "name": "capabilityCount", "type": "uint256" },
+      { "internalType": "uint256", "name": "adminLockAmount", "type": "uint256" },
+      { "internalType": "uint256", "name": "adminLockRemainingTime", "type": "uint256" },
+      { "internalType": "bool", "name": "adminLockIsUnlocked", "type": "bool" }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "address", "name": "token", "type": "address" }
+    ],
+    "name": "getTokenAssignedCapabilities",
+    "outputs": [
+      { "internalType": "string[]", "name": "", "type": "string[]" }
+    ],
+    "stateMutability": "view",
+    "type": "function"
   }
 ];
 
