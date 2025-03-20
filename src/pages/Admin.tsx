@@ -1,5 +1,6 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Settings, Shield } from 'lucide-react';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
@@ -8,12 +9,34 @@ import FeatureCard from '@/components/admin/FeatureCard';
 import AccessDenied from '@/components/admin/AccessDenied';
 import AdminSkeleton from '@/components/admin/AdminSkeleton';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
+import { connectWallet } from '@/utils/walletUtils';
+import { toast } from '@/components/ui/use-toast';
 
 const AdminPage = () => {
   // Admin wallet address
   const ADMIN_WALLET_ADDRESS = '0x86A683C6B0e8d7A962B7A040Ed0e6d993F1d9F83'.toLowerCase();
+  const navigate = useNavigate();
   
   const { isAdmin, isLoading, accessDenied } = useAdminAuth(ADMIN_WALLET_ADDRESS);
+
+  // Try to connect wallet if none is connected
+  useEffect(() => {
+    const attemptWalletConnection = async () => {
+      if (!window.ethereum || !(await window.ethereum.request({ method: 'eth_accounts' })).length) {
+        const connected = await connectWallet();
+        if (!connected) {
+          toast({
+            title: "Admin Access Required",
+            description: "Please connect with the admin wallet to access this page.",
+            variant: "destructive"
+          });
+          navigate('/');
+        }
+      }
+    };
+    
+    attemptWalletConnection();
+  }, [navigate]);
 
   if (isLoading) {
     return (

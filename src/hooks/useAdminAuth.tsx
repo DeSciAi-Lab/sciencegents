@@ -18,7 +18,14 @@ export const useAdminAuth = (adminWalletAddress: string) => {
         if (!window.ethereum) {
           console.error('No Ethereum wallet detected');
           setAccessDenied(true);
+          setIsAdmin(false);
           setIsLoading(false);
+          toast({
+            title: "Wallet Connection Required",
+            description: "Please install and connect MetaMask to access the admin page.",
+            variant: "destructive"
+          });
+          navigate('/');
           return;
         }
         
@@ -28,23 +35,26 @@ export const useAdminAuth = (adminWalletAddress: string) => {
         if (!accounts || accounts.length === 0) {
           console.error('No wallet connected');
           setAccessDenied(true);
+          setIsAdmin(false);
           setIsLoading(false);
           toast({
             title: "Wallet Not Connected",
             description: "Please connect your wallet to access the admin page.",
             variant: "destructive"
           });
+          navigate('/');
           return;
         }
         
         const currentWallet = accounts[0].toLowerCase();
         console.log('Connected wallet:', currentWallet);
-        console.log('Admin wallet:', adminWalletAddress);
+        console.log('Admin wallet:', adminWalletAddress.toLowerCase());
         
         // Strict equality check against admin wallet address
         if (currentWallet !== adminWalletAddress.toLowerCase()) {
           console.error('Connected wallet is not admin wallet');
           setAccessDenied(true);
+          setIsAdmin(false);
           setIsLoading(false);
           toast({
             title: "Access Denied",
@@ -60,6 +70,7 @@ export const useAdminAuth = (adminWalletAddress: string) => {
       } catch (error) {
         console.error('Error checking admin access:', error);
         setAccessDenied(true);
+        setIsAdmin(false);
         toast({
           title: "Authentication Error",
           description: "An error occurred while checking admin access.",

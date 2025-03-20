@@ -7,6 +7,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { refreshCapabilities } from '@/data/capabilities';
 import { checkIfWalletIsConnected } from '@/utils/walletUtils';
 import { CapabilityFormValues } from '@/utils/formSchemas';
+import { upsertCapabilityToSupabase } from '@/services/capability';
 
 export const useCapabilityCreation = () => {
   const navigate = useNavigate();
@@ -64,6 +65,32 @@ export const useCapabilityCreation = () => {
       
       await tx.wait();
       
+      // Create a capability object to add to Supabase
+      const capabilityObj = {
+        id: values.id,
+        name: values.name || values.id,
+        domain: values.domain,
+        description: values.description,
+        price: parseFloat(values.fee),
+        creator: values.creatorAddress,
+        createdAt: new Date().toISOString(),
+        stats: {
+          usageCount: 0,
+          rating: 0,
+          revenue: 0
+        },
+        features: []
+      };
+      
+      // Add to Supabase directly to avoid waiting for sync
+      try {
+        await upsertCapabilityToSupabase(capabilityObj, true);
+        console.log("Capability added to Supabase");
+      } catch (error) {
+        console.error("Error adding capability to Supabase:", error);
+      }
+      
+      // Refresh capabilities data
       await refreshCapabilities();
       
       toast({
