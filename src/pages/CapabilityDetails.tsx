@@ -1,44 +1,70 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, Beaker, FileText, Star, Users, DollarSign, Code } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import Reveal from '@/components/animations/Reveal';
-
-// Mock data for a capability
-const mockCapability = {
-  id: 'mol-viz-3d',
-  name: 'Molecule Visualization (3D)',
-  domain: 'Chemistry',
-  description: 'Advanced 3D molecular visualization capability that enables ScienceGents to render and interact with complex molecular structures in three dimensions. This capability supports various molecular representations (ball-and-stick, space-filling, ribbon, etc.) and allows for real-time rotation, zooming, and manipulation of molecular models.',
-  price: 0.25, // ETH
-  creator: '0x8a7b7c6d5e4f3g2h1i0j',
-  createdAt: '2023-10-01T00:00:00Z',
-  docs: 'https://example.com/docs/mol-viz-3d',
-  stats: {
-    usageCount: 47,
-    rating: 4.8,
-    revenue: 11.75 // ETH
-  },
-  features: [
-    'Real-time 3D rendering of molecular structures',
-    'Multiple visualization modes (ball-and-stick, space-filling, etc.)',
-    'Interactive rotation, zooming, and manipulation',
-    'Support for common molecular file formats (PDB, MOL, XYZ, etc.)',
-    'Measurement tools for bond lengths, angles, and dihedral angles',
-    'Screenshot and export capabilities'
-  ]
-};
+import { Capability, getCapabilityById } from '@/data/capabilities';
+import { useNavigate } from 'react-router-dom';
 
 const CapabilityDetails = () => {
   const { id } = useParams<{ id: string }>();
+  const [capability, setCapability] = useState<Capability | null>(null);
+  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
+  
+  // Fetch capability data based on ID
+  useEffect(() => {
+    if (id) {
+      const foundCapability = getCapabilityById(id);
+      if (foundCapability) {
+        setCapability(foundCapability);
+      } else {
+        // If capability not found, redirect to capabilities page
+        navigate('/capabilities');
+      }
+    }
+    setLoading(false);
+  }, [id, navigate]);
   
   // Scroll to top on component mount
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Navbar />
+        <main className="flex-grow pt-24 pb-16 flex items-center justify-center">
+          <div className="animate-pulse text-lg font-medium text-muted-foreground">
+            Loading capability details...
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  if (!capability) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Navbar />
+        <main className="flex-grow pt-24 pb-16 flex items-center justify-center">
+          <div className="text-center">
+            <h2 className="text-xl font-semibold mb-4">Capability Not Found</h2>
+            <p className="text-muted-foreground mb-6">The capability you're looking for doesn't exist or has been removed.</p>
+            <Button asChild>
+              <Link to="/capabilities">View All Capabilities</Link>
+            </Button>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -60,13 +86,13 @@ const CapabilityDetails = () => {
                   </div>
                   
                   <div>
-                    <h1 className="text-2xl font-bold">{mockCapability.name}</h1>
+                    <h1 className="text-2xl font-bold">{capability.name}</h1>
                     <div className="flex items-center gap-3 mt-1">
                       <div className="flex items-center gap-1.5 text-xs font-medium text-science-700 bg-science-50 px-2 py-1 rounded-full">
                         <Beaker size={12} />
-                        <span>{mockCapability.domain}</span>
+                        <span>{capability.domain}</span>
                       </div>
-                      <div className="text-sm text-muted-foreground">ID: {mockCapability.id}</div>
+                      <div className="text-sm text-muted-foreground">ID: {capability.id}</div>
                     </div>
                   </div>
                 </div>
@@ -93,7 +119,7 @@ const CapabilityDetails = () => {
               <Reveal delay={100}>
                 <div className="glass-card p-6 mb-6">
                   <h2 className="text-lg font-semibold mb-3">Description</h2>
-                  <p className="text-muted-foreground">{mockCapability.description}</p>
+                  <p className="text-muted-foreground">{capability.description}</p>
                 </div>
               </Reveal>
               
@@ -101,7 +127,7 @@ const CapabilityDetails = () => {
                 <div className="glass-card p-6">
                   <h2 className="text-lg font-semibold mb-4">Features</h2>
                   <ul className="space-y-2">
-                    {mockCapability.features.map((feature, index) => (
+                    {capability.features.map((feature, index) => (
                       <li key={index} className="flex items-start">
                         <div className="mr-2 mt-1 rounded-full w-1.5 h-1.5 bg-science-500" />
                         <span className="text-muted-foreground">{feature}</span>
@@ -118,7 +144,7 @@ const CapabilityDetails = () => {
                 <div className="glass-card p-6 mb-6">
                   <h2 className="text-lg font-semibold mb-4">Capability Price</h2>
                   <div className="text-3xl font-bold mb-4 flex items-center">
-                    <span>{mockCapability.price}</span>
+                    <span>{capability.price}</span>
                     <span className="ml-2 text-muted-foreground text-lg">ETH</span>
                   </div>
                   
@@ -145,7 +171,7 @@ const CapabilityDetails = () => {
                         </div>
                         <span>Usage Count</span>
                       </div>
-                      <span className="font-medium">{mockCapability.stats.usageCount}</span>
+                      <span className="font-medium">{capability.stats.usageCount}</span>
                     </div>
                     
                     <div className="flex justify-between items-center">
@@ -155,7 +181,7 @@ const CapabilityDetails = () => {
                         </div>
                         <span>Rating</span>
                       </div>
-                      <span className="font-medium">{mockCapability.stats.rating}/5</span>
+                      <span className="font-medium">{capability.stats.rating}/5</span>
                     </div>
                     
                     <div className="flex justify-between items-center">
@@ -165,7 +191,7 @@ const CapabilityDetails = () => {
                         </div>
                         <span>Revenue Generated</span>
                       </div>
-                      <span className="font-medium">{mockCapability.stats.revenue} ETH</span>
+                      <span className="font-medium">{capability.stats.revenue} ETH</span>
                     </div>
                   </div>
                 </div>
@@ -180,12 +206,12 @@ const CapabilityDetails = () => {
                     </div>
                     <div>
                       <p className="font-medium">Capability Creator</p>
-                      <p className="text-xs text-muted-foreground">{mockCapability.creator.slice(0, 6)}...{mockCapability.creator.slice(-4)}</p>
+                      <p className="text-xs text-muted-foreground">{capability.creator.slice(0, 6)}...{capability.creator.slice(-4)}</p>
                     </div>
                   </div>
                   
                   <p className="text-sm text-muted-foreground">
-                    Created on {new Date(mockCapability.createdAt).toLocaleDateString()}
+                    Created on {new Date(capability.createdAt).toLocaleDateString()}
                   </p>
                 </div>
               </Reveal>
