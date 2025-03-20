@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { 
@@ -309,7 +308,10 @@ const ScienceGentDetails = () => {
                         <span className="text-muted-foreground">Progress towards migration</span>
                         <span className="font-medium">{mockGentData.maturityProgress}%</span>
                       </div>
-                      <Progress value={mockGentData.maturityProgress} className="h-2 bg-secondary" indicatorClassName="bg-science-600" />
+                      <Progress 
+                        value={mockGentData.maturityProgress} 
+                        className="h-2 bg-secondary" 
+                      />
                       <div className="mt-4 text-sm text-muted-foreground">
                         <p>This ScienceGent will be eligible for migration to an external DEX when trading fees reach 2× the virtual ETH amount plus capability fees.</p>
                       </div>
