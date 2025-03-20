@@ -11,38 +11,53 @@ const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 
 // Function to fetch all capabilities from Supabase
 export const fetchCapabilitiesFromSupabase = async (): Promise<Capability[]> => {
-  const { data, error } = await supabase
-    .from('capabilities')
-    .select('*');
+  try {
+    console.log("Fetching capabilities from Supabase...");
+    const { data, error } = await supabase
+      .from('capabilities')
+      .select('*');
 
-  if (error) {
-    console.error('Error fetching capabilities:', error);
+    if (error) {
+      console.error('Error fetching capabilities:', error);
+      throw error;
+    }
+
+    console.log("Capabilities fetched successfully:", data?.length || 0);
+    // Convert Supabase records to Capability format
+    return (data || []).map(record => mapSupabaseToCapability(record as SupabaseCapability));
+  } catch (error) {
+    console.error('Error in fetchCapabilitiesFromSupabase:', error);
     throw error;
   }
-
-  // Convert Supabase records to Capability format
-  return (data || []).map(record => mapSupabaseToCapability(record as SupabaseCapability));
 };
 
 // Function to fetch a specific capability by ID from Supabase
 export const fetchCapabilityById = async (id: string): Promise<Capability | null> => {
-  const { data, error } = await supabase
-    .from('capabilities')
-    .select('*')
-    .eq('id', id)
-    .single();
+  try {
+    console.log(`Fetching capability with ID ${id} from Supabase...`);
+    const { data, error } = await supabase
+      .from('capabilities')
+      .select('*')
+      .eq('id', id)
+      .single();
 
-  if (error) {
-    if (error.code === 'PGRST116') {
-      // No rows returned
-      return null;
+    if (error) {
+      if (error.code === 'PGRST116') {
+        // No rows returned
+        console.log(`No capability found with ID ${id}`);
+        return null;
+      }
+      console.error('Error fetching capability:', error);
+      throw error;
     }
-    console.error('Error fetching capability:', error);
+
+    console.log(`Capability with ID ${id} fetched successfully:`, data ? 'Found' : 'Not found');
+    // Convert Supabase record to Capability format
+    return data ? mapSupabaseToCapability(data as SupabaseCapability) : null;
+  } catch (error) {
+    console.error(`Error in fetchCapabilityById for ID ${id}:`, error);
     throw error;
   }
-
-  // Convert Supabase record to Capability format
-  return data ? mapSupabaseToCapability(data as SupabaseCapability) : null;
 };
 
 // Function to check if the connected wallet is the admin wallet
@@ -50,6 +65,7 @@ export const isAdminWallet = async (): Promise<boolean> => {
   const ADMIN_WALLET_ADDRESS = '0x86A683C6B0e8d7A962B7A040Ed0e6d993F1d9F83'.toLowerCase();
   
   if (!window.ethereum) {
+    console.log("No Ethereum provider found");
     return false;
   }
   
@@ -58,11 +74,14 @@ export const isAdminWallet = async (): Promise<boolean> => {
     const accounts = await provider.listAccounts();
     
     if (!accounts || accounts.length === 0) {
+      console.log("No connected accounts found");
       return false;
     }
     
     const connectedAccount = accounts[0].toLowerCase();
-    return connectedAccount === ADMIN_WALLET_ADDRESS;
+    const isAdmin = connectedAccount === ADMIN_WALLET_ADDRESS;
+    console.log(`Connected account: ${connectedAccount}, Is admin: ${isAdmin}`);
+    return isAdmin;
   } catch (error) {
     console.error('Error checking admin wallet:', error);
     return false;
@@ -72,8 +91,13 @@ export const isAdminWallet = async (): Promise<boolean> => {
 // Function to insert or update a capability in Supabase
 export const upsertCapability = async (capability: Capability): Promise<void> => {
   try {
+    console.log("Attempting to upsert capability:", capability.id);
+    
     // Check if connected wallet is admin
-    if (!await isAdminWallet()) {
+    const adminStatus = await isAdminWallet();
+    console.log("Admin status check result:", adminStatus);
+    
+    if (!adminStatus) {
       throw new Error("Only admin wallet can perform this operation");
     }
     
@@ -94,21 +118,41 @@ export const upsertCapability = async (capability: Capability): Promise<void> =>
       last_synced_at: new Date().toISOString()
     };
 
-    // Use direct fetch API instead of Supabase client to bypass RLS
-    const response = await fetch(`${SUPABASE_URL}/rest/v1/capabilities`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey': SUPABASE_ANON_KEY,
-        'Prefer': 'resolution=merge-duplicates'
-      },
-      body: JSON.stringify(supabaseRecord)
-    });
+    console.log("Upserting capability with data:", supabaseRecord);
+    
+    // Attempt to use the Supabase client first
+    try {
+      const { error } = await supabase
+        .from('capabilities')
+        .upsert(supabaseRecord);
+        
+      if (error) {
+        console.warn("Supabase client upsert failed, falling back to direct API call:", error);
+        throw error; // Throw to trigger fallback
+      }
+      
+      console.log("Capability upsert successful via Supabase client");
+      return;
+    } catch (clientError) {
+      console.log("Falling back to direct API call due to:", clientError);
+      // If Supabase client fails, try direct API call as fallback
+      const response = await fetch(`${SUPABASE_URL}/rest/v1/capabilities`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': SUPABASE_ANON_KEY,
+          'Prefer': 'resolution=merge-duplicates'
+        },
+        body: JSON.stringify(supabaseRecord)
+      });
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      console.error('Error upserting capability:', errorData);
-      throw new Error(`Failed to upsert capability: ${response.status}`);
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Error upserting capability via direct API:', errorData);
+        throw new Error(`Failed to upsert capability: ${response.status}`);
+      }
+      
+      console.log("Capability upsert successful via direct API");
     }
   } catch (error) {
     console.error('Admin verification or upsert failed:', error);
@@ -119,6 +163,7 @@ export const upsertCapability = async (capability: Capability): Promise<void> =>
 // Function to get all registered capability IDs from the blockchain
 export const fetchCapabilityIdsFromBlockchain = async (): Promise<string[]> => {
   try {
+    console.log("Fetching capability IDs from blockchain...");
     if (!window.ethereum) {
       throw new Error("No wallet detected. Please install MetaMask or another Web3 provider.");
     }
@@ -135,6 +180,7 @@ export const fetchCapabilityIdsFromBlockchain = async (): Promise<string[]> => {
     );
 
     const capabilityIds = await factory.getAllRegisteredCapabilityIDs();
+    console.log(`${capabilityIds.length} capability IDs fetched from blockchain`);
     return capabilityIds;
   } catch (error) {
     console.error('Error fetching capability IDs from blockchain:', error);
@@ -145,6 +191,7 @@ export const fetchCapabilityIdsFromBlockchain = async (): Promise<string[]> => {
 // Function to get capability details from the blockchain
 export const fetchCapabilityDetailsFromBlockchain = async (id: string): Promise<Partial<Capability>> => {
   try {
+    console.log(`Fetching details for capability ${id} from blockchain...`);
     if (!window.ethereum) {
       throw new Error("No wallet detected. Please install MetaMask or another Web3 provider.");
     }
@@ -161,6 +208,7 @@ export const fetchCapabilityDetailsFromBlockchain = async (id: string): Promise<
     );
 
     const [description, price, creator] = await factory.getCapabilityDetails(id);
+    console.log(`Capability ${id} details retrieved from blockchain`);
     
     return {
       id,
@@ -189,24 +237,33 @@ export const syncCapabilitiesWithBlockchain = async (): Promise<{
   total: number 
 }> => {
   try {
+    console.log("Starting capability sync with blockchain...");
     // Check if connected wallet is admin
-    if (!await isAdminWallet()) {
+    const adminStatus = await isAdminWallet();
+    console.log("Admin status check for sync:", adminStatus);
+    
+    if (!adminStatus) {
       throw new Error("Only admin wallet can sync capabilities");
     }
     
     // Get capability IDs from blockchain
     const capabilityIds = await fetchCapabilityIdsFromBlockchain();
+    console.log(`Found ${capabilityIds.length} capabilities on blockchain`);
+    
     let added = 0;
     let updated = 0;
 
     // Process each capability
     for (const id of capabilityIds) {
+      console.log(`Processing capability ${id}...`);
+      
       // Check if capability exists in Supabase
       const existingCapability = await fetchCapabilityById(id);
       const blockchainCapability = await fetchCapabilityDetailsFromBlockchain(id);
       
       if (!existingCapability) {
         // New capability - create it
+        console.log(`Capability ${id} not found in Supabase, creating new record`);
         const newCapability: Capability = {
           id: blockchainCapability.id || '',
           name: blockchainCapability.name || id,
@@ -223,33 +280,61 @@ export const syncCapabilitiesWithBlockchain = async (): Promise<{
           features: []
         };
         
-        // Use direct fetch API to create capability
-        const response = await fetch(`${SUPABASE_URL}/rest/v1/capabilities`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'apikey': SUPABASE_ANON_KEY
-          },
-          body: JSON.stringify({
-            id: newCapability.id,
-            name: newCapability.name,
-            domain: newCapability.domain,
-            description: newCapability.description,
-            price: newCapability.price,
-            creator: newCapability.creator,
-            created_at: newCapability.createdAt,
-            usage_count: newCapability.stats.usageCount,
-            rating: newCapability.stats.rating,
-            revenue: newCapability.stats.revenue,
-            features: newCapability.features,
-            last_synced_at: new Date().toISOString()
-          })
-        });
-        
-        if (response.ok) {
+        try {
+          // Try using Supabase client first
+          const { error } = await supabase
+            .from('capabilities')
+            .insert([{
+              id: newCapability.id,
+              name: newCapability.name,
+              domain: newCapability.domain,
+              description: newCapability.description,
+              price: newCapability.price,
+              creator: newCapability.creator,
+              created_at: newCapability.createdAt,
+              usage_count: newCapability.stats.usageCount,
+              rating: newCapability.stats.rating,
+              revenue: newCapability.stats.revenue,
+              features: newCapability.features,
+              last_synced_at: new Date().toISOString()
+            }]);
+            
+          if (error) {
+            console.warn(`Supabase client insert failed for ${id}, falling back to direct API:`, error);
+            // Fallback to direct API
+            const response = await fetch(`${SUPABASE_URL}/rest/v1/capabilities`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'apikey': SUPABASE_ANON_KEY
+              },
+              body: JSON.stringify({
+                id: newCapability.id,
+                name: newCapability.name,
+                domain: newCapability.domain,
+                description: newCapability.description,
+                price: newCapability.price,
+                creator: newCapability.creator,
+                created_at: newCapability.createdAt,
+                usage_count: newCapability.stats.usageCount,
+                rating: newCapability.stats.rating,
+                revenue: newCapability.stats.revenue,
+                features: newCapability.features,
+                last_synced_at: new Date().toISOString()
+              })
+            });
+            
+            if (!response.ok) {
+              const errorData = await response.json();
+              console.error(`Failed to add capability ${id} via direct API:`, errorData);
+              continue;
+            }
+          }
+          
+          console.log(`Capability ${id} added successfully`);
           added++;
-        } else {
-          console.error(`Failed to add capability ${id}:`, await response.json());
+        } catch (error) {
+          console.error(`Error adding capability ${id}:`, error);
         }
       } else if (
         blockchainCapability.description !== existingCapability.description ||
@@ -257,6 +342,7 @@ export const syncCapabilitiesWithBlockchain = async (): Promise<{
         blockchainCapability.creator !== existingCapability.creator
       ) {
         // Capability exists but needs updating
+        console.log(`Capability ${id} found in Supabase, updating record`);
         const updatedData = {
           id: existingCapability.id,
           description: blockchainCapability.description || existingCapability.description,
@@ -265,24 +351,43 @@ export const syncCapabilitiesWithBlockchain = async (): Promise<{
           last_synced_at: new Date().toISOString()
         };
         
-        // Use direct fetch API to update capability
-        const response = await fetch(`${SUPABASE_URL}/rest/v1/capabilities?id=eq.${encodeURIComponent(id)}`, {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-            'apikey': SUPABASE_ANON_KEY
-          },
-          body: JSON.stringify(updatedData)
-        });
-        
-        if (response.ok) {
+        try {
+          // Try using Supabase client first
+          const { error } = await supabase
+            .from('capabilities')
+            .update(updatedData)
+            .eq('id', id);
+            
+          if (error) {
+            console.warn(`Supabase client update failed for ${id}, falling back to direct API:`, error);
+            // Fallback to direct API
+            const response = await fetch(`${SUPABASE_URL}/rest/v1/capabilities?id=eq.${encodeURIComponent(id)}`, {
+              method: 'PATCH',
+              headers: {
+                'Content-Type': 'application/json',
+                'apikey': SUPABASE_ANON_KEY
+              },
+              body: JSON.stringify(updatedData)
+            });
+            
+            if (!response.ok) {
+              const errorData = await response.json();
+              console.error(`Failed to update capability ${id} via direct API:`, errorData);
+              continue;
+            }
+          }
+          
+          console.log(`Capability ${id} updated successfully`);
           updated++;
-        } else {
-          console.error(`Failed to update capability ${id}:`, await response.json());
+        } catch (error) {
+          console.error(`Error updating capability ${id}:`, error);
         }
+      } else {
+        console.log(`Capability ${id} is up to date, no changes needed`);
       }
     }
 
+    console.log(`Sync completed: ${added} added, ${updated} updated, ${capabilityIds.length} total`);
     return { added, updated, total: capabilityIds.length };
   } catch (error) {
     console.error('Error syncing capabilities with blockchain:', error);

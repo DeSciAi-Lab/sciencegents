@@ -1,3 +1,4 @@
+
 import { fetchCapabilitiesFromSupabase, fetchCapabilityById } from "@/services/capabilityService";
 import { Capability } from "@/types/capability";
 
@@ -77,10 +78,18 @@ export const capabilities: Capability[] = [
 // Function to get a capability by ID from Supabase
 export const getCapabilityById = async (id: string): Promise<Capability | undefined> => {
   try {
+    console.log(`Getting capability with ID ${id}...`);
     const capability = await fetchCapabilityById(id);
-    return capability || capabilities.find(capability => capability.id === id);
+    if (capability) {
+      console.log(`Found capability ${id} in Supabase`);
+      return capability;
+    } else {
+      console.log(`Capability ${id} not found in Supabase, using fallback`);
+      return capabilities.find(capability => capability.id === id);
+    }
   } catch (error) {
     console.error('Error fetching capability from Supabase:', error);
+    console.log(`Using fallback for capability ${id}`);
     // Fallback to mock data
     return capabilities.find(capability => capability.id === id);
   }
@@ -89,10 +98,18 @@ export const getCapabilityById = async (id: string): Promise<Capability | undefi
 // Function to get all capabilities from Supabase
 export const getAllCapabilities = async (): Promise<Capability[]> => {
   try {
+    console.log("Getting all capabilities...");
     const supabaseCapabilities = await fetchCapabilitiesFromSupabase();
-    return supabaseCapabilities.length > 0 ? supabaseCapabilities : capabilities;
+    if (supabaseCapabilities.length > 0) {
+      console.log(`Got ${supabaseCapabilities.length} capabilities from Supabase`);
+      return supabaseCapabilities;
+    } else {
+      console.log("No capabilities found in Supabase, using fallback");
+      return capabilities;
+    }
   } catch (error) {
     console.error('Error fetching capabilities from Supabase:', error);
+    console.log("Using fallback capabilities");
     // Fallback to mock data
     return capabilities;
   }
