@@ -18,7 +18,7 @@ interface ReviewAndLaunchProps {
 const ReviewAndLaunch: React.FC<ReviewAndLaunchProps> = ({ formData, onSubmit }) => {
   const [capabilities, setCapabilities] = useState<Capability[]>([]);
   const [loadingCapabilities, setLoadingCapabilities] = useState(true);
-  const { status, error, createToken, launchFee } = useScienceGentCreation();
+  const { status, error, createToken, launchFee, tokenAddress } = useScienceGentCreation();
 
   useEffect(() => {
     const fetchCapabilities = async () => {
@@ -70,7 +70,7 @@ const ReviewAndLaunch: React.FC<ReviewAndLaunchProps> = ({ formData, onSubmit })
       <CardContent>
         {status !== CreationStatus.Idle && (
           <div className="mb-6">
-            <TransactionStatus status={status} error={error} />
+            <TransactionStatus status={status} error={error} tokenAddress={tokenAddress} />
           </div>
         )}
 
