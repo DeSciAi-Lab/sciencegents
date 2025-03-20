@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { RefreshCcw, CheckCircle, AlertCircle, Database, Settings, Shield, Lock } from 'lucide-react';
@@ -6,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
-import { syncCapabilitiesWithBlockchain } from '@/services/capabilityService';
+import { syncCapabilitiesWithBlockchain, isAdminWallet } from '@/services/capabilityService';
 import { toast } from '@/components/ui/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -24,33 +23,10 @@ const AdminPage = () => {
     const checkAdminAccess = async () => {
       setIsLoading(true);
       
-      if (typeof window.ethereum === 'undefined') {
-        toast({
-          title: "Wallet Required",
-          description: "Please install MetaMask to access the admin page.",
-          variant: "destructive"
-        });
-        navigate('/');
-        return;
-      }
-      
       try {
-        const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+        const hasAdminAccess = await isAdminWallet();
         
-        if (!accounts || accounts.length === 0) {
-          // No connected account
-          toast({
-            title: "Authentication Required",
-            description: "Please connect your wallet to access the admin page.",
-            variant: "destructive"
-          });
-          navigate('/');
-          return;
-        }
-        
-        const connectedAccount = accounts[0].toLowerCase();
-        
-        if (connectedAccount !== ADMIN_WALLET_ADDRESS) {
+        if (!hasAdminAccess) {
           toast({
             title: "Access Denied",
             description: "You don't have permission to access the admin page.",
@@ -78,8 +54,9 @@ const AdminPage = () => {
     
     // Listen for account changes
     if (window.ethereum) {
-      window.ethereum.on('accountsChanged', (accounts: string[]) => {
-        if (!accounts.length || accounts[0].toLowerCase() !== ADMIN_WALLET_ADDRESS) {
+      const handleAccountsChanged = async (accounts: string[]) => {
+        const hasAdminAccess = await isAdminWallet();
+        if (!hasAdminAccess) {
           toast({
             title: "Access Revoked",
             description: "Admin access has been revoked due to wallet change.",
@@ -87,15 +64,17 @@ const AdminPage = () => {
           });
           navigate('/');
         }
-      });
+      };
+      
+      window.ethereum.on('accountsChanged', handleAccountsChanged);
+      
+      return () => {
+        // Clean up event listeners
+        if (window.ethereum) {
+          window.ethereum.removeListener('accountsChanged', handleAccountsChanged);
+        }
+      };
     }
-    
-    return () => {
-      // Clean up event listeners
-      if (window.ethereum) {
-        window.ethereum.removeListener('accountsChanged', () => {});
-      }
-    };
   }, [navigate]);
 
   // Function to handle capability sync
@@ -104,24 +83,12 @@ const AdminPage = () => {
     setSyncResult(null);
     
     try {
-      // Check if MetaMask is installed
-      if (!window.ethereum) {
+      // Check if admin wallet is connected
+      const hasAdminAccess = await isAdminWallet();
+      if (!hasAdminAccess) {
         toast({
-          title: "Wallet Required",
-          description: "Please install MetaMask to sync capabilities from the blockchain.",
-          variant: "destructive"
-        });
-        setSyncing(false);
-        return;
-      }
-      
-      try {
-        // Request account access
-        await window.ethereum.request({ method: 'eth_requestAccounts' });
-      } catch (walletError) {
-        toast({
-          title: "Wallet Connection Failed",
-          description: "You need to connect your wallet to sync capabilities.",
+          title: "Access Denied",
+          description: "Only the admin wallet can perform this operation.",
           variant: "destructive"
         });
         setSyncing(false);
