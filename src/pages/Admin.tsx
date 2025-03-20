@@ -1,7 +1,7 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { RefreshCcw, CheckCircle, AlertCircle, Database, Settings, Shield } from 'lucide-react';
+import { RefreshCcw, CheckCircle, AlertCircle, Database, Settings, Shield, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import Navbar from '@/components/layout/Navbar';
@@ -13,7 +13,90 @@ import { Skeleton } from '@/components/ui/skeleton';
 const AdminPage = () => {
   const [syncing, setSyncing] = useState(false);
   const [syncResult, setSyncResult] = useState<{ added: number; updated: number; total: number } | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
+
+  // Admin wallet address
+  const ADMIN_WALLET_ADDRESS = '0x86A683C6B0e8d7A962B7A040Ed0e6d993F1d9F83'.toLowerCase();
+
+  useEffect(() => {
+    const checkAdminAccess = async () => {
+      setIsLoading(true);
+      
+      if (typeof window.ethereum === 'undefined') {
+        toast({
+          title: "Wallet Required",
+          description: "Please install MetaMask to access the admin page.",
+          variant: "destructive"
+        });
+        navigate('/');
+        return;
+      }
+      
+      try {
+        const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+        
+        if (!accounts || accounts.length === 0) {
+          // No connected account
+          toast({
+            title: "Authentication Required",
+            description: "Please connect your wallet to access the admin page.",
+            variant: "destructive"
+          });
+          navigate('/');
+          return;
+        }
+        
+        const connectedAccount = accounts[0].toLowerCase();
+        
+        if (connectedAccount !== ADMIN_WALLET_ADDRESS) {
+          toast({
+            title: "Access Denied",
+            description: "You don't have permission to access the admin page.",
+            variant: "destructive"
+          });
+          navigate('/');
+          return;
+        }
+        
+        setIsAdmin(true);
+      } catch (error) {
+        console.error('Error checking admin access:', error);
+        toast({
+          title: "Authentication Error",
+          description: "An error occurred while checking admin access.",
+          variant: "destructive"
+        });
+        navigate('/');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    checkAdminAccess();
+    
+    // Listen for account changes
+    if (window.ethereum) {
+      window.ethereum.on('accountsChanged', (accounts: string[]) => {
+        if (!accounts.length || accounts[0].toLowerCase() !== ADMIN_WALLET_ADDRESS) {
+          toast({
+            title: "Access Revoked",
+            description: "Admin access has been revoked due to wallet change.",
+            variant: "destructive"
+          });
+          navigate('/');
+        }
+      });
+    }
+    
+    return () => {
+      // Clean up event listeners
+      if (window.ethereum) {
+        window.ethereum.removeListener('accountsChanged', () => {});
+      }
+    };
+  }, [navigate]);
 
   // Function to handle capability sync
   const handleSyncCapabilities = async () => {
@@ -75,6 +158,44 @@ const AdminPage = () => {
       setSyncing(false);
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Navbar />
+        <main className="flex-grow pt-24 pb-16">
+          <div className="container mx-auto px-6">
+            <div className="flex flex-col items-center justify-center h-64">
+              <Skeleton className="h-12 w-64 mb-4" />
+              <Skeleton className="h-4 w-48 mb-8" />
+              <Skeleton className="h-32 w-full max-w-md" />
+            </div>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  if (!isAdmin) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Navbar />
+        <main className="flex-grow pt-24 pb-16">
+          <div className="container mx-auto px-6">
+            <div className="flex flex-col items-center justify-center h-64">
+              <Lock className="h-16 w-16 text-muted-foreground mb-4" />
+              <h2 className="text-2xl font-bold mb-2">Access Denied</h2>
+              <p className="text-muted-foreground">
+                You don't have permission to access this page.
+              </p>
+            </div>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col">

@@ -16,6 +16,7 @@ const Navbar = () => {
   const location = useLocation();
   const isMobile = useIsMobile();
   const [isScrolled, setIsScrolled] = useState(false);
+  const [connectedWallet, setConnectedWallet] = useState<string | null>(null);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -31,12 +32,46 @@ const Navbar = () => {
     setIsOpen(false);
   }, [location]);
 
+  // Check for connected wallet
+  useEffect(() => {
+    const checkWallet = async () => {
+      if (typeof window.ethereum !== 'undefined') {
+        try {
+          const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+          setConnectedWallet(accounts[0] || null);
+
+          // Listen for account changes
+          window.ethereum.on('accountsChanged', (accounts: string[]) => {
+            setConnectedWallet(accounts[0] || null);
+          });
+        } catch (error) {
+          console.error('Error checking wallet:', error);
+        }
+      }
+    };
+
+    checkWallet();
+
+    return () => {
+      // Clean up listener
+      if (window.ethereum) {
+        window.ethereum.removeListener('accountsChanged', () => {});
+      }
+    };
+  }, []);
+
   const navLinks = [
     { href: '/', label: 'Home' },
     { href: '/explore', label: 'ScienceGents' },
     { href: '/capabilities', label: 'Capabilities' },
     { href: '/dashboard', label: 'Dashboard' },
   ];
+
+  // Admin wallet address from config
+  const ADMIN_WALLET_ADDRESS = '0x86A683C6B0e8d7A962B7A040Ed0e6d993F1d9F83'.toLowerCase();
+  
+  // Check if current wallet is admin
+  const isAdmin = connectedWallet && connectedWallet.toLowerCase() === ADMIN_WALLET_ADDRESS;
 
   return (
     <header className={`fixed top-0 left-0 right-0 z-40 transition-all duration-300 ${isScrolled ? 'bg-white/80 backdrop-blur-md shadow-sm' : 'bg-transparent'}`}>
@@ -65,6 +100,20 @@ const Navbar = () => {
                 {link.label}
               </Link>
             ))}
+            
+            {/* Admin Link - Only show if connected wallet is admin */}
+            {isAdmin && (
+              <Link
+                to="/admin"
+                className={`px-3 py-2 text-sm rounded-md transition-colors ${
+                  location.pathname === '/admin'
+                    ? 'text-science-700 bg-science-50'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-secondary/80'
+                }`}
+              >
+                Admin
+              </Link>
+            )}
           </nav>
 
           {/* Actions */}
@@ -101,6 +150,20 @@ const Navbar = () => {
                 {link.label}
               </Link>
             ))}
+            
+            {/* Admin Link for Mobile - Only show if connected wallet is admin */}
+            {isAdmin && (
+              <Link
+                to="/admin"
+                className={`px-3 py-2.5 rounded-md transition-colors ${
+                  location.pathname === '/admin'
+                    ? 'text-science-700 bg-science-50'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-secondary/80'
+                }`}
+              >
+                Admin
+              </Link>
+            )}
           </nav>
         </div>
       )}
