@@ -5,6 +5,10 @@ import { ethers } from "ethers";
 import { contractConfig, factoryABI } from "@/utils/contractConfig";
 import { toast } from "@/components/ui/use-toast";
 
+// Supabase URL and key from our configuration
+const SUPABASE_URL = "https://pwlptpkzbnjcccgfbkck.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB3bHB0cGt6Ym5qY2NjZ2Zia2NrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDIyNzUwMTAsImV4cCI6MjA1Nzg1MTAxMH0.tDmiZeDYqM2ui3NjLg3JjqqIy90gXXnSzEauKqGGiYg";
+
 // Function to fetch all capabilities from Supabase
 export const fetchCapabilitiesFromSupabase = async (): Promise<Capability[]> => {
   const { data, error } = await supabase
@@ -91,11 +95,11 @@ export const upsertCapability = async (capability: Capability): Promise<void> =>
     };
 
     // Use direct fetch API instead of Supabase client to bypass RLS
-    const response = await fetch(`${supabase.supabaseUrl}/rest/v1/capabilities`, {
+    const response = await fetch(`${SUPABASE_URL}/rest/v1/capabilities`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'apikey': supabase.supabaseKey,
+        'apikey': SUPABASE_ANON_KEY,
         'Prefer': 'resolution=merge-duplicates'
       },
       body: JSON.stringify(supabaseRecord)
@@ -220,11 +224,11 @@ export const syncCapabilitiesWithBlockchain = async (): Promise<{
         };
         
         // Use direct fetch API to create capability
-        const response = await fetch(`${supabase.supabaseUrl}/rest/v1/capabilities`, {
+        const response = await fetch(`${SUPABASE_URL}/rest/v1/capabilities`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'apikey': supabase.supabaseKey
+            'apikey': SUPABASE_ANON_KEY
           },
           body: JSON.stringify({
             id: newCapability.id,
@@ -262,11 +266,11 @@ export const syncCapabilitiesWithBlockchain = async (): Promise<{
         };
         
         // Use direct fetch API to update capability
-        const response = await fetch(`${supabase.supabaseUrl}/rest/v1/capabilities?id=eq.${encodeURIComponent(id)}`, {
+        const response = await fetch(`${SUPABASE_URL}/rest/v1/capabilities?id=eq.${encodeURIComponent(id)}`, {
           method: 'PATCH',
           headers: {
             'Content-Type': 'application/json',
-            'apikey': supabase.supabaseKey
+            'apikey': SUPABASE_ANON_KEY
           },
           body: JSON.stringify(updatedData)
         });
