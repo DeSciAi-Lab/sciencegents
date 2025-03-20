@@ -1,13 +1,14 @@
 
-import React from 'react';
-import { FileText, DollarSign } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import { ScienceGentFormData } from '@/types/sciencegent';
-import { calculateTotalCapabilityFees, mockCapabilities } from '../utils';
+import { LAUNCH_FEE, calculateTotalCapabilityFeesSynchronous } from '../utils';
+import { getAllCapabilities } from '@/data/capabilities';
+import { Capability } from '@/types/capability';
+import { Loader2 } from 'lucide-react';
+import useScienceGentCreation, { CreationStatus } from '@/hooks/useScienceGentCreation';
 import TransactionStatus from '../TransactionStatus';
-import { useScienceGentCreation, CreationStatus } from '@/hooks/useScienceGentCreation';
 
 interface ReviewAndLaunchProps {
   formData: ScienceGentFormData;
@@ -15,134 +16,150 @@ interface ReviewAndLaunchProps {
 }
 
 const ReviewAndLaunch: React.FC<ReviewAndLaunchProps> = ({ formData, onSubmit }) => {
-  const { 
-    status, 
-    error, 
-    tokenAddress, 
-    launchFee,
-    createToken
-  } = useScienceGentCreation();
-  
-  const isSubmitting = status !== CreationStatus.Idle && status !== CreationStatus.Error;
-  
+  const [capabilities, setCapabilities] = useState<Capability[]>([]);
+  const [loadingCapabilities, setLoadingCapabilities] = useState(true);
+  const { status, error, createToken, launchFee } = useScienceGentCreation();
+
+  useEffect(() => {
+    const fetchCapabilities = async () => {
+      try {
+        setLoadingCapabilities(true);
+        const fetchedCapabilities = await getAllCapabilities();
+        setCapabilities(fetchedCapabilities);
+      } catch (error) {
+        console.error('Error fetching capabilities:', error);
+      } finally {
+        setLoadingCapabilities(false);
+      }
+    };
+
+    fetchCapabilities();
+  }, []);
+
   const handleLaunch = async () => {
-    await createToken(formData);
-    onSubmit(); // Call the parent's onSubmit to move to success screen
+    const tokenAddress = await createToken(formData);
+    if (tokenAddress) {
+      onSubmit();
+    }
   };
-  
+
+  const totalCapabilityFees = calculateTotalCapabilityFeesSynchronous(
+    formData.selectedCapabilities,
+    capabilities
+  );
+
+  const selectedCapabilityNames = formData.selectedCapabilities.map(capId => {
+    const cap = capabilities.find(c => c.id === capId);
+    return cap ? cap.name : capId;
+  });
+
+  const isLoading = loadingCapabilities || status === CreationStatus.CheckingWallet ||
+    status === CreationStatus.CheckingAllowance || status === CreationStatus.ApprovingDSI ||
+    status === CreationStatus.Creating;
+
+  const isButtonDisabled = isLoading || status === CreationStatus.Success || status === CreationStatus.Error;
+
   return (
     <Card className="w-full">
       <CardHeader>
         <CardTitle>Review & Launch</CardTitle>
         <CardDescription>
-          Review your ScienceGent details and launch it to the platform
+          Review your ScienceGent details and launch
         </CardDescription>
       </CardHeader>
       <CardContent>
+        {status !== CreationStatus.Idle && (
+          <div className="mb-6">
+            <TransactionStatus status={status} error={error} />
+          </div>
+        )}
+
         <div className="space-y-6">
           <div className="grid gap-4">
-            <h3 className="text-lg font-medium flex items-center gap-2">
-              <FileText className="w-5 h-5 text-science-600" />
-              <span>Summary</span>
-            </h3>
-            
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="p-4 bg-muted rounded-lg">
-                  <div className="text-sm text-muted-foreground mb-1">Token Name</div>
-                  <div className="font-medium">{formData.name || 'Not set'}</div>
+            <div className="p-4 rounded-lg border bg-muted/30">
+              <h3 className="font-medium mb-1">Basic Information</h3>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+                <div>
+                  <p className="text-xs text-muted-foreground">Name</p>
+                  <p className="text-sm">{formData.name}</p>
                 </div>
-                
-                <div className="p-4 bg-muted rounded-lg">
-                  <div className="text-sm text-muted-foreground mb-1">Token Symbol</div>
-                  <div className="font-medium">{formData.symbol || 'Not set'}</div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Symbol</p>
+                  <p className="text-sm">{formData.symbol}</p>
                 </div>
-                
-                <div className="p-4 bg-muted rounded-lg">
-                  <div className="text-sm text-muted-foreground mb-1">Total Supply</div>
-                  <div className="font-medium">{formData.totalSupply || 'Not set'}</div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Total Supply</p>
+                  <p className="text-sm">{formData.totalSupply} tokens</p>
                 </div>
-                
-                <div className="p-4 bg-muted rounded-lg">
-                  <div className="text-sm text-muted-foreground mb-1">Initial Liquidity</div>
-                  <div className="font-medium">{formData.initialLiquidity || 'Not set'} virtualETH</div>
-                </div>
-              </div>
-              
-              <div className="p-4 bg-muted rounded-lg">
-                <div className="text-sm text-muted-foreground mb-1">Selected Capabilities</div>
-                <div className="font-medium">
-                  {formData.selectedCapabilities.length > 0 
-                    ? formData.selectedCapabilities.map(id => {
-                        const cap = mockCapabilities.find(c => c.id === id);
-                        return cap?.name;
-                      }).join(', ')
-                    : 'None'
-                  }
+                <div>
+                  <p className="text-xs text-muted-foreground">Initial Liquidity</p>
+                  <p className="text-sm">{formData.initialLiquidity} ETH</p>
                 </div>
               </div>
             </div>
             
-            <h3 className="text-lg font-medium flex items-center gap-2 mt-4">
-              <DollarSign className="w-5 h-5 text-science-600" />
-              <span>Fees & Costs</span>
-            </h3>
-            
-            <div className="space-y-2">
-              <div className="flex justify-between p-3 bg-muted rounded-lg">
-                <span className="text-muted-foreground">Launch Fee</span>
-                <span className="font-medium">{launchFee} DSI</span>
-              </div>
-              
-              <div className="flex justify-between p-3 bg-muted rounded-lg">
-                <span className="text-muted-foreground">virtualETH Amount</span>
-                <span className="font-medium">{formData.initialLiquidity || '0'} ETH</span>
-              </div>
-              
-              <div className="flex justify-between p-3 bg-muted rounded-lg">
-                <span className="text-muted-foreground">Capability Fees</span>
-                <span className="font-medium">{calculateTotalCapabilityFees(formData.selectedCapabilities).toFixed(2)} ETH</span>
-              </div>
-              
-              <Separator className="my-2" />
-              
-              <div className="flex justify-between p-3 bg-science-50 text-science-800 rounded-lg">
-                <span className="font-medium">Total Cost Now</span>
-                <span className="font-bold">{launchFee} DSI</span>
-              </div>
-              
-              <p className="text-xs text-muted-foreground mt-1">
-                The virtualETH and capability fees will be paid from collected trading fees when your token is migrated to an external DEX.
-              </p>
+            <div className="p-4 rounded-lg border bg-muted/30">
+              <h3 className="font-medium mb-1">AI Agent Persona</h3>
+              <p className="text-sm whitespace-pre-wrap">{formData.persona}</p>
             </div>
             
-            <div className="mt-6 p-4 border border-amber-200 bg-amber-50 rounded-lg">
-              <h4 className="font-medium text-amber-800 mb-2">Important Information</h4>
-              <ul className="space-y-2 text-sm text-amber-700">
-                <li>Once created, your token's parameters cannot be changed</li>
-                <li>1% of the total supply will be locked for 30 days and sent to the admin wallet</li>
-                <li>99% of the total supply will be added to the liquidity pool</li>
-                <li>You will need to enable trading manually after launch</li>
-                <li>Your token will need to collect sufficient trading fees to migrate to an external DEX</li>
-              </ul>
+            <div className="p-4 rounded-lg border bg-muted/30">
+              <h3 className="font-medium mb-1">Selected Capabilities</h3>
+              {loadingCapabilities ? (
+                <div className="flex items-center gap-2 py-2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span className="text-sm text-muted-foreground">Loading capabilities...</span>
+                </div>
+              ) : (
+                <>
+                  {selectedCapabilityNames.length > 0 ? (
+                    <ul className="list-disc list-inside text-sm space-y-1">
+                      {selectedCapabilityNames.map((name, index) => (
+                        <li key={index}>{name}</li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">No capabilities selected</p>
+                  )}
+                </>
+              )}
+            </div>
+            
+            <div className="p-4 rounded-lg border bg-science-50 border-science-200">
+              <h3 className="font-medium mb-3">Launch Fees</h3>
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span>Platform Fee</span>
+                  <span>{launchFee} DSI</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span>Virtual ETH (Initial Pool)</span>
+                  <span>{formData.initialLiquidity} ETH</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span>Capability Fees</span>
+                  <span>{totalCapabilityFees.toFixed(2)} ETH</span>
+                </div>
+                <div className="border-t pt-2 flex justify-between font-medium">
+                  <span>Total Launch Fee</span>
+                  <span>{launchFee} DSI</span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Note: Virtual ETH and capability fees are not charged upfront. They will be 
+                  covered by trading fees collected from your token.
+                </p>
+              </div>
             </div>
           </div>
           
-          <TransactionStatus 
-            status={status} 
-            error={error}
-            tokenAddress={tokenAddress}
-          />
-          
-          <div className="flex justify-end">
-            <Button 
-              className="bg-science-600 hover:bg-science-700 text-white"
-              onClick={handleLaunch}
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? 'Processing...' : 'Launch ScienceGent'}
-            </Button>
-          </div>
+          <Button 
+            onClick={handleLaunch}
+            disabled={isButtonDisabled}
+            className="w-full bg-science-600 hover:bg-science-700 text-white"
+          >
+            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Launch ScienceGent
+          </Button>
         </div>
       </CardContent>
     </Card>

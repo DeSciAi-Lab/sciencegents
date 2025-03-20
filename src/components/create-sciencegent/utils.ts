@@ -1,24 +1,29 @@
 
-import { Capability } from "@/types/sciencegent";
-
-// Mock capabilities data
-export const mockCapabilities: Capability[] = [
-  { id: 'mol-viz', name: 'Molecule Visualization', domain: 'Chemistry', fee: 0.05 },
-  { id: 'spec-analysis', name: 'Spectroscopy Analysis', domain: 'Chemistry', fee: 0.08 },
-  { id: 'react-sim', name: 'Reaction Simulation', domain: 'Chemistry', fee: 0.07 },
-  { id: 'dna-seq', name: 'DNA Sequencing', domain: 'Genomics', fee: 0.09 },
-  { id: 'prot-fold', name: 'Protein Folding', domain: 'Protein Analysis', fee: 0.1 },
-  { id: 'drug-dock', name: 'Drug Docking', domain: 'Drug Discovery', fee: 0.15 }
-];
+import { Capability } from "@/types/capability";
+import { getAllCapabilities } from "@/data/capabilities";
 
 // Launch fee (1000 DSI tokens)
 export const LAUNCH_FEE = 1000;
 
 // Calculate total capability fees
-export const calculateTotalCapabilityFees = (selectedCapabilities: string[]): number => {
+export const calculateTotalCapabilityFees = async (selectedCapabilities: string[]): Promise<number> => {
+  try {
+    const capabilities = await getAllCapabilities();
+    return selectedCapabilities.reduce((total, id) => {
+      const capability = capabilities.find(cap => cap.id === id);
+      return total + (capability ? capability.price : 0);
+    }, 0);
+  } catch (error) {
+    console.error("Error calculating total capability fees:", error);
+    return 0;
+  }
+};
+
+// Synchronous version for components that can't use async directly
+export const calculateTotalCapabilityFeesSynchronous = (selectedCapabilities: string[], availableCapabilities: Capability[]): number => {
   return selectedCapabilities.reduce((total, id) => {
-    const capability = mockCapabilities.find(cap => cap.id === id);
-    return total + (capability ? capability.fee : 0);
+    const capability = availableCapabilities.find(cap => cap.id === id);
+    return total + (capability ? capability.price : 0);
   }, 0);
 };
 
