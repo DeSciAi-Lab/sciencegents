@@ -1,4 +1,3 @@
-
 import { ethers } from "ethers";
 import { supabase } from "@/integrations/supabase/client";
 import { contractConfig, factoryABI } from "@/utils/contractConfig";
@@ -83,26 +82,34 @@ export const saveScienceGentToSupabase = async (
       last_synced_at: new Date().toISOString()
     };
     
-    // Insert or update ScienceGent
+    // Insert or update ScienceGent using the address as the conflict key
     const { error: upsertError } = await supabase
       .from('sciencegents')
-      .upsert(scienceGent, { onConflict: 'address' });
+      .upsert(scienceGent, { 
+        onConflict: 'address',
+        ignoreDuplicates: false
+      });
     
     if (upsertError) {
       console.error("Error upserting ScienceGent:", upsertError);
       throw upsertError;
     }
     
-    // Initialize or update stats
+    // Initialize or update stats using sciencegent_address as the conflict key
+    const statsData = {
+      sciencegent_address: scienceGentData.address,
+      volume_24h: 0, // This would require tracking transactions
+      transactions: 0, // This would require tracking transactions
+      holders: 0, // This would require tracking token holders
+      updated_at: new Date().toISOString()
+    };
+    
     const { error: statsError } = await supabase
       .from('sciencegent_stats')
-      .upsert({
-        sciencegent_address: scienceGentData.address,
-        volume_24h: 0, // This would require tracking transactions
-        transactions: 0, // This would require tracking transactions
-        holders: 0, // This would require tracking token holders
-        updated_at: new Date().toISOString()
-      }, { onConflict: 'sciencegent_address' });
+      .upsert(statsData, { 
+        onConflict: 'sciencegent_address',
+        ignoreDuplicates: false
+      });
     
     if (statsError) {
       console.error("Error upserting ScienceGent stats:", statsError);
