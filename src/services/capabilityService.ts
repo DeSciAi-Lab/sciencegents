@@ -1,5 +1,6 @@
+
 import { supabase } from "@/integrations/supabase/client";
-import { Capability } from "@/types/capability";
+import { Capability, SupabaseCapability, mapSupabaseToCapability } from "@/types/capability";
 import { ethers } from "ethers";
 import { contractConfig, factoryABI } from "@/utils/contractConfig";
 
@@ -14,7 +15,8 @@ export const fetchCapabilitiesFromSupabase = async (): Promise<Capability[]> => 
     throw error;
   }
 
-  return data || [];
+  // Convert Supabase records to Capability format
+  return (data || []).map(record => mapSupabaseToCapability(record as SupabaseCapability));
 };
 
 // Function to fetch a specific capability by ID from Supabase
@@ -34,14 +36,31 @@ export const fetchCapabilityById = async (id: string): Promise<Capability | null
     throw error;
   }
 
-  return data;
+  // Convert Supabase record to Capability format
+  return data ? mapSupabaseToCapability(data as SupabaseCapability) : null;
 };
 
 // Function to insert or update a capability in Supabase
 export const upsertCapability = async (capability: Capability): Promise<void> => {
+  // Convert Capability to Supabase format
+  const supabaseRecord: Partial<SupabaseCapability> = {
+    id: capability.id,
+    name: capability.name,
+    domain: capability.domain,
+    description: capability.description,
+    price: capability.price,
+    creator: capability.creator,
+    docs: capability.docs,
+    usage_count: capability.stats.usageCount,
+    rating: capability.stats.rating,
+    revenue: capability.stats.revenue,
+    features: capability.features,
+    last_synced_at: new Date().toISOString()
+  };
+
   const { error } = await supabase
     .from('capabilities')
-    .upsert(capability, { onConflict: 'id' });
+    .upsert(supabaseRecord, { onConflict: 'id' });
 
   if (error) {
     console.error('Error upserting capability:', error);
@@ -83,7 +102,7 @@ export const fetchCapabilityDetailsFromBlockchain = async (id: string): Promise<
       id,
       name: id, // The contract doesn't store a separate name, we'll use the ID
       description,
-      price: ethers.utils.formatEther(price),
+      price: parseFloat(ethers.utils.formatEther(price)),
       creator,
       domain: "Unknown", // The contract doesn't store domain, we'll need to update this manually
       features: [], // The contract doesn't store features
@@ -123,7 +142,7 @@ export const syncCapabilitiesWithBlockchain = async (): Promise<{
           name: blockchainCapability.name || id,
           domain: 'Unknown',
           description: blockchainCapability.description || '',
-          price: parseFloat(blockchainCapability.price?.toString() || '0'),
+          price: blockchainCapability.price || 0,
           creator: blockchainCapability.creator || '',
           createdAt: new Date().toISOString(),
           stats: {
@@ -143,13 +162,13 @@ export const syncCapabilitiesWithBlockchain = async (): Promise<{
         // Only update if there are differences
         if (
           blockchainCapability.description !== existingCapability.description ||
-          parseFloat(blockchainCapability.price?.toString() || '0') !== existingCapability.price ||
+          blockchainCapability.price !== existingCapability.price ||
           blockchainCapability.creator !== existingCapability.creator
         ) {
           const updatedCapability = {
             ...existingCapability,
             description: blockchainCapability.description || existingCapability.description,
-            price: parseFloat(blockchainCapability.price?.toString() || existingCapability.price.toString()),
+            price: blockchainCapability.price || existingCapability.price,
             creator: blockchainCapability.creator || existingCapability.creator,
             last_synced_at: new Date().toISOString()
           };

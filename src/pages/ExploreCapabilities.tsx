@@ -7,7 +7,8 @@ import { Input } from '@/components/ui/input';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import Reveal from '@/components/animations/Reveal';
-import { getAllCapabilities, Capability } from '@/data/capabilities';
+import { getAllCapabilities } from '@/data/capabilities';
+import { Capability } from '@/types/capability';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const ExploreCapabilities = () => {

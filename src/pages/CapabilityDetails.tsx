@@ -6,7 +6,8 @@ import { Button } from '@/components/ui/button';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import Reveal from '@/components/animations/Reveal';
-import { Capability, getCapabilityById } from '@/data/capabilities';
+import { getCapabilityById } from '@/data/capabilities';
+import { Capability } from '@/types/capability';
 import { useNavigate } from 'react-router-dom';
 import { Skeleton } from '@/components/ui/skeleton';
 
