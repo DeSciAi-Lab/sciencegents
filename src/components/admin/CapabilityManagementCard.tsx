@@ -1,9 +1,8 @@
-
 import React, { useState } from 'react';
 import { RefreshCcw, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { syncCapabilitiesWithBlockchain } from '@/services/capabilityService';
+import { syncCapabilitiesWithBlockchain } from '@/services/capability';
 import { toast } from '@/components/ui/use-toast';
 import { refreshCapabilities } from '@/data/capabilities';
 
@@ -15,13 +14,11 @@ const CapabilityManagementCard: React.FC<CapabilityManagementCardProps> = ({ adm
   const [syncing, setSyncing] = useState(false);
   const [syncResult, setSyncResult] = useState<{ added: number; updated: number; total: number } | null>(null);
 
-  // Function to handle capability sync
   const handleSyncCapabilities = async () => {
     setSyncing(true);
     setSyncResult(null);
     
     try {
-      // Strict check if connected wallet is admin
       const accounts = await window.ethereum.request({ method: 'eth_accounts' });
       if (!accounts || accounts.length === 0 || accounts[0].toLowerCase() !== adminWalletAddress.toLowerCase()) {
         toast({
@@ -33,13 +30,10 @@ const CapabilityManagementCard: React.FC<CapabilityManagementCardProps> = ({ adm
         return;
       }
       
-      // Sync capabilities
       const result = await syncCapabilitiesWithBlockchain();
       
-      // Update state and show success toast
       setSyncResult(result);
       
-      // Force refresh capabilities data
       await refreshCapabilities();
       
       if (result.added === 0 && result.updated === 0) {
