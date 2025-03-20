@@ -10,6 +10,7 @@ import ScienceGentDetails from "./pages/ScienceGentDetails";
 import ExploreCapabilities from "./pages/ExploreCapabilities";
 import CapabilityDetails from "./pages/CapabilityDetails";
 import CreateCapability from "./pages/CreateCapability";
+import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -27,6 +28,7 @@ const App = () => (
           <Route path="/capabilities" element={<ExploreCapabilities />} />
           <Route path="/capability/:id" element={<CapabilityDetails />} />
           <Route path="/create-capability" element={<CreateCapability />} />
+          <Route path="/admin" element={<Admin />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

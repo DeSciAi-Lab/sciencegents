@@ -1,23 +1,7 @@
+import { fetchCapabilitiesFromSupabase, fetchCapabilityById } from "@/services/capabilityService";
+import { Capability } from "@/types/capability";
 
-// Capability types and interfaces
-export interface Capability {
-  id: string;
-  name: string;
-  domain: string;
-  description: string;
-  price: number; // ETH
-  creator: string;
-  createdAt: string;
-  docs?: string;
-  stats: {
-    usageCount: number;
-    rating: number;
-    revenue: number; // ETH
-  };
-  features: string[];
-}
-
-// Mock capabilities data
+// Mock capabilities data (this will be used as fallback if Supabase fetch fails)
 export const capabilities: Capability[] = [
   {
     id: 'mol-viz-3d',
@@ -90,12 +74,26 @@ export const capabilities: Capability[] = [
   }
 ];
 
-// Function to get a capability by ID
-export const getCapabilityById = (id: string): Capability | undefined => {
-  return capabilities.find(capability => capability.id === id);
+// Function to get a capability by ID from Supabase
+export const getCapabilityById = async (id: string): Promise<Capability | undefined> => {
+  try {
+    const capability = await fetchCapabilityById(id);
+    return capability || capabilities.find(capability => capability.id === id);
+  } catch (error) {
+    console.error('Error fetching capability from Supabase:', error);
+    // Fallback to mock data
+    return capabilities.find(capability => capability.id === id);
+  }
 };
 
-// Function to get all capabilities
-export const getAllCapabilities = (): Capability[] => {
-  return capabilities;
+// Function to get all capabilities from Supabase
+export const getAllCapabilities = async (): Promise<Capability[]> => {
+  try {
+    const supabaseCapabilities = await fetchCapabilitiesFromSupabase();
+    return supabaseCapabilities.length > 0 ? supabaseCapabilities : capabilities;
+  } catch (error) {
+    console.error('Error fetching capabilities from Supabase:', error);
+    // Fallback to mock data
+    return capabilities;
+  }
 };

@@ -8,6 +8,7 @@ import Footer from '@/components/layout/Footer';
 import Reveal from '@/components/animations/Reveal';
 import { Capability, getCapabilityById } from '@/data/capabilities';
 import { useNavigate } from 'react-router-dom';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const CapabilityDetails = () => {
   const { id } = useParams<{ id: string }>();
@@ -17,16 +18,24 @@ const CapabilityDetails = () => {
   
   // Fetch capability data based on ID
   useEffect(() => {
-    if (id) {
-      const foundCapability = getCapabilityById(id);
-      if (foundCapability) {
-        setCapability(foundCapability);
-      } else {
-        // If capability not found, redirect to capabilities page
-        navigate('/capabilities');
+    const fetchCapability = async () => {
+      if (id) {
+        try {
+          const foundCapability = await getCapabilityById(id);
+          if (foundCapability) {
+            setCapability(foundCapability);
+          } else {
+            // If capability not found, redirect to capabilities page
+            navigate('/capabilities');
+          }
+        } catch (error) {
+          console.error('Error fetching capability:', error);
+        }
+        setLoading(false);
       }
-    }
-    setLoading(false);
+    };
+    
+    fetchCapability();
   }, [id, navigate]);
   
   // Scroll to top on component mount
@@ -38,9 +47,36 @@ const CapabilityDetails = () => {
     return (
       <div className="min-h-screen flex flex-col">
         <Navbar />
-        <main className="flex-grow pt-24 pb-16 flex items-center justify-center">
-          <div className="animate-pulse text-lg font-medium text-muted-foreground">
-            Loading capability details...
+        <main className="flex-grow pt-24 pb-16">
+          <div className="container mx-auto px-6">
+            <div className="mb-6">
+              <Link to="/capabilities" className="inline-flex items-center text-muted-foreground hover:text-foreground transition-colors mb-4">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back to Capabilities
+              </Link>
+              
+              <div className="flex flex-col md:flex-row gap-6 items-start md:items-center">
+                <div className="flex items-center gap-4">
+                  <Skeleton className="w-16 h-16 rounded-full" />
+                  <div>
+                    <Skeleton className="h-8 w-48 mb-2" />
+                    <Skeleton className="h-5 w-32" />
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              <div className="lg:col-span-2">
+                <Skeleton className="h-40 w-full mb-6" />
+                <Skeleton className="h-60 w-full" />
+              </div>
+              <div>
+                <Skeleton className="h-80 w-full mb-6" />
+                <Skeleton className="h-40 w-full mb-6" />
+                <Skeleton className="h-40 w-full" />
+              </div>
+            </div>
           </div>
         </main>
         <Footer />
@@ -100,10 +136,16 @@ const CapabilityDetails = () => {
                 <div className="flex-grow" />
                 
                 <div className="flex flex-wrap gap-3">
-                  <Button variant="outline" className="gap-1.5 border-science-200">
-                    <FileText size={16} />
-                    <span>Documentation</span>
-                  </Button>
+                  {capability.docs && (
+                    <Button 
+                      variant="outline" 
+                      className="gap-1.5 border-science-200"
+                      onClick={() => window.open(capability.docs, '_blank')}
+                    >
+                      <FileText size={16} />
+                      <span>Documentation</span>
+                    </Button>
+                  )}
                   <Button className="bg-science-600 hover:bg-science-700 text-white gap-1.5">
                     <Code size={16} />
                     <span>Integration Guide</span>
@@ -123,19 +165,21 @@ const CapabilityDetails = () => {
                 </div>
               </Reveal>
               
-              <Reveal delay={150}>
-                <div className="glass-card p-6">
-                  <h2 className="text-lg font-semibold mb-4">Features</h2>
-                  <ul className="space-y-2">
-                    {capability.features.map((feature, index) => (
-                      <li key={index} className="flex items-start">
-                        <div className="mr-2 mt-1 rounded-full w-1.5 h-1.5 bg-science-500" />
-                        <span className="text-muted-foreground">{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </Reveal>
+              {capability.features && capability.features.length > 0 && (
+                <Reveal delay={150}>
+                  <div className="glass-card p-6">
+                    <h2 className="text-lg font-semibold mb-4">Features</h2>
+                    <ul className="space-y-2">
+                      {capability.features.map((feature, index) => (
+                        <li key={index} className="flex items-start">
+                          <div className="mr-2 mt-1 rounded-full w-1.5 h-1.5 bg-science-500" />
+                          <span className="text-muted-foreground">{feature}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </Reveal>
+              )}
             </div>
             
             {/* Right column - Stats and info */}
