@@ -25,6 +25,7 @@ interface ScienceGentWizardProps {
 const ScienceGentWizard: React.FC<ScienceGentWizardProps> = () => {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
+  const [isLaunching, setIsLaunching] = useState(false);
   const {
     status,
     error,
@@ -59,6 +60,11 @@ const ScienceGentWizard: React.FC<ScienceGentWizardProps> = () => {
         status === CreationStatus.WaitingConfirmation || 
         status === CreationStatus.Success) {
       setCurrentStep(6);
+    }
+    
+    // Reset launching state when status changes
+    if (status !== CreationStatus.Idle) {
+      setIsLaunching(false);
     }
   }, [status]);
 
@@ -109,8 +115,15 @@ const ScienceGentWizard: React.FC<ScienceGentWizardProps> = () => {
     setCurrentStep(prev => Math.max(prev - 1, 1));
   };
 
-  const handleLaunch = () => {
-    createToken(formData);
+  const handleLaunch = async () => {
+    // Prevent multiple launches
+    if (isLaunching || status !== CreationStatus.Idle) {
+      console.log("Already launching, preventing duplicate call");
+      return;
+    }
+    
+    setIsLaunching(true);
+    await createToken(formData);
   };
 
   const renderStep = () => {
@@ -149,6 +162,7 @@ const ScienceGentWizard: React.FC<ScienceGentWizardProps> = () => {
           <ReviewAndLaunch 
             formData={formData}
             onSubmit={handleLaunch}
+            isLaunching={isLaunching || status !== CreationStatus.Idle}
           />
         );
       case 6:

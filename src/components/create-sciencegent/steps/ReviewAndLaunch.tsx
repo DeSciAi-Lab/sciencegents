@@ -13,9 +13,10 @@ import TransactionStatus from '../TransactionStatus';
 interface ReviewAndLaunchProps {
   formData: ScienceGentFormData;
   onSubmit: () => void;
+  isLaunching?: boolean;
 }
 
-const ReviewAndLaunch: React.FC<ReviewAndLaunchProps> = ({ formData, onSubmit }) => {
+const ReviewAndLaunch: React.FC<ReviewAndLaunchProps> = ({ formData, onSubmit, isLaunching = false }) => {
   const [capabilities, setCapabilities] = useState<Capability[]>([]);
   const [loadingCapabilities, setLoadingCapabilities] = useState(true);
   const { status, error, createToken, launchFee, tokenAddress, transactionHash } = useScienceGentCreation();
@@ -37,10 +38,12 @@ const ReviewAndLaunch: React.FC<ReviewAndLaunchProps> = ({ formData, onSubmit })
   }, []);
 
   const handleLaunch = async () => {
-    const result = await createToken(formData);
-    if (result && (result.tokenAddress || result.transactionHash)) {
-      onSubmit();
+    // Prevent multiple clicks
+    if (isLaunching) {
+      console.log("Launch already in progress, ignoring click");
+      return;
     }
+    onSubmit();
   };
 
   const totalCapabilityFees = calculateTotalCapabilityFeesSynchronous(
@@ -57,7 +60,7 @@ const ReviewAndLaunch: React.FC<ReviewAndLaunchProps> = ({ formData, onSubmit })
     status === CreationStatus.CheckingAllowance || status === CreationStatus.ApprovingDSI ||
     status === CreationStatus.Creating || status === CreationStatus.WaitingConfirmation;
 
-  const isButtonDisabled = isLoading || status === CreationStatus.Success || status === CreationStatus.Error;
+  const isButtonDisabled = isLoading || status === CreationStatus.Success || status === CreationStatus.Error || isLaunching;
 
   return (
     <Card className="w-full">
@@ -162,7 +165,7 @@ const ReviewAndLaunch: React.FC<ReviewAndLaunchProps> = ({ formData, onSubmit })
             disabled={isButtonDisabled}
             className="w-full bg-science-600 hover:bg-science-700 text-white"
           >
-            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {(isLoading || isLaunching) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Launch ScienceGent
           </Button>
         </div>

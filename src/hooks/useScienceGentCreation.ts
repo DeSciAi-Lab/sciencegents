@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { ScienceGentFormData } from "@/types/sciencegent";
 import { 
   getLaunchFee, 
@@ -30,6 +30,7 @@ export const useScienceGentCreation = () => {
   const [error, setError] = useState<string | null>(null);
   const [launchFee, setLaunchFee] = useState<string>("1000"); // Default to 1000 DSI
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
+  const isProcessingRef = useRef<boolean>(false);
 
   // Fetch the launch fee on mount
   useEffect(() => {
@@ -109,6 +110,15 @@ export const useScienceGentCreation = () => {
   };
 
   const createToken = async (formData: ScienceGentFormData) => {
+    // Check if already processing a transaction to prevent duplicate calls
+    if (isProcessingRef.current || status !== CreationStatus.Idle) {
+      console.log("Already processing a transaction, skipping duplicate call");
+      return null;
+    }
+    
+    // Set processing flag to true
+    isProcessingRef.current = true;
+    
     setStatus(CreationStatus.CheckingWallet);
     setError(null);
     
@@ -165,7 +175,19 @@ export const useScienceGentCreation = () => {
       });
       
       return null;
+    } finally {
+      // Clear processing flag regardless of outcome
+      isProcessingRef.current = false;
     }
+  };
+
+  // Reset the creation process
+  const resetCreation = () => {
+    setStatus(CreationStatus.Idle);
+    setTransactionHash(null);
+    setTokenAddress(null);
+    setError(null);
+    isProcessingRef.current = false;
   };
 
   return {
@@ -175,7 +197,8 @@ export const useScienceGentCreation = () => {
     tokenAddress,
     launchFee,
     isSyncing,
-    createToken
+    createToken,
+    resetCreation
   };
 };
 

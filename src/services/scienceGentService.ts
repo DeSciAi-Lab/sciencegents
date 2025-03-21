@@ -5,6 +5,9 @@ import { ScienceGentFormData } from "@/types/sciencegent";
 import { toast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
+// Track pending transactions to prevent duplicates
+const pendingTransactions = new Set<string>();
+
 /**
  * Fetches the current launch fee from the ScienceGentsFactory contract
  */
@@ -81,6 +84,18 @@ export const approveDSIForFactory = async (launchFee: string): Promise<string> =
       throw new Error("No Ethereum provider found");
     }
     
+    // Generate a unique key for this approval request
+    const approvalKey = `approve-${Date.now()}`;
+    
+    // Check if we already have a pending approval
+    if (pendingTransactions.has(approvalKey)) {
+      console.log("Approval already in progress, skipping duplicate call");
+      return "pending_approval";
+    }
+    
+    // Add to pending transactions
+    pendingTransactions.add(approvalKey);
+    
     const provider = new ethers.providers.Web3Provider(window.ethereum);
     const signer = provider.getSigner();
     
@@ -111,14 +126,22 @@ export const approveDSIForFactory = async (launchFee: string): Promise<string> =
       description: "DSI tokens approved for ScienceGents Factory",
     });
     
+    // Remove from pending transactions
+    pendingTransactions.delete(approvalKey);
+    
     return receipt.transactionHash;
   } catch (error) {
     console.error("Error approving DSI tokens:", error);
+    
+    // Clear pending transactions on error
+    pendingTransactions.clear();
+    
     toast({
       title: "Approval Failed",
       description: error.message || "Failed to approve DSI tokens",
       variant: "destructive",
     });
+    
     throw error;
   }
 };
@@ -144,11 +167,6 @@ export const extractTokenAddressFromReceipt = async (transactionHash: string): P
     // Look for TokenCreated event
     // The event signature is TokenCreated(address indexed token, string name, string symbol, uint256 totalSupply)
     // The token address is the first indexed parameter (topics[1])
-    const factoryContract = new ethers.Contract(
-      contractConfig.addresses.ScienceGentsFactory,
-      factoryABI,
-      provider
-    );
     
     // Get the TokenCreated event signature
     const eventSignatureHash = ethers.utils.id("TokenCreated(address,string,string,uint256)");
@@ -190,6 +208,21 @@ export const createScienceGent = async (formData: ScienceGentFormData & { transa
     if (!window.ethereum) {
       throw new Error("No Ethereum provider found");
     }
+    
+    // Generate a unique key for this creation request
+    const creationKey = `create-${formData.name}-${formData.symbol}-${Date.now()}`;
+    
+    // Check if we already have a pending creation
+    if (pendingTransactions.has(creationKey)) {
+      console.log("Creation already in progress, skipping duplicate call");
+      return {
+        transactionHash: "pending_transaction",
+        tokenAddress: null
+      };
+    }
+    
+    // Add to pending transactions
+    pendingTransactions.add(creationKey);
     
     // Convert form data to contract parameters
     const totalSupply = ethers.utils.parseEther(formData.totalSupply);
@@ -242,6 +275,11 @@ export const createScienceGent = async (formData: ScienceGentFormData & { transa
         tokenAddress = event.args[0]; // Token address is typically the first parameter
         console.log("Extracted token address:", tokenAddress);
       }
+    }
+    
+    // If we couldn't extract from events, try the logs
+    if (!tokenAddress) {
+      tokenAddress = await extractTokenAddressFromReceipt(transactionHash);
     }
     
     if (tokenAddress) {
@@ -308,14 +346,22 @@ export const createScienceGent = async (formData: ScienceGentFormData & { transa
       description: "Your ScienceGent has been successfully created.",
     });
     
+    // Remove from pending transactions
+    pendingTransactions.delete(creationKey);
+    
     return { transactionHash, tokenAddress };
   } catch (error) {
     console.error("Error creating ScienceGent:", error);
+    
+    // Clear pending transactions on error
+    pendingTransactions.clear();
+    
     toast({
       title: "Creation Failed",
       description: error.message || "Failed to create ScienceGent",
       variant: "destructive",
     });
+    
     throw error;
   }
 };
