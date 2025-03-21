@@ -1,6 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/components/ui/use-toast';
 
 export interface ChatMessage {
   role: 'user' | 'assistant';
@@ -14,6 +15,31 @@ const useScienceGentChat = (
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // Load chat history from localStorage on mount
+  useEffect(() => {
+    if (scienceGentAddress) {
+      try {
+        const savedMessages = localStorage.getItem(`chat_${scienceGentAddress}`);
+        if (savedMessages) {
+          setMessages(JSON.parse(savedMessages));
+        }
+      } catch (e) {
+        console.error('Error loading chat history:', e);
+      }
+    }
+  }, [scienceGentAddress]);
+  
+  // Save chat history to localStorage when messages change
+  useEffect(() => {
+    if (scienceGentAddress && messages.length > 0) {
+      try {
+        localStorage.setItem(`chat_${scienceGentAddress}`, JSON.stringify(messages));
+      } catch (e) {
+        console.error('Error saving chat history:', e);
+      }
+    }
+  }, [messages, scienceGentAddress]);
   
   // Function to send message to the Edge Function API
   const sendMessage = async (content: string) => {
@@ -50,18 +76,19 @@ const useScienceGentChat = (
       
       // Prepare the capabilities string
       const capabilitiesText = capabilities.length > 0 
-        ? `This AI has the following capabilities:\n${capabilities.map(cap => 
+        ? `${capabilities.map(cap => 
             `- ${cap.name}: ${cap.description}`
           ).join('\n')}` 
         : '';
       
-      // Call the Edge Function
+      // Call the Edge Function with scienceGentAddress
       const { data, error: functionError } = await supabase.functions.invoke('generateChatResponse', {
         body: {
           messages: [...messages, userMessage],
           scienceGentName: scienceGent?.name || 'ScienceGent',
           persona,
-          capabilities: capabilitiesText
+          capabilities: capabilitiesText,
+          scienceGentAddress // Add the address to create or reuse the assistant
         }
       });
       
@@ -79,6 +106,11 @@ const useScienceGentChat = (
     } catch (err) {
       console.error('Error in chat:', err);
       setError(err.message || 'Failed to get a response');
+      toast({
+        title: "Chat Error",
+        description: err.message || 'Failed to get a response',
+        variant: "destructive"
+      });
     } finally {
       setIsLoading(false);
     }
