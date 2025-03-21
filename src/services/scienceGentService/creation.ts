@@ -1,191 +1,16 @@
 
 import { ethers } from "ethers";
-import { contractConfig, factoryABI, dsiTokenABI } from "@/utils/contractConfig";
+import { contractConfig, factoryABI } from "@/utils/contractConfig";
 import { ScienceGentFormData } from "@/types/sciencegent";
 import { toast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-
-// Track pending transactions to prevent duplicates
-const pendingTransactions = new Set<string>();
-
-/**
- * Fetches the current launch fee from the ScienceGentsFactory contract
- */
-export const getLaunchFee = async (): Promise<string> => {
-  try {
-    if (!window.ethereum) {
-      throw new Error("No Ethereum provider found");
-    }
-    
-    const provider = new ethers.providers.Web3Provider(window.ethereum);
-    const factoryContract = new ethers.Contract(
-      contractConfig.addresses.ScienceGentsFactory,
-      factoryABI,
-      provider
-    );
-    
-    const launchFee = await factoryContract.launchFee();
-    return ethers.utils.formatEther(launchFee);
-  } catch (error) {
-    console.error("Error fetching launch fee:", error);
-    throw error;
-  }
-};
-
-/**
- * Checks if the user has enough DSI tokens and has approved the factory contract
- */
-export const checkDSIAllowance = async (launchFee: string): Promise<boolean> => {
-  try {
-    if (!window.ethereum) {
-      throw new Error("No Ethereum provider found");
-    }
-    
-    const provider = new ethers.providers.Web3Provider(window.ethereum);
-    const accounts = await provider.listAccounts();
-    
-    if (accounts.length === 0) {
-      throw new Error("No connected account found");
-    }
-    
-    const dsiContract = new ethers.Contract(
-      contractConfig.addresses.DSIToken,
-      dsiTokenABI,
-      provider
-    );
-    
-    // Check balance
-    const balance = await dsiContract.balanceOf(accounts[0]);
-    const launchFeeWei = ethers.utils.parseEther(launchFee);
-    
-    if (balance.lt(launchFeeWei)) {
-      throw new Error(`Insufficient DSI balance. You need ${launchFee} DSI tokens.`);
-    }
-    
-    // Check allowance
-    const allowance = await dsiContract.allowance(
-      accounts[0],
-      contractConfig.addresses.ScienceGentsFactory
-    );
-    
-    return allowance.gte(launchFeeWei);
-  } catch (error) {
-    console.error("Error checking DSI allowance:", error);
-    throw error;
-  }
-};
-
-/**
- * Approves the factory contract to spend DSI tokens
- */
-export const approveDSIForFactory = async (launchFee: string): Promise<string> => {
-  try {
-    if (!window.ethereum) {
-      throw new Error("No Ethereum provider found");
-    }
-    
-    // Generate a unique key for this approval request
-    const approvalKey = `approve-${Date.now()}`;
-    
-    // Check if we already have a pending approval
-    if (pendingTransactions.has(approvalKey)) {
-      console.log("Approval already in progress, skipping duplicate call");
-      return "pending_approval";
-    }
-    
-    // Add to pending transactions
-    pendingTransactions.add(approvalKey);
-    
-    const provider = new ethers.providers.Web3Provider(window.ethereum);
-    const signer = provider.getSigner();
-    
-    const dsiContract = new ethers.Contract(
-      contractConfig.addresses.DSIToken,
-      dsiTokenABI,
-      signer
-    );
-    
-    // Add 10% buffer to ensure approval is sufficient
-    const launchFeeWei = ethers.utils.parseEther(launchFee);
-    const approvalAmount = launchFeeWei.mul(110).div(100);
-    
-    const tx = await dsiContract.approve(
-      contractConfig.addresses.ScienceGentsFactory,
-      approvalAmount
-    );
-    
-    toast({
-      title: "Transaction Submitted",
-      description: "Approving DSI tokens for ScienceGents Factory...",
-    });
-    
-    const receipt = await tx.wait();
-    
-    toast({
-      title: "Approval Successful",
-      description: "DSI tokens approved for ScienceGents Factory",
-    });
-    
-    // Remove from pending transactions
-    pendingTransactions.delete(approvalKey);
-    
-    return receipt.transactionHash;
-  } catch (error) {
-    console.error("Error approving DSI tokens:", error);
-    
-    // Clear pending transactions on error
-    pendingTransactions.clear();
-    
-    toast({
-      title: "Approval Failed",
-      description: error.message || "Failed to approve DSI tokens",
-      variant: "destructive",
-    });
-    
-    throw error;
-  }
-};
-
-/**
- * Extracts token address from transaction receipt
- * @param transactionHash The transaction hash
- * @returns The token address if found
- */
-export const extractTokenAddressFromReceipt = async (transactionHash: string): Promise<string | null> => {
-  try {
-    if (!window.ethereum) {
-      throw new Error("No Ethereum provider found");
-    }
-    
-    const provider = new ethers.providers.Web3Provider(window.ethereum);
-    const receipt = await provider.getTransactionReceipt(transactionHash);
-    
-    if (!receipt || !receipt.logs) {
-      return null;
-    }
-    
-    // Look for TokenCreated event
-    // The event signature is TokenCreated(address indexed token, string name, string symbol, uint256 totalSupply)
-    // The token address is the first indexed parameter (topics[1])
-    
-    // Get the TokenCreated event signature
-    const eventSignatureHash = ethers.utils.id("TokenCreated(address,string,string,uint256)");
-    
-    for (const log of receipt.logs) {
-      if (log.topics[0] === eventSignatureHash) {
-        // The token address is the first indexed parameter
-        const tokenAddress = ethers.utils.defaultAbiCoder.decode(['address'], log.topics[1])[0];
-        console.log("Extracted token address:", tokenAddress);
-        return tokenAddress;
-      }
-    }
-    
-    return null;
-  } catch (error) {
-    console.error("Error extracting token address:", error);
-    return null;
-  }
-};
+import { 
+  pendingTransactions,
+  addPendingTransaction, 
+  removePendingTransaction, 
+  clearPendingTransactions 
+} from './transaction';
+import { extractTokenAddressFromReceipt } from './blockchain';
 
 /**
  * Creates a new ScienceGent token on the blockchain and saves it to Supabase
@@ -222,7 +47,7 @@ export const createScienceGent = async (formData: ScienceGentFormData & { transa
     }
     
     // Add to pending transactions
-    pendingTransactions.add(creationKey);
+    addPendingTransaction(creationKey);
     
     // Convert form data to contract parameters
     const totalSupply = ethers.utils.parseEther(formData.totalSupply);
@@ -347,14 +172,14 @@ export const createScienceGent = async (formData: ScienceGentFormData & { transa
     });
     
     // Remove from pending transactions
-    pendingTransactions.delete(creationKey);
+    removePendingTransaction(creationKey);
     
     return { transactionHash, tokenAddress };
   } catch (error) {
     console.error("Error creating ScienceGent:", error);
     
     // Clear pending transactions on error
-    pendingTransactions.clear();
+    clearPendingTransactions();
     
     toast({
       title: "Creation Failed",
@@ -365,3 +190,6 @@ export const createScienceGent = async (formData: ScienceGentFormData & { transa
     throw error;
   }
 };
+
+// Re-export extractTokenAddressFromReceipt for convenience
+export { extractTokenAddressFromReceipt } from './blockchain';
