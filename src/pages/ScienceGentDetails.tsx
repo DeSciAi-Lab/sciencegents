@@ -29,7 +29,6 @@ import useScienceGentDetails, { LoadingStatus } from '@/hooks/useScienceGentDeta
 import { useTokenSwap } from '@/hooks/useTokenSwap';
 import { connectWallet } from '@/services/walletService';
 
-// Mock chat messages for the AI interface
 const initialMessages = [
   {
     id: '1',
@@ -58,13 +57,12 @@ const ScienceGentDetails = () => {
     ethBalance,
     tokenBalance,
     toggleDirection,
-    connectSwapWallet,
+    connectWallet: connectSwapWallet,
     handleEthAmountChange,
     handleTokenAmountChange,
     executeSwap
   } = useTokenSwap(address ?? '');
 
-  // Reset copied text after 2 seconds
   useEffect(() => {
     if (copiedText) {
       const timer = setTimeout(() => {
@@ -74,7 +72,6 @@ const ScienceGentDetails = () => {
     }
   }, [copiedText]);
 
-  // Scroll to top on component mount
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
@@ -87,7 +84,6 @@ const ScienceGentDetails = () => {
   const handleSendMessage = () => {
     if (!inputMessage.trim()) return;
     
-    // Add user message
     const userMessage = {
       id: Date.now().toString(),
       sender: 'user',
@@ -99,7 +95,6 @@ const ScienceGentDetails = () => {
     setInputMessage('');
     setIsLoadingResponse(true);
     
-    // Simulate AI response after a delay
     setTimeout(() => {
       const aiResponse = {
         id: (Date.now() + 1).toString(),
@@ -113,13 +108,11 @@ const ScienceGentDetails = () => {
     }, 1500);
   };
 
-  // Format address for display
   const formatAddress = (address: string) => {
     if (!address) return '';
     return `${address.substring(0, 6)}...${address.slice(-4)}`;
   };
 
-  // Format currency for display
   const formatCurrency = (value: number) => {
     if (!value && value !== 0) return '$0.00';
     
@@ -131,7 +124,6 @@ const ScienceGentDetails = () => {
     return `$${value.toFixed(2)}`;
   };
 
-  // Handle loading states
   if (status === LoadingStatus.Loading) {
     return (
       <div className="min-h-screen flex flex-col">
@@ -159,7 +151,6 @@ const ScienceGentDetails = () => {
     );
   }
 
-  // Handle not found
   if (status === LoadingStatus.NotFound || status === LoadingStatus.Error) {
     return (
       <div className="min-h-screen flex flex-col">
@@ -180,14 +171,12 @@ const ScienceGentDetails = () => {
     );
   }
 
-  // Main content when data is loaded
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
       
       <main className="flex-grow pt-24 pb-16">
         <div className="container mx-auto px-6">
-          {/* Header with basic info */}
           <Reveal>
             <div className="mb-8">
               <div className="flex flex-col md:flex-row gap-6 items-start md:items-center">
@@ -273,9 +262,7 @@ const ScienceGentDetails = () => {
           </Reveal>
           
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Left column - AI info and interaction */}
             <div className="lg:col-span-2">
-              {/* Tabs */}
               <Reveal delay={100}>
                 <div className="mb-6 border-b border-border">
                   <div className="flex overflow-x-auto hidden-scrollbar">
@@ -313,7 +300,6 @@ const ScienceGentDetails = () => {
                 </div>
               </Reveal>
               
-              {/* Tab Content */}
               {activeTab === 'overview' && (
                 <div className="space-y-8">
                   <Reveal delay={150}>
@@ -395,7 +381,6 @@ const ScienceGentDetails = () => {
                       </Button>
                     </div>
                     
-                    {/* Chat Messages */}
                     <div className="flex-grow overflow-y-auto mb-4 p-2">
                       {messages.map((message) => (
                         <div
@@ -428,7 +413,6 @@ const ScienceGentDetails = () => {
                       )}
                     </div>
                     
-                    {/* Input */}
                     <div className="relative">
                       <input
                         type="text"
@@ -505,9 +489,7 @@ const ScienceGentDetails = () => {
               )}
             </div>
             
-            {/* Right column - Token info and trading */}
             <div>
-              {/* Token Price Card */}
               <Reveal delay={150}>
                 <div className="glass-card p-6 mb-6">
                   <div className="flex justify-between items-start mb-4">
@@ -534,7 +516,6 @@ const ScienceGentDetails = () => {
                 </div>
               </Reveal>
               
-              {/* Trading Card */}
               <Reveal delay={200}>
                 <div className="glass-card p-6 mb-6">
                   <h2 className="text-lg font-semibold mb-4">Swap</h2>
@@ -669,7 +650,6 @@ const ScienceGentDetails = () => {
                 </div>
               </Reveal>
               
-              {/* Stats Card */}
               <Reveal delay={250}>
                 <div className="glass-card p-6">
                   <h2 className="text-lg font-semibold mb-4">Token Stats</h2>

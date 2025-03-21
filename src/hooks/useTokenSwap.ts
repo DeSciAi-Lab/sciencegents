@@ -124,7 +124,12 @@ export const useTokenSwap = (tokenAddress: string) => {
     
     try {
       setIsCalculating(true);
-      const provider = new ethers.providers.Web3Provider(window.ethereum || ethers.getDefaultProvider());
+      
+      // Fix: Use correct provider type
+      const provider = window.ethereum 
+        ? new ethers.providers.Web3Provider(window.ethereum) 
+        : ethers.getDefaultProvider();
+      
       const swapContract = new ethers.Contract(
         contractConfig.addresses.ScienceGentsSwap,
         swapABI,
@@ -152,7 +157,12 @@ export const useTokenSwap = (tokenAddress: string) => {
     
     try {
       setIsCalculating(true);
-      const provider = new ethers.providers.Web3Provider(window.ethereum || ethers.getDefaultProvider());
+      
+      // Fix: Use correct provider type
+      const provider = window.ethereum 
+        ? new ethers.providers.Web3Provider(window.ethereum) 
+        : ethers.getDefaultProvider();
+      
       const swapContract = new ethers.Contract(
         contractConfig.addresses.ScienceGentsSwap,
         swapABI,
@@ -180,7 +190,12 @@ export const useTokenSwap = (tokenAddress: string) => {
     
     try {
       setIsCalculating(true);
-      const provider = new ethers.providers.Web3Provider(window.ethereum || ethers.getDefaultProvider());
+      
+      // Fix: Use correct provider type
+      const provider = window.ethereum 
+        ? new ethers.providers.Web3Provider(window.ethereum) 
+        : ethers.getDefaultProvider();
+      
       const swapContract = new ethers.Contract(
         contractConfig.addresses.ScienceGentsSwap,
         swapABI,
@@ -208,7 +223,12 @@ export const useTokenSwap = (tokenAddress: string) => {
     
     try {
       setIsCalculating(true);
-      const provider = new ethers.providers.Web3Provider(window.ethereum || ethers.getDefaultProvider());
+      
+      // Fix: Use correct provider type
+      const provider = window.ethereum 
+        ? new ethers.providers.Web3Provider(window.ethereum) 
+        : ethers.getDefaultProvider();
+      
       const swapContract = new ethers.Contract(
         contractConfig.addresses.ScienceGentsSwap,
         swapABI,
