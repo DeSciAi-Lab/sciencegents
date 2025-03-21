@@ -47,7 +47,7 @@ export const fetchCapabilityDetailsFromBlockchain = async (id: string): Promise<
       id,
       name: id, // The contract doesn't store a separate name, we'll use the ID
       description,
-      price: price, // Store the fee as price for compatibility with Capability type
+      price, // Store the fee as price for compatibility with Capability type
       creator,
       domain: "Unknown", // The contract doesn't store domain, we'll need to update this manually
       features: [], // The contract doesn't store features

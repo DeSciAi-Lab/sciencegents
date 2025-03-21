@@ -35,10 +35,7 @@ export const syncAllScienceGents = async (): Promise<{ syncCount: number; errorC
     const result = await syncAllScienceGentsFromBlockchain();
     console.log(`Found ${result.syncCount} ScienceGents on blockchain`);
     
-    // Extract addresses from the result (if available)
-    const addresses: string[] = [];
     // Since we don't have access to actual addresses, we'll have to just return the counts
-    
     let syncCount = 0;
     let errorCount = 0;
     
@@ -78,7 +75,7 @@ export const syncSingleScienceGent = async (address: string): Promise<boolean> =
         try {
           const capDetails = await fetchCapabilityDetailsFromBlockchain(capId);
           if (capDetails && capDetails.price) {
-            totalCapabilityFees += capDetails.price;
+            totalCapabilityFees += parseFloat(String(capDetails.price));
           }
           
           // Also sync capability details to Supabase
@@ -90,7 +87,7 @@ export const syncSingleScienceGent = async (address: string): Promise<boolean> =
     }
     
     // Create a modified ScienceGentData with capability fees
-    const enrichedData: ScienceGentData & { capabilityFees?: number } = {
+    const enrichedData: ScienceGentData = {
       ...scienceGentData,
       capabilityFees: totalCapabilityFees
     };

@@ -1,3 +1,4 @@
+
 // Type definitions for ScienceGent data structures
 
 export interface ScienceGentData {
@@ -12,7 +13,7 @@ export interface ScienceGentData {
   adminLockAmount: string;
   adminLockRemainingTime: string;
   isAdminTokensUnlocked: boolean;
-  capabilityFees?: number; // Added optional property for capability fees
+  capabilityFees?: number; // Added property for capability fees
 }
 
 export interface TokenStats {
@@ -58,7 +59,6 @@ export interface FormattedScienceGent {
   creatorAddress: string;
   createdOnChainAt: string;
   isMigrated: boolean;
-  // Added new properties
   migrationEligible: boolean;
   remainingMaturityTime: number;
   collectedFees: number;

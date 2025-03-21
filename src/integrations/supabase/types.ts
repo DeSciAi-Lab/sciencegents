@@ -141,10 +141,13 @@ export type Database = {
           is_migrated: boolean | null
           last_synced_at: string | null
           market_cap: number | null
+          maturity_deadline: number | null
           maturity_progress: number | null
+          migration_eligible: boolean | null
           name: string
           price_change_24h: number | null
           profile_pic: string | null
+          remaining_maturity_time: number | null
           socials: Json | null
           symbol: string
           token_price: number | null
@@ -166,10 +169,13 @@ export type Database = {
           is_migrated?: boolean | null
           last_synced_at?: string | null
           market_cap?: number | null
+          maturity_deadline?: number | null
           maturity_progress?: number | null
+          migration_eligible?: boolean | null
           name: string
           price_change_24h?: number | null
           profile_pic?: string | null
+          remaining_maturity_time?: number | null
           socials?: Json | null
           symbol: string
           token_price?: number | null
@@ -191,10 +197,13 @@ export type Database = {
           is_migrated?: boolean | null
           last_synced_at?: string | null
           market_cap?: number | null
+          maturity_deadline?: number | null
           maturity_progress?: number | null
+          migration_eligible?: boolean | null
           name?: string
           price_change_24h?: number | null
           profile_pic?: string | null
+          remaining_maturity_time?: number | null
           socials?: Json | null
           symbol?: string
           token_price?: number | null
