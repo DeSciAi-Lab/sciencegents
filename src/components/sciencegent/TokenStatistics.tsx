@@ -92,7 +92,7 @@ const TokenStatistics: React.FC<TokenStatisticsProps> = ({
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
           <div>
             <p className="text-sm text-muted-foreground mb-1">Market Cap</p>
-            <p className="text-xl font-medium">{marketCap.toFixed(2)} ETH</p>
+            <p className="text-xl font-medium">{marketCap.toFixed(4)} ETH</p>
           </div>
           <div>
             <p className="text-sm text-muted-foreground mb-1">Total Supply</p>
@@ -100,7 +100,7 @@ const TokenStatistics: React.FC<TokenStatisticsProps> = ({
           </div>
           <div>
             <p className="text-sm text-muted-foreground mb-1">Liquidity</p>
-            <p className="text-xl font-medium">{totalLiquidity.toFixed(2)} ETH</p>
+            <p className="text-xl font-medium">{totalLiquidity.toFixed(4)} ETH</p>
           </div>
           <div>
             <p className="text-sm text-muted-foreground mb-1">Trading Status</p>
@@ -115,7 +115,7 @@ const TokenStatistics: React.FC<TokenStatisticsProps> = ({
           </div>
           <div>
             <p className="text-sm text-muted-foreground mb-1">24h Volume</p>
-            <p className="text-xl font-medium">{volume24h.toFixed(2)} ETH</p>
+            <p className="text-xl font-medium">{volume24h.toFixed(4)} ETH</p>
           </div>
           <div>
             <p className="text-sm text-muted-foreground mb-1">Holders</p>
@@ -123,7 +123,7 @@ const TokenStatistics: React.FC<TokenStatisticsProps> = ({
           </div>
           <div>
             <p className="text-sm text-muted-foreground mb-1">Virtual ETH</p>
-            <p className="text-xl font-medium">{virtualETH.toFixed(2)} ETH</p>
+            <p className="text-xl font-medium">{virtualETH.toFixed(4)} ETH</p>
           </div>
         </div>
         

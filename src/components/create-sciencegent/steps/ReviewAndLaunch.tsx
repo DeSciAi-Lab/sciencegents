@@ -146,7 +146,7 @@ const ReviewAndLaunch: React.FC<ReviewAndLaunchProps> = ({ formData, onSubmit, i
                 </div>
                 <div className="flex justify-between text-sm">
                   <span>Capability Fees</span>
-                  <span>{totalCapabilityFees.toFixed(2)} ETH</span>
+                  <span>{totalCapabilityFees.toFixed(4)} ETH</span>
                 </div>
                 <div className="border-t pt-2 flex justify-between font-medium">
                   <span>Total Launch Fee</span>

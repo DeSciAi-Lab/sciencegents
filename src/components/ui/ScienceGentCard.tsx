@@ -49,7 +49,7 @@ const ScienceGentCard: React.FC<ScienceGentCardProps> = ({
     } else if (value >= 1000) {
       return `$${(value / 1000).toFixed(2)}K`;
     }
-    return `$${value.toFixed(2)}`;
+    return `$${value.toFixed(4)}`;
   };
 
   // Format token price for display

@@ -66,7 +66,7 @@ const BuyTokenForm: React.FC<BuyTokenFormProps> = ({
           step="0.001"
           disabled={isPending}
         />
-        <p className="text-xs text-muted-foreground text-right">Balance: {ethBalance} ETH</p>
+        <p className="text-xs text-muted-foreground text-right">Balance: {parseFloat(ethBalance).toFixed(6)} ETH</p>
       </div>
       
       <div className="flex justify-center my-2">

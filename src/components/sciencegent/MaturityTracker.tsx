@@ -108,7 +108,7 @@ const MaturityTracker: React.FC<MaturityTrackerProps> = ({
             <div className="flex justify-between">
               <p className="text-sm font-medium">{Math.min(Math.round(feesPercentage), 100)}%</p>
               <p className="text-xs text-muted-foreground">
-                {collectedFees.toFixed(2)}/{requiredFees.toFixed(2)} ETH
+                {collectedFees.toFixed(4)}/{requiredFees.toFixed(4)} ETH
               </p>
             </div>
           </div>
