@@ -127,7 +127,8 @@ export const createScienceGent = async (formData: ScienceGentFormData & { transa
             virtual_eth: parseFloat(formData.initialLiquidity),
             creator_address: signerAddress,
             created_on_chain_at: new Date().toISOString(),
-            last_synced_at: new Date().toISOString()
+            last_synced_at: new Date().toISOString(),
+            persona: formData.persona || "" // Store the persona customization
           });
           
         if (error) {

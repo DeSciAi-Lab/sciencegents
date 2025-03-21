@@ -67,7 +67,8 @@ export const transformBlockchainToSupabaseFormat = (
     market_cap: marketCap,
     virtual_eth: tokenStats.virtualETH ? parseFloat(ethers.utils.formatEther(tokenStats.virtualETH)) : 0,
     collected_fees: tokenStats.collectedFees ? parseFloat(ethers.utils.formatEther(tokenStats.collectedFees)) : 0,
-    last_synced_at: new Date().toISOString()
+    last_synced_at: new Date().toISOString(),
+    persona: blockchainData.persona || null
   };
   
   // Stats data for the sciencegent_stats table
@@ -134,6 +135,7 @@ export const transformSupabaseToFormattedScienceGent = (
       : undefined,
     migrationEligible: supabaseData.migration_eligible,
     capabilities,
-    tokenAge: supabaseData.tokenAge || 0
+    tokenAge: supabaseData.tokenAge || 0,
+    persona: supabaseData.persona
   };
 };

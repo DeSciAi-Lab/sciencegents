@@ -65,16 +65,35 @@ serve(async (req) => {
       apiKey: apiKey,
     });
     
+    // First, try to get the persona directly from the database
+    // This will take precedence over the persona sent in the request
+    let storedPersona = "";
+    try {
+      const { data, error } = await supabaseClient
+        .from("sciencegents")
+        .select("persona")
+        .eq("address", scienceGentAddress)
+        .single();
+      
+      if (!error && data && data.persona) {
+        console.log("Found stored persona in database:", data.persona.substring(0, 50) + "...");
+        storedPersona = data.persona;
+      }
+    } catch (err) {
+      console.error("Error fetching persona from database:", err);
+    }
+    
     // Prepare assistant instructions with persona and capabilities
     const instructions = `You are ${scienceGentName}, a specialized AI assistant for scientific research.
     
-${persona || "You are helpful, concise, and focus on providing accurate scientific information."}
+${storedPersona || persona || "You are helpful, concise, and focus on providing accurate scientific information."}
 
 ${capabilities ? `You have the following capabilities:\n${capabilities}` : ""}
 
 Always provide accurate and well-referenced scientific information. If you're not sure about something, acknowledge the limitations of your knowledge.`;
 
     console.log(`Processing request for ScienceGent: ${scienceGentAddress}`);
+    console.log(`Assistant instructions length: ${instructions.length} characters`);
     
     let assistantId: string | undefined = assistantCache[scienceGentAddress];
     

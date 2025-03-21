@@ -138,6 +138,7 @@ export type Database = {
           maturity_progress: number | null
           migration_eligible: boolean | null
           name: string
+          persona: string | null
           price_change_24h: number | null
           profile_pic: string | null
           remaining_maturity_time: number | null
@@ -166,6 +167,7 @@ export type Database = {
           maturity_progress?: number | null
           migration_eligible?: boolean | null
           name: string
+          persona?: string | null
           price_change_24h?: number | null
           profile_pic?: string | null
           remaining_maturity_time?: number | null
@@ -194,6 +196,7 @@ export type Database = {
           maturity_progress?: number | null
           migration_eligible?: boolean | null
           name?: string
+          persona?: string | null
           price_change_24h?: number | null
           profile_pic?: string | null
           remaining_maturity_time?: number | null

@@ -54,7 +54,7 @@ const useScienceGentChat = (
       setMessages(prev => [...prev, userMessage]);
       
       // Get the persona from the scienceGent if available
-      const persona = scienceGent?.description || '';
+      const persona = scienceGent?.persona || scienceGent?.description || '';
       
       // Fetch capabilities to enhance persona
       const { data: capabilityLinks } = await supabase
@@ -81,12 +81,14 @@ const useScienceGentChat = (
           ).join('\n')}` 
         : '';
       
+      console.log("Sending chat with persona:", persona?.substring(0, 50) + "...");
+      
       // Call the Edge Function with scienceGentAddress
       const { data, error: functionError } = await supabase.functions.invoke('generateChatResponse', {
         body: {
           messages: [...messages, userMessage],
           scienceGentName: scienceGent?.name || 'ScienceGent',
-          persona,
+          persona, // The edge function will prioritize getting this from the database directly
           capabilities: capabilitiesText,
           scienceGentAddress // Add the address to create or reuse the assistant
         }
