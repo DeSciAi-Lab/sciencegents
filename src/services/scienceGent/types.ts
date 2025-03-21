@@ -62,21 +62,10 @@ export interface FormattedScienceGent {
   migrationEligible: boolean;
   remainingMaturityTime: number;
   collectedFees: number;
-  tokenReserve?: string;
-  ethReserve?: string;
-  tradingEnabled?: boolean;
   stats: {
     volume24h: number;
     transactions: number;
     holders: number;
-    tokenAge?: number;
   };
   capabilities: any[]; // Using any[] to match the existing type
-}
-
-export interface ScienceGentStats {
-  transactions: number;
-  volume24h: number;
-  holders: number;
-  tokenAge?: number;
 }
