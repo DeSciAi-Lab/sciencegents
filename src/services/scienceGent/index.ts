@@ -6,7 +6,7 @@ import {
   syncAllScienceGentsFromBlockchain
 } from './blockchain';
 
-// Export Supabase-related functions
+// Export Supabase-related functions (from our new modular structure)
 import {
   saveScienceGentToSupabase,
   fetchScienceGentFromSupabase
