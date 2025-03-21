@@ -1,3 +1,4 @@
+
 import { ethers } from "ethers";
 import { contractConfig, factoryABI, dsiTokenABI } from "@/utils/contractConfig";
 import { ScienceGentFormData } from "@/types/sciencegent";
@@ -124,8 +125,12 @@ export const approveDSIForFactory = async (launchFee: string): Promise<string> =
 
 /**
  * Creates a new ScienceGent token on the blockchain and saves it to Supabase
+ * @returns An object containing the transaction hash and token address (if available)
  */
-export const createScienceGent = async (formData: ScienceGentFormData): Promise<string> => {
+export const createScienceGent = async (formData: ScienceGentFormData): Promise<{
+  transactionHash: string;
+  tokenAddress: string | null;
+}> => {
   try {
     if (!window.ethereum) {
       throw new Error("No Ethereum provider found");
@@ -163,7 +168,12 @@ export const createScienceGent = async (formData: ScienceGentFormData): Promise<
       description: "Waiting for confirmation...",
     });
     
+    // Return transaction hash immediately so UI can show pending state
+    const transactionHash = tx.hash;
+    
+    // Wait for transaction confirmation and extract token address
     const receipt = await tx.wait();
+    console.log("Transaction receipt:", receipt);
     
     // Extract token address from the event logs
     let tokenAddress = null;
@@ -175,6 +185,7 @@ export const createScienceGent = async (formData: ScienceGentFormData): Promise<
       
       if (event && event.args) {
         tokenAddress = event.args[0]; // Token address is typically the first parameter
+        console.log("Extracted token address:", tokenAddress);
       }
     }
     
@@ -233,6 +244,8 @@ export const createScienceGent = async (formData: ScienceGentFormData): Promise<
         console.error("Error saving to database:", dbError);
         // Don't throw here, we still want to return the token address
       }
+    } else {
+      console.error("Could not extract token address from transaction receipt");
     }
     
     toast({
@@ -240,7 +253,7 @@ export const createScienceGent = async (formData: ScienceGentFormData): Promise<
       description: "Your ScienceGent has been successfully created.",
     });
     
-    return tokenAddress || receipt.transactionHash;
+    return { transactionHash, tokenAddress };
   } catch (error) {
     console.error("Error creating ScienceGent:", error);
     toast({

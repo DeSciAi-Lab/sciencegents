@@ -17,6 +17,7 @@ export enum CreationStatus {
   CheckingAllowance = "checking_allowance",
   ApprovingDSI = "approving_dsi",
   Creating = "creating",
+  WaitingConfirmation = "waiting_confirmation",
   Success = "success",
   Error = "error"
 }
@@ -24,6 +25,7 @@ export enum CreationStatus {
 export const useScienceGentCreation = () => {
   const navigate = useNavigate();
   const [status, setStatus] = useState<CreationStatus>(CreationStatus.Idle);
+  const [transactionHash, setTransactionHash] = useState<string | null>(null);
   const [tokenAddress, setTokenAddress] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [launchFee, setLaunchFee] = useState<string>("1000"); // Default to 1000 DSI
@@ -69,18 +71,26 @@ export const useScienceGentCreation = () => {
       
       // Create the token
       setStatus(CreationStatus.Creating);
-      const address = await createScienceGent(formData);
+      const result = await createScienceGent(formData);
       
-      // Handle success
-      setTokenAddress(address);
-      setStatus(CreationStatus.Success);
+      setTransactionHash(result.transactionHash);
       
-      // Navigate to ScienceGent details page after 3 seconds
-      setTimeout(() => {
-        navigate(`/sciencegent/${address}`);
-      }, 3000);
+      // If we have transaction hash but not token address, we're waiting for confirmation
+      if (result.transactionHash && !result.tokenAddress) {
+        setStatus(CreationStatus.WaitingConfirmation);
+        // We'll poll for token address in the component using this hook
+      } else if (result.tokenAddress) {
+        // We have the token address, we can proceed
+        setTokenAddress(result.tokenAddress);
+        setStatus(CreationStatus.Success);
+        
+        // Navigate to ScienceGent details page after 3 seconds
+        setTimeout(() => {
+          navigate(`/sciencegent/${result.tokenAddress}`);
+        }, 3000);
+      }
       
-      return address;
+      return result;
     } catch (err) {
       const errorMessage = err.message || "An unknown error occurred";
       setError(errorMessage);
@@ -99,12 +109,14 @@ export const useScienceGentCreation = () => {
   const resetState = () => {
     setStatus(CreationStatus.Idle);
     setError(null);
+    setTransactionHash(null);
     setTokenAddress(null);
   };
 
   return {
     status,
     error,
+    transactionHash,
     tokenAddress,
     launchFee,
     createToken,

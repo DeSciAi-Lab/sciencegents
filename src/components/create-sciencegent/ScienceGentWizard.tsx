@@ -149,7 +149,7 @@ const ScienceGentWizard: React.FC<ScienceGentWizardProps> = () => {
         <div className="max-w-3xl mx-auto">
           {renderStep()}
           
-          {currentStep < 6 && (
+          {currentStep < 5 && (
             <div className="flex justify-between mt-8">
               {currentStep > 1 ? (
                 <Button variant="outline" onClick={prevStep}>
@@ -159,18 +159,14 @@ const ScienceGentWizard: React.FC<ScienceGentWizardProps> = () => {
                 <div></div>
               )}
               
-              {currentStep < 5 ? (
-                <Button 
-                  className="bg-science-600 hover:bg-science-700 text-white"
-                  onClick={nextStep}
-                  disabled={!validateStep(currentStep, formData)}
-                >
-                  <span>Continue</span>
-                  <ChevronRight className="ml-2 h-4 w-4" />
-                </Button>
-              ) : (
-                currentStep === 5 && null // Removed the button from here as it's now inside ReviewAndLaunch
-              )}
+              <Button 
+                className="bg-science-600 hover:bg-science-700 text-white"
+                onClick={nextStep}
+                disabled={!validateStep(currentStep, formData)}
+              >
+                <span>Continue</span>
+                <ChevronRight className="ml-2 h-4 w-4" />
+              </Button>
             </div>
           )}
         </div>

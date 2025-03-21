@@ -18,7 +18,7 @@ interface ReviewAndLaunchProps {
 const ReviewAndLaunch: React.FC<ReviewAndLaunchProps> = ({ formData, onSubmit }) => {
   const [capabilities, setCapabilities] = useState<Capability[]>([]);
   const [loadingCapabilities, setLoadingCapabilities] = useState(true);
-  const { status, error, createToken, launchFee, tokenAddress } = useScienceGentCreation();
+  const { status, error, createToken, launchFee, tokenAddress, transactionHash } = useScienceGentCreation();
 
   useEffect(() => {
     const fetchCapabilities = async () => {
@@ -37,8 +37,8 @@ const ReviewAndLaunch: React.FC<ReviewAndLaunchProps> = ({ formData, onSubmit })
   }, []);
 
   const handleLaunch = async () => {
-    const tokenAddress = await createToken(formData);
-    if (tokenAddress) {
+    const result = await createToken(formData);
+    if (result && (result.tokenAddress || result.transactionHash)) {
       onSubmit();
     }
   };
@@ -55,7 +55,7 @@ const ReviewAndLaunch: React.FC<ReviewAndLaunchProps> = ({ formData, onSubmit })
 
   const isLoading = loadingCapabilities || status === CreationStatus.CheckingWallet ||
     status === CreationStatus.CheckingAllowance || status === CreationStatus.ApprovingDSI ||
-    status === CreationStatus.Creating;
+    status === CreationStatus.Creating || status === CreationStatus.WaitingConfirmation;
 
   const isButtonDisabled = isLoading || status === CreationStatus.Success || status === CreationStatus.Error;
 
@@ -70,7 +70,12 @@ const ReviewAndLaunch: React.FC<ReviewAndLaunchProps> = ({ formData, onSubmit })
       <CardContent>
         {status !== CreationStatus.Idle && (
           <div className="mb-6">
-            <TransactionStatus status={status} error={error} tokenAddress={tokenAddress} />
+            <TransactionStatus 
+              status={status} 
+              error={error} 
+              tokenAddress={tokenAddress} 
+              transactionHash={transactionHash} 
+            />
           </div>
         )}
 

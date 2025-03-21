@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Loader2, CheckCircle, XCircle, Wallet, CreditCard, Sparkles } from 'lucide-react';
+import { Loader2, CheckCircle, XCircle, Wallet, CreditCard, Sparkles, Clock } from 'lucide-react';
 import { CreationStatus } from '@/hooks/useScienceGentCreation';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
@@ -8,24 +8,28 @@ import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 interface TransactionStatusProps {
   status: CreationStatus;
   error: string | null;
+  transactionHash: string | null;
   tokenAddress: string | null;
 }
 
 const TransactionStatus: React.FC<TransactionStatusProps> = ({ 
   status,
   error,
+  transactionHash,
   tokenAddress
 }) => {
   // Calculate progress percentage based on status
   const getProgressPercentage = () => {
     switch (status) {
       case CreationStatus.CheckingWallet:
-        return 20;
+        return 15;
       case CreationStatus.CheckingAllowance:
-        return 40;
+        return 30;
       case CreationStatus.ApprovingDSI:
-        return 60;
+        return 45;
       case CreationStatus.Creating:
+        return 60;
+      case CreationStatus.WaitingConfirmation:
         return 80;
       case CreationStatus.Success:
         return 100;
@@ -70,7 +74,37 @@ const TransactionStatus: React.FC<TransactionStatusProps> = ({
           text="Creating ScienceGent token"
           status={getStatusForStep(status, CreationStatus.Creating)}
         />
+        
+        {(status === CreationStatus.WaitingConfirmation || status > CreationStatus.WaitingConfirmation || status === CreationStatus.Error) && (
+          <StatusItem 
+            icon={<Clock />}
+            text="Waiting for blockchain confirmation"
+            status={getStatusForStep(status, CreationStatus.WaitingConfirmation)}
+          />
+        )}
       </div>
+      
+      {transactionHash && (status === CreationStatus.WaitingConfirmation || status === CreationStatus.Success) && (
+        <Alert className="mt-4 border-blue-200 bg-blue-50">
+          <div className="flex flex-col gap-2">
+            <AlertTitle className="text-blue-800">Transaction submitted!</AlertTitle>
+            <AlertDescription className="text-blue-700">
+              <p className="mb-2">Your transaction has been submitted to the blockchain.</p>
+              <div className="text-xs">
+                <span className="font-medium">Transaction Hash:</span>{' '}
+                <a 
+                  href={`https://sepolia.etherscan.io/tx/${transactionHash}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-mono underline text-blue-600 break-all"
+                >
+                  {transactionHash}
+                </a>
+              </div>
+            </AlertDescription>
+          </div>
+        </Alert>
+      )}
       
       {status === CreationStatus.Error && error && (
         <Alert variant="destructive" className="mt-4">
