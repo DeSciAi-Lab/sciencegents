@@ -4,7 +4,8 @@ import { toast } from "@/components/ui/use-toast";
 import { isAdminWallet } from "./walletService";
 import { 
   fetchScienceGentFromBlockchain,
-  fetchTokenStatsFromBlockchain
+  fetchTokenStatsFromBlockchain,
+  syncAllScienceGentsFromBlockchain
 } from "./scienceGent/blockchain";
 import { 
   saveScienceGentToSupabase,
@@ -12,7 +13,6 @@ import {
   syncCapabilityDetailsToSupabase
 } from "./scienceGent/supabase";
 import { 
-  fetchCapabilityIdsFromBlockchain,
   fetchCapabilityDetailsFromBlockchain
 } from "./capability/blockchain";
 import { ScienceGentData } from "./scienceGent/types";
@@ -26,30 +26,41 @@ export const syncAllScienceGents = async (): Promise<{ syncCount: number; errorC
     // Check if user is admin
     const isAdmin = await isAdminWallet();
     if (!isAdmin) {
+      toast({
+        title: "Access Denied",
+        description: "Only admin wallet can perform this operation",
+        variant: "destructive"
+      });
       throw new Error("Only admin wallet can perform this operation");
     }
     
-    // Get all ScienceGent addresses from blockchain
-    console.log("Fetching ScienceGent addresses from blockchain...");
-    const { syncAllScienceGentsFromBlockchain } = await import("./scienceGent/blockchain");
+    // Show toast notification
+    toast({
+      title: "Sync Started",
+      description: "Fetching ScienceGents from blockchain..."
+    });
+    
+    console.log("Starting blockchain sync process...");
     const result = await syncAllScienceGentsFromBlockchain();
-    console.log(`Found ${result.syncCount} ScienceGents on blockchain`);
-    
-    // Since we don't have access to actual addresses, we'll have to just return the counts
-    let syncCount = 0;
-    let errorCount = 0;
-    
-    // Process each address if we have them
-    // Note: In a real implementation, we would iterate through the addresses
-    // For now, we'll just return the counts from the blockchain sync
     
     console.log(`Sync completed: ${result.syncCount} synced, ${result.errorCount} errors`);
-    return { 
-      syncCount: result.syncCount,
-      errorCount: result.errorCount 
-    };
+    
+    // Show success toast
+    toast({
+      title: "Sync Completed",
+      description: `Successfully synced ${result.syncCount} ScienceGents with ${result.errorCount} errors.`
+    });
+    
+    return result;
   } catch (error) {
     console.error("Error in syncAllScienceGents:", error);
+    
+    toast({
+      title: "Sync Failed",
+      description: error.message || "An error occurred during sync",
+      variant: "destructive"
+    });
+    
     throw error;
   }
 };
@@ -74,8 +85,8 @@ export const syncSingleScienceGent = async (address: string): Promise<boolean> =
       for (const capId of scienceGentData.capabilities) {
         try {
           const capDetails = await fetchCapabilityDetailsFromBlockchain(capId);
-          if (capDetails && capDetails.price) {
-            totalCapabilityFees += parseFloat(String(capDetails.price));
+          if (capDetails && capDetails.feeInETH) {
+            totalCapabilityFees += parseFloat(ethers.utils.formatEther(capDetails.feeInETH));
           }
           
           // Also sync capability details to Supabase
@@ -95,9 +106,21 @@ export const syncSingleScienceGent = async (address: string): Promise<boolean> =
     // Save to Supabase
     await saveScienceGentToSupabase(enrichedData, tokenStats);
     
+    toast({
+      title: "Sync Successful",
+      description: `Successfully synced ${scienceGentData.name}`
+    });
+    
     return true;
   } catch (error) {
     console.error(`Error syncing ${address}:`, error);
+    
+    toast({
+      title: "Sync Failed",
+      description: error.message || "Failed to sync ScienceGent",
+      variant: "destructive"
+    });
+    
     return false;
   }
 };

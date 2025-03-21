@@ -15,13 +15,13 @@ const ScienceGentSync = () => {
   const handleSync = async () => {
     try {
       setIsSyncing(true);
-      setSyncMessage("Starting synchronization...");
+      setSyncMessage("Starting synchronization with blockchain...");
       
       const result = await syncAllScienceGents();
       
       setLastSyncResult(result);
       setLastSyncTime(new Date().toISOString());
-      setSyncMessage(null);
+      setSyncMessage("Sync completed successfully!");
       
       toast({
         title: "Sync Completed",
@@ -29,7 +29,7 @@ const ScienceGentSync = () => {
       });
     } catch (error) {
       console.error("Sync failed:", error);
-      setSyncMessage(null);
+      setSyncMessage("Sync failed. See console for details.");
       toast({
         title: "Sync Failed",
         description: error.message || "An error occurred during sync",
@@ -71,8 +71,12 @@ const ScienceGentSync = () => {
             </p>
             
             {syncMessage && (
-              <div className="flex items-center gap-2 text-sm bg-blue-50 dark:bg-blue-950 p-2 rounded">
-                <Info size={16} className="text-blue-600" />
+              <div className={`flex items-center gap-2 text-sm p-2 rounded ${
+                syncMessage.includes("failed") 
+                  ? "bg-red-50 dark:bg-red-950 text-red-600" 
+                  : "bg-blue-50 dark:bg-blue-950 text-blue-600"
+              }`}>
+                <Info size={16} />
                 <span>{syncMessage}</span>
               </div>
             )}

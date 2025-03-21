@@ -1,3 +1,4 @@
+
 import { ethers } from "ethers";
 import { contractConfig, factoryABI } from "@/utils/contractConfig";
 import { toast } from "@/components/ui/use-toast";
@@ -54,16 +55,19 @@ export const fetchScienceGentFromBlockchain = async (address: string): Promise<S
 /**
  * Fetches capability details from blockchain
  * @param capabilityId Capability ID
- * @param provider Ethereum provider
  * @returns Capability details or null if error
  */
 export const fetchCapabilityDetailsFromBlockchain = async (
-  capabilityId: string, 
-  provider: ethers.providers.Web3Provider
+  capabilityId: string
 ): Promise<CapabilityDetail | null> => {
   try {
     console.log(`Fetching capability ${capabilityId} from blockchain`);
     
+    if (!window.ethereum) {
+      throw new Error("No Ethereum provider found");
+    }
+    
+    const provider = new ethers.providers.Web3Provider(window.ethereum);
     const factoryContract = new ethers.Contract(
       contractConfig.addresses.ScienceGentsFactory,
       factoryABI,
@@ -197,7 +201,11 @@ export const syncAllScienceGentsFromBlockchain = async (): Promise<{ syncCount: 
     let syncCount = 0;
     let errorCount = 0;
     
-    for (let offset = 0; offset < tokenCount; offset += batchSize) {
+    // Import required functions
+    const { saveScienceGentToSupabase } = await import('./supabase');
+    const { syncCapabilityDetailsToSupabase } = await import('./supabase');
+    
+    for (let offset = 0; offset < tokenCount.toNumber(); offset += batchSize) {
       const limit = Math.min(batchSize, tokenCount.toNumber() - offset);
       
       // Use getTokensWithPagination to get tokens in batches
@@ -214,24 +222,38 @@ export const syncAllScienceGentsFromBlockchain = async (): Promise<{ syncCount: 
           const tokenStats = await fetchTokenStatsFromBlockchain(tokenAddress);
           
           if (scienceGentData && tokenStats) {
-            // Sync capabilities to Supabase
-            if (scienceGentData.capabilities.length > 0) {
-              console.log(`Syncing ${scienceGentData.capabilities.length} capabilities for token ${tokenAddress}`);
-              for (const capabilityId of scienceGentData.capabilities) {
-                const capabilityDetail = await fetchCapabilityDetailsFromBlockchain(capabilityId, provider);
-                if (capabilityDetail) {
-                  // This will be imported from the transformations module
-                  await syncCapabilityToSupabase(tokenAddress, capabilityDetail);
+            // Calculate total capability fees for this token
+            let totalCapabilityFees = 0;
+            if (scienceGentData.capabilities && scienceGentData.capabilities.length > 0) {
+              for (const capId of scienceGentData.capabilities) {
+                try {
+                  const capDetails = await fetchCapabilityDetailsFromBlockchain(capId);
+                  if (capDetails && capDetails.feeInETH) {
+                    totalCapabilityFees += parseFloat(ethers.utils.formatEther(capDetails.feeInETH));
+                  }
+                  
+                  // Also sync capability details to Supabase
+                  await syncCapabilityDetailsToSupabase(capDetails);
+                } catch (capError) {
+                  console.error(`Error fetching capability ${capId}:`, capError);
                 }
               }
             }
             
-            // Import from Supabase operations module
-            const { saveScienceGentToSupabase } = await import('./supabase');
-            await saveScienceGentToSupabase(scienceGentData, tokenStats);
+            // Create a modified ScienceGentData with capability fees
+            const enrichedData: ScienceGentData = {
+              ...scienceGentData,
+              capabilityFees: totalCapabilityFees
+            };
+            
+            // Save to Supabase
+            await saveScienceGentToSupabase(enrichedData, tokenStats);
             
             syncCount++;
             console.log(`Successfully synced token ${tokenAddress} (${syncCount}/${tokens.length})`);
+          } else {
+            console.error(`Failed to fetch data for token ${tokenAddress}`);
+            errorCount++;
           }
         } catch (error) {
           console.error(`Error syncing token ${tokenAddress}:`, error);
@@ -242,35 +264,9 @@ export const syncAllScienceGentsFromBlockchain = async (): Promise<{ syncCount: 
     
     console.log(`Sync completed. Synced ${syncCount} tokens with ${errorCount} errors.`);
     
-    toast({
-      title: "Sync Completed",
-      description: `Successfully synced ${syncCount} ScienceGents with ${errorCount} errors.`
-    });
-    
     return { syncCount, errorCount };
   } catch (error) {
     console.error("Error syncing ScienceGents:", error);
-    
-    toast({
-      title: "Sync Failed",
-      description: error.message || "Failed to sync ScienceGents",
-      variant: "destructive"
-    });
-    
     throw error;
-  }
-};
-
-/**
- * Syncs a capability to Supabase
- * @param tokenAddress Token address
- * @param capabilityDetail Capability details
- */
-const syncCapabilityToSupabase = async (tokenAddress: string, capabilityDetail: CapabilityDetail) => {
-  try {
-    const { syncCapabilityDetailsToSupabase } = await import('./supabase');
-    await syncCapabilityDetailsToSupabase(capabilityDetail);
-  } catch (error) {
-    console.error(`Error syncing capability ${capabilityDetail.id}:`, error);
   }
 };

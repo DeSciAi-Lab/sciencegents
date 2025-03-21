@@ -1,4 +1,5 @@
-import { ScienceGentData, TokenStats } from './types';
+
+import { ScienceGentData, TokenStats, CapabilityDetail } from './types';
 import { supabase } from '@/integrations/supabase/client';
 import { transformBlockchainToSupabaseFormat } from './transformations';
 
@@ -107,6 +108,8 @@ export const saveScienceGentToSupabase = async (
       return null;
     }
     
+    console.log("ScienceGent upsert successful:", scienceGentData.address);
+    
     // Insert or update the ScienceGent stats
     const { error: statsError } = await supabase
       .from('sciencegent_stats')
@@ -114,6 +117,8 @@ export const saveScienceGentToSupabase = async (
       
     if (statsError) {
       console.error("Supabase stats upsert error:", statsError);
+    } else {
+      console.log("ScienceGent stats upsert successful:", scienceGentData.address);
     }
     
     // If capabilities exist, sync them to the junction table
@@ -121,7 +126,7 @@ export const saveScienceGentToSupabase = async (
       await syncCapabilitiesToSupabase(scienceGentData.address, scienceGentData.capabilities);
     }
     
-    return data[0];
+    return data?.[0] || null;
   } catch (error) {
     console.error("Error saving to Supabase:", error);
     return null;
@@ -137,32 +142,33 @@ const syncCapabilitiesToSupabase = async (tokenAddress: string, capabilityIds: s
   try {
     console.log(`Syncing ${capabilityIds.length} capabilities for token ${tokenAddress}`);
     
-    // First, get existing capability IDs for this token
-    const { data: existingData, error: fetchError } = await supabase
-      .from('sciencegent_capabilities')
-      .select('capability_id')
-      .eq('sciencegent_address', tokenAddress);
-    
-    if (fetchError) {
-      console.error("Error fetching existing capabilities:", fetchError);
-      return;
-    }
-    
     // Create capability entries for each ID
     const capabilityEntries = capabilityIds.map(id => ({
       sciencegent_address: tokenAddress,
       capability_id: id
     }));
     
-    // Upsert all capabilities
-    const { error: upsertError } = await supabase
+    // Delete existing capabilities first to ensure clean sync
+    const { error: deleteError } = await supabase
       .from('sciencegent_capabilities')
-      .upsert(capabilityEntries, {
-        onConflict: 'sciencegent_address,capability_id'
-      });
+      .delete()
+      .eq('sciencegent_address', tokenAddress);
     
-    if (upsertError) {
-      console.error("Error upserting capabilities:", upsertError);
+    if (deleteError) {
+      console.error("Error deleting existing capabilities:", deleteError);
+    }
+    
+    // Insert all capabilities
+    if (capabilityEntries.length > 0) {
+      const { error: insertError } = await supabase
+        .from('sciencegent_capabilities')
+        .insert(capabilityEntries);
+      
+      if (insertError) {
+        console.error("Error inserting capabilities:", insertError);
+      } else {
+        console.log(`Successfully synced ${capabilityEntries.length} capabilities for ${tokenAddress}`);
+      }
     }
   } catch (error) {
     console.error("Error syncing capabilities:", error);
@@ -173,34 +179,22 @@ const syncCapabilitiesToSupabase = async (tokenAddress: string, capabilityIds: s
  * Syncs a capability's details to Supabase
  * @param capabilityDetail Capability details from blockchain
  */
-export const syncCapabilityDetailsToSupabase = async (capabilityDetail: any) => {
+export const syncCapabilityDetailsToSupabase = async (capabilityDetail: CapabilityDetail | null) => {
   try {
-    // Skip if no ID
-    if (!capabilityDetail.id) return;
+    // Skip if no details or no ID
+    if (!capabilityDetail || !capabilityDetail.id) return;
     
     console.log(`Syncing capability details for ${capabilityDetail.id}`);
-    
-    // Check if capability exists in main capabilities table
-    const { data: existingData, error: fetchError } = await supabase
-      .from('capabilities')
-      .select('id')
-      .eq('id', capabilityDetail.id)
-      .maybeSingle();
-    
-    if (fetchError) {
-      console.error("Error fetching capability:", fetchError);
-      return;
-    }
     
     // Prepare data for upsert
     const capabilityData = {
       id: capabilityDetail.id,
       name: capabilityDetail.id, // Default name to ID
       description: capabilityDetail.description || '',
-      price: capabilityDetail.feeInETH ? parseFloat(capabilityDetail.feeInETH) : 0,
+      price: capabilityDetail.feeInETH ? parseFloat(ethers.utils.formatEther(capabilityDetail.feeInETH)) : 0,
       creator: capabilityDetail.creator || '',
       domain: 'General', // Default domain
-      created_at: new Date().toISOString()
+      last_synced_at: new Date().toISOString()
     };
     
     // Upsert capability
@@ -210,6 +204,8 @@ export const syncCapabilityDetailsToSupabase = async (capabilityDetail: any) => 
     
     if (upsertError) {
       console.error("Error upserting capability:", upsertError);
+    } else {
+      console.log(`Successfully synced capability ${capabilityDetail.id}`);
     }
   } catch (error) {
     console.error("Error syncing capability details:", error);

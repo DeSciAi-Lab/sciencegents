@@ -15,9 +15,11 @@ export const transformBlockchainToSupabaseFormat = (
   scienceGent: any;
   scienceGentStats: any;
 } => {
-  // Calculate maturity progress based on collected fees and virtualETH
+  // Convert BigNumber values to regular numbers
   const collectedFees = parseFloat(ethers.utils.formatEther(tokenStats.collectedFees));
   const virtualETH = parseFloat(ethers.utils.formatEther(tokenStats.virtualETH));
+  
+  // Calculate maturity progress based on collected fees and virtualETH
   const maturityProgress = virtualETH > 0 
     ? Math.min(Math.round((collectedFees / (2 * virtualETH)) * 100), 100) 
     : 0;
@@ -64,7 +66,7 @@ export const transformBlockchainToSupabaseFormat = (
     migration_eligible: tokenStats.migrationEligible || false,
     maturity_deadline: maturityDeadline,
     remaining_maturity_time: remainingMaturityTime,
-    token_age: tokenAge,
+    token_age: tokenAge, // Added explicitly
     last_synced_at: new Date().toISOString()
   };
   
