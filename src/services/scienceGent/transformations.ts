@@ -1,3 +1,4 @@
+
 import { ethers } from 'ethers';
 import { ScienceGentData, TokenStats, FormattedScienceGent } from './types';
 
@@ -48,9 +49,14 @@ export const transformBlockchainToSupabaseFormat = (
     total_liquidity: totalLiquidity,
     maturity_progress: maturityProgress,
     virtual_eth: virtualETH,
+    collected_fees: collectedFees,
     creator_address: scienceGentData.creator,
     created_on_chain_at: new Date(parseInt(tokenStats.creationTimestamp) * 1000).toISOString(),
     is_migrated: tokenStats.migrated,
+    migration_eligible: tokenStats.migrationEligible || false,
+    maturity_deadline: tokenStats.maturityDeadline,
+    remaining_maturity_time: parseInt(tokenStats.maturityDeadline) - Math.floor(Date.now() / 1000),
+    token_age: Math.floor(Date.now() / 1000) - parseInt(tokenStats.creationTimestamp),
     last_synced_at: new Date().toISOString()
   };
   
@@ -95,10 +101,8 @@ export const transformSupabaseToFormattedScienceGent = (data: any): FormattedSci
     totalLiquidity: parseFloat(data.eth_reserve || '0') * ethPriceInUsd,
     maturityProgress: maturityProgress,
     virtualEth: parseFloat(data.virtual_eth || '0'),
-    creatorAddress: data.creator || '',
-    createdOnChainAt: data.creation_timestamp 
-      ? new Date(parseInt(data.creation_timestamp) * 1000).toISOString() 
-      : new Date().toISOString(),
+    creatorAddress: data.creator_address || '',
+    createdOnChainAt: data.created_on_chain_at || new Date().toISOString(),
     isMigrated: data.is_migrated || false,
     migrationEligible: data.migration_eligible || false,
     remainingMaturityTime: parseInt(data.remaining_maturity_time || '0'),

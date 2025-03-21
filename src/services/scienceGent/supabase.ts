@@ -37,19 +37,19 @@ export const fetchScienceGentFromSupabase = async (address: string) => {
     const formattedData = {
       ...data,
       // Convert prices to numbers for easier handling
-      token_price: data.token_price ? parseFloat(data.token_price) : 0,
+      token_price: data.token_price ? parseFloat(String(data.token_price)) : 0,
       // Add maturity progress calculation if not available
       maturity_progress: data.maturity_progress || (
         data.virtual_eth && data.collected_fees 
-          ? calculateMaturityProgress(data.collected_fees, data.virtual_eth) 
+          ? calculateMaturityProgress(String(data.virtual_eth), String(data.collected_fees)) 
           : 0
       ),
       // Add any other derived fields from TokenStats
-      tokenAge: data.creation_timestamp 
-        ? Math.floor(Date.now() / 1000) - parseInt(data.creation_timestamp)
+      tokenAge: data.created_on_chain_at 
+        ? Math.floor(Date.now() / 1000) - new Date(data.created_on_chain_at).getTime() / 1000
         : 0,
       remainingMaturityTime: data.maturity_deadline 
-        ? Math.max(0, parseInt(data.maturity_deadline) - Math.floor(Date.now() / 1000))
+        ? Math.max(0, parseInt(String(data.maturity_deadline)) - Math.floor(Date.now() / 1000))
         : 0
     };
     
@@ -66,7 +66,7 @@ export const fetchScienceGentFromSupabase = async (address: string) => {
  * @param virtualETH Virtual ETH amount
  * @returns Progress percentage (0-100)
  */
-const calculateMaturityProgress = (collectedFees: string, virtualETH: string): number => {
+const calculateMaturityProgress = (virtualETH: string, collectedFees: string): number => {
   try {
     const fees = parseFloat(collectedFees);
     const vETH = parseFloat(virtualETH);
@@ -99,14 +99,14 @@ export const saveScienceGentToSupabase = async (
     console.log("Saving ScienceGent to Supabase:", scienceGentData.address);
     
     // Transform the data to Supabase format
-    const supabaseData = transformBlockchainToSupabaseFormat(scienceGentData, tokenStats);
+    const { scienceGent, scienceGentStats } = transformBlockchainToSupabaseFormat(scienceGentData, tokenStats);
     
-    // Add enhanced fields
-    const enhancedData = {
-      ...supabaseData,
+    // Add enhanced fields to scienceGent object
+    const enhancedScienceGent = {
+      ...scienceGent,
       // Add maturity progress calculation
       maturity_progress: tokenStats.maturityProgress || 
-        calculateMaturityProgress(tokenStats.collectedFees, tokenStats.virtualETH),
+        calculateMaturityProgress(tokenStats.virtualETH, tokenStats.collectedFees),
       // Add remaining time calculation
       remaining_maturity_time: tokenStats.remainingMaturityTime || 
         (parseInt(tokenStats.maturityDeadline) - Math.floor(Date.now() / 1000)),
@@ -120,12 +120,21 @@ export const saveScienceGentToSupabase = async (
     // Insert or update the ScienceGent
     const { data, error } = await supabase
       .from('sciencegents')
-      .upsert(enhancedData)
+      .upsert(enhancedScienceGent)
       .select();
     
     if (error) {
       console.error("Supabase upsert error:", error);
       return null;
+    }
+    
+    // Insert or update the ScienceGent stats
+    const { error: statsError } = await supabase
+      .from('sciencegent_stats')
+      .upsert(scienceGentStats);
+      
+    if (statsError) {
+      console.error("Supabase stats upsert error:", statsError);
     }
     
     // If capabilities exist, sync them to the junction table
@@ -152,7 +161,7 @@ const syncCapabilitiesToSupabase = async (tokenAddress: string, capabilityIds: s
     // First, get existing capability IDs for this token
     const { data: existingData, error: fetchError } = await supabase
       .from('sciencegent_capabilities')
-      .select('id')
+      .select('capability_id')
       .eq('sciencegent_address', tokenAddress);
     
     if (fetchError) {
@@ -163,7 +172,7 @@ const syncCapabilitiesToSupabase = async (tokenAddress: string, capabilityIds: s
     // Create capability entries for each ID
     const capabilityEntries = capabilityIds.map(id => ({
       sciencegent_address: tokenAddress,
-      id,
+      capability_id: id,
       name: id, // Default name to ID
       domain: 'General' // Default domain
     }));
@@ -171,8 +180,11 @@ const syncCapabilitiesToSupabase = async (tokenAddress: string, capabilityIds: s
     // Upsert all capabilities
     const { error: upsertError } = await supabase
       .from('sciencegent_capabilities')
-      .upsert(capabilityEntries, {
-        onConflict: 'sciencegent_address,id'
+      .upsert(capabilityEntries.map(entry => ({
+        sciencegent_address: entry.sciencegent_address,
+        capability_id: entry.capability_id
+      })), {
+        onConflict: 'sciencegent_address,capability_id'
       });
     
     if (upsertError) {

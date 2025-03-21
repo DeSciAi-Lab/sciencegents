@@ -1,3 +1,4 @@
+
 // Type definitions for ScienceGent data structures
 
 export interface ScienceGentData {
