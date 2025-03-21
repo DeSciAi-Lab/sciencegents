@@ -1,4 +1,3 @@
-
 import { ethers } from "ethers";
 import { contractConfig, factoryABI } from "@/utils/contractConfig";
 import { toast } from "@/components/ui/use-toast";
@@ -26,9 +25,11 @@ export const fetchScienceGentFromBlockchain = async (address: string): Promise<S
     
     // Get token details from factory
     const details = await factoryContract.getTokenDetails(address);
+    console.log("Token details from blockchain:", details);
     
     // Get token capabilities
     const capabilities = await factoryContract.getTokenAssignedCapabilities(address);
+    console.log("Token capabilities from blockchain:", capabilities);
     
     // Create ScienceGentData object
     const scienceGentData: ScienceGentData = {
@@ -118,6 +119,7 @@ export const fetchTokenStatsFromBlockchain = async (address: string): Promise<To
     
     // Get token stats from swap contract
     const stats = await swapContract.getTokenStats(address);
+    console.log("Raw token stats from blockchain:", stats);
     
     // Get current timestamp for age calculation
     const currentTimestamp = Math.floor(Date.now() / 1000);
@@ -142,6 +144,8 @@ export const fetchTokenStatsFromBlockchain = async (address: string): Promise<To
       remainingMaturityTime: Math.max(0, parseInt(stats[7].toString()) - currentTimestamp),
       maturityProgress: calculateMaturityProgress(stats[3].toString(), stats[2].toString())
     };
+    
+    console.log("Formatted token stats:", tokenStats);
     
     return tokenStats;
   } catch (error) {
@@ -269,5 +273,67 @@ export const syncAllScienceGentsFromBlockchain = async (): Promise<{ syncCount: 
   } catch (error) {
     console.error("Error syncing ScienceGents:", error);
     throw error;
+  }
+};
+
+/**
+ * Utility function to extract token address from transaction hash
+ * @param transactionHash Transaction hash
+ * @returns Token address if found
+ */
+export const extractTokenAddressFromTransactionHash = async (transactionHash: string): Promise<string | null> => {
+  try {
+    console.log("Extracting token address from transaction hash:", transactionHash);
+    
+    if (!window.ethereum) {
+      throw new Error("No Ethereum provider found");
+    }
+    
+    const provider = new ethers.providers.Web3Provider(window.ethereum);
+    
+    // Get transaction receipt
+    const receipt = await provider.getTransactionReceipt(transactionHash);
+    if (!receipt || receipt.status !== 1) {
+      console.log("Transaction not confirmed or failed:", receipt);
+      return null;
+    }
+    
+    console.log("Transaction receipt:", receipt);
+    
+    // Get the factory contract
+    const factoryContract = new ethers.Contract(
+      contractConfig.addresses.ScienceGentsFactory,
+      factoryABI,
+      provider
+    );
+    
+    // Find the TokenCreated event
+    if (receipt.logs && receipt.logs.length > 0) {
+      for (const log of receipt.logs) {
+        // Check if the log is from our factory contract
+        if (log.address.toLowerCase() === contractConfig.addresses.ScienceGentsFactory.toLowerCase()) {
+          try {
+            // Try to parse the log using our contract interface
+            const parsedLog = factoryContract.interface.parseLog(log);
+            console.log("Parsed log:", parsedLog);
+            
+            // Check if this is the TokenCreated event
+            if (parsedLog && parsedLog.name === "TokenCreated") {
+              // The first parameter should be the token address
+              return parsedLog.args[0];
+            }
+          } catch (parseError) {
+            console.log("Could not parse log:", parseError);
+            // Continue to next log
+          }
+        }
+      }
+    }
+    
+    console.log("Could not find TokenCreated event in logs");
+    return null;
+  } catch (error) {
+    console.error("Error extracting token address from transaction hash:", error);
+    return null;
   }
 };

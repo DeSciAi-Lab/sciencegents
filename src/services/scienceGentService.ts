@@ -1,4 +1,3 @@
-
 import { ethers } from "ethers";
 import { contractConfig, factoryABI, dsiTokenABI } from "@/utils/contractConfig";
 import { ScienceGentFormData } from "@/types/sciencegent";
@@ -124,14 +123,70 @@ export const approveDSIForFactory = async (launchFee: string): Promise<string> =
 };
 
 /**
+ * Extracts token address from transaction receipt
+ * @param transactionHash The transaction hash
+ * @returns The token address if found
+ */
+export const extractTokenAddressFromReceipt = async (transactionHash: string): Promise<string | null> => {
+  try {
+    if (!window.ethereum) {
+      throw new Error("No Ethereum provider found");
+    }
+    
+    const provider = new ethers.providers.Web3Provider(window.ethereum);
+    const receipt = await provider.getTransactionReceipt(transactionHash);
+    
+    if (!receipt || !receipt.logs) {
+      return null;
+    }
+    
+    // Look for TokenCreated event
+    // The event signature is TokenCreated(address indexed token, string name, string symbol, uint256 totalSupply)
+    // The token address is the first indexed parameter (topics[1])
+    const factoryContract = new ethers.Contract(
+      contractConfig.addresses.ScienceGentsFactory,
+      factoryABI,
+      provider
+    );
+    
+    // Get the TokenCreated event signature
+    const tokenCreatedEvent = factoryContract.interface.events['TokenCreated(address,string,string,uint256)'];
+    const eventSignature = tokenCreatedEvent.topic;
+    
+    for (const log of receipt.logs) {
+      if (log.topics[0] === eventSignature) {
+        // The token address is the first indexed parameter
+        const tokenAddress = ethers.utils.defaultAbiCoder.decode(['address'], log.topics[1])[0];
+        console.log("Extracted token address:", tokenAddress);
+        return tokenAddress;
+      }
+    }
+    
+    return null;
+  } catch (error) {
+    console.error("Error extracting token address:", error);
+    return null;
+  }
+};
+
+/**
  * Creates a new ScienceGent token on the blockchain and saves it to Supabase
  * @returns An object containing the transaction hash and token address (if available)
  */
-export const createScienceGent = async (formData: ScienceGentFormData): Promise<{
+export const createScienceGent = async (formData: ScienceGentFormData & { transactionHash?: string, checkOnly?: boolean }): Promise<{
   transactionHash: string;
   tokenAddress: string | null;
 }> => {
   try {
+    // If we're just checking for a token address from an existing transaction
+    if (formData.checkOnly && formData.transactionHash) {
+      const tokenAddress = await extractTokenAddressFromReceipt(formData.transactionHash);
+      return {
+        transactionHash: formData.transactionHash,
+        tokenAddress
+      };
+    }
+    
     if (!window.ethereum) {
       throw new Error("No Ethereum provider found");
     }

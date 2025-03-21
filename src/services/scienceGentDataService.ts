@@ -1,3 +1,4 @@
+
 import { ethers } from "ethers";
 import { toast } from "@/components/ui/use-toast";
 import { isAdminWallet } from "./walletService";
@@ -67,31 +68,45 @@ export const syncAllScienceGents = async (): Promise<{ syncCount: number; errorC
 /**
  * Helper function to sync a single ScienceGent
  * @param address Token address
+ * @returns True if sync was successful, false otherwise
  */
 export const syncSingleScienceGent = async (address: string): Promise<boolean> => {
   try {
+    console.log(`Starting sync for ScienceGent: ${address}`);
+    
     // Fetch data from blockchain
     const scienceGentData = await fetchScienceGentFromBlockchain(address);
-    const tokenStats = await fetchTokenStatsFromBlockchain(address);
-    
-    if (!scienceGentData || !tokenStats) {
-      throw new Error(`Failed to fetch data for ${address}`);
+    if (!scienceGentData) {
+      throw new Error(`Failed to fetch ScienceGent data for ${address}`);
     }
+    
+    console.log("ScienceGent data fetched:", scienceGentData);
+    
+    const tokenStats = await fetchTokenStatsFromBlockchain(address);
+    if (!tokenStats) {
+      throw new Error(`Failed to fetch token stats for ${address}`);
+    }
+    
+    console.log("Token stats fetched:", tokenStats);
     
     // Calculate total capability fees for this token
     let totalCapabilityFees = 0;
     if (scienceGentData.capabilities && scienceGentData.capabilities.length > 0) {
+      console.log(`Fetching ${scienceGentData.capabilities.length} capabilities...`);
+      
       for (const capId of scienceGentData.capabilities) {
         try {
           const capDetails = await fetchCapabilityDetailsFromBlockchain(capId);
           
           // Make sure we have valid capability details
           if (capDetails) {
-            // The capDetails is already in CapabilityDetail format, no need for conversion
+            console.log(`Capability ${capId} details:`, capDetails);
             
             // Add the capability fee to the total (in ETH)
             if (capDetails.feeInETH) {
-              totalCapabilityFees += parseFloat(ethers.utils.formatEther(capDetails.feeInETH));
+              const feeInEth = parseFloat(ethers.utils.formatEther(capDetails.feeInETH));
+              totalCapabilityFees += feeInEth;
+              console.log(`Added fee ${feeInEth} ETH, total now: ${totalCapabilityFees} ETH`);
             }
             
             // Also sync capability details to Supabase
@@ -109,8 +124,12 @@ export const syncSingleScienceGent = async (address: string): Promise<boolean> =
       capabilityFees: totalCapabilityFees
     };
     
+    console.log("Saving enriched data to Supabase:", enrichedData);
+    
     // Save to Supabase
     await saveScienceGentToSupabase(enrichedData, tokenStats);
+    
+    console.log(`Successfully synced ${address}`);
     
     toast({
       title: "Sync Successful",

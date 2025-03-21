@@ -28,7 +28,7 @@ const SuccessScreen: React.FC<SuccessScreenProps> = ({
             Congratulations! Your ScienceGent has been successfully created.
           </p>
           
-          {tokenAddress && (
+          {tokenAddress ? (
             <div className="w-full max-w-md bg-slate-50 p-4 rounded-lg mb-6 border border-slate-200">
               <p className="text-sm font-medium text-slate-600 mb-2">Token Address:</p>
               <div className="flex items-center justify-between">
@@ -57,11 +57,21 @@ const SuccessScreen: React.FC<SuccessScreenProps> = ({
                 </Button>
               )}
             </div>
+          ) : (
+            <div className="w-full max-w-md bg-amber-50 p-4 rounded-lg mb-6 border border-amber-200">
+              <p className="text-sm text-amber-700">
+                Waiting for token address from blockchain...
+              </p>
+              <div className="flex justify-center mt-3">
+                <RefreshCw className="w-5 h-5 text-amber-500 animate-spin" />
+              </div>
+            </div>
           )}
           
           <div className="flex justify-center">
             <Button 
               onClick={navigateToDetails}
+              disabled={!tokenAddress}
               className="bg-science-600 hover:bg-science-700 text-white gap-2"
             >
               <span>View My ScienceGent</span>
