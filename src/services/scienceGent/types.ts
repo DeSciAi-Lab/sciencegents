@@ -1,4 +1,3 @@
-
 // Import ethers for BigNumber type compatibility
 import { BigNumber } from "ethers";
 
@@ -31,15 +30,16 @@ export interface TokenStats {
   ethReserve: string;
   virtualETH: string;
   collectedFees: string;
+  tradingEnabled: boolean;
+  creator: string;
+  creationTimestamp: string;
+  maturityDeadline: string;
+  migrated: boolean;
+  lpUnlockTime: string;
+  lockedLPAmount: string;
   currentPrice: string;
   migrationEligible: boolean;
-  tradingEnabled?: boolean;
-  creator?: string;
-  creationTimestamp?: string;
-  maturityDeadline?: string;
-  migrated?: boolean;
-  lpUnlockTime?: string;
-  lockedLPAmount?: string;
+  // Derived properties
   tokenAge?: number;
   remainingMaturityTime?: number;
   maturityProgress?: number;

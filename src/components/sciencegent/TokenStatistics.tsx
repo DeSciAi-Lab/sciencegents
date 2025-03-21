@@ -2,7 +2,7 @@
 import React from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { RefreshCcw, ExternalLink, TrendingUp, TrendingDown } from "lucide-react";
+import { RefreshCcw, ExternalLink, TrendingUp, TrendingDown, GitMerge } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import MaturityTracker from './MaturityTracker';
@@ -37,6 +37,37 @@ const TokenStatistics: React.FC<TokenStatisticsProps> = ({
     collectedFees = 0,
     capabilityFees = 0
   } = scienceGent;
+
+  // Calculate migration status
+  const getMigrationStatus = () => {
+    if (isMigrated || scienceGent.is_migrated) {
+      return {
+        text: "Migrated to Uniswap",
+        color: "bg-green-100 text-green-800",
+        icon: <GitMerge className="h-3 w-3 mr-1" />
+      };
+    }
+    
+    // Calculate fee progress
+    const requiredFees = virtualETH * 2 + capabilityFees;
+    const feeProgress = requiredFees > 0 ? (collectedFees / requiredFees) * 100 : 0;
+    
+    if (feeProgress >= 100) {
+      return {
+        text: "Ready for Migration",
+        color: "bg-blue-100 text-blue-800",
+        icon: <GitMerge className="h-3 w-3 mr-1" />
+      };
+    }
+    
+    return {
+      text: "Internal DEX",
+      color: "bg-amber-100 text-amber-800",
+      icon: null
+    };
+  };
+
+  const migrationStatus = getMigrationStatus();
 
   return (
     <Card>
@@ -73,8 +104,9 @@ const TokenStatistics: React.FC<TokenStatisticsProps> = ({
           </div>
           <div>
             <p className="text-sm text-muted-foreground mb-1">Trading Status</p>
-            <Badge className={isMigrated ? "bg-green-100 text-green-800" : "bg-blue-100 text-blue-800"}>
-              {isMigrated ? "External DEX" : "Internal DEX"}
+            <Badge className={migrationStatus.color}>
+              {migrationStatus.icon}
+              {migrationStatus.text}
             </Badge>
           </div>
           <div>
@@ -102,14 +134,15 @@ const TokenStatistics: React.FC<TokenStatisticsProps> = ({
             virtualETH={virtualETH}
             collectedFees={collectedFees || 0}
             capabilityFees={capabilityFees || 0}
+            remainingMaturityTime={scienceGent.remaining_maturity_time}
           />
           
-          {scienceGent.address && isMigrated && (
+          {scienceGent.address && (isMigrated || scienceGent.is_migrated) && scienceGent.uniswap_pair && (
             <div className="pt-4 border-t">
               <div className="flex justify-between items-center">
                 <h3 className="font-medium">Uniswap Pair</h3>
                 <a
-                  href={`https://sepolia.etherscan.io/address/${scienceGent.uniswapPair || ''}`}
+                  href={`https://sepolia.etherscan.io/address/${scienceGent.uniswap_pair || ''}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center text-science-600 hover:text-science-700"

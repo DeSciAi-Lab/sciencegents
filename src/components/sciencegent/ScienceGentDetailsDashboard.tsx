@@ -9,8 +9,9 @@ import TokenSwapInterface from './TokenSwapInterface';
 import ScienceGentChat from './ScienceGentChat';
 import CapabilitiesList from './CapabilitiesList';
 import MaturityTracker from './MaturityTracker';
+import MigrationPanel from './MigrationPanel';
 import { Badge } from '@/components/ui/badge';
-import { Bot, ArrowUpRight, MessageCircle, Brain } from 'lucide-react';
+import { Bot, ArrowUpRight, MessageCircle, Brain, GitMerge } from 'lucide-react';
 
 interface ScienceGentDetailsDashboardProps {
   address: string;
@@ -44,7 +45,7 @@ const ScienceGentDetailsDashboard: React.FC<ScienceGentDetailsDashboardProps> = 
   return (
     <div className="space-y-6">
       <Tabs defaultValue="overview" className="w-full">
-        <TabsList className="grid grid-cols-4 mb-6">
+        <TabsList className="grid grid-cols-5 mb-6">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="chat" className="flex items-center gap-1.5">
             <MessageCircle className="h-4 w-4" />
@@ -57,6 +58,10 @@ const ScienceGentDetailsDashboard: React.FC<ScienceGentDetailsDashboardProps> = 
             )}
           </TabsTrigger>
           <TabsTrigger value="trade">Trade</TabsTrigger>
+          <TabsTrigger value="migrate" className="flex items-center gap-1.5">
+            <GitMerge className="h-4 w-4" />
+            <span>Migration</span>
+          </TabsTrigger>
           <TabsTrigger value="capabilities" className="flex items-center gap-1.5">
             <span>Capabilities</span>
             {capabilitiesCount > 0 && (
@@ -163,6 +168,14 @@ const ScienceGentDetailsDashboard: React.FC<ScienceGentDetailsDashboardProps> = 
               />
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="migrate">
+          <MigrationPanel 
+            tokenAddress={address}
+            scienceGent={scienceGentData}
+            refreshData={refreshData}
+          />
         </TabsContent>
         
         <TabsContent value="capabilities">

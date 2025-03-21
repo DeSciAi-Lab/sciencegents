@@ -108,7 +108,8 @@ export const fetchTokenStatsFromBlockchain = async (address: string): Promise<To
     
     // Enhanced ABI for the ScienceGentsSwap contract to include more stats
     const swapABI = [
-      "function getTokenStats(address token) external view returns (uint256 tokenReserve, uint256 ethReserve, uint256 virtualETH, uint256 collectedFees, bool tradingEnabled, address creator, uint256 creationTimestamp, uint256 maturityDeadline, bool migrated, uint256 lpUnlockTime, uint256 lockedLPAmount, uint256 currentPrice, bool migrationEligible)"
+      "function getTokenStats(address token) external view returns (uint256 tokenReserve, uint256 ethReserve, uint256 virtualETH, uint256 collectedFees, bool tradingEnabled, address creator, uint256 creationTimestamp, uint256 maturityDeadline, bool migrated, uint256 lpUnlockTime, uint256 lockedLPAmount, uint256 currentPrice, bool migrationEligible)",
+      "function isMigrationEligible(address token) external view returns (bool)"
     ];
     
     const swapContract = new ethers.Contract(
@@ -120,6 +121,10 @@ export const fetchTokenStatsFromBlockchain = async (address: string): Promise<To
     // Get token stats from swap contract
     const stats = await swapContract.getTokenStats(address);
     console.log("Raw token stats from blockchain:", stats);
+    
+    // Get migration eligibility
+    const isMigrationEligible = await swapContract.isMigrationEligible(address);
+    console.log("Migration eligibility:", isMigrationEligible);
     
     // Get current timestamp for age calculation
     const currentTimestamp = Math.floor(Date.now() / 1000);
@@ -138,7 +143,7 @@ export const fetchTokenStatsFromBlockchain = async (address: string): Promise<To
       lpUnlockTime: stats[9].toString(),
       lockedLPAmount: stats[10].toString(),
       currentPrice: stats[11].toString(),
-      migrationEligible: stats[12],
+      migrationEligible: isMigrationEligible,
       // Add derived properties for easier UI display
       tokenAge: currentTimestamp - parseInt(stats[6].toString()),
       remainingMaturityTime: Math.max(0, parseInt(stats[7].toString()) - currentTimestamp),
@@ -337,3 +342,4 @@ export const extractTokenAddressFromTransactionHash = async (transactionHash: st
     return null;
   }
 };
+
