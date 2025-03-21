@@ -10,6 +10,7 @@ import ScienceGentChat from './ScienceGentChat';
 import CapabilitiesList from './CapabilitiesList';
 import MaturityTracker from './MaturityTracker';
 import { Badge } from '@/components/ui/badge';
+import { Bot, ArrowUpRight, MessageCircle, Brain } from 'lucide-react';
 
 interface ScienceGentDetailsDashboardProps {
   address: string;
@@ -45,17 +46,21 @@ const ScienceGentDetailsDashboard: React.FC<ScienceGentDetailsDashboardProps> = 
       <Tabs defaultValue="overview" className="w-full">
         <TabsList className="grid grid-cols-4 mb-6">
           <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="chat">
-            Chat
+          <TabsTrigger value="chat" className="flex items-center gap-1.5">
+            <MessageCircle className="h-4 w-4" />
+            <span>Chat</span>
             {hasPersona && (
-              <Badge variant="outline" className="ml-2 text-xs">Custom Persona</Badge>
+              <Badge variant="outline" className="ml-1 text-xs bg-purple-50 text-purple-700 border-purple-200">
+                <Brain className="h-3 w-3 mr-1" />
+                Custom Persona
+              </Badge>
             )}
           </TabsTrigger>
           <TabsTrigger value="trade">Trade</TabsTrigger>
-          <TabsTrigger value="capabilities">
-            Capabilities
+          <TabsTrigger value="capabilities" className="flex items-center gap-1.5">
+            <span>Capabilities</span>
             {capabilitiesCount > 0 && (
-              <Badge variant="outline" className="ml-2 text-xs">{capabilitiesCount}</Badge>
+              <Badge variant="outline" className="ml-1 text-xs">{capabilitiesCount}</Badge>
             )}
           </TabsTrigger>
         </TabsList>
@@ -120,11 +125,22 @@ const ScienceGentDetailsDashboard: React.FC<ScienceGentDetailsDashboardProps> = 
         <TabsContent value="chat">
           <Card>
             <CardHeader>
-              <CardTitle>Chat with {scienceGentData?.name || "ScienceGent"}</CardTitle>
-              <CardDescription>
-                This AI agent {hasPersona ? 'has a custom persona' : 'uses a default scientific assistant persona'} 
-                {capabilitiesCount > 0 ? ` and ${capabilitiesCount} specialized capabilities` : ''}
-              </CardDescription>
+              <div className="flex justify-between items-start">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Bot className="h-5 w-5 text-science-600" />
+                    Chat with {scienceGentData?.name || "ScienceGent"}
+                  </CardTitle>
+                  <CardDescription>
+                    {hasPersona 
+                      ? 'This AI agent has a custom scientific persona' 
+                      : 'This AI agent uses a default scientific assistant persona'}
+                    {capabilitiesCount > 0 
+                      ? ` and ${capabilitiesCount} specialized scientific capabilities` 
+                      : ''}
+                  </CardDescription>
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
               <ScienceGentChat 

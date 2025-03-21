@@ -57,6 +57,30 @@ export type Database = {
         }
         Relationships: []
       }
+      sciencegent_assistants: {
+        Row: {
+          assistant_id: string
+          created_at: string | null
+          id: string
+          last_used_at: string | null
+          sciencegent_address: string
+        }
+        Insert: {
+          assistant_id: string
+          created_at?: string | null
+          id?: string
+          last_used_at?: string | null
+          sciencegent_address: string
+        }
+        Update: {
+          assistant_id?: string
+          created_at?: string | null
+          id?: string
+          last_used_at?: string | null
+          sciencegent_address?: string
+        }
+        Relationships: []
+      }
       sciencegent_capabilities: {
         Row: {
           added_at: string | null
@@ -88,25 +112,34 @@ export type Database = {
       }
       sciencegent_stats: {
         Row: {
+          chat_count: number | null
           holders: number | null
           id: string
+          price_history: Json | null
           sciencegent_address: string
+          trade_volume_eth: number | null
           transactions: number | null
           updated_at: string | null
           volume_24h: number | null
         }
         Insert: {
+          chat_count?: number | null
           holders?: number | null
           id?: string
+          price_history?: Json | null
           sciencegent_address: string
+          trade_volume_eth?: number | null
           transactions?: number | null
           updated_at?: string | null
           volume_24h?: number | null
         }
         Update: {
+          chat_count?: number | null
           holders?: number | null
           id?: string
+          price_history?: Json | null
           sciencegent_address?: string
+          trade_volume_eth?: number | null
           transactions?: number | null
           updated_at?: string | null
           volume_24h?: number | null
@@ -208,6 +241,33 @@ export type Database = {
           updated_at?: string | null
           virtual_eth?: number | null
           website?: string | null
+        }
+        Relationships: []
+      }
+      user_interactions: {
+        Row: {
+          created_at: string | null
+          id: string
+          interaction_data: Json | null
+          interaction_type: string
+          sciencegent_address: string
+          user_address: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          interaction_data?: Json | null
+          interaction_type: string
+          sciencegent_address: string
+          user_address: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          interaction_data?: Json | null
+          interaction_type?: string
+          sciencegent_address?: string
+          user_address?: string
         }
         Relationships: []
       }

@@ -16,20 +16,40 @@ const useScienceGentChat = (
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isInitializing, setIsInitializing] = useState(true);
+  const [assistantId, setAssistantId] = useState<string | null>(null);
   
-  // Load chat history from localStorage on mount
+  // Load chat history and check for existing assistant on mount
   useEffect(() => {
     if (scienceGentAddress) {
-      try {
-        const savedMessages = localStorage.getItem(`chat_${scienceGentAddress}`);
-        if (savedMessages) {
-          setMessages(JSON.parse(savedMessages));
+      const initializeChat = async () => {
+        try {
+          // Load chat history from localStorage
+          const savedMessages = localStorage.getItem(`chat_${scienceGentAddress}`);
+          if (savedMessages) {
+            setMessages(JSON.parse(savedMessages));
+          }
+          
+          // Check if this ScienceGent has an associated assistant
+          const { data: assistantData, error: assistantError } = await supabase
+            .from('sciencegent_assistants')
+            .select('assistant_id')
+            .eq('sciencegent_address', scienceGentAddress)
+            .single();
+            
+          if (assistantData) {
+            console.log("Found existing assistant ID:", assistantData.assistant_id);
+            setAssistantId(assistantData.assistant_id);
+          } else if (assistantError) {
+            console.log("No existing assistant found, will create on first message");
+          }
+        } catch (e) {
+          console.error('Error initializing chat:', e);
+        } finally {
+          setIsInitializing(false);
         }
-      } catch (e) {
-        console.error('Error loading chat history:', e);
-      } finally {
-        setIsInitializing(false);
-      }
+      };
+      
+      initializeChat();
     }
   }, [scienceGentAddress]);
   
@@ -44,6 +64,30 @@ const useScienceGentChat = (
     }
   }, [messages, scienceGentAddress]);
   
+  // Track user interactions
+  const trackInteraction = async (content: string) => {
+    if (!scienceGentAddress) return;
+    
+    try {
+      await supabase.from('user_interactions').insert({
+        user_address: 'anonymous', // Replace with actual user address when available
+        sciencegent_address: scienceGentAddress,
+        interaction_type: 'chat',
+        interaction_data: { message_length: content.length }
+      });
+      
+      // Update chat count in sciencegent_stats
+      await supabase.rpc('increment_chat_count', { 
+        address: scienceGentAddress 
+      }).catch(err => {
+        console.error('Failed to update chat count:', err);
+      });
+    } catch (e) {
+      console.error('Error tracking interaction:', e);
+      // Non-critical error, don't show to user
+    }
+  };
+  
   // Function to send message to the Edge Function API
   const sendMessage = async (content: string) => {
     if (!content.trim() || !scienceGentAddress) return;
@@ -55,6 +99,9 @@ const useScienceGentChat = (
       // Add user message to the state immediately
       const userMessage: ChatMessage = { role: 'user', content };
       setMessages(prev => [...prev, userMessage]);
+      
+      // Track this interaction
+      trackInteraction(content);
       
       // Get the persona from the scienceGent if available
       const persona = scienceGent?.persona || '';
@@ -91,19 +138,26 @@ const useScienceGentChat = (
           ).join('\n')}` 
         : '';
       
-      // Call the Edge Function with scienceGentAddress
+      // Call the Edge Function with scienceGentAddress and assistantId (if exists)
       const { data, error: functionError } = await supabase.functions.invoke('generateChatResponse', {
         body: {
           messages: [...messages, userMessage],
           scienceGentName: scienceGent?.name || 'ScienceGent',
-          persona: persona, // Now correctly retrieving the persona from the db
+          persona: persona,
           capabilities: capabilitiesText,
-          scienceGentAddress // Add the address to create or reuse the assistant
+          scienceGentAddress,
+          assistantId // Pass the existing assistantId if we have one
         }
       });
       
       if (functionError) throw new Error(functionError.message);
       if (!data || !data.message) throw new Error('Invalid response from AI');
+      
+      // Store the assistantId if it's returned and we don't have it yet
+      if (data.assistantId && !assistantId) {
+        setAssistantId(data.assistantId);
+        console.log("New assistant created with ID:", data.assistantId);
+      }
       
       // Add AI response to messages
       const assistantMessage: ChatMessage = { 
@@ -144,7 +198,8 @@ const useScienceGentChat = (
     error,
     sendMessage,
     clearChat,
-    isInitializing
+    isInitializing,
+    hasAssistant: !!assistantId
   };
 };
 
