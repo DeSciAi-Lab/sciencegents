@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { 
@@ -22,10 +21,13 @@ import {
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Input } from '@/components/ui/input'; 
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import Reveal from '@/components/animations/Reveal';
 import useScienceGentDetails, { LoadingStatus } from '@/hooks/useScienceGentDetails';
+import { useTokenSwap } from '@/hooks/useTokenSwap';
+import { connectWallet } from '@/services/walletService';
 
 // Mock chat messages for the AI interface
 const initialMessages = [
@@ -46,6 +48,21 @@ const ScienceGentDetails = () => {
   const [copiedText, setCopiedText] = useState('');
   
   const { scienceGent, status, isRefreshing, refreshData } = useScienceGentDetails(address);
+  const {
+    direction,
+    ethAmount,
+    tokenAmount,
+    isCalculating,
+    isProcessing,
+    walletConnected,
+    ethBalance,
+    tokenBalance,
+    toggleDirection,
+    connectSwapWallet,
+    handleEthAmountChange,
+    handleTokenAmountChange,
+    executeSwap
+  } = useTokenSwap(address ?? '');
 
   // Reset copied text after 2 seconds
   useEffect(() => {
@@ -526,24 +543,43 @@ const ScienceGentDetails = () => {
                     <div className="p-3 rounded-lg border border-border">
                       <div className="flex justify-between text-sm mb-2">
                         <span className="text-muted-foreground">From</span>
-                        <span className="text-xs text-muted-foreground">Balance: 0.5 ETH</span>
+                        <span className="text-xs text-muted-foreground">
+                          Balance: {direction === 'buy' 
+                            ? `${parseFloat(ethBalance).toFixed(4)} ETH` 
+                            : `${parseFloat(tokenBalance).toFixed(4)} ${scienceGent?.symbol}`}
+                        </span>
                       </div>
                       <div className="flex justify-between items-center">
-                        <input
+                        <Input
                           type="number"
                           placeholder="0.0"
-                          className="w-full text-lg bg-transparent outline-none"
+                          value={direction === 'buy' ? ethAmount : tokenAmount}
+                          onChange={(e) => direction === 'buy' 
+                            ? handleEthAmountChange(e.target.value)
+                            : handleTokenAmountChange(e.target.value)
+                          }
+                          className="w-full text-lg bg-transparent outline-none border-0 p-0 focus-visible:ring-0"
+                          disabled={isProcessing || isCalculating}
                         />
                         <div className="flex items-center gap-2 bg-secondary px-3 py-1.5 rounded-lg text-sm font-medium">
-                          <div className="w-5 h-5 rounded-full bg-gray-400" />
-                          <span>ETH</span>
-                          <ChevronDown size={16} className="text-muted-foreground" />
+                          <div className={`w-5 h-5 rounded-full ${direction === 'buy' 
+                            ? 'bg-gray-400' 
+                            : 'bg-gradient-to-br from-science-400 to-science-600 text-white flex items-center justify-center text-xs font-bold'}`}>
+                            {direction === 'buy' 
+                              ? '' 
+                              : scienceGent?.symbol?.substring(0, 2).toUpperCase() || "??"}
+                          </div>
+                          <span>{direction === 'buy' ? 'ETH' : scienceGent?.symbol || "????"}</span>
                         </div>
                       </div>
                     </div>
                     
                     <div className="flex justify-center">
-                      <button className="w-8 h-8 rounded-full bg-white border border-border flex items-center justify-center">
+                      <button 
+                        className="w-8 h-8 rounded-full bg-white border border-border flex items-center justify-center hover:bg-gray-50 transition-colors"
+                        onClick={toggleDirection}
+                        disabled={isProcessing}
+                      >
                         <ArrowUpDown size={16} className="text-muted-foreground" />
                       </button>
                     </div>
@@ -551,20 +587,33 @@ const ScienceGentDetails = () => {
                     <div className="p-3 rounded-lg border border-border">
                       <div className="flex justify-between text-sm mb-2">
                         <span className="text-muted-foreground">To</span>
-                        <span className="text-xs text-muted-foreground">Balance: 0 {scienceGent?.symbol}</span>
+                        <span className="text-xs text-muted-foreground">
+                          Balance: {direction === 'buy' 
+                            ? `${parseFloat(tokenBalance).toFixed(4)} ${scienceGent?.symbol}` 
+                            : `${parseFloat(ethBalance).toFixed(4)} ETH`}
+                        </span>
                       </div>
                       <div className="flex justify-between items-center">
-                        <input
+                        <Input
                           type="number"
                           placeholder="0.0"
-                          className="w-full text-lg bg-transparent outline-none"
+                          value={direction === 'buy' ? tokenAmount : ethAmount}
+                          onChange={(e) => direction === 'buy' 
+                            ? handleTokenAmountChange(e.target.value)
+                            : handleEthAmountChange(e.target.value)
+                          }
+                          className="w-full text-lg bg-transparent outline-none border-0 p-0 focus-visible:ring-0"
+                          disabled={isProcessing || isCalculating}
                         />
                         <div className="flex items-center gap-2 bg-secondary px-3 py-1.5 rounded-lg text-sm font-medium">
-                          <div className="w-5 h-5 rounded-full bg-gradient-to-br from-science-400 to-science-600 text-white flex items-center justify-center text-xs font-bold">
-                            {scienceGent?.symbol?.substring(0, 2).toUpperCase() || "??"}
+                          <div className={`w-5 h-5 rounded-full ${direction === 'buy' 
+                            ? 'bg-gradient-to-br from-science-400 to-science-600 text-white flex items-center justify-center text-xs font-bold'
+                            : 'bg-gray-400'}`}>
+                            {direction === 'buy' 
+                              ? scienceGent?.symbol?.substring(0, 2).toUpperCase() || "??" 
+                              : ''}
                           </div>
-                          <span>{scienceGent?.symbol || "????"}</span>
-                          <ChevronDown size={16} className="text-muted-foreground" />
+                          <span>{direction === 'buy' ? scienceGent?.symbol || "????" : 'ETH'}</span>
                         </div>
                       </div>
                     </div>
@@ -573,17 +622,50 @@ const ScienceGentDetails = () => {
                   <div className="text-xs text-muted-foreground mb-4">
                     <div className="flex justify-between mb-1">
                       <span>Slippage Tolerance</span>
-                      <span>0.5%</span>
+                      <span>1.0%</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Trading Fee</span>
-                      <span>5%</span>
+                      <span>5.0%</span>
                     </div>
+                    {isCalculating && (
+                      <div className="mt-2 flex items-center justify-center text-xs text-muted-foreground">
+                        <span className="mr-2">Calculating...</span>
+                        <div className="animate-spin h-3 w-3 border-2 border-science-500 rounded-full border-t-transparent"></div>
+                      </div>
+                    )}
                   </div>
                   
-                  <Button className="w-full bg-science-600 hover:bg-science-700 text-white">
-                    Connect Wallet to Swap
-                  </Button>
+                  {walletConnected ? (
+                    <Button 
+                      className="w-full bg-science-600 hover:bg-science-700 text-white"
+                      onClick={executeSwap}
+                      disabled={
+                        isProcessing || 
+                        isCalculating || 
+                        !ethAmount || 
+                        !tokenAmount || 
+                        parseFloat(ethAmount) <= 0 || 
+                        parseFloat(tokenAmount) <= 0
+                      }
+                    >
+                      {isProcessing ? (
+                        <div className="flex items-center">
+                          <span className="mr-2">Processing...</span>
+                          <div className="animate-spin h-4 w-4 border-2 border-white rounded-full border-t-transparent"></div>
+                        </div>
+                      ) : (
+                        direction === 'buy' ? 'Buy Tokens' : 'Sell Tokens'
+                      )}
+                    </Button>
+                  ) : (
+                    <Button 
+                      className="w-full bg-science-600 hover:bg-science-700 text-white"
+                      onClick={connectSwapWallet}
+                    >
+                      Connect Wallet to Swap
+                    </Button>
+                  )}
                 </div>
               </Reveal>
               
