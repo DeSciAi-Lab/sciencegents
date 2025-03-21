@@ -42,17 +42,17 @@ export const syncCapabilitiesWithBlockchain = async (): Promise<{
         const newCapability: Capability = {
           id: blockchainCapability.id || '',
           name: blockchainCapability.name || id,
-          domain: 'Unknown',
+          domain: blockchainCapability.domain || 'Unknown',
           description: blockchainCapability.description || '',
           price: blockchainCapability.price || 0,
           creator: blockchainCapability.creator || '',
           createdAt: new Date().toISOString(),
-          stats: {
+          stats: blockchainCapability.stats || {
             usageCount: 0,
             rating: 4.5,
             revenue: 0
           },
-          features: []
+          features: blockchainCapability.features || []
         };
         
         try {

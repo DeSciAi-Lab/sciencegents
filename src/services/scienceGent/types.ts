@@ -1,3 +1,4 @@
+
 // Import ethers for BigNumber type compatibility
 import { BigNumber } from "ethers";
 
@@ -50,6 +51,15 @@ export interface CapabilityDetail {
   feeInETH: string; // Fee in wei as string (for large numbers)
   creator: string;
   domain?: string; // Optional field added for categorization
+  // Adding these fields to resolve type errors
+  name?: string;
+  price?: number; // Converted price in ETH (for UI display)
+  stats?: {
+    usageCount: number;
+    rating: number;
+    revenue: number;
+  };
+  features?: string[];
 }
 
 // Formatted ScienceGent data for UI display

@@ -1,3 +1,4 @@
+
 import { ethers } from "ethers";
 import { contractConfig, factoryABI } from "@/utils/contractConfig";
 import { Capability } from "@/types/capability";
@@ -40,13 +41,21 @@ export const fetchCapabilityDetailsFromBlockchain = async (id: string): Promise<
     const [description, feeInETH, creator] = await factory.getCapabilityDetails(id);
     console.log(`Capability ${id} details retrieved from blockchain`);
     
-    // Return data in CapabilityDetail format
+    // Return data in CapabilityDetail format with additional fields
     return {
       id,
+      name: id, // Using the ID as the name since blockchain doesn't store a separate name
       description,
       feeInETH, // Keep the raw value for conversion later
+      price: parseFloat(ethers.utils.formatEther(feeInETH)), // Add price for UI display
       creator,
-      domain: "Unknown" // Default domain
+      domain: "Unknown", // Default domain
+      stats: {
+        usageCount: 0,
+        rating: 4.5,
+        revenue: 0
+      },
+      features: []
     };
   } catch (error) {
     console.error(`Error fetching capability ${id} from blockchain:`, error);
