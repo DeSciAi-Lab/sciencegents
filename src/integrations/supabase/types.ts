@@ -78,13 +78,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "sciencegent_capabilities_capability_id_fkey"
-            columns: ["capability_id"]
-            isOneToOne: false
-            referencedRelation: "capabilities"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "sciencegent_capabilities_sciencegent_address_fkey"
             columns: ["sciencegent_address"]
             isOneToOne: false

@@ -1,3 +1,4 @@
+
 import { ethers } from "ethers";
 import { toast } from "@/components/ui/use-toast";
 import { isAdminWallet } from "./walletService";
@@ -85,15 +86,20 @@ export const syncSingleScienceGent = async (address: string): Promise<boolean> =
         try {
           const capDetails = await fetchCapabilityDetailsFromBlockchain(capId);
           
-          // Convert the Partial<Capability> to CapabilityDetail
+          // Convert the blockchain capability data to CapabilityDetail
           if (capDetails) {
             const capabilityDetail: CapabilityDetail = {
               id: capDetails.id || capId,
               description: capDetails.description || '',
-              feeInETH: capDetails.price ? ethers.utils.parseEther(capDetails.price.toString()).toString() : '0',
-              creator: capDetails.creator || ''
+              // Convert price from ETH to wei and store as string
+              feeInETH: capDetails.price 
+                ? ethers.utils.parseEther(capDetails.price.toString()).toString() 
+                : '0',
+              creator: capDetails.creator || '',
+              domain: capDetails.domain || 'General'
             };
             
+            // Add the capability fee to the total (in ETH)
             if (capabilityDetail.feeInETH) {
               totalCapabilityFees += parseFloat(ethers.utils.formatEther(capabilityDetail.feeInETH));
             }

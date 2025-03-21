@@ -1,3 +1,4 @@
+
 import { ScienceGentData, TokenStats, CapabilityDetail } from './types';
 import { supabase } from '@/integrations/supabase/client';
 import { transformBlockchainToSupabaseFormat } from './transformations';
@@ -193,7 +194,7 @@ export const syncCapabilityDetailsToSupabase = async (capabilityDetail: Capabili
       description: capabilityDetail.description || '',
       price: capabilityDetail.feeInETH ? parseFloat(ethers.utils.formatEther(capabilityDetail.feeInETH)) : 0,
       creator: capabilityDetail.creator || '',
-      domain: 'General', // Default domain
+      domain: capabilityDetail.domain || 'General', // Use domain if available
       last_synced_at: new Date().toISOString()
     };
     

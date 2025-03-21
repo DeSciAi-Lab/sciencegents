@@ -1,7 +1,8 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useInView } from 'react-intersection-observer';
 import Reveal from '@/components/animations/Reveal';
+import { supabase } from '@/integrations/supabase/client';
 
 // CountUp component for animating numbers
 const CountUp = ({ end, duration = 2, decimals = 0 }: { end: number, duration?: number, decimals?: number }) => {
@@ -39,11 +40,78 @@ const CountUp = ({ end, duration = 2, decimals = 0 }: { end: number, duration?: 
 };
 
 const Stats = () => {
-  const stats = [
-    { label: 'ScienceGents Launched', value: 178 },
-    { label: 'Total Transactions', value: 15672 },
-    { label: 'Total Liquidity', value: 2.4, prefix: '$', suffix: 'M', decimals: 1 },
-    { label: 'Total Market Cap', value: 5.7, prefix: '$', suffix: 'M', decimals: 1 },
+  const [stats, setStats] = useState({
+    scienceGentsCount: 0,
+    totalTransactions: 0,
+    totalLiquidity: 0,
+    totalMarketCap: 0,
+    isLoading: true
+  });
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        // Get ScienceGents count
+        const { count: scienceGentsCount } = await supabase
+          .from('sciencegents')
+          .select('*', { count: 'exact', head: true });
+        
+        // Get total transactions
+        const { data: statsData } = await supabase
+          .from('sciencegent_stats')
+          .select('transactions');
+        
+        // Sum up transactions
+        const totalTransactions = statsData?.reduce((sum, item) => sum + (item.transactions || 0), 0) || 0;
+        
+        // Get total liquidity and market cap
+        const { data: marketData } = await supabase
+          .from('sciencegents')
+          .select('total_liquidity, market_cap');
+        
+        const totalLiquidity = marketData?.reduce((sum, item) => sum + (parseFloat(String(item.total_liquidity)) || 0), 0) || 0;
+        const totalMarketCap = marketData?.reduce((sum, item) => sum + (parseFloat(String(item.market_cap)) || 0), 0) || 0;
+        
+        setStats({
+          scienceGentsCount: scienceGentsCount || 0,
+          totalTransactions,
+          totalLiquidity: totalLiquidity / 1e6, // Convert to millions
+          totalMarketCap: totalMarketCap / 1e6, // Convert to millions
+          isLoading: false
+        });
+      } catch (error) {
+        console.error("Error fetching stats:", error);
+        setStats(prev => ({ ...prev, isLoading: false }));
+      }
+    };
+
+    fetchStats();
+  }, []);
+  
+  // Fallback data if database is empty
+  const statItems = [
+    { 
+      label: 'ScienceGents Launched', 
+      value: stats.isLoading || stats.scienceGentsCount === 0 ? 178 : stats.scienceGentsCount 
+    },
+    { 
+      label: 'Total Transactions', 
+      value: stats.isLoading || stats.totalTransactions === 0 ? 15672 : stats.totalTransactions 
+    },
+    { 
+      label: 'Total Liquidity', 
+      value: stats.isLoading || stats.totalLiquidity === 0 ? 2.4 : stats.totalLiquidity, 
+      prefix: '$', 
+      suffix: 'M', 
+      decimals: 1 
+    },
+    { 
+      label: 'Total Market Cap', 
+      value: stats.isLoading || stats.totalMarketCap === 0 ? 5.7 : stats.totalMarketCap, 
+      prefix: '$', 
+      suffix: 'M', 
+      decimals: 1 
+    },
   ];
 
   return (
@@ -62,7 +130,7 @@ const Stats = () => {
         </Reveal>
         
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-10">
-          {stats.map((stat, index) => (
+          {statItems.map((stat, index) => (
             <Reveal key={index} delay={100 * index} direction="up">
               <div className="bg-white rounded-2xl shadow-soft p-6 text-center">
                 <h3 className="text-3xl md:text-4xl font-bold mb-2 text-science-800">
