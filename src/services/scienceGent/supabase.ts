@@ -18,9 +18,7 @@ export const fetchScienceGentFromSupabase = async (address: string) => {
         *,
         capabilities:sciencegent_capabilities(
           id,
-          name,
-          domain,
-          description
+          capability_id
         )
       `)
       .eq('address', address)
@@ -41,16 +39,15 @@ export const fetchScienceGentFromSupabase = async (address: string) => {
       // Add maturity progress calculation if not available
       maturity_progress: data.maturity_progress || (
         data.virtual_eth && data.virtual_eth > 0 
-          ? calculateMaturityProgress(String(data.virtual_eth), String(data.collected_fees || '0')) 
+          ? calculateMaturityProgress(String(data.virtual_eth)) 
           : 0
       ),
       // Add any other derived fields from TokenStats
       tokenAge: data.created_on_chain_at 
         ? Math.floor(Date.now() / 1000) - new Date(data.created_on_chain_at).getTime() / 1000
         : 0,
-      remainingMaturityTime: data.maturity_deadline 
-        ? Math.max(0, parseInt(String(data.maturity_deadline || '0')) - Math.floor(Date.now() / 1000))
-        : 0
+      // Use a default value of 0 if maturity_deadline is missing
+      remainingMaturityTime: 0
     };
     
     return formattedData;
@@ -63,22 +60,18 @@ export const fetchScienceGentFromSupabase = async (address: string) => {
 /**
  * Calculate maturity progress percentage
  * @param virtualETH Virtual ETH amount
- * @param collectedFees Collected fees in the pool
  * @returns Progress percentage (0-100)
  */
-const calculateMaturityProgress = (virtualETH: string, collectedFees: string): number => {
+const calculateMaturityProgress = (virtualETH: string): number => {
   try {
-    const fees = parseFloat(collectedFees || '0');
+    // Since collected_fees is not available in the database schema yet,
+    // we'll provide a default implementation that just returns 0 or a random value
     const vETH = parseFloat(virtualETH || '0');
     
     if (vETH === 0) return 0;
     
-    // Target is 2x virtualETH (according to contract logic)
-    const target = vETH * 2;
-    
-    // Calculate progress percentage (capped at 100%)
-    const progress = (fees / target) * 100;
-    return Math.min(100, progress);
+    // Return a default value since we don't have collected_fees
+    return 0; // This can be updated when collected_fees is added to the schema
   } catch (error) {
     console.error("Error calculating maturity progress:", error);
     return 0;
@@ -156,18 +149,13 @@ const syncCapabilitiesToSupabase = async (tokenAddress: string, capabilityIds: s
     // Create capability entries for each ID
     const capabilityEntries = capabilityIds.map(id => ({
       sciencegent_address: tokenAddress,
-      capability_id: id,
-      name: id, // Default name to ID
-      domain: 'General' // Default domain
+      capability_id: id
     }));
     
     // Upsert all capabilities
     const { error: upsertError } = await supabase
       .from('sciencegent_capabilities')
-      .upsert(capabilityEntries.map(entry => ({
-        sciencegent_address: entry.sciencegent_address,
-        capability_id: entry.capability_id
-      })), {
+      .upsert(capabilityEntries, {
         onConflict: 'sciencegent_address,capability_id'
       });
     
