@@ -1,12 +1,11 @@
 
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, ArrowDownUp } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { useTokenSwap } from "@/hooks/useTokenSwap";
+import TokenBalanceInfo from "./swap/TokenBalanceInfo";
+import BuyTokenForm from "./swap/BuyTokenForm";
+import SellTokenForm from "./swap/SellTokenForm";
+import SwapError from "./swap/SwapError";
 
 interface TokenSwapInterfaceProps {
   tokenAddress: string;
@@ -92,33 +91,14 @@ const TokenSwapInterface: React.FC<TokenSwapInterfaceProps> = ({
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <p className="text-sm text-muted-foreground">Current Price</p>
-          <p className="text-xl font-semibold">{tokenPrice} ETH per {tokenSymbol}</p>
-        </div>
-        <div>
-          <Button variant="ghost" size="sm" onClick={refreshBalances}>
-            <Loader2 className={`h-4 w-4 mr-2 ${isPending ? 'animate-spin' : ''}`} />
-            Refresh
-          </Button>
-        </div>
-      </div>
-      
-      <div className="grid grid-cols-2 gap-4 mb-4">
-        <div>
-          <p className="text-sm text-muted-foreground mb-1">Your Balance</p>
-          <div className="flex items-center">
-            <p className="font-medium">{tokenBalance} {tokenSymbol}</p>
-          </div>
-        </div>
-        <div>
-          <p className="text-sm text-muted-foreground mb-1">ETH Balance</p>
-          <div className="flex items-center">
-            <p className="font-medium">{ethBalance} ETH</p>
-          </div>
-        </div>
-      </div>
+      <TokenBalanceInfo
+        tokenSymbol={tokenSymbol}
+        tokenPrice={tokenPrice}
+        tokenBalance={tokenBalance}
+        ethBalance={ethBalance}
+        isPending={isPending}
+        onRefresh={refreshBalances}
+      />
       
       <Tabs defaultValue="buy" onValueChange={handleTabChange}>
         <TabsList className="grid grid-cols-2 mb-4">
@@ -126,89 +106,32 @@ const TokenSwapInterface: React.FC<TokenSwapInterfaceProps> = ({
           <TabsTrigger value="sell">Sell {tokenSymbol}</TabsTrigger>
         </TabsList>
         
-        <TabsContent value="buy" className="space-y-4">
-          <div className="space-y-2">
-            <p className="text-sm font-medium">ETH Amount</p>
-            <Input
-              type="number"
-              placeholder="0.0"
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              min="0"
-              step="0.001"
-            />
-            <p className="text-xs text-muted-foreground text-right">Max: {ethBalance} ETH</p>
-          </div>
-          
-          <div className="flex justify-center my-2">
-            <ArrowDownUp className="h-6 w-6 text-muted-foreground" />
-          </div>
-          
-          <div className="space-y-2">
-            <p className="text-sm font-medium">{tokenSymbol} Amount</p>
-            <Input
-              type="text"
-              placeholder="0.0"
-              value={outputValue}
-              readOnly
-              className="bg-muted"
-            />
-          </div>
-          
-          <Button
-            onClick={handleSwap}
-            className="w-full bg-science-600 hover:bg-science-700 text-white"
-            disabled={isPending || !inputValue || parseFloat(inputValue) <= 0}
-          >
-            {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-            Buy {tokenSymbol}
-          </Button>
+        <TabsContent value="buy">
+          <BuyTokenForm
+            tokenSymbol={tokenSymbol}
+            inputValue={inputValue}
+            outputValue={outputValue}
+            ethBalance={ethBalance}
+            isPending={isPending}
+            onInputChange={setInputValue}
+            onSwap={handleSwap}
+          />
         </TabsContent>
         
-        <TabsContent value="sell" className="space-y-4">
-          <div className="space-y-2">
-            <p className="text-sm font-medium">{tokenSymbol} Amount</p>
-            <Input
-              type="number"
-              placeholder="0.0"
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              min="0"
-            />
-            <p className="text-xs text-muted-foreground text-right">Max: {tokenBalance} {tokenSymbol}</p>
-          </div>
-          
-          <div className="flex justify-center my-2">
-            <ArrowDownUp className="h-6 w-6 text-muted-foreground" />
-          </div>
-          
-          <div className="space-y-2">
-            <p className="text-sm font-medium">ETH Amount</p>
-            <Input
-              type="text"
-              placeholder="0.0"
-              value={outputValue}
-              readOnly
-              className="bg-muted"
-            />
-          </div>
-          
-          <Button
-            onClick={handleSwap}
-            className="w-full bg-science-600 hover:bg-science-700 text-white"
-            disabled={isPending || !inputValue || parseFloat(inputValue) <= 0}
-          >
-            {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-            Sell {tokenSymbol}
-          </Button>
+        <TabsContent value="sell">
+          <SellTokenForm
+            tokenSymbol={tokenSymbol}
+            inputValue={inputValue}
+            outputValue={outputValue}
+            tokenBalance={tokenBalance}
+            isPending={isPending}
+            onInputChange={setInputValue}
+            onSwap={handleSwap}
+          />
         </TabsContent>
       </Tabs>
       
-      {error && (
-        <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded text-sm text-red-600">
-          {error}
-        </div>
-      )}
+      <SwapError error={error} />
     </div>
   );
 };
