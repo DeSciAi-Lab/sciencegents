@@ -68,6 +68,12 @@ const TokenStatistics: React.FC<TokenStatisticsProps> = ({
   };
 
   const migrationStatus = getMigrationStatus();
+  
+  // Get Uniswap link for the token
+  const getUniswapLink = () => {
+    if (!scienceGent.address) return "#";
+    return `https://app.uniswap.org/explore/tokens/ethereum_sepolia/${scienceGent.address.toLowerCase()}`;
+  };
 
   return (
     <Card>
@@ -104,10 +110,23 @@ const TokenStatistics: React.FC<TokenStatisticsProps> = ({
           </div>
           <div>
             <p className="text-sm text-muted-foreground mb-1">Trading Status</p>
-            <Badge className={migrationStatus.color}>
-              {migrationStatus.icon}
-              {migrationStatus.text}
-            </Badge>
+            <div className="flex items-center gap-2">
+              <Badge className={migrationStatus.color}>
+                {migrationStatus.icon}
+                {migrationStatus.text}
+              </Badge>
+              {(isMigrated || scienceGent.is_migrated) && (
+                <a 
+                  href={getUniswapLink()} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-xs text-science-600 hover:text-science-700 flex items-center"
+                >
+                  <ExternalLink className="h-3 w-3 mr-1" />
+                  Trade
+                </a>
+              )}
+            </div>
           </div>
           <div>
             <p className="text-sm text-muted-foreground mb-1">Transactions</p>
@@ -141,14 +160,24 @@ const TokenStatistics: React.FC<TokenStatisticsProps> = ({
             <div className="pt-4 border-t">
               <div className="flex justify-between items-center">
                 <h3 className="font-medium">Uniswap Pair</h3>
-                <a
-                  href={`https://sepolia.etherscan.io/address/${scienceGent.uniswap_pair || ''}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center text-science-600 hover:text-science-700"
-                >
-                  View on Etherscan <ExternalLink className="ml-1 h-3 w-3" />
-                </a>
+                <div className="flex items-center gap-2">
+                  <a
+                    href={`https://sepolia.etherscan.io/address/${scienceGent.uniswap_pair || ''}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center text-science-600 hover:text-science-700"
+                  >
+                    View on Etherscan <ExternalLink className="ml-1 h-3 w-3" />
+                  </a>
+                  <a
+                    href={getUniswapLink()}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center text-science-600 hover:text-science-700"
+                  >
+                    Trade on Uniswap <ExternalLink className="ml-1 h-3 w-3" />
+                  </a>
+                </div>
               </div>
             </div>
           )}

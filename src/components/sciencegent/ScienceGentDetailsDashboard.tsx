@@ -11,7 +11,7 @@ import CapabilitiesList from './CapabilitiesList';
 import MaturityTracker from './MaturityTracker';
 import MigrationPanel from './MigrationPanel';
 import { Badge } from '@/components/ui/badge';
-import { Bot, ArrowUpRight, MessageCircle, Brain, GitMerge } from 'lucide-react';
+import { Bot, MessageCircle, Brain, GitMerge } from 'lucide-react';
 
 interface ScienceGentDetailsDashboardProps {
   address: string;
@@ -41,6 +41,7 @@ const ScienceGentDetailsDashboard: React.FC<ScienceGentDetailsDashboardProps> = 
 
   const hasPersona = Boolean(scienceGentData?.persona);
   const capabilitiesCount = scienceGentData?.capabilities?.length || 0;
+  const isMigrated = scienceGentData?.is_migrated || false;
 
   return (
     <div className="space-y-6">
@@ -78,7 +79,7 @@ const ScienceGentDetailsDashboard: React.FC<ScienceGentDetailsDashboardProps> = 
           />
           
           {/* Add maturity details section */}
-          {scienceGentData && !scienceGentData.isMigrated && (
+          {scienceGentData && !scienceGentData.is_migrated && (
             <Card>
               <CardHeader>
                 <CardTitle>Migration Details</CardTitle>
@@ -93,21 +94,21 @@ const ScienceGentDetailsDashboard: React.FC<ScienceGentDetailsDashboardProps> = 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <p className="text-sm text-muted-foreground">Virtual ETH</p>
-                      <p className="font-medium">{scienceGentData.virtual_eth?.toFixed(2) || 0} ETH</p>
+                      <p className="font-medium">{scienceGentData.virtual_eth?.toFixed(4) || "0.0000"} ETH</p>
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">Required Fees</p>
                       <p className="font-medium">
-                        {((scienceGentData.virtual_eth || 0) * 2 + (scienceGentData.capabilityFees || 0)).toFixed(2)} ETH
+                        {((scienceGentData.virtual_eth || 0) * 2 + (scienceGentData.capabilityFees || 0)).toFixed(4)} ETH
                       </p>
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">Collected Fees</p>
-                      <p className="font-medium">{scienceGentData.collected_fees?.toFixed(2) || 0} ETH</p>
+                      <p className="font-medium">{scienceGentData.collected_fees?.toFixed(4) || "0.0000"} ETH</p>
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">Capability Fees</p>
-                      <p className="font-medium">{scienceGentData.capabilityFees?.toFixed(2) || 0} ETH</p>
+                      <p className="font-medium">{scienceGentData.capabilityFees?.toFixed(4) || "0.0000"} ETH</p>
                     </div>
                   </div>
                   
@@ -165,6 +166,8 @@ const ScienceGentDetailsDashboard: React.FC<ScienceGentDetailsDashboardProps> = 
               <TokenSwapInterface 
                 tokenAddress={address}
                 tokenSymbol={scienceGentData?.symbol || "Token"}
+                isMigrated={isMigrated}
+                uniswapPair={scienceGentData?.uniswap_pair}
               />
             </CardContent>
           </Card>

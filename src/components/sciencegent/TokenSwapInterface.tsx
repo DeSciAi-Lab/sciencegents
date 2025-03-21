@@ -6,19 +6,24 @@ import TokenBalanceInfo from "./swap/TokenBalanceInfo";
 import BuyTokenForm from "./swap/BuyTokenForm";
 import SellTokenForm from "./swap/SellTokenForm";
 import SwapError from "./swap/SwapError";
-import { AlertCircle, Loader2 } from 'lucide-react';
+import { AlertCircle, Loader2, ExternalLink } from 'lucide-react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { Button } from "@/components/ui/button";
 
 interface TokenSwapInterfaceProps {
   tokenAddress: string;
   tokenSymbol: string;
+  isMigrated?: boolean;
+  uniswapPair?: string;
 }
 
 const TokenSwapInterface: React.FC<TokenSwapInterfaceProps> = ({
   tokenAddress,
-  tokenSymbol
+  tokenSymbol,
+  isMigrated = false,
+  uniswapPair
 }) => {
   const [activeTab, setActiveTab] = useState<SwapDirection>('buy');
   const [inputValue, setInputValue] = useState<string>('');
@@ -104,6 +109,51 @@ const TokenSwapInterface: React.FC<TokenSwapInterfaceProps> = ({
   const handleSlippageChange = (value: number) => {
     setSlippageTolerance(value);
   };
+
+  // Get Uniswap link for the token
+  const getUniswapLink = () => {
+    if (!tokenAddress) return "#";
+    return `https://app.uniswap.org/explore/tokens/ethereum_sepolia/${tokenAddress.toLowerCase()}`;
+  };
+
+  if (isMigrated) {
+    return (
+      <Card className={`${isMobile ? 'p-2' : 'p-4'}`}>
+        <CardContent className="space-y-6 pt-4">
+          <Alert className="bg-blue-50 border-blue-200">
+            <div className="flex flex-col space-y-4">
+              <AlertDescription className="text-blue-800">
+                This token has been migrated to Uniswap and is now tradable on the Uniswap exchange.
+              </AlertDescription>
+              <Button 
+                variant="outline"
+                className="flex items-center gap-2"
+                asChild
+              >
+                <a 
+                  href={getUniswapLink()} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                >
+                  Trade on Uniswap
+                  <ExternalLink className="h-4 w-4" />
+                </a>
+              </Button>
+            </div>
+          </Alert>
+          
+          <TokenBalanceInfo
+            tokenSymbol={tokenSymbol}
+            tokenPrice={tokenPrice}
+            tokenBalance={tokenBalance}
+            ethBalance={ethBalance}
+            isPending={isPending}
+            onRefresh={refreshBalances}
+          />
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className={`${isMobile ? 'p-2' : 'p-4'}`}>

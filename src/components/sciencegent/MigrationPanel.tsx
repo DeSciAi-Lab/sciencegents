@@ -4,7 +4,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, GitMerge, ExternalLink, Check, AlertTriangle, Clock } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
 import useMigration from '@/hooks/useMigration';
 
 interface MigrationPanelProps {
@@ -50,6 +49,12 @@ const MigrationPanel: React.FC<MigrationPanelProps> = ({
     return `${days} days`;
   };
 
+  // Get Uniswap link for the token
+  const getUniswapLink = () => {
+    if (!tokenAddress) return "#";
+    return `https://app.uniswap.org/explore/tokens/ethereum_sepolia/${tokenAddress.toLowerCase()}`;
+  };
+
   // Early return if data is not loaded
   if (!scienceGent) {
     return null;
@@ -75,32 +80,53 @@ const MigrationPanel: React.FC<MigrationPanelProps> = ({
         )}
         
         {isMigrated || scienceGent.is_migrated ? (
-          <div className="space-y-4">
-            <div className="flex items-center gap-2 text-green-600 font-medium">
-              <Check className="h-5 w-5" />
-              <span>This token has been migrated to Uniswap</span>
-            </div>
+          <div className="space-y-6">
+            <Alert className="bg-green-50 border-green-200 mb-4">
+              <div className="flex items-start gap-2">
+                <Check className="h-5 w-5 text-green-600 mt-0.5" />
+                <div>
+                  <h3 className="text-green-800 font-medium mb-1">Successfully Migrated to Uniswap</h3>
+                  <p className="text-green-700 text-sm">
+                    This token has been migrated to Uniswap and is now tradable on the Uniswap exchange.
+                  </p>
+                </div>
+              </div>
+            </Alert>
             
             {scienceGent.uniswap_pair && (
-              <div className="pt-2">
-                <p className="text-sm text-muted-foreground mb-2">Uniswap Pair</p>
-                <div className="flex justify-between items-center">
-                  <p className="font-mono text-sm">{scienceGent.uniswap_pair}</p>
-                  <a
-                    href={`https://sepolia.etherscan.io/address/${scienceGent.uniswap_pair}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center text-sm text-science-600 hover:text-science-700"
-                  >
-                    View on Etherscan
-                    <ExternalLink className="ml-1 h-3 w-3" />
-                  </a>
+              <div className="space-y-4">
+                <div>
+                  <p className="text-sm text-muted-foreground mb-2">Uniswap Pair</p>
+                  <div className="flex justify-between items-center">
+                    <p className="font-mono text-sm">{scienceGent.uniswap_pair}</p>
+                    <a
+                      href={`https://sepolia.etherscan.io/address/${scienceGent.uniswap_pair}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center text-sm text-science-600 hover:text-science-700"
+                    >
+                      View on Etherscan
+                      <ExternalLink className="ml-1 h-3 w-3" />
+                    </a>
+                  </div>
                 </div>
+                
+                <Button className="w-full mt-2" asChild>
+                  <a 
+                    href={getUniswapLink()} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center gap-2"
+                  >
+                    Trade on Uniswap
+                    <ExternalLink className="h-4 w-4" />
+                  </a>
+                </Button>
               </div>
             )}
             
             {lpUnlockTimeRemaining && lpUnlockTimeRemaining > 0 && (
-              <div className="pt-2 border-t border-border mt-4">
+              <div className="pt-4 border-t border-border mt-4">
                 <div className="flex items-center gap-2 text-amber-600">
                   <Clock className="h-4 w-4" />
                   <span className="text-sm">LP tokens will unlock in {formatLPUnlockTime()}</span>
