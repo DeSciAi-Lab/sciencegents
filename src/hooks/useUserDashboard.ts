@@ -299,7 +299,8 @@ export const useUserDashboard = () => {
     
     return () => {
       if (window.ethereum) {
-        window.ethereum.removeAllListeners('accountsChanged');
+        // Fix: Use removeListener instead of removeAllListeners
+        window.ethereum.removeListener('accountsChanged', () => {});
       }
     };
   }, []);

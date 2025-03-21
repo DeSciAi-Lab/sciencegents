@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ScienceGentCard } from '@/components/ui/ScienceGentCard';
+import ScienceGentCard from '@/components/ui/ScienceGentCard';
 import { Wallet, Beaker, Sparkles, Loader2, ChevronRight, ArrowRight } from "lucide-react";
 import { useNavigate } from 'react-router-dom';
 import { formatDistance } from 'date-fns';
