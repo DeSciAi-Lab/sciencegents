@@ -77,13 +77,17 @@ const useScienceGentChat = (
       });
       
       // Update chat count in sciencegent_stats
-      // Fix: Use the RPC function properly without .catch()
+      // Use the Edge Function to update the chat count instead of direct RPC call
       try {
-        await supabase.rpc('increment_chat_count', { 
-          address: scienceGentAddress 
+        const { error } = await supabase.functions.invoke('increment_chat_count', {
+          body: { sciencegent_address: scienceGentAddress }
         });
+        
+        if (error) {
+          console.error('Failed to update chat count:', error);
+        }
       } catch (err) {
-        console.error('Failed to update chat count:', err);
+        console.error('Failed to invoke increment_chat_count function:', err);
       }
     } catch (e) {
       console.error('Error tracking interaction:', e);
