@@ -1,12 +1,12 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { ArrowDown, AlertCircle, Loader2 } from "lucide-react";
-import { useTokenSwap } from '@/hooks/useTokenSwap';
+import { Loader2, ArrowDownUp } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { useTokenSwap } from "@/hooks/useTokenSwap";
 
 interface TokenSwapInterfaceProps {
   tokenAddress: string;
@@ -17,166 +17,198 @@ const TokenSwapInterface: React.FC<TokenSwapInterfaceProps> = ({
   tokenAddress,
   tokenSymbol
 }) => {
-  const [localError, setLocalError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'buy' | 'sell'>('buy');
+  const [inputValue, setInputValue] = useState<string>('');
+  const [outputValue, setOutputValue] = useState<string>('');
   
   const {
-    direction,
-    ethAmount,
-    tokenAmount,
-    isCalculating,
-    isProcessing,
-    walletConnected,
-    ethBalance,
+    buyTokens,
+    sellTokens,
+    estimateTokensFromETH,
+    estimateETHFromTokens,
+    isPending,
+    error,
     tokenBalance,
+    ethBalance,
     tokenPrice,
-    toggleDirection,
-    connectWallet,
-    handleEthAmountChange,
-    handleTokenAmountChange,
-    executeSwap
+    refreshBalances
   } = useTokenSwap(tokenAddress);
 
-  const handleSetAmount = (value: string, isEth: boolean) => {
-    setLocalError(null);
-    
-    if (isEth) {
-      handleEthAmountChange(value);
-      if (direction === 'sell') {
-        toggleDirection();
+  // Update output estimate when input changes
+  useEffect(() => {
+    const updateEstimate = async () => {
+      if (!inputValue || parseFloat(inputValue) <= 0) {
+        setOutputValue('0');
+        return;
       }
-    } else {
-      handleTokenAmountChange(value);
-      if (direction === 'buy') {
-        toggleDirection();
+
+      try {
+        if (activeTab === 'buy') {
+          // ETH to Token
+          const tokensOut = await estimateTokensFromETH(inputValue);
+          setOutputValue(tokensOut);
+        } else {
+          // Token to ETH
+          const ethOut = await estimateETHFromTokens(inputValue);
+          setOutputValue(ethOut);
+        }
+      } catch (err) {
+        console.error('Estimation error:', err);
+        setOutputValue('0');
       }
-    }
+    };
+
+    updateEstimate();
+  }, [inputValue, activeTab, estimateTokensFromETH, estimateETHFromTokens]);
+
+  // Switch between buy and sell tabs
+  const handleTabChange = (value: string) => {
+    setActiveTab(value as 'buy' | 'sell');
+    setInputValue('');
+    setOutputValue('0');
   };
 
+  // Execute swap
   const handleSwap = async () => {
-    setLocalError(null);
+    if (!inputValue || parseFloat(inputValue) <= 0) return;
+
     try {
-      await executeSwap();
-    } catch (error) {
-      console.error("Swap error:", error);
-      setLocalError(error.message || "Failed to execute swap");
+      if (activeTab === 'buy') {
+        await buyTokens(inputValue, outputValue);
+      } else {
+        await sellTokens(inputValue, outputValue);
+      }
+      
+      // Reset form after successful swap
+      setInputValue('');
+      setOutputValue('0');
+      
+      // Refresh balances
+      refreshBalances();
+    } catch (err) {
+      console.error('Swap error:', err);
     }
   };
-
-  const isInputDisabled = isProcessing || isCalculating;
-  const isSubmitDisabled = isProcessing || isCalculating || !ethAmount || !tokenAmount || !!localError;
 
   return (
     <div className="space-y-6">
-      <Tabs defaultValue="swap" className="w-full">
-        <TabsList className="grid grid-cols-2 mb-6">
-          <TabsTrigger value="swap">Swap</TabsTrigger>
-          <TabsTrigger value="liquidity" disabled>Liquidity</TabsTrigger>
+      <div className="flex justify-between items-center">
+        <div>
+          <p className="text-sm text-muted-foreground">Current Price</p>
+          <p className="text-xl font-semibold">{tokenPrice} ETH per {tokenSymbol}</p>
+        </div>
+        <div>
+          <Button variant="ghost" size="sm" onClick={refreshBalances}>
+            <Loader2 className={`h-4 w-4 mr-2 ${isPending ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
+        </div>
+      </div>
+      
+      <div className="grid grid-cols-2 gap-4 mb-4">
+        <div>
+          <p className="text-sm text-muted-foreground mb-1">Your Balance</p>
+          <div className="flex items-center">
+            <p className="font-medium">{tokenBalance} {tokenSymbol}</p>
+          </div>
+        </div>
+        <div>
+          <p className="text-sm text-muted-foreground mb-1">ETH Balance</p>
+          <div className="flex items-center">
+            <p className="font-medium">{ethBalance} ETH</p>
+          </div>
+        </div>
+      </div>
+      
+      <Tabs defaultValue="buy" onValueChange={handleTabChange}>
+        <TabsList className="grid grid-cols-2 mb-4">
+          <TabsTrigger value="buy">Buy {tokenSymbol}</TabsTrigger>
+          <TabsTrigger value="sell">Sell {tokenSymbol}</TabsTrigger>
         </TabsList>
         
-        <TabsContent value="swap" className="space-y-4">
-          {!walletConnected ? (
-            <div className="flex flex-col items-center py-6">
-              <h3 className="text-lg font-medium mb-4">Connect your wallet to trade</h3>
-              <Button onClick={connectWallet}>Connect Wallet</Button>
-            </div>
-          ) : (
-            <>
-              <div className="space-y-4">
-                {/* ETH Input */}
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <Label htmlFor="ethAmount">ETH</Label>
-                    <span className="text-xs text-muted-foreground">
-                      Balance: {parseFloat(ethBalance).toFixed(4)} ETH
-                    </span>
-                  </div>
-                  <div className="relative">
-                    <Input
-                      id="ethAmount"
-                      type="number"
-                      placeholder="0.0"
-                      value={ethAmount}
-                      onChange={(e) => handleSetAmount(e.target.value, true)}
-                      disabled={isInputDisabled}
-                      className="pr-16"
-                    />
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleSetAmount(ethBalance, true)}
-                      className="absolute right-1 top-1 h-8"
-                      disabled={isInputDisabled || parseFloat(ethBalance) <= 0}
-                    >
-                      MAX
-                    </Button>
-                  </div>
-                </div>
-                
-                {/* Direction indicator */}
-                <div className="flex justify-center">
-                  <div className="bg-secondary w-8 h-8 rounded-full flex items-center justify-center">
-                    <ArrowDown className="h-4 w-4" />
-                  </div>
-                </div>
-                
-                {/* Token Input */}
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <Label htmlFor="tokenAmount">{tokenSymbol}</Label>
-                    <span className="text-xs text-muted-foreground">
-                      Balance: {parseFloat(tokenBalance).toFixed(4)} {tokenSymbol}
-                    </span>
-                  </div>
-                  <div className="relative">
-                    <Input
-                      id="tokenAmount"
-                      type="number"
-                      placeholder="0.0"
-                      value={tokenAmount}
-                      onChange={(e) => handleSetAmount(e.target.value, false)}
-                      disabled={isInputDisabled}
-                      className="pr-16"
-                    />
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleSetAmount(tokenBalance, false)}
-                      className="absolute right-1 top-1 h-8"
-                      disabled={isInputDisabled || parseFloat(tokenBalance) <= 0}
-                    >
-                      MAX
-                    </Button>
-                  </div>
-                </div>
-
-                {tokenPrice > 0 && (
-                  <div className="text-sm text-center text-muted-foreground">
-                    1 {tokenSymbol} = {tokenPrice.toFixed(6)} ETH
-                  </div>
-                )}
-                
-                {/* Error Display */}
-                {localError && (
-                  <Alert variant="destructive">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertDescription>{localError}</AlertDescription>
-                  </Alert>
-                )}
-                
-                {/* Submit Button */}
-                <Button 
-                  className="w-full bg-science-600 hover:bg-science-700 text-white" 
-                  onClick={handleSwap}
-                  disabled={isSubmitDisabled}
-                >
-                  {isProcessing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  {isProcessing ? 'Processing...' : 'Swap'}
-                </Button>
-              </div>
-            </>
-          )}
+        <TabsContent value="buy" className="space-y-4">
+          <div className="space-y-2">
+            <p className="text-sm font-medium">ETH Amount</p>
+            <Input
+              type="number"
+              placeholder="0.0"
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              min="0"
+              step="0.001"
+            />
+            <p className="text-xs text-muted-foreground text-right">Max: {ethBalance} ETH</p>
+          </div>
+          
+          <div className="flex justify-center my-2">
+            <ArrowDownUp className="h-6 w-6 text-muted-foreground" />
+          </div>
+          
+          <div className="space-y-2">
+            <p className="text-sm font-medium">{tokenSymbol} Amount</p>
+            <Input
+              type="text"
+              placeholder="0.0"
+              value={outputValue}
+              readOnly
+              className="bg-muted"
+            />
+          </div>
+          
+          <Button
+            onClick={handleSwap}
+            className="w-full bg-science-600 hover:bg-science-700 text-white"
+            disabled={isPending || !inputValue || parseFloat(inputValue) <= 0}
+          >
+            {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+            Buy {tokenSymbol}
+          </Button>
+        </TabsContent>
+        
+        <TabsContent value="sell" className="space-y-4">
+          <div className="space-y-2">
+            <p className="text-sm font-medium">{tokenSymbol} Amount</p>
+            <Input
+              type="number"
+              placeholder="0.0"
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              min="0"
+            />
+            <p className="text-xs text-muted-foreground text-right">Max: {tokenBalance} {tokenSymbol}</p>
+          </div>
+          
+          <div className="flex justify-center my-2">
+            <ArrowDownUp className="h-6 w-6 text-muted-foreground" />
+          </div>
+          
+          <div className="space-y-2">
+            <p className="text-sm font-medium">ETH Amount</p>
+            <Input
+              type="text"
+              placeholder="0.0"
+              value={outputValue}
+              readOnly
+              className="bg-muted"
+            />
+          </div>
+          
+          <Button
+            onClick={handleSwap}
+            className="w-full bg-science-600 hover:bg-science-700 text-white"
+            disabled={isPending || !inputValue || parseFloat(inputValue) <= 0}
+          >
+            {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+            Sell {tokenSymbol}
+          </Button>
         </TabsContent>
       </Tabs>
+      
+      {error && (
+        <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded text-sm text-red-600">
+          {error}
+        </div>
+      )}
     </div>
   );
 };

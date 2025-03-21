@@ -8,6 +8,7 @@ import TokenStatistics from './TokenStatistics';
 import TokenSwapInterface from './TokenSwapInterface';
 import ScienceGentChat from './ScienceGentChat';
 import CapabilitiesList from './CapabilitiesList';
+import MaturityTracker from './MaturityTracker';
 
 interface ScienceGentDetailsDashboardProps {
   address: string;
@@ -51,6 +52,54 @@ const ScienceGentDetailsDashboard: React.FC<ScienceGentDetailsDashboardProps> = 
             isRefreshing={isRefreshing} 
             refreshData={refreshData} 
           />
+          
+          {/* Add maturity details section */}
+          {scienceGentData && !scienceGentData.isMigrated && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Migration Details</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground mb-4">
+                  This ScienceGent token is currently trading on the internal DEX. Once it has collected
+                  enough trading fees, it can be migrated to Uniswap for external trading.
+                </p>
+                
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Virtual ETH</p>
+                      <p className="font-medium">{scienceGentData.virtualETH?.toFixed(2) || 0} ETH</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Required Fees</p>
+                      <p className="font-medium">
+                        {((scienceGentData.virtualETH || 0) * 2 + (scienceGentData.capabilityFees || 0)).toFixed(2)} ETH
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Collected Fees</p>
+                      <p className="font-medium">{scienceGentData.collectedFees?.toFixed(2) || 0} ETH</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Capability Fees</p>
+                      <p className="font-medium">{scienceGentData.capabilityFees?.toFixed(2) || 0} ETH</p>
+                    </div>
+                  </div>
+                  
+                  <div className="pt-4 border-t border-border">
+                    <MaturityTracker
+                      maturityProgress={scienceGentData.maturityProgress || 0}
+                      isMigrated={scienceGentData.isMigrated || false}
+                      virtualETH={scienceGentData.virtualETH || 0}
+                      collectedFees={scienceGentData.collectedFees || 0}
+                      capabilityFees={scienceGentData.capabilityFees || 0}
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
         
         <TabsContent value="chat">
