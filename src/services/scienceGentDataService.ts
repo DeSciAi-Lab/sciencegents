@@ -86,16 +86,14 @@ export const syncSingleScienceGent = async (address: string): Promise<boolean> =
         try {
           const capDetails = await fetchCapabilityDetailsFromBlockchain(capId);
           
-          // Convert the blockchain capability data to CapabilityDetail
+          // Make sure we have valid capability details
           if (capDetails) {
+            // Convert capability data to match CapabilityDetail format
             const capabilityDetail: CapabilityDetail = {
-              id: capDetails.id || capId,
-              description: capDetails.description || '',
-              // Convert price from ETH to wei and store as string
-              feeInETH: capDetails.price 
-                ? ethers.utils.parseEther(capDetails.price.toString()).toString() 
-                : '0',
-              creator: capDetails.creator || '',
+              id: capDetails.id,
+              description: capDetails.description,
+              feeInETH: capDetails.feeInETH,
+              creator: capDetails.creator,
               domain: capDetails.domain || 'General'
             };
             

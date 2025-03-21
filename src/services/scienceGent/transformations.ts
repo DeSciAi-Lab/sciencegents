@@ -1,5 +1,5 @@
 
-import { ScienceGentData, TokenStats } from './types';
+import { ScienceGentData, TokenStats, FormattedScienceGent } from './types';
 import { ethers } from 'ethers';
 
 /**
@@ -49,7 +49,7 @@ export const transformBlockchainToSupabaseFormat = (
     address: blockchainData.address,
     name: blockchainData.name,
     symbol: blockchainData.symbol,
-    total_supply: blockchainData.totalSupply ? ethers.utils.formatEther(blockchainData.totalSupply) : null,
+    total_supply: blockchainData.totalSupply ? parseFloat(ethers.utils.formatEther(blockchainData.totalSupply)) : null,
     creator_address: blockchainData.creator,
     description: blockchainData.description || null,
     profile_pic: blockchainData.profilePic || null,
@@ -63,10 +63,10 @@ export const transformBlockchainToSupabaseFormat = (
     maturity_deadline: blockchainData.maturityDeadline || null,
     remaining_maturity_time: remainingMaturityTime,
     maturity_progress: maturityProgress,
-    token_price: tokenStats.currentPrice ? ethers.utils.formatEther(tokenStats.currentPrice) : 0,
+    token_price: tokenStats.currentPrice ? parseFloat(ethers.utils.formatEther(tokenStats.currentPrice)) : 0,
     market_cap: marketCap,
-    virtual_eth: tokenStats.virtualETH ? ethers.utils.formatEther(tokenStats.virtualETH) : 0,
-    collected_fees: tokenStats.collectedFees ? ethers.utils.formatEther(tokenStats.collectedFees) : 0,
+    virtual_eth: tokenStats.virtualETH ? parseFloat(ethers.utils.formatEther(tokenStats.virtualETH)) : 0,
+    collected_fees: tokenStats.collectedFees ? parseFloat(ethers.utils.formatEther(tokenStats.collectedFees)) : 0,
     last_synced_at: new Date().toISOString()
   };
   
@@ -81,4 +81,59 @@ export const transformBlockchainToSupabaseFormat = (
   };
   
   return { scienceGent, scienceGentStats };
+};
+
+/**
+ * Transforms Supabase data to formatted ScienceGent for UI
+ * @param supabaseData ScienceGent data from Supabase
+ * @returns Formatted ScienceGent for UI display
+ */
+export const transformSupabaseToFormattedScienceGent = (
+  supabaseData: any
+): FormattedScienceGent => {
+  if (!supabaseData) return null;
+
+  // Extract capabilities from the supabase data if available
+  const capabilities = supabaseData.capabilities
+    ? supabaseData.capabilities.map(cap => cap.capability_id)
+    : [];
+
+  // Convert socials JSON string to object if needed
+  let socialLinks = {};
+  try {
+    if (supabaseData.socials) {
+      if (typeof supabaseData.socials === 'string') {
+        socialLinks = JSON.parse(supabaseData.socials);
+      } else {
+        socialLinks = supabaseData.socials;
+      }
+    }
+  } catch (e) {
+    console.error("Error parsing social links:", e);
+  }
+
+  // Create a formatted ScienceGent object for UI
+  return {
+    address: supabaseData.address,
+    name: supabaseData.name,
+    symbol: supabaseData.symbol,
+    description: supabaseData.description,
+    profilePic: supabaseData.profile_pic,
+    website: supabaseData.website,
+    socialLinks,
+    isMigrated: !!supabaseData.is_migrated,
+    totalSupply: supabaseData.total_supply?.toString(),
+    tokenPrice: supabaseData.token_price ? parseFloat(String(supabaseData.token_price)) : 0,
+    marketCap: supabaseData.market_cap ? parseFloat(String(supabaseData.market_cap)) : 0,
+    maturityProgress: supabaseData.maturity_progress || 0,
+    virtualEth: supabaseData.virtual_eth ? parseFloat(String(supabaseData.virtual_eth)) : 0,
+    collectedFees: supabaseData.collected_fees ? parseFloat(String(supabaseData.collected_fees)) : 0,
+    remainingMaturityTime: supabaseData.remaining_maturity_time,
+    creationTimestamp: supabaseData.created_on_chain_at
+      ? new Date(supabaseData.created_on_chain_at).getTime() / 1000
+      : undefined,
+    migrationEligible: supabaseData.migration_eligible,
+    capabilities,
+    tokenAge: supabaseData.tokenAge || 0
+  };
 };

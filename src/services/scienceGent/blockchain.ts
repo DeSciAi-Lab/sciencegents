@@ -40,6 +40,7 @@ export const fetchScienceGentFromBlockchain = async (address: string): Promise<S
       tradingEnabled: details[4],
       isMigrated: details[5],
       capabilities,
+      // Store additional details from the contract
       adminLockAmount: details[7].toString(),
       adminLockRemainingTime: details[8].toString(),
       isAdminTokensUnlocked: details[9]

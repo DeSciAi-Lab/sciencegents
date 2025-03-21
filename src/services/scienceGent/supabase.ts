@@ -98,10 +98,31 @@ export const saveScienceGentToSupabase = async (
     // Transform the data to Supabase format
     const { scienceGent, scienceGentStats } = transformBlockchainToSupabaseFormat(scienceGentData, tokenStats);
     
-    // Insert or update the ScienceGent
+    // Insert or update the ScienceGent - ensure all values match Supabase column types
     const { data, error } = await supabase
       .from('sciencegents')
-      .upsert(scienceGent)
+      .upsert({
+        address: scienceGent.address,
+        name: scienceGent.name,
+        symbol: scienceGent.symbol,
+        total_supply: scienceGent.total_supply,
+        creator_address: scienceGent.creator_address,
+        description: scienceGent.description,
+        profile_pic: scienceGent.profile_pic,
+        website: scienceGent.website,
+        socials: scienceGent.socials,
+        is_migrated: scienceGent.is_migrated,
+        migration_eligible: scienceGent.migration_eligible,
+        created_on_chain_at: scienceGent.created_on_chain_at,
+        maturity_deadline: scienceGent.maturity_deadline,
+        remaining_maturity_time: scienceGent.remaining_maturity_time,
+        maturity_progress: scienceGent.maturity_progress,
+        token_price: scienceGent.token_price,
+        market_cap: scienceGent.market_cap,
+        virtual_eth: scienceGent.virtual_eth,
+        collected_fees: scienceGent.collected_fees,
+        last_synced_at: scienceGent.last_synced_at
+      })
       .select();
     
     if (error) {
@@ -114,7 +135,13 @@ export const saveScienceGentToSupabase = async (
     // Insert or update the ScienceGent stats
     const { error: statsError } = await supabase
       .from('sciencegent_stats')
-      .upsert(scienceGentStats);
+      .upsert({
+        sciencegent_address: scienceGentStats.sciencegent_address,
+        volume_24h: scienceGentStats.volume_24h,
+        transactions: scienceGentStats.transactions,
+        holders: scienceGentStats.holders,
+        updated_at: scienceGentStats.updated_at
+      });
       
     if (statsError) {
       console.error("Supabase stats upsert error:", statsError);
