@@ -1,6 +1,5 @@
-
-import { ethers } from "ethers";
-import { ScienceGentData, TokenStats, FormattedScienceGent } from "./types";
+import { ethers } from 'ethers';
+import { ScienceGentData, TokenStats, FormattedScienceGent } from './types';
 
 /**
  * Transforms blockchain data to a format suitable for Supabase storage
@@ -68,34 +67,47 @@ export const transformBlockchainToSupabaseFormat = (
 };
 
 /**
- * Transforms Supabase data to a formatted ScienceGent object
- * @param supabaseData Data from Supabase
+ * Transforms Supabase data to a formatted ScienceGent object for UI
+ * @param data The data from Supabase
  * @returns Formatted ScienceGent object
  */
-export const transformSupabaseToFormattedScienceGent = (
-  supabaseData: any
-): FormattedScienceGent => {
+export const transformSupabaseToFormattedScienceGent = (data: any): FormattedScienceGent => {
+  // Calculate token price in USD (if available)
+  const tokenPriceInEth = data.token_price ? parseFloat(data.token_price) : 0;
+  const ethPriceInUsd = 3500; // This would ideally come from an oracle or API
+  
+  // Format capabilities
+  const capabilities = data.capabilities || [];
+  
+  // Calculate maturity progress
+  const maturityProgress = data.maturity_progress || 0;
+  
   return {
-    address: supabaseData.address,
-    name: supabaseData.name,
-    symbol: supabaseData.symbol,
-    description: supabaseData.description || "",
-    domain: supabaseData.domain || "General",
-    totalSupply: supabaseData.total_supply || 0,
-    marketCap: supabaseData.market_cap || 0,
-    tokenPrice: supabaseData.token_price || 0,
-    priceChange24h: supabaseData.price_change_24h || 0,
-    totalLiquidity: supabaseData.total_liquidity || 0,
-    maturityProgress: supabaseData.maturity_progress || 0,
-    virtualEth: supabaseData.virtual_eth || 0,
-    creatorAddress: supabaseData.creator_address || "",
-    createdOnChainAt: supabaseData.created_on_chain_at || new Date().toISOString(),
-    isMigrated: supabaseData.is_migrated || false,
+    address: data.address,
+    name: data.name,
+    symbol: data.symbol,
+    description: data.description || `${data.name} is a ScienceGent deployed on the DeSciAi platform.`,
+    domain: data.domain || 'General Science',
+    totalSupply: parseInt(data.total_supply) || 0,
+    marketCap: tokenPriceInEth * ethPriceInUsd * (parseInt(data.total_supply) || 0),
+    tokenPrice: tokenPriceInEth,
+    priceChange24h: data.price_change_24h || 0,
+    totalLiquidity: parseFloat(data.eth_reserve || '0') * ethPriceInUsd,
+    maturityProgress: maturityProgress,
+    virtualEth: parseFloat(data.virtual_eth || '0'),
+    creatorAddress: data.creator || '',
+    createdOnChainAt: data.creation_timestamp 
+      ? new Date(parseInt(data.creation_timestamp) * 1000).toISOString() 
+      : new Date().toISOString(),
+    isMigrated: data.is_migrated || false,
+    migrationEligible: data.migration_eligible || false,
+    remainingMaturityTime: parseInt(data.remaining_maturity_time || '0'),
+    collectedFees: parseFloat(data.collected_fees || '0'),
     stats: {
-      volume24h: supabaseData.stats?.volume_24h || 0,
-      transactions: supabaseData.stats?.transactions || 0,
-      holders: supabaseData.stats?.holders || 0
+      volume24h: data.volume_24h || 0,
+      transactions: data.transaction_count || 0,
+      holders: data.holder_count || 0
     },
-    capabilities: supabaseData.capabilities?.map(cap => cap) || []
+    capabilities: capabilities
   };
 };

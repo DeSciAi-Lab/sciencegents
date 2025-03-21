@@ -1,275 +1,231 @@
 
-import { supabase } from "@/integrations/supabase/client";
-import { ethers } from "ethers";
-import { ScienceGentData, TokenStats, CapabilityDetail } from "./types";
-import { transformBlockchainToSupabaseFormat } from "./transformations";
+import { ScienceGentData, TokenStats } from './types';
+import { supabase } from '@/integrations/supabase/client';
+import { transformBlockchainToSupabaseFormat } from './transformations';
 
 /**
- * Saves a ScienceGent to Supabase
- * @param scienceGentData ScienceGent data from blockchain
- * @param tokenStats Token statistics from blockchain
- * @returns Success status
- */
-export const saveScienceGentToSupabase = async (
-  scienceGentData: ScienceGentData,
-  tokenStats: TokenStats
-): Promise<boolean> => {
-  try {
-    console.log("Saving ScienceGent to Supabase:", scienceGentData.address);
-    
-    // Transform data for Supabase
-    const { scienceGent, scienceGentStats } = transformBlockchainToSupabaseFormat(
-      scienceGentData, 
-      tokenStats
-    );
-    
-    // Check if ScienceGent exists
-    console.log("Checking if ScienceGent exists:", scienceGentData.address);
-    const { data: existingScienceGent, error: checkError } = await supabase
-      .from('sciencegents')
-      .select('id')
-      .eq('address', scienceGentData.address)
-      .maybeSingle();
-    
-    if (checkError) {
-      console.error("Error checking if ScienceGent exists:", checkError);
-      throw checkError;
-    }
-    
-    // Insert or update ScienceGent
-    if (existingScienceGent) {
-      console.log("Updating existing ScienceGent:", scienceGentData.address);
-      const { error } = await supabase
-        .from('sciencegents')
-        .update(scienceGent)
-        .eq('address', scienceGentData.address);
-      
-      if (error) {
-        console.error("Error updating ScienceGent:", error);
-        throw error;
-      }
-    } else {
-      console.log("Inserting new ScienceGent:", scienceGentData.address);
-      const { error } = await supabase
-        .from('sciencegents')
-        .insert(scienceGent);
-      
-      if (error) {
-        console.error("Error inserting ScienceGent:", error);
-        throw error;
-      }
-    }
-    
-    // Check if ScienceGent stats exist
-    const { data: existingStats, error: checkStatsError } = await supabase
-      .from('sciencegent_stats')
-      .select('id')
-      .eq('sciencegent_address', scienceGentData.address)
-      .maybeSingle();
-    
-    if (checkStatsError) {
-      console.error("Error checking if ScienceGent stats exist:", checkStatsError);
-      throw checkStatsError;
-    }
-    
-    // Insert or update ScienceGent stats
-    if (existingStats) {
-      console.log("Updating existing ScienceGent stats:", scienceGentData.address);
-      const { error } = await supabase
-        .from('sciencegent_stats')
-        .update(scienceGentStats)
-        .eq('sciencegent_address', scienceGentData.address);
-      
-      if (error) {
-        console.error("Error updating ScienceGent stats:", error);
-        throw error;
-      }
-    } else {
-      console.log("Inserting new ScienceGent stats:", scienceGentData.address);
-      const { error } = await supabase
-        .from('sciencegent_stats')
-        .insert(scienceGentStats);
-      
-      if (error) {
-        console.error("Error inserting ScienceGent stats:", error);
-        throw error;
-      }
-    }
-    
-    // Save capabilities
-    if (scienceGentData.capabilities && scienceGentData.capabilities.length > 0) {
-      await saveCapabilitiesToSupabase(scienceGentData.address, scienceGentData.capabilities);
-    }
-    
-    console.log("ScienceGent saved successfully:", scienceGentData.address);
-    return true;
-  } catch (error) {
-    console.error("Error saving ScienceGent to Supabase:", error);
-    throw error;
-  }
-};
-
-/**
- * Saves ScienceGent capabilities to Supabase
- * @param scienceGentAddress ScienceGent address
- * @param capabilities Array of capability IDs
- * @returns Success status
- */
-export const saveCapabilitiesToSupabase = async (
-  scienceGentAddress: string,
-  capabilities: string[]
-): Promise<boolean> => {
-  try {
-    // First, delete any existing capabilities for this ScienceGent
-    const { error: deleteError } = await supabase
-      .from('sciencegent_capabilities')
-      .delete()
-      .eq('sciencegent_address', scienceGentAddress);
-    
-    if (deleteError) {
-      console.error("Error deleting existing capabilities:", deleteError);
-      throw deleteError;
-    }
-    
-    // Insert new capabilities
-    const capabilityRows = capabilities.map(capabilityId => ({
-      sciencegent_address: scienceGentAddress,
-      capability_id: capabilityId,
-      added_at: new Date().toISOString()
-    }));
-    
-    if (capabilityRows.length > 0) {
-      const { error: insertError } = await supabase
-        .from('sciencegent_capabilities')
-        .insert(capabilityRows);
-      
-      if (insertError) {
-        console.error("Error inserting capabilities:", insertError);
-        throw insertError;
-      }
-    }
-    
-    return true;
-  } catch (error) {
-    console.error("Error saving capabilities to Supabase:", error);
-    throw error;
-  }
-};
-
-/**
- * Fetches ScienceGent details from Supabase
- * @param address ScienceGent address
- * @returns ScienceGent data or null if not found
+ * Fetches a ScienceGent from Supabase by address
+ * @param address The token address
+ * @returns The ScienceGent data or null if not found
  */
 export const fetchScienceGentFromSupabase = async (address: string) => {
   try {
     console.log("Fetching ScienceGent from Supabase:", address);
     
-    // Fetch ScienceGent
-    const { data: scienceGent, error: scienceGentError } = await supabase
+    const { data, error } = await supabase
       .from('sciencegents')
-      .select('*')
+      .select(`
+        *,
+        capabilities:sciencegent_capabilities(
+          id,
+          name,
+          domain,
+          description
+        )
+      `)
       .eq('address', address)
       .single();
     
-    if (scienceGentError) {
-      console.error("Error fetching ScienceGent from Supabase:", scienceGentError);
+    if (error) {
+      console.error("Supabase error:", error);
       return null;
     }
     
-    // Fetch ScienceGent stats
-    const { data: stats, error: statsError } = await supabase
-      .from('sciencegent_stats')
-      .select('*')
-      .eq('sciencegent_address', address)
-      .maybeSingle();
+    if (!data) return null;
     
-    // Fetch capabilities
-    const { data: capabilities, error: capabilitiesError } = await supabase
-      .from('sciencegent_capabilities')
-      .select('capabilities:capability_id(id, name, domain, price)')
-      .eq('sciencegent_address', address);
-    
-    if (capabilitiesError) {
-      console.error("Error fetching ScienceGent capabilities:", capabilitiesError);
-    }
-    
-    return {
-      ...scienceGent,
-      stats: stats || {
-        volume_24h: 0,
-        transactions: 0,
-        holders: 0
-      },
-      capabilities: capabilities?.map(cap => cap.capabilities) || []
+    // Format the data for frontend use (add calculated fields)
+    const formattedData = {
+      ...data,
+      // Convert prices to numbers for easier handling
+      token_price: data.token_price ? parseFloat(data.token_price) : 0,
+      // Add maturity progress calculation if not available
+      maturity_progress: data.maturity_progress || (
+        data.virtual_eth && data.collected_fees 
+          ? calculateMaturityProgress(data.collected_fees, data.virtual_eth) 
+          : 0
+      ),
+      // Add any other derived fields from TokenStats
+      tokenAge: data.creation_timestamp 
+        ? Math.floor(Date.now() / 1000) - parseInt(data.creation_timestamp)
+        : 0,
+      remainingMaturityTime: data.maturity_deadline 
+        ? Math.max(0, parseInt(data.maturity_deadline) - Math.floor(Date.now() / 1000))
+        : 0
     };
+    
+    return formattedData;
   } catch (error) {
-    console.error("Error fetching ScienceGent from Supabase:", error);
+    console.error("Error fetching from Supabase:", error);
     return null;
   }
 };
 
 /**
- * Syncs capability details to Supabase
- * @param capabilityDetail Capability details from blockchain
- * @returns Success status
+ * Calculate maturity progress percentage
+ * @param collectedFees Collected fees in the pool
+ * @param virtualETH Virtual ETH amount
+ * @returns Progress percentage (0-100)
  */
-export const syncCapabilityDetailsToSupabase = async (
-  capabilityDetail: CapabilityDetail
-): Promise<boolean> => {
+const calculateMaturityProgress = (collectedFees: string, virtualETH: string): number => {
   try {
-    console.log(`Syncing capability ${capabilityDetail.id} to Supabase`);
+    const fees = parseFloat(collectedFees);
+    const vETH = parseFloat(virtualETH);
     
-    // Format capability data
-    const capabilityData = {
-      id: capabilityDetail.id,
-      name: capabilityDetail.id, // Use ID as name initially, can be updated by user later
-      description: capabilityDetail.description,
-      price: parseFloat(ethers.utils.formatEther(capabilityDetail.feeInETH)),
-      creator: capabilityDetail.creator,
-      domain: "General", // Default domain
-      last_synced_at: new Date().toISOString()
+    if (vETH === 0) return 0;
+    
+    // Target is 2x virtualETH (according to contract logic)
+    const target = vETH * 2;
+    
+    // Calculate progress percentage (capped at 100%)
+    const progress = (fees / target) * 100;
+    return Math.min(100, progress);
+  } catch (error) {
+    console.error("Error calculating maturity progress:", error);
+    return 0;
+  }
+};
+
+/**
+ * Saves a ScienceGent to Supabase
+ * @param scienceGentData The blockchain data
+ * @param tokenStats The token statistics
+ * @returns The saved data or null if error
+ */
+export const saveScienceGentToSupabase = async (
+  scienceGentData: ScienceGentData,
+  tokenStats: TokenStats
+) => {
+  try {
+    console.log("Saving ScienceGent to Supabase:", scienceGentData.address);
+    
+    // Transform the data to Supabase format
+    const supabaseData = transformBlockchainToSupabaseFormat(scienceGentData, tokenStats);
+    
+    // Add enhanced fields
+    const enhancedData = {
+      ...supabaseData,
+      // Add maturity progress calculation
+      maturity_progress: tokenStats.maturityProgress || 
+        calculateMaturityProgress(tokenStats.collectedFees, tokenStats.virtualETH),
+      // Add remaining time calculation
+      remaining_maturity_time: tokenStats.remainingMaturityTime || 
+        (parseInt(tokenStats.maturityDeadline) - Math.floor(Date.now() / 1000)),
+      // Add token age
+      token_age: tokenStats.tokenAge || 
+        (Math.floor(Date.now() / 1000) - parseInt(tokenStats.creationTimestamp)),
+      // Add migration eligibility
+      migration_eligible: tokenStats.migrationEligible || false
     };
     
-    // Check if capability exists in Supabase
-    const { data: existingCapability, error: checkError } = await supabase
+    // Insert or update the ScienceGent
+    const { data, error } = await supabase
+      .from('sciencegents')
+      .upsert(enhancedData)
+      .select();
+    
+    if (error) {
+      console.error("Supabase upsert error:", error);
+      return null;
+    }
+    
+    // If capabilities exist, sync them to the junction table
+    if (scienceGentData.capabilities && scienceGentData.capabilities.length > 0) {
+      await syncCapabilitiesToSupabase(scienceGentData.address, scienceGentData.capabilities);
+    }
+    
+    return data[0];
+  } catch (error) {
+    console.error("Error saving to Supabase:", error);
+    return null;
+  }
+};
+
+/**
+ * Syncs capabilities to Supabase for a ScienceGent
+ * @param tokenAddress The token address
+ * @param capabilityIds Array of capability IDs
+ */
+const syncCapabilitiesToSupabase = async (tokenAddress: string, capabilityIds: string[]) => {
+  try {
+    console.log(`Syncing ${capabilityIds.length} capabilities for token ${tokenAddress}`);
+    
+    // First, get existing capability IDs for this token
+    const { data: existingData, error: fetchError } = await supabase
+      .from('sciencegent_capabilities')
+      .select('id')
+      .eq('sciencegent_address', tokenAddress);
+    
+    if (fetchError) {
+      console.error("Error fetching existing capabilities:", fetchError);
+      return;
+    }
+    
+    // Create capability entries for each ID
+    const capabilityEntries = capabilityIds.map(id => ({
+      sciencegent_address: tokenAddress,
+      id,
+      name: id, // Default name to ID
+      domain: 'General' // Default domain
+    }));
+    
+    // Upsert all capabilities
+    const { error: upsertError } = await supabase
+      .from('sciencegent_capabilities')
+      .upsert(capabilityEntries, {
+        onConflict: 'sciencegent_address,id'
+      });
+    
+    if (upsertError) {
+      console.error("Error upserting capabilities:", upsertError);
+    }
+  } catch (error) {
+    console.error("Error syncing capabilities:", error);
+  }
+};
+
+/**
+ * Syncs a capability's details to Supabase
+ * @param capabilityDetail Capability details from blockchain
+ */
+export const syncCapabilityDetailsToSupabase = async (capabilityDetail: any) => {
+  try {
+    // Skip if no ID
+    if (!capabilityDetail.id) return;
+    
+    console.log(`Syncing capability details for ${capabilityDetail.id}`);
+    
+    // Check if capability exists in main capabilities table
+    const { data: existingData, error: fetchError } = await supabase
       .from('capabilities')
       .select('id')
       .eq('id', capabilityDetail.id)
       .maybeSingle();
-      
-    if (checkError) {
-      console.error(`Error checking if capability ${capabilityDetail.id} exists:`, checkError);
-      throw checkError;
+    
+    if (fetchError) {
+      console.error("Error fetching capability:", fetchError);
+      return;
     }
     
-    // Update or insert capability
-    if (existingCapability) {
-      console.log(`Updating existing capability ${capabilityDetail.id}`);
-      const { error } = await supabase
-        .from('capabilities')
-        .update(capabilityData)
-        .eq('id', capabilityDetail.id);
-      
-      if (error) {
-        console.error(`Error updating capability ${capabilityDetail.id}:`, error);
-        throw error;
-      }
-    } else {
-      console.log(`Inserting new capability ${capabilityDetail.id}`);
-      const { error } = await supabase
-        .from('capabilities')
-        .insert(capabilityData);
-      
-      if (error) {
-        console.error(`Error inserting capability ${capabilityDetail.id}:`, error);
-        throw error;
-      }
-    }
+    // Prepare data for upsert
+    const capabilityData = {
+      id: capabilityDetail.id,
+      name: capabilityDetail.id, // Default name to ID
+      description: capabilityDetail.description || '',
+      price: capabilityDetail.feeInETH ? parseFloat(capabilityDetail.feeInETH) : 0,
+      creator: capabilityDetail.creator || '',
+      domain: 'General', // Default domain
+      created_at: new Date().toISOString()
+    };
     
-    return true;
+    // Upsert capability
+    const { error: upsertError } = await supabase
+      .from('capabilities')
+      .upsert(capabilityData);
+    
+    if (upsertError) {
+      console.error("Error upserting capability:", upsertError);
+    }
   } catch (error) {
-    console.error(`Error syncing capability ${capabilityDetail.id}:`, error);
-    return false;
+    console.error("Error syncing capability details:", error);
   }
 };

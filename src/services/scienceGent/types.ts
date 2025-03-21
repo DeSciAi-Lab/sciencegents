@@ -1,4 +1,3 @@
-
 // Type definitions for ScienceGent data structures
 
 export interface ScienceGentData {
@@ -29,6 +28,10 @@ export interface TokenStats {
   lockedLPAmount: string;
   currentPrice: string;
   migrationEligible: boolean;
+  // Added derived properties
+  tokenAge?: number;              // Age in seconds
+  remainingMaturityTime?: number; // Remaining time until maturity in seconds
+  maturityProgress?: number;      // Progress percentage (0-100)
 }
 
 export interface CapabilityDetail {
@@ -54,10 +57,14 @@ export interface FormattedScienceGent {
   creatorAddress: string;
   createdOnChainAt: string;
   isMigrated: boolean;
+  // Added new properties
+  migrationEligible: boolean;
+  remainingMaturityTime: number;
+  collectedFees: number;
   stats: {
     volume24h: number;
     transactions: number;
     holders: number;
   };
-  capabilities: string[];
+  capabilities: any[]; // Using any[] to match the existing type
 }

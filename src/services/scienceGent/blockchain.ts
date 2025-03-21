@@ -1,4 +1,3 @@
-
 import { ethers } from "ethers";
 import { contractConfig, factoryABI } from "@/utils/contractConfig";
 import { toast } from "@/components/ui/use-toast";
@@ -101,7 +100,7 @@ export const fetchTokenStatsFromBlockchain = async (address: string): Promise<To
     
     const provider = new ethers.providers.Web3Provider(window.ethereum);
     
-    // Use the ABI for the ScienceGentsSwap contract
+    // Enhanced ABI for the ScienceGentsSwap contract to include more stats
     const swapABI = [
       "function getTokenStats(address token) external view returns (uint256 tokenReserve, uint256 ethReserve, uint256 virtualETH, uint256 collectedFees, bool tradingEnabled, address creator, uint256 creationTimestamp, uint256 maturityDeadline, bool migrated, uint256 lpUnlockTime, uint256 lockedLPAmount, uint256 currentPrice, bool migrationEligible)"
     ];
@@ -115,7 +114,10 @@ export const fetchTokenStatsFromBlockchain = async (address: string): Promise<To
     // Get token stats from swap contract
     const stats = await swapContract.getTokenStats(address);
     
-    // Create TokenStats object
+    // Get current timestamp for age calculation
+    const currentTimestamp = Math.floor(Date.now() / 1000);
+    
+    // Create enhanced TokenStats object
     const tokenStats: TokenStats = {
       tokenReserve: stats[0].toString(),
       ethReserve: stats[1].toString(),
@@ -129,13 +131,42 @@ export const fetchTokenStatsFromBlockchain = async (address: string): Promise<To
       lpUnlockTime: stats[9].toString(),
       lockedLPAmount: stats[10].toString(),
       currentPrice: stats[11].toString(),
-      migrationEligible: stats[12]
+      migrationEligible: stats[12],
+      // Add derived properties for easier UI display
+      tokenAge: currentTimestamp - parseInt(stats[6].toString()),
+      remainingMaturityTime: Math.max(0, parseInt(stats[7].toString()) - currentTimestamp),
+      maturityProgress: calculateMaturityProgress(stats[3].toString(), stats[2].toString())
     };
     
     return tokenStats;
   } catch (error) {
     console.error("Error fetching token stats from blockchain:", error);
     return null;
+  }
+};
+
+/**
+ * Calculate maturity progress percentage
+ * @param collectedFees Collected fees in the pool
+ * @param virtualETH Virtual ETH amount
+ * @returns Progress percentage (0-100)
+ */
+const calculateMaturityProgress = (collectedFees: string, virtualETH: string): number => {
+  try {
+    const fees = ethers.BigNumber.from(collectedFees);
+    const vETH = ethers.BigNumber.from(virtualETH);
+    
+    // Target is 2x virtualETH (according to contract logic)
+    const target = vETH.mul(2);
+    
+    if (target.isZero()) return 0;
+    
+    // Calculate progress percentage (capped at 100%)
+    const progress = fees.mul(100).div(target);
+    return Math.min(100, progress.toNumber());
+  } catch (error) {
+    console.error("Error calculating maturity progress:", error);
+    return 0;
   }
 };
 

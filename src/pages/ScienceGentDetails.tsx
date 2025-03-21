@@ -16,7 +16,13 @@ import {
   TrendingUp,
   Sparkles,
   ArrowUpDown,
-  RefreshCcw
+  RefreshCcw,
+  Calendar,
+  CheckCircle2,
+  AlertTriangle,
+  Timer,
+  Wallet,
+  BarChart3
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -122,6 +128,32 @@ const ScienceGentDetails = () => {
       return `$${(value / 1000).toFixed(2)}K`;
     }
     return `$${value.toFixed(2)}`;
+  };
+
+  const formatTimeDuration = (seconds: number) => {
+    if (!seconds) return 'N/A';
+    
+    const days = Math.floor(seconds / 86400);
+    const hours = Math.floor((seconds % 86400) / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    
+    if (days > 0) {
+      return `${days}d ${hours}h`;
+    } else if (hours > 0) {
+      return `${hours}h ${minutes}m`;
+    } else {
+      return `${minutes}m`;
+    }
+  };
+
+  const formatEth = (ethAmount: number) => {
+    if (!ethAmount && ethAmount !== 0) return '0 ETH';
+    
+    if (ethAmount >= 1000) {
+      return `${(ethAmount / 1000).toFixed(2)}K ETH`;
+    } else {
+      return `${ethAmount.toFixed(4)} ETH`;
+    }
   };
 
   if (status === LoadingStatus.Loading) {
@@ -295,6 +327,16 @@ const ScienceGentDetails = () => {
                       }`}
                     >
                       Capabilities
+                    </button>
+                    <button
+                      onClick={() => setActiveTab('stats')}
+                      className={`px-4 py-3 font-medium text-sm whitespace-nowrap border-b-2 ${
+                        activeTab === 'stats'
+                          ? 'border-science-600 text-science-700'
+                          : 'border-transparent text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      Advanced Stats
                     </button>
                   </div>
                 </div>
@@ -483,6 +525,172 @@ const ScienceGentDetails = () => {
                           <p className="text-muted-foreground">No capabilities have been added yet.</p>
                         </div>
                       )}
+                    </div>
+                  </div>
+                </Reveal>
+              )}
+              
+              {activeTab === 'stats' && (
+                <Reveal delay={150}>
+                  <div className="space-y-6">
+                    <div className="glass-card p-6">
+                      <h2 className="text-lg font-semibold mb-4">Liquidity Pool Details</h2>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-4">
+                          <div className="flex justify-between items-center pb-2 border-b border-border">
+                            <span className="text-muted-foreground">Token Reserve</span>
+                            <span className="font-medium">{parseInt(scienceGent?.tokenReserve || '0').toLocaleString()} {scienceGent?.symbol}</span>
+                          </div>
+                          <div className="flex justify-between items-center pb-2 border-b border-border">
+                            <span className="text-muted-foreground">ETH Reserve</span>
+                            <span className="font-medium">{formatEth(parseFloat(scienceGent?.ethReserve || '0'))}</span>
+                          </div>
+                          <div className="flex justify-between items-center pb-2 border-b border-border">
+                            <span className="text-muted-foreground">Virtual ETH</span>
+                            <span className="font-medium">{formatEth(parseFloat(scienceGent?.virtualEth?.toString() || '0'))}</span>
+                          </div>
+                        </div>
+                        <div className="space-y-4">
+                          <div className="flex justify-between items-center pb-2 border-b border-border">
+                            <span className="text-muted-foreground">Collected Fees</span>
+                            <span className="font-medium">{formatEth(parseFloat(scienceGent?.collectedFees?.toString() || '0'))}</span>
+                          </div>
+                          <div className="flex justify-between items-center pb-2 border-b border-border">
+                            <span className="text-muted-foreground">Trading Enabled</span>
+                            <span className={`font-medium ${scienceGent?.tradingEnabled ? 'text-green-600' : 'text-yellow-600'} flex items-center gap-1`}>
+                              {scienceGent?.tradingEnabled ? (
+                                <>
+                                  <CheckCircle2 size={16} />
+                                  <span>Enabled</span>
+                                </>
+                              ) : (
+                                <>
+                                  <AlertTriangle size={16} />
+                                  <span>Disabled</span>
+                                </>
+                              )}
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center pb-2 border-b border-border">
+                            <span className="text-muted-foreground">Migrated to Uniswap</span>
+                            <span className={`font-medium ${scienceGent?.isMigrated ? 'text-green-600' : 'text-blue-600'} flex items-center gap-1`}>
+                              {scienceGent?.isMigrated ? (
+                                <>
+                                  <CheckCircle2 size={16} />
+                                  <span>Yes</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Clock size={16} />
+                                  <span>No</span>
+                                </>
+                              )}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="glass-card p-6">
+                      <h2 className="text-lg font-semibold mb-4">Maturity Status</h2>
+                      <div className="space-y-4">
+                        <div>
+                          <div className="flex justify-between mb-2">
+                            <span className="text-muted-foreground">Migration Progress</span>
+                            <span className="font-medium">{scienceGent?.maturityProgress || 0}%</span>
+                          </div>
+                          <Progress 
+                            value={scienceGent?.maturityProgress || 0} 
+                            className="h-2 bg-secondary" 
+                          />
+                          <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                            <span>0%</span>
+                            <span>Target: 2x Virtual ETH</span>
+                            <span>100%</span>
+                          </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                          <div className="flex justify-between items-center pb-2 border-b border-border">
+                            <span className="text-muted-foreground flex items-center gap-1">
+                              <Calendar size={16} />
+                              <span>Creation Date</span>
+                            </span>
+                            <span className="font-medium">
+                              {scienceGent?.createdOnChainAt ? new Date(scienceGent.createdOnChainAt).toLocaleDateString() : 'N/A'}
+                            </span>
+                          </div>
+                          
+                          <div className="flex justify-between items-center pb-2 border-b border-border">
+                            <span className="text-muted-foreground flex items-center gap-1">
+                              <Clock size={16} />
+                              <span>Token Age</span>
+                            </span>
+                            <span className="font-medium">
+                              {formatTimeDuration(scienceGent?.stats?.tokenAge || 0)}
+                            </span>
+                          </div>
+                          
+                          <div className="flex justify-between items-center pb-2 border-b border-border">
+                            <span className="text-muted-foreground flex items-center gap-1">
+                              <Timer size={16} />
+                              <span>Maturity Deadline</span>
+                            </span>
+                            <span className="font-medium">
+                              {formatTimeDuration(scienceGent?.remainingMaturityTime || 0)} remaining
+                            </span>
+                          </div>
+                          
+                          <div className="flex justify-between items-center pb-2 border-b border-border">
+                            <span className="text-muted-foreground flex items-center gap-1">
+                              <Wallet size={16} />
+                              <span>Migration Eligible</span>
+                            </span>
+                            <span className={`font-medium ${scienceGent?.migrationEligible ? 'text-green-600' : 'text-blue-600'} flex items-center gap-1`}>
+                              {scienceGent?.migrationEligible ? (
+                                <>
+                                  <CheckCircle2 size={16} />
+                                  <span>Ready</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Clock size={16} />
+                                  <span>Not Yet</span>
+                                </>
+                              )}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="glass-card p-6">
+                      <h2 className="text-lg font-semibold mb-4">Trading Analytics</h2>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div className="flex flex-col items-center p-4 bg-white rounded-xl border border-border">
+                          <div className="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center text-green-700 mb-3">
+                            <BarChart3 size={18} />
+                          </div>
+                          <span className="text-xl font-semibold">{formatCurrency(scienceGent?.stats?.volume24h || 0)}</span>
+                          <span className="text-sm text-muted-foreground">24h Volume</span>
+                        </div>
+                        
+                        <div className="flex flex-col items-center p-4 bg-white rounded-xl border border-border">
+                          <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-700 mb-3">
+                            <TrendingUp size={18} />
+                          </div>
+                          <span className="text-xl font-semibold">{scienceGent?.stats?.transactions || 0}</span>
+                          <span className="text-sm text-muted-foreground">Total Transactions</span>
+                        </div>
+                        
+                        <div className="flex flex-col items-center p-4 bg-white rounded-xl border border-border">
+                          <div className="w-10 h-10 rounded-full bg-purple-50 flex items-center justify-center text-purple-700 mb-3">
+                            <Wallet size={18} />
+                          </div>
+                          <span className="text-xl font-semibold">{scienceGent?.stats?.holders || 0}</span>
+                          <span className="text-sm text-muted-foreground">Token Holders</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </Reveal>
