@@ -40,6 +40,9 @@ export const transformBlockchainToSupabaseFormat = (
   const currentTime = Math.floor(Date.now() / 1000);
   const remainingMaturityTime = maturityDeadline > currentTime ? maturityDeadline - currentTime : 0;
   
+  // Calculate token age in seconds
+  const tokenAge = currentTime - parseInt(tokenStats.creationTimestamp);
+  
   // Prepare ScienceGent data for Supabase
   const scienceGent = {
     address: scienceGentData.address,
@@ -61,7 +64,7 @@ export const transformBlockchainToSupabaseFormat = (
     migration_eligible: tokenStats.migrationEligible || false,
     maturity_deadline: maturityDeadline,
     remaining_maturity_time: remainingMaturityTime,
-    token_age: Math.floor(Date.now() / 1000) - parseInt(tokenStats.creationTimestamp),
+    token_age: tokenAge,
     last_synced_at: new Date().toISOString()
   };
   
@@ -103,7 +106,7 @@ export const transformSupabaseToFormattedScienceGent = (data: any): FormattedSci
     marketCap: tokenPriceInEth * ethPriceInUsd * (parseInt(data.total_supply) || 0),
     tokenPrice: tokenPriceInEth,
     priceChange24h: data.price_change_24h || 0,
-    totalLiquidity: parseFloat(data.eth_reserve || '0') * ethPriceInUsd,
+    totalLiquidity: parseFloat(data.total_liquidity || '0'),
     maturityProgress: maturityProgress,
     virtualEth: parseFloat(data.virtual_eth || '0'),
     creatorAddress: data.creator_address || '',

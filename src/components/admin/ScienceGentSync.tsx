@@ -1,7 +1,8 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { RefreshCcw, Check, AlertTriangle } from 'lucide-react';
+import { RefreshCcw, Check, AlertTriangle, Info } from 'lucide-react';
 import { syncAllScienceGents } from '@/services/scienceGentDataService';
 import { toast } from '@/components/ui/use-toast';
 
@@ -9,15 +10,18 @@ const ScienceGentSync = () => {
   const [isSyncing, setIsSyncing] = useState(false);
   const [lastSyncResult, setLastSyncResult] = useState<{ syncCount: number; errorCount: number } | null>(null);
   const [lastSyncTime, setLastSyncTime] = useState<string | null>(null);
+  const [syncMessage, setSyncMessage] = useState<string | null>(null);
 
   const handleSync = async () => {
     try {
       setIsSyncing(true);
+      setSyncMessage("Starting synchronization...");
       
       const result = await syncAllScienceGents();
       
       setLastSyncResult(result);
       setLastSyncTime(new Date().toISOString());
+      setSyncMessage(null);
       
       toast({
         title: "Sync Completed",
@@ -25,6 +29,7 @@ const ScienceGentSync = () => {
       });
     } catch (error) {
       console.error("Sync failed:", error);
+      setSyncMessage(null);
       toast({
         title: "Sync Failed",
         description: error.message || "An error occurred during sync",
@@ -64,6 +69,13 @@ const ScienceGentSync = () => {
               This action will fetch all ScienceGents from the blockchain and update the database with the latest information.
               This process might take some time depending on the number of ScienceGents.
             </p>
+            
+            {syncMessage && (
+              <div className="flex items-center gap-2 text-sm bg-blue-50 dark:bg-blue-950 p-2 rounded">
+                <Info size={16} className="text-blue-600" />
+                <span>{syncMessage}</span>
+              </div>
+            )}
             
             {lastSyncTime && (
               <div className="text-sm">

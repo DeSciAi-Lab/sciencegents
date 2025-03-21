@@ -39,15 +39,17 @@ export const fetchScienceGentFromSupabase = async (address: string) => {
       // Add maturity progress calculation if not available
       maturity_progress: data.maturity_progress || (
         data.virtual_eth && data.virtual_eth > 0 
-          ? calculateMaturityProgress(String(data.virtual_eth)) 
+          ? calculateMaturityProgress(String(data.virtual_eth), String(data.collected_fees || 0)) 
           : 0
       ),
-      // Add any other derived fields from TokenStats
-      tokenAge: data.created_on_chain_at 
-        ? Math.floor(Date.now() / 1000) - new Date(data.created_on_chain_at).getTime() / 1000
-        : 0,
-      // Use a default value of 0 if maturity_deadline is missing
-      remainingMaturityTime: 0
+      // Use token_age from database if available, or calculate it
+      tokenAge: data.token_age || (
+        data.created_on_chain_at 
+          ? Math.floor(Date.now() / 1000) - new Date(data.created_on_chain_at).getTime() / 1000
+          : 0
+      ),
+      // Use remaining_maturity_time from database if available
+      remainingMaturityTime: data.remaining_maturity_time || 0
     };
     
     return formattedData;
@@ -60,18 +62,21 @@ export const fetchScienceGentFromSupabase = async (address: string) => {
 /**
  * Calculate maturity progress percentage
  * @param virtualETH Virtual ETH amount
+ * @param collectedFees Collected fees
  * @returns Progress percentage (0-100)
  */
-const calculateMaturityProgress = (virtualETH: string): number => {
+const calculateMaturityProgress = (virtualETH: string, collectedFees: string): number => {
   try {
-    // Since collected_fees is not available in the database schema yet,
-    // we'll provide a default implementation that just returns 0 or a random value
     const vETH = parseFloat(virtualETH || '0');
+    const fees = parseFloat(collectedFees || '0');
     
     if (vETH === 0) return 0;
     
-    // Return a default value since we don't have collected_fees
-    return 0; // This can be updated when collected_fees is added to the schema
+    // Migration threshold is 2x virtualETH
+    const targetFees = 2 * vETH;
+    const progress = Math.min(Math.round((fees / targetFees) * 100), 100);
+    
+    return progress;
   } catch (error) {
     console.error("Error calculating maturity progress:", error);
     return 0;
