@@ -42,8 +42,8 @@ export const fetchScienceGentFromSupabase = async (address: string) => {
           ? calculateMaturityProgress(String(data.virtual_eth), String(data.collected_fees || 0)) 
           : 0
       ),
-      // Use token_age from database if available, or calculate it
-      tokenAge: data.token_age || (
+      // Calculate token age if it's not available in the database
+      token_age: data.token_age !== undefined ? Number(data.token_age) : (
         data.created_on_chain_at 
           ? Math.floor(Date.now() / 1000) - new Date(data.created_on_chain_at).getTime() / 1000
           : 0
