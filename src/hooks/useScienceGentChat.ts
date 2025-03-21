@@ -77,11 +77,14 @@ const useScienceGentChat = (
       });
       
       // Update chat count in sciencegent_stats
-      await supabase.rpc('increment_chat_count', { 
-        address: scienceGentAddress 
-      }).catch(err => {
+      // Fix: Use the RPC function properly without .catch()
+      try {
+        await supabase.rpc('increment_chat_count', { 
+          address: scienceGentAddress 
+        });
+      } catch (err) {
         console.error('Failed to update chat count:', err);
-      });
+      }
     } catch (e) {
       console.error('Error tracking interaction:', e);
       // Non-critical error, don't show to user

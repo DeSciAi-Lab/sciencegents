@@ -33,13 +33,9 @@ serve(async (req) => {
       );
     }
     
-    // Increment the chat count for this ScienceGent
+    // Call the increment_chat_count RPC function to update the chat count
     const { data, error } = await supabase
-      .from('sciencegent_stats')
-      .update({ 
-        chat_count: supabase.rpc('increment', { row_id: sciencegent_address, amount: 1 }) 
-      })
-      .eq('sciencegent_address', sciencegent_address);
+      .rpc('increment_chat_count', { address: sciencegent_address });
     
     if (error) {
       console.error("Error incrementing chat count:", error);
