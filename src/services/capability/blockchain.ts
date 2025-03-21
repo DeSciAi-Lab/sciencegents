@@ -37,14 +37,17 @@ export const fetchCapabilityDetailsFromBlockchain = async (id: string): Promise<
       provider
     );
 
-    const [description, price, creator] = await factory.getCapabilityDetails(id);
+    const [description, feeInETH, creator] = await factory.getCapabilityDetails(id);
     console.log(`Capability ${id} details retrieved from blockchain`);
+    
+    // Convert feeInETH to numeric value for price
+    const price = parseFloat(ethers.utils.formatEther(feeInETH));
     
     return {
       id,
       name: id, // The contract doesn't store a separate name, we'll use the ID
       description,
-      price: parseFloat(ethers.utils.formatEther(price)),
+      price: price, // Store the fee as price for compatibility with Capability type
       creator,
       domain: "Unknown", // The contract doesn't store domain, we'll need to update this manually
       features: [], // The contract doesn't store features
