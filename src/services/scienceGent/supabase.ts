@@ -1,7 +1,7 @@
-
 import { ScienceGentData, TokenStats, CapabilityDetail } from './types';
 import { supabase } from '@/integrations/supabase/client';
 import { transformBlockchainToSupabaseFormat } from './transformations';
+import { ethers } from 'ethers';
 
 /**
  * Fetches a ScienceGent from Supabase by address

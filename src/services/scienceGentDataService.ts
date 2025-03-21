@@ -1,4 +1,3 @@
-
 import { ethers } from "ethers";
 import { toast } from "@/components/ui/use-toast";
 import { isAdminWallet } from "./walletService";
@@ -15,7 +14,7 @@ import {
 import { 
   fetchCapabilityDetailsFromBlockchain
 } from "./capability/blockchain";
-import { ScienceGentData } from "./scienceGent/types";
+import { ScienceGentData, CapabilityDetail } from "./scienceGent/types";
 
 /**
  * Synchronizes all ScienceGents from blockchain to database
@@ -85,12 +84,23 @@ export const syncSingleScienceGent = async (address: string): Promise<boolean> =
       for (const capId of scienceGentData.capabilities) {
         try {
           const capDetails = await fetchCapabilityDetailsFromBlockchain(capId);
-          if (capDetails && capDetails.feeInETH) {
-            totalCapabilityFees += parseFloat(ethers.utils.formatEther(capDetails.feeInETH));
-          }
           
-          // Also sync capability details to Supabase
-          await syncCapabilityDetailsToSupabase(capDetails);
+          // Convert the Partial<Capability> to CapabilityDetail
+          if (capDetails) {
+            const capabilityDetail: CapabilityDetail = {
+              id: capDetails.id || capId,
+              description: capDetails.description || '',
+              feeInETH: capDetails.price ? ethers.utils.parseEther(capDetails.price.toString()).toString() : '0',
+              creator: capDetails.creator || ''
+            };
+            
+            if (capabilityDetail.feeInETH) {
+              totalCapabilityFees += parseFloat(ethers.utils.formatEther(capabilityDetail.feeInETH));
+            }
+            
+            // Also sync capability details to Supabase
+            await syncCapabilityDetailsToSupabase(capabilityDetail);
+          }
         } catch (capError) {
           console.error(`Error fetching capability ${capId}:`, capError);
         }
