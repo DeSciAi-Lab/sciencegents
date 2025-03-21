@@ -1,4 +1,3 @@
-
 import { ScienceGentData, TokenStats } from './types';
 import { supabase } from '@/integrations/supabase/client';
 import { transformBlockchainToSupabaseFormat } from './transformations';
@@ -43,11 +42,9 @@ export const fetchScienceGentFromSupabase = async (address: string) => {
           : 0
       ),
       // Calculate token age if it's not available in the database
-      token_age: data.token_age !== undefined ? Number(data.token_age) : (
-        data.created_on_chain_at 
-          ? Math.floor(Date.now() / 1000) - new Date(data.created_on_chain_at).getTime() / 1000
-          : 0
-      ),
+      tokenAge: data.created_on_chain_at 
+        ? Math.floor(Date.now() / 1000) - new Date(data.created_on_chain_at).getTime() / 1000
+        : 0,
       // Use remaining_maturity_time from database if available
       remainingMaturityTime: data.remaining_maturity_time || 0
     };
