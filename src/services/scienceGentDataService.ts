@@ -7,7 +7,7 @@ export {
   // Blockchain interactions
   fetchScienceGentFromBlockchain,
   fetchTokenStatsFromBlockchain,
-  syncAllScienceGentsFromBlockchain,
+  syncAllScienceGentsFromBlockchain as syncAllScienceGents,
   
   // Supabase operations
   saveScienceGentToSupabase,
@@ -15,8 +15,10 @@ export {
   
   // Single entity synchronization
   syncScienceGent,
-  
-  // Types
+}
+
+// Type exports need to use 'export type' syntax
+export type {
   ScienceGentData,
   TokenStats,
   CapabilityDetail,

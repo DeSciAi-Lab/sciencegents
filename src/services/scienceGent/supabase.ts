@@ -1,5 +1,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
+import { ethers } from "ethers";
 import { ScienceGentData, TokenStats, CapabilityDetail } from "./types";
 import { transformBlockchainToSupabaseFormat } from "./transformations";
 

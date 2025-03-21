@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { RefreshCcw, Check, AlertTriangle } from 'lucide-react';
-import { syncAllScienceGentsFromBlockchain } from '@/services/scienceGent';
+import { syncAllScienceGents } from '@/services/scienceGentDataService';
 import { toast } from '@/components/ui/use-toast';
 
 const ScienceGentSync = () => {
@@ -14,7 +14,7 @@ const ScienceGentSync = () => {
     try {
       setIsSyncing(true);
       
-      const result = await syncAllScienceGentsFromBlockchain();
+      const result = await syncAllScienceGents();
       
       setLastSyncResult(result);
       setLastSyncTime(new Date().toISOString());
