@@ -1,25 +1,22 @@
 
 import React from 'react';
-import { Loader2, CheckCircle, XCircle, Wallet, CreditCard, Sparkles, Clock, RefreshCw } from 'lucide-react';
+import { Loader2, CheckCircle, XCircle, Wallet, CreditCard, Sparkles, Clock } from 'lucide-react';
 import { CreationStatus } from '@/hooks/useScienceGentCreation';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
 
 interface TransactionStatusProps {
   status: CreationStatus;
   error: string | null;
   transactionHash: string | null;
   tokenAddress: string | null;
-  onRefresh?: () => void;
 }
 
 const TransactionStatus: React.FC<TransactionStatusProps> = ({ 
   status,
   error,
   transactionHash,
-  tokenAddress,
-  onRefresh
+  tokenAddress
 }) => {
   // Calculate progress percentage based on status
   const getProgressPercentage = () => {
@@ -117,36 +114,21 @@ const TransactionStatus: React.FC<TransactionStatusProps> = ({
         </Alert>
       )}
       
-      {status === CreationStatus.Success && (
+      {status === CreationStatus.Success && tokenAddress && (
         <Alert className="mt-4 border-green-200 bg-green-50">
           <CheckCircle className="h-5 w-5 text-green-600" />
           <AlertTitle className="text-green-800">Success!</AlertTitle>
           <AlertDescription className="text-green-700">
             <p>Your ScienceGent has been created successfully.</p>
-            {tokenAddress ? (
-              <div className="mt-2">
-                <p className="font-medium">Token Address:</p>
-                <code className="px-2 py-1 bg-green-100 rounded text-sm block mt-1 break-all">
-                  {tokenAddress}
-                </code>
-                
-                {onRefresh && (
-                  <Button 
-                    onClick={onRefresh}
-                    size="sm" 
-                    variant="outline" 
-                    className="mt-3 bg-green-50 border-green-200 text-green-700 hover:bg-green-100 hover:text-green-800"
-                  >
-                    <RefreshCw className="h-4 w-4 mr-2" />
-                    Refresh My ScienceGent
-                  </Button>
-                )}
-              </div>
-            ) : (
-              <p className="mt-2 text-amber-600">
-                Waiting for token address from blockchain...
+            <div className="mt-2">
+              <p className="font-medium">Token Address:</p>
+              <code className="px-2 py-1 bg-green-100 rounded text-sm block mt-1 break-all">
+                {tokenAddress}
+              </code>
+              <p className="mt-2 text-sm">
+                Redirecting to your ScienceGent details page...
               </p>
-            )}
+            </div>
           </AlertDescription>
         </Alert>
       )}

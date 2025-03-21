@@ -1,12 +1,12 @@
 
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import { ScienceGentFormData } from "@/types/sciencegent";
 import { 
   getLaunchFee, 
   checkDSIAllowance, 
   approveDSIForFactory, 
-  createScienceGent 
+  createScienceGent,
+  extractTokenAddressFromReceipt
 } from "@/services/scienceGentService";
 import { checkIfWalletIsConnected, connectWallet } from "@/utils/walletUtils";
 import { toast } from "@/components/ui/use-toast";
@@ -24,7 +24,6 @@ export enum CreationStatus {
 }
 
 export const useScienceGentCreation = () => {
-  const navigate = useNavigate();
   const [status, setStatus] = useState<CreationStatus>(CreationStatus.Idle);
   const [transactionHash, setTransactionHash] = useState<string | null>(null);
   const [tokenAddress, setTokenAddress] = useState<string | null>(null);
@@ -53,58 +52,20 @@ export const useScienceGentCreation = () => {
     
     const pollForTokenAddress = async () => {
       if (transactionHash && !tokenAddress && status === CreationStatus.WaitingConfirmation) {
-        // Check the receipt
-        if (window.ethereum) {
-          const provider = new (window as any).ethers.providers.Web3Provider(window.ethereum);
-          try {
-            const receipt = await provider.getTransactionReceipt(transactionHash);
+        try {
+          console.log("Polling for token address from transaction:", transactionHash);
+          const extractedAddress = await extractTokenAddressFromReceipt(transactionHash);
+          
+          if (extractedAddress) {
+            console.log("Found token address:", extractedAddress);
+            setTokenAddress(extractedAddress);
+            setStatus(CreationStatus.Success);
             
-            if (receipt && receipt.status === 1 && receipt.logs) {
-              // Look for the TokenCreated event
-              // We need to parse the logs to find our event
-              // This is simplified - in a real app, you'd want to decode the logs using the ABI
-              console.log("Transaction confirmed, logs:", receipt.logs);
-              
-              // For now, let's check if any events were emitted at all
-              if (receipt.logs.length > 0) {
-                // Try to extract token address from the transaction details via the service
-                try {
-                  const { data } = await (window as any).ethers.providers.getDefaultProvider().getTransaction(transactionHash);
-                  console.log("Transaction data:", data);
-                  // Here we would parse the data to extract the token address
-                  // For now, just notify the user that the transaction was successful
-                  
-                  toast({
-                    title: "Transaction Confirmed",
-                    description: "Fetching token details...",
-                  });
-                  
-                  // Call our service to get the new token address
-                  const result = await createScienceGent({ 
-                    transactionHash, 
-                    checkOnly: true 
-                  } as any);
-                  
-                  if (result.tokenAddress) {
-                    setTokenAddress(result.tokenAddress);
-                    setStatus(CreationStatus.Success);
-                    
-                    // Sync the newly created ScienceGent
-                    syncNewScienceGent(result.tokenAddress);
-                  }
-                } catch (err) {
-                  console.error("Error fetching token address:", err);
-                }
-              }
-            } else if (receipt && receipt.status === 0) {
-              // Transaction failed
-              setStatus(CreationStatus.Error);
-              setError("Transaction failed. Please check Etherscan for details.");
-              if (pollingInterval) clearInterval(pollingInterval);
-            }
-          } catch (err) {
-            console.log("Error checking receipt, still pending:", err);
+            // Automatically sync the new ScienceGent data
+            syncNewScienceGent(extractedAddress);
           }
+        } catch (err) {
+          console.error("Error polling for token address:", err);
         }
       } else if (tokenAddress || status !== CreationStatus.WaitingConfirmation) {
         // We have a token address or we're not waiting for confirmation, stop polling
@@ -115,7 +76,7 @@ export const useScienceGentCreation = () => {
     // Start polling if needed
     if (transactionHash && !tokenAddress && status === CreationStatus.WaitingConfirmation) {
       pollForTokenAddress(); // Initial check
-      pollingInterval = setInterval(pollForTokenAddress, 5000); // Then every 5 seconds
+      pollingInterval = setInterval(pollForTokenAddress, 3000); // Then every 3 seconds
     }
     
     // Clean up
@@ -128,17 +89,18 @@ export const useScienceGentCreation = () => {
     setIsSyncing(true);
     
     try {
+      console.log("Syncing new ScienceGent data for address:", address);
       await syncSingleScienceGent(address);
       
       toast({
-        title: "ScienceGent Synced",
-        description: "Your ScienceGent data has been loaded from the blockchain",
+        title: "ScienceGent Ready",
+        description: "Your ScienceGent data has been loaded and is ready to view",
       });
     } catch (error) {
       console.error("Failed to sync new ScienceGent:", error);
       toast({
         title: "Sync Warning",
-        description: "Created successfully, but there was an issue syncing data. You can try refreshing.",
+        description: "Created successfully, but there was an issue syncing data.",
         variant: "destructive",
       });
     } finally {
@@ -176,17 +138,18 @@ export const useScienceGentCreation = () => {
       
       setTransactionHash(result.transactionHash);
       
-      // If we have transaction hash but not token address, we're waiting for confirmation
-      if (result.transactionHash && !result.tokenAddress) {
+      // If we have a transaction hash, we're waiting for confirmation
+      if (result.transactionHash) {
         setStatus(CreationStatus.WaitingConfirmation);
-        // We'll poll for token address in the effect
-      } else if (result.tokenAddress) {
-        // We have the token address, we can proceed
-        setTokenAddress(result.tokenAddress);
-        setStatus(CreationStatus.Success);
         
-        // Sync the newly created ScienceGent
-        await syncNewScienceGent(result.tokenAddress);
+        // If we also have a token address, we can move to success
+        if (result.tokenAddress) {
+          setTokenAddress(result.tokenAddress);
+          setStatus(CreationStatus.Success);
+          
+          // Sync the newly created ScienceGent
+          await syncNewScienceGent(result.tokenAddress);
+        }
       }
       
       return result;
@@ -205,49 +168,6 @@ export const useScienceGentCreation = () => {
     }
   };
 
-  const refreshScienceGent = async () => {
-    if (!tokenAddress) {
-      toast({
-        title: "Cannot Refresh",
-        description: "Token address not available yet",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    setIsSyncing(true);
-    
-    try {
-      toast({
-        title: "Refreshing",
-        description: "Syncing your ScienceGent data from blockchain...",
-      });
-      
-      await syncSingleScienceGent(tokenAddress);
-      
-      toast({
-        title: "Refresh Complete",
-        description: "Your ScienceGent data has been updated",
-      });
-    } catch (error) {
-      console.error("Failed to refresh ScienceGent:", error);
-      toast({
-        title: "Refresh Failed",
-        description: error.message || "Failed to sync ScienceGent data",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSyncing(false);
-    }
-  };
-
-  const resetState = () => {
-    setStatus(CreationStatus.Idle);
-    setError(null);
-    setTransactionHash(null);
-    setTokenAddress(null);
-  };
-
   return {
     status,
     error,
@@ -255,9 +175,7 @@ export const useScienceGentCreation = () => {
     tokenAddress,
     launchFee,
     isSyncing,
-    createToken,
-    refreshScienceGent,
-    resetState
+    createToken
   };
 };
 

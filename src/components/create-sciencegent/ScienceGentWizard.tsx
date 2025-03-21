@@ -32,8 +32,7 @@ const ScienceGentWizard: React.FC<ScienceGentWizardProps> = () => {
     tokenAddress,
     launchFee,
     createToken,
-    refreshScienceGent,
-    resetState
+    isSyncing
   } = useScienceGentCreation();
   
   const [formData, setFormData] = useState<ScienceGentFormData>({
@@ -56,10 +55,24 @@ const ScienceGentWizard: React.FC<ScienceGentWizardProps> = () => {
 
   useEffect(() => {
     // If we've successfully created a token, move to the success step
-    if (status === CreationStatus.Success) {
+    if (status === CreationStatus.Creating || 
+        status === CreationStatus.WaitingConfirmation || 
+        status === CreationStatus.Success) {
       setCurrentStep(6);
     }
   }, [status]);
+
+  useEffect(() => {
+    // Navigate to details page when token is successfully synced
+    if (status === CreationStatus.Success && tokenAddress && !isSyncing) {
+      // Small delay to show success state before redirecting
+      const redirectTimer = setTimeout(() => {
+        navigate(`/sciencegent/${tokenAddress}`);
+      }, 2000);
+      
+      return () => clearTimeout(redirectTimer);
+    }
+  }, [status, tokenAddress, isSyncing, navigate]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -98,14 +111,6 @@ const ScienceGentWizard: React.FC<ScienceGentWizardProps> = () => {
 
   const handleLaunch = () => {
     createToken(formData);
-  };
-
-  const navigateToDetails = () => {
-    if (tokenAddress) {
-      navigate(`/sciencegent/${tokenAddress}`);
-    } else {
-      navigate('/sciencegents');
-    }
   };
 
   const renderStep = () => {
@@ -149,9 +154,10 @@ const ScienceGentWizard: React.FC<ScienceGentWizardProps> = () => {
       case 6:
         return (
           <SuccessScreen 
-            navigateToDetails={navigateToDetails} 
+            navigateToDetails={() => navigate(`/sciencegent/${tokenAddress}`)}
             tokenAddress={tokenAddress}
-            onRefresh={refreshScienceGent}
+            transactionHash={transactionHash}
+            isLoading={status !== CreationStatus.Success || isSyncing}
           />
         );
       default:
@@ -171,14 +177,13 @@ const ScienceGentWizard: React.FC<ScienceGentWizardProps> = () => {
         <div className="max-w-3xl mx-auto">
           {renderStep()}
           
-          {/* Show transaction status during creation */}
-          {status !== CreationStatus.Idle && (
+          {/* Show transaction status during creation (except on success screen) */}
+          {status !== CreationStatus.Idle && currentStep !== 6 && (
             <TransactionStatus 
               status={status}
               error={error}
               transactionHash={transactionHash}
               tokenAddress={tokenAddress}
-              onRefresh={refreshScienceGent}
             />
           )}
           
