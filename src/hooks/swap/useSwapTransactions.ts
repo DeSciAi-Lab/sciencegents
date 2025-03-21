@@ -28,36 +28,51 @@ export const useSwapTransactions = (tokenAddress: string, onSuccess: () => Promi
       const ethAmountWei = ethers.utils.parseEther(ethAmount);
       const minTokensOutWei = ethers.utils.parseEther(minTokensOut);
       
-      // Apply 1% slippage tolerance
-      const minTokensWithSlippage = minTokensOutWei.mul(99).div(100);
+      const toastId = toast({
+        title: "Preparing Transaction",
+        description: "Confirm the transaction in your wallet...",
+      });
       
       const tx = await swapContract.buyTokens(
         tokenAddress,
-        minTokensWithSlippage,
+        minTokensOutWei,
         { value: ethAmountWei }
       );
       
       toast({
         title: "Transaction Submitted",
-        description: "Please wait while your transaction is being processed...",
+        description: "Your purchase is being processed...",
       });
       
       await tx.wait();
       
       toast({
         title: "Purchase Successful",
-        description: `You have successfully purchased ${minTokensOut} tokens.`,
+        description: `You have successfully purchased approximately ${parseFloat(minTokensOut).toFixed(6)} tokens.`,
       });
       
       await onSuccess();
       return true;
     } catch (e: any) {
       console.error('Error buying tokens:', e);
-      setError(e.message || 'Failed to buy tokens. Please try again.');
+      
+      // Extract readable error message
+      let errorMsg = e.message || 'Failed to buy tokens. Please try again.';
+      
+      // Check for common errors and simplify them
+      if (errorMsg.includes('user rejected')) {
+        errorMsg = 'Transaction was rejected in your wallet.';
+      } else if (errorMsg.includes('insufficient funds')) {
+        errorMsg = 'Insufficient ETH balance for this transaction.';
+      } else if (errorMsg.includes('slippage')) {
+        errorMsg = 'Transaction would result in too much slippage. Try a smaller amount or increase slippage tolerance.';
+      }
+      
+      setError(errorMsg);
       
       toast({
         title: "Purchase Failed",
-        description: e.message || 'Failed to buy tokens. Please try again.',
+        description: errorMsg,
         variant: "destructive",
       });
       
@@ -87,6 +102,11 @@ export const useSwapTransactions = (tokenAddress: string, onSuccess: () => Promi
       
       const tokenAmountWei = ethers.utils.parseEther(tokenAmount);
       
+      const toastId = toast({
+        title: "Preparing Transaction",
+        description: "Approve token spending in your wallet...",
+      });
+      
       const approveTx = await tokenContract.approve(
         contractConfig.addresses.ScienceGentsSwap,
         tokenAmountWei
@@ -94,7 +114,7 @@ export const useSwapTransactions = (tokenAddress: string, onSuccess: () => Promi
       
       toast({
         title: "Approval Submitted",
-        description: "Please wait while your approval transaction is being processed...",
+        description: "Approval is being processed...",
       });
       
       await approveTx.wait();
@@ -108,36 +128,51 @@ export const useSwapTransactions = (tokenAddress: string, onSuccess: () => Promi
       
       const minEthOutWei = ethers.utils.parseEther(minEthOut);
       
-      // Apply 1% slippage tolerance
-      const minEthWithSlippage = minEthOutWei.mul(99).div(100);
+      toast({
+        title: "Confirm Sale",
+        description: "Confirm the sale transaction in your wallet...",
+      });
       
       const tx = await swapContract.sellTokens(
         tokenAddress,
         tokenAmountWei,
-        minEthWithSlippage
+        minEthOutWei
       );
       
       toast({
         title: "Transaction Submitted",
-        description: "Please wait while your transaction is being processed...",
+        description: "Your sale is being processed...",
       });
       
       await tx.wait();
       
       toast({
         title: "Sale Successful",
-        description: `You have successfully sold ${tokenAmount} tokens.`,
+        description: `You have successfully sold ${tokenAmount} tokens for approximately ${parseFloat(minEthOut).toFixed(6)} ETH.`,
       });
       
       await onSuccess();
       return true;
     } catch (e: any) {
       console.error('Error selling tokens:', e);
-      setError(e.message || 'Failed to sell tokens. Please try again.');
+      
+      // Extract readable error message
+      let errorMsg = e.message || 'Failed to sell tokens. Please try again.';
+      
+      // Check for common errors and simplify them
+      if (errorMsg.includes('user rejected')) {
+        errorMsg = 'Transaction was rejected in your wallet.';
+      } else if (errorMsg.includes('insufficient balance')) {
+        errorMsg = 'Insufficient token balance for this transaction.';
+      } else if (errorMsg.includes('slippage')) {
+        errorMsg = 'Transaction would result in too much slippage. Try a smaller amount or increase slippage tolerance.';
+      }
+      
+      setError(errorMsg);
       
       toast({
         title: "Sale Failed",
-        description: e.message || 'Failed to sell tokens. Please try again.',
+        description: errorMsg,
         variant: "destructive",
       });
       
