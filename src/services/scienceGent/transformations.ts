@@ -35,6 +35,11 @@ export const transformBlockchainToSupabaseFormat = (
   const ethReserve = parseFloat(ethers.utils.formatEther(tokenStats.ethReserve));
   const totalLiquidity = ethReserve * 2;
   
+  // Calculate remaining maturity time
+  const maturityDeadline = parseInt(tokenStats.maturityDeadline);
+  const currentTime = Math.floor(Date.now() / 1000);
+  const remainingMaturityTime = maturityDeadline > currentTime ? maturityDeadline - currentTime : 0;
+  
   // Prepare ScienceGent data for Supabase
   const scienceGent = {
     address: scienceGentData.address,
@@ -54,8 +59,8 @@ export const transformBlockchainToSupabaseFormat = (
     created_on_chain_at: new Date(parseInt(tokenStats.creationTimestamp) * 1000).toISOString(),
     is_migrated: tokenStats.migrated,
     migration_eligible: tokenStats.migrationEligible || false,
-    maturity_deadline: tokenStats.maturityDeadline,
-    remaining_maturity_time: parseInt(tokenStats.maturityDeadline) - Math.floor(Date.now() / 1000),
+    maturity_deadline: maturityDeadline,
+    remaining_maturity_time: remainingMaturityTime,
     token_age: Math.floor(Date.now() / 1000) - parseInt(tokenStats.creationTimestamp),
     last_synced_at: new Date().toISOString()
   };

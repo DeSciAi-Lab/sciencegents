@@ -69,17 +69,17 @@ const ScienceGentDetailsDashboard: React.FC<ScienceGentDetailsDashboardProps> = 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <p className="text-sm text-muted-foreground">Virtual ETH</p>
-                      <p className="font-medium">{scienceGentData.virtualETH?.toFixed(2) || 0} ETH</p>
+                      <p className="font-medium">{scienceGentData.virtual_eth?.toFixed(2) || 0} ETH</p>
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">Required Fees</p>
                       <p className="font-medium">
-                        {((scienceGentData.virtualETH || 0) * 2 + (scienceGentData.capabilityFees || 0)).toFixed(2)} ETH
+                        {((scienceGentData.virtual_eth || 0) * 2 + (scienceGentData.capabilityFees || 0)).toFixed(2)} ETH
                       </p>
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">Collected Fees</p>
-                      <p className="font-medium">{scienceGentData.collectedFees?.toFixed(2) || 0} ETH</p>
+                      <p className="font-medium">{scienceGentData.collected_fees?.toFixed(2) || 0} ETH</p>
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">Capability Fees</p>
@@ -89,11 +89,12 @@ const ScienceGentDetailsDashboard: React.FC<ScienceGentDetailsDashboardProps> = 
                   
                   <div className="pt-4 border-t border-border">
                     <MaturityTracker
-                      maturityProgress={scienceGentData.maturityProgress || 0}
-                      isMigrated={scienceGentData.isMigrated || false}
-                      virtualETH={scienceGentData.virtualETH || 0}
-                      collectedFees={scienceGentData.collectedFees || 0}
+                      maturityProgress={scienceGentData.maturity_progress || 0}
+                      isMigrated={scienceGentData.is_migrated || false}
+                      virtualETH={scienceGentData.virtual_eth || 0}
+                      collectedFees={scienceGentData.collected_fees || 0}
                       capabilityFees={scienceGentData.capabilityFees || 0}
+                      remainingMaturityTime={scienceGentData.remaining_maturity_time}
                     />
                   </div>
                 </div>

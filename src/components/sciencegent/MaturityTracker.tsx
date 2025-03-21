@@ -11,6 +11,7 @@ interface MaturityTrackerProps {
   virtualETH: number;
   collectedFees: number;
   capabilityFees: number;
+  remainingMaturityTime?: number;
 }
 
 const MaturityTracker: React.FC<MaturityTrackerProps> = ({
@@ -18,11 +19,22 @@ const MaturityTracker: React.FC<MaturityTrackerProps> = ({
   isMigrated,
   virtualETH,
   collectedFees,
-  capabilityFees
+  capabilityFees,
+  remainingMaturityTime
 }) => {
   // Calculate the required fees for migration
   const requiredFees = virtualETH * 2 + capabilityFees;
   const feesPercentage = (collectedFees / requiredFees) * 100;
+  
+  // Calculate time remaining display
+  const formatTimeRemaining = () => {
+    if (!remainingMaturityTime || remainingMaturityTime <= 0) return "Maturity reached";
+    
+    const days = Math.floor(remainingMaturityTime / (60 * 60 * 24));
+    const hours = Math.floor((remainingMaturityTime % (60 * 60 * 24)) / (60 * 60));
+    
+    return `${days}d ${hours}h remaining`;
+  };
   
   // Determine status text and color
   const getStatusInfo = () => {
@@ -84,11 +96,21 @@ const MaturityTracker: React.FC<MaturityTrackerProps> = ({
         <div className="grid grid-cols-2 gap-4 mt-3">
           <div>
             <p className="text-xs text-muted-foreground">Time Progress</p>
-            <p className="text-sm font-medium">{maturityProgress}%</p>
+            <div className="flex justify-between">
+              <p className="text-sm font-medium">{maturityProgress}%</p>
+              {remainingMaturityTime !== undefined && (
+                <p className="text-xs text-muted-foreground">{formatTimeRemaining()}</p>
+              )}
+            </div>
           </div>
           <div>
             <p className="text-xs text-muted-foreground">Fee Progress</p>
-            <p className="text-sm font-medium">{Math.min(Math.round(feesPercentage), 100)}%</p>
+            <div className="flex justify-between">
+              <p className="text-sm font-medium">{Math.min(Math.round(feesPercentage), 100)}%</p>
+              <p className="text-xs text-muted-foreground">
+                {collectedFees.toFixed(2)}/{requiredFees.toFixed(2)} ETH
+              </p>
+            </div>
           </div>
         </div>
       )}
