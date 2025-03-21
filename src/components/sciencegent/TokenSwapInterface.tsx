@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ArrowDown, AlertCircle, Loader2 } from "lucide-react";
-import useTokenSwap, { SwapDirection } from '@/hooks/useTokenSwap';
+import { useTokenSwap } from '@/hooks/useTokenSwap';
 
 interface TokenSwapInterfaceProps {
   tokenAddress: string;
@@ -29,11 +29,10 @@ const TokenSwapInterface: React.FC<TokenSwapInterfaceProps> = ({
     ethBalance,
     tokenBalance,
     tokenPrice,
-    setDirection,
-    setEthAmount,
-    setTokenAmount,
-    connectToWallet,
-    calculateOutput,
+    toggleDirection,
+    connectWallet,
+    handleEthAmountChange,
+    handleTokenAmountChange,
     executeSwap
   } = useTokenSwap(tokenAddress);
 
@@ -41,38 +40,15 @@ const TokenSwapInterface: React.FC<TokenSwapInterfaceProps> = ({
     setLocalError(null);
     
     if (isEth) {
-      setEthAmount(value);
-      if (direction === SwapDirection.TokenToEth) {
-        setDirection(SwapDirection.EthToToken);
+      handleEthAmountChange(value);
+      if (direction === 'sell') {
+        toggleDirection();
       }
     } else {
-      setTokenAmount(value);
-      if (direction === SwapDirection.EthToToken) {
-        setDirection(SwapDirection.TokenToEth);
+      handleTokenAmountChange(value);
+      if (direction === 'buy') {
+        toggleDirection();
       }
-    }
-    
-    // Validate and calculate output
-    try {
-      const amount = parseFloat(value);
-      if (isNaN(amount) || amount <= 0) return;
-      
-      // Check balance
-      if (isEth) {
-        if (amount > parseFloat(ethBalance)) {
-          setLocalError("Insufficient ETH balance");
-          return;
-        }
-      } else {
-        if (amount > parseFloat(tokenBalance)) {
-          setLocalError("Insufficient token balance");
-          return;
-        }
-      }
-      
-      calculateOutput(value, isEth);
-    } catch (error) {
-      console.error("Error in amount calculation:", error);
     }
   };
 
@@ -101,7 +77,7 @@ const TokenSwapInterface: React.FC<TokenSwapInterfaceProps> = ({
           {!walletConnected ? (
             <div className="flex flex-col items-center py-6">
               <h3 className="text-lg font-medium mb-4">Connect your wallet to trade</h3>
-              <Button onClick={connectToWallet}>Connect Wallet</Button>
+              <Button onClick={connectWallet}>Connect Wallet</Button>
             </div>
           ) : (
             <>

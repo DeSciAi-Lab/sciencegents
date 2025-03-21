@@ -31,6 +31,7 @@ export const useTokenSwap = (tokenAddress: string) => {
   const [walletConnected, setWalletConnected] = useState(false);
   const [ethBalance, setEthBalance] = useState<string>('0');
   const [tokenBalance, setTokenBalance] = useState<string>('0');
+  const [tokenPrice, setTokenPrice] = useState<number>(0);
   
   // Check wallet connection
   useEffect(() => {
@@ -59,6 +60,20 @@ export const useTokenSwap = (tokenAddress: string) => {
             );
             const tokenBalance = await tokenContract.balanceOf(accounts[0]);
             setTokenBalance(ethers.utils.formatUnits(tokenBalance, 18));
+            
+            // Get token price
+            try {
+              const swapContract = new ethers.Contract(
+                contractConfig.addresses.ScienceGentsSwap,
+                swapABI,
+                provider
+              );
+              const oneToken = ethers.utils.parseUnits("1", 18);
+              const ethAmount = await swapContract.calculateETHFromTokens(tokenAddress, oneToken);
+              setTokenPrice(parseFloat(ethers.utils.formatEther(ethAmount)));
+            } catch (error) {
+              console.error("Error fetching token price:", error);
+            }
           }
         }
       } catch (error) {
@@ -398,8 +413,9 @@ export const useTokenSwap = (tokenAddress: string) => {
     walletConnected,
     ethBalance,
     tokenBalance,
+    tokenPrice,
     toggleDirection,
-    connectWallet,
+    connectWallet: connectWallet,
     handleEthAmountChange,
     handleTokenAmountChange,
     executeSwap
