@@ -132,13 +132,13 @@ const MigrationPanel: React.FC<MigrationPanelProps> = ({
               <div>
                 <p className="text-sm text-muted-foreground">Required Fees</p>
                 <p className="font-medium">
-                  {((scienceGent.virtual_eth || 0) * 2 + (scienceGent.capabilityFees || 0)).toFixed(2)} ETH
+                  {((scienceGent.virtual_eth || 0) * 2 + (scienceGent.capabilityFees || 0)).toFixed(4)} ETH
                 </p>
               </div>
               
               <div>
                 <p className="text-sm text-muted-foreground">Collected Fees</p>
-                <p className="font-medium">{scienceGent.collected_fees?.toFixed(2) || 0} ETH</p>
+                <p className="font-medium">{scienceGent.collected_fees?.toFixed(4) || "0.0000"} ETH</p>
               </div>
               
               <div>

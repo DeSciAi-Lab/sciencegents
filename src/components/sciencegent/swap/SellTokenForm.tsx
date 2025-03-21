@@ -63,7 +63,7 @@ const SellTokenForm: React.FC<SellTokenFormProps> = ({
           min="0"
           disabled={isPending}
         />
-        <p className="text-xs text-muted-foreground text-right">Balance: {tokenBalance} {tokenSymbol}</p>
+        <p className="text-xs text-muted-foreground text-right">Balance: {parseFloat(tokenBalance).toFixed(6)} {tokenSymbol}</p>
       </div>
       
       <div className="flex justify-center my-2">
