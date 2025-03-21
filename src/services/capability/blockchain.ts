@@ -1,8 +1,8 @@
-
 import { ethers } from "ethers";
 import { contractConfig, factoryABI } from "@/utils/contractConfig";
 import { Capability } from "@/types/capability";
 import { getProvider } from "@/services/walletService";
+import { CapabilityDetail } from "@/services/scienceGent/types";
 
 // Function to get all registered capability IDs from the blockchain
 export const fetchCapabilityIdsFromBlockchain = async (): Promise<string[]> => {
@@ -26,7 +26,7 @@ export const fetchCapabilityIdsFromBlockchain = async (): Promise<string[]> => {
 };
 
 // Function to get capability details from the blockchain
-export const fetchCapabilityDetailsFromBlockchain = async (id: string): Promise<Partial<Capability>> => {
+export const fetchCapabilityDetailsFromBlockchain = async (id: string): Promise<CapabilityDetail> => {
   try {
     console.log(`Fetching details for capability ${id} from blockchain...`);
     const provider = await getProvider();
@@ -40,22 +40,13 @@ export const fetchCapabilityDetailsFromBlockchain = async (id: string): Promise<
     const [description, feeInETH, creator] = await factory.getCapabilityDetails(id);
     console.log(`Capability ${id} details retrieved from blockchain`);
     
-    // Convert feeInETH to numeric value for price
-    const price = parseFloat(ethers.utils.formatEther(feeInETH));
-    
+    // Return data in CapabilityDetail format
     return {
       id,
-      name: id, // The contract doesn't store a separate name, we'll use the ID
       description,
-      price, // Store the fee as price for compatibility with Capability type
+      feeInETH, // Keep the raw value for conversion later
       creator,
-      domain: "Unknown", // The contract doesn't store domain, we'll need to update this manually
-      features: [], // The contract doesn't store features
-      stats: {
-        usageCount: 0,
-        rating: 4.5,
-        revenue: 0
-      }
+      domain: "Unknown" // Default domain
     };
   } catch (error) {
     console.error(`Error fetching capability ${id} from blockchain:`, error);

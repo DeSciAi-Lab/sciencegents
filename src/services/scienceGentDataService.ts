@@ -1,4 +1,3 @@
-
 import { ethers } from "ethers";
 import { toast } from "@/components/ui/use-toast";
 import { isAdminWallet } from "./walletService";
@@ -88,22 +87,15 @@ export const syncSingleScienceGent = async (address: string): Promise<boolean> =
           
           // Make sure we have valid capability details
           if (capDetails) {
-            // Convert capability data to match CapabilityDetail format
-            const capabilityDetail: CapabilityDetail = {
-              id: capDetails.id,
-              description: capDetails.description,
-              feeInETH: capDetails.feeInETH,
-              creator: capDetails.creator,
-              domain: capDetails.domain || 'General'
-            };
+            // The capDetails is already in CapabilityDetail format, no need for conversion
             
             // Add the capability fee to the total (in ETH)
-            if (capabilityDetail.feeInETH) {
-              totalCapabilityFees += parseFloat(ethers.utils.formatEther(capabilityDetail.feeInETH));
+            if (capDetails.feeInETH) {
+              totalCapabilityFees += parseFloat(ethers.utils.formatEther(capDetails.feeInETH));
             }
             
             // Also sync capability details to Supabase
-            await syncCapabilityDetailsToSupabase(capabilityDetail);
+            await syncCapabilityDetailsToSupabase(capDetails);
           }
         } catch (capError) {
           console.error(`Error fetching capability ${capId}:`, capError);
