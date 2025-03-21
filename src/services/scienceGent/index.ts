@@ -1,13 +1,13 @@
 
 // Export blockchain-related functions
-export { 
+import { 
   fetchScienceGentFromBlockchain,
   fetchTokenStatsFromBlockchain,
   syncAllScienceGentsFromBlockchain
 } from './blockchain';
 
 // Export Supabase-related functions
-export {
+import {
   saveScienceGentToSupabase,
   fetchScienceGentFromSupabase
 } from './supabase';
@@ -25,6 +25,15 @@ export {
   transformBlockchainToSupabaseFormat,
   transformSupabaseToFormattedScienceGent
 } from './transformations';
+
+// Export the imported functions
+export {
+  fetchScienceGentFromBlockchain,
+  fetchTokenStatsFromBlockchain,
+  syncAllScienceGentsFromBlockchain,
+  saveScienceGentToSupabase,
+  fetchScienceGentFromSupabase
+};
 
 /**
  * Syncs a single ScienceGent from blockchain to Supabase
