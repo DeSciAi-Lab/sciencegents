@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import TokenStatistics from "./TokenStatistics";
 import TradingChart from "./TradingChart";
 import TokenSwapInterface from "./TokenSwapInterface";
-import { useScienceGentDetails } from '@/hooks/useScienceGentDetails';
+import { useScienceGentDetails, LoadingStatus } from '@/hooks/useScienceGentDetails';
 
 interface ScienceGentDetailsDashboardProps {
   address: string;
@@ -17,9 +17,10 @@ interface ScienceGentDetailsDashboardProps {
 
 const ScienceGentDetailsDashboard = ({ address }: ScienceGentDetailsDashboardProps) => {
   const [copied, setCopied] = useState(false);
-  const { scienceGent, loading, error } = useScienceGentDetails(address);
+  const { scienceGent, status, isRefreshing, refreshData } = useScienceGentDetails(address);
   
-  if (loading) {
+  // Check if loading
+  if (status === LoadingStatus.Loading || isRefreshing) {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="flex flex-col gap-8 animate-pulse">
@@ -35,7 +36,8 @@ const ScienceGentDetailsDashboard = ({ address }: ScienceGentDetailsDashboardPro
     );
   }
   
-  if (error || !scienceGent) {
+  // Check if error or not found
+  if (status === LoadingStatus.Error || status === LoadingStatus.NotFound || !scienceGent) {
     return (
       <div className="container mx-auto px-4 py-8">
         <Card>
@@ -43,7 +45,9 @@ const ScienceGentDetailsDashboard = ({ address }: ScienceGentDetailsDashboardPro
             <div className="text-center">
               <h2 className="text-xl font-semibold">Error Loading ScienceGent</h2>
               <p className="text-muted-foreground mt-2">
-                {error || "Could not find the requested ScienceGent"}
+                {status === LoadingStatus.NotFound 
+                  ? "Could not find the requested ScienceGent" 
+                  : "Error loading ScienceGent details"}
               </p>
               <Button asChild className="mt-4">
                 <a href="/explore">Back to Explore</a>

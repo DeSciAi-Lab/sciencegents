@@ -25,40 +25,55 @@ const TokenSwapInterface = ({
   tokenPrice,
   tokenBalance = 0,
 }: TokenSwapInterfaceProps) => {
-  const [swapDirection, setSwapDirection] = useState<'buy' | 'sell'>('buy');
   const [amount, setAmount] = useState<string>('');
   
   // Use the token swap hook
   const { 
-    estimateSwapOutput, 
-    performSwap, 
-    isLoading, 
-    error 
+    direction, 
+    isCalculating, 
+    isProcessing, 
+    walletConnected,
+    executeSwap,
+    handleEthAmountChange,
+    handleTokenAmountChange,
+    toggleDirection,
+    ethAmount,
+    tokenAmount
   } = useTokenSwap(tokenAddress);
   
-  // Calculate estimated output
-  const estimatedOutput = amount ? 
-    (swapDirection === 'buy' 
-      ? parseFloat(amount) / tokenPrice 
-      : parseFloat(amount) * tokenPrice) 
-    : 0;
+  // Error state for displaying validation errors
+  const [error, setError] = useState<string | null>(null);
+  
+  // Calculate estimated output based on current input and direction
+  const estimatedOutput = direction === 'buy' 
+    ? tokenAmount 
+    : ethAmount;
     
-  const flipSwapDirection = () => {
-    setSwapDirection(swapDirection === 'buy' ? 'sell' : 'buy');
-    setAmount('');
+  const handleSwap = async () => {
+    if (!amount || parseFloat(amount) <= 0) {
+      setError("Please enter a valid amount");
+      return;
+    }
+    
+    setError(null);
+    
+    try {
+      await executeSwap();
+      // Clear input after swap
+      setAmount('');
+    } catch (err: any) {
+      setError(err.message || "Swap failed");
+    }
   };
   
-  const handleSwap = async () => {
-    if (!amount || parseFloat(amount) <= 0) return;
-    
-    await performSwap({
-      type: swapDirection,
-      amount: parseFloat(amount),
-      minReceived: estimatedOutput * 0.95, // 5% slippage tolerance
-    });
-    
-    // Clear input after swap
-    setAmount('');
+  // Update the appropriate amount based on direction
+  const handleAmountChange = (newAmount: string) => {
+    setAmount(newAmount);
+    if (direction === 'buy') {
+      handleEthAmountChange(newAmount);
+    } else {
+      handleTokenAmountChange(newAmount);
+    }
   };
   
   return (
@@ -72,10 +87,10 @@ const TokenSwapInterface = ({
           <div className="p-4 bg-secondary rounded-lg">
             <div className="flex justify-between mb-2">
               <span className="text-sm text-muted-foreground">
-                {swapDirection === 'buy' ? 'You pay' : 'You sell'}
+                {direction === 'buy' ? 'You pay' : 'You sell'}
               </span>
               <span className="text-sm text-muted-foreground">
-                Balance: {swapDirection === 'buy' ? 'ETH Balance' : tokenBalance.toFixed(4)}
+                Balance: {direction === 'buy' ? 'ETH Balance' : tokenBalance.toFixed(4)}
               </span>
             </div>
             <div className="flex items-center">
@@ -83,15 +98,15 @@ const TokenSwapInterface = ({
                 type="number"
                 placeholder="0.0"
                 value={amount}
-                onChange={(e) => setAmount(e.target.value)}
+                onChange={(e) => handleAmountChange(e.target.value)}
                 className="border-none text-xl font-medium bg-transparent p-0 h-auto"
               />
               <div className="flex items-center gap-2 bg-white/50 px-3 py-1 rounded-full">
                 <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center">
-                  {swapDirection === 'buy' ? 'Ξ' : tokenSymbol.charAt(0)}
+                  {direction === 'buy' ? 'Ξ' : tokenSymbol.charAt(0)}
                 </div>
                 <span className="font-medium">
-                  {swapDirection === 'buy' ? 'ETH' : tokenSymbol}
+                  {direction === 'buy' ? 'ETH' : tokenSymbol}
                 </span>
               </div>
             </div>
@@ -103,7 +118,7 @@ const TokenSwapInterface = ({
               variant="outline"
               size="icon"
               className="rounded-full h-10 w-10 border-muted bg-card shadow-sm"
-              onClick={flipSwapDirection}
+              onClick={toggleDirection}
             >
               <ArrowDownUp className="h-4 w-4" />
             </Button>
@@ -113,24 +128,24 @@ const TokenSwapInterface = ({
           <div className="p-4 bg-secondary rounded-lg">
             <div className="flex justify-between mb-2">
               <span className="text-sm text-muted-foreground">
-                {swapDirection === 'buy' ? 'You receive' : 'You receive'}
+                {direction === 'buy' ? 'You receive' : 'You receive'}
               </span>
               <span className="text-sm text-muted-foreground">
-                Balance: {swapDirection === 'buy' ? tokenBalance.toFixed(4) : 'ETH Balance'}
+                Balance: {direction === 'buy' ? tokenBalance.toFixed(4) : 'ETH Balance'}
               </span>
             </div>
             <div className="flex items-center">
               <div className="flex-1 text-xl font-medium">
-                {amount && !isNaN(parseFloat(amount))
-                  ? estimatedOutput.toFixed(6)
+                {estimatedOutput && !isNaN(parseFloat(estimatedOutput))
+                  ? parseFloat(estimatedOutput).toFixed(6)
                   : '0.0'}
               </div>
               <div className="flex items-center gap-2 bg-white/50 px-3 py-1 rounded-full">
                 <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center">
-                  {swapDirection === 'buy' ? tokenSymbol.charAt(0) : 'Ξ'}
+                  {direction === 'buy' ? tokenSymbol.charAt(0) : 'Ξ'}
                 </div>
                 <span className="font-medium">
-                  {swapDirection === 'buy' ? tokenSymbol : 'ETH'}
+                  {direction === 'buy' ? tokenSymbol : 'ETH'}
                 </span>
               </div>
             </div>
@@ -152,11 +167,11 @@ const TokenSwapInterface = ({
               </TooltipProvider>
             </div>
             <div>
-              1 {swapDirection === 'buy' ? 'ETH' : tokenSymbol} = {' '}
-              {swapDirection === 'buy' 
+              1 {direction === 'buy' ? 'ETH' : tokenSymbol} = {' '}
+              {direction === 'buy' 
                 ? (1 / tokenPrice).toFixed(4) 
                 : tokenPrice.toFixed(6)}{' '}
-              {swapDirection === 'buy' ? tokenSymbol : 'ETH'}
+              {direction === 'buy' ? tokenSymbol : 'ETH'}
             </div>
           </div>
           
@@ -170,12 +185,12 @@ const TokenSwapInterface = ({
           <Button 
             className="w-full" 
             size="lg"
-            disabled={!amount || parseFloat(amount) <= 0 || isLoading}
+            disabled={!amount || parseFloat(amount) <= 0 || isProcessing || isCalculating}
             onClick={handleSwap}
           >
-            {isLoading 
+            {isProcessing 
               ? 'Swapping...' 
-              : `Swap ${swapDirection === 'buy' ? 'ETH for' : ''} ${tokenSymbol} ${swapDirection === 'sell' ? 'for ETH' : ''}`}
+              : `Swap ${direction === 'buy' ? 'ETH for' : ''} ${tokenSymbol} ${direction === 'sell' ? 'for ETH' : ''}`}
           </Button>
           
           {/* Error message */}
