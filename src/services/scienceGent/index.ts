@@ -35,13 +35,6 @@ export const syncScienceGent = async (address: string): Promise<boolean> => {
   try {
     console.log("Syncing ScienceGent:", address);
     
-    // Import functions from modules
-    const { fetchScienceGentFromBlockchain, fetchTokenStatsFromBlockchain } = await import('./blockchain');
-    const { saveScienceGentToSupabase } = await import('./supabase');
-    
-    // Import toast from UI
-    const { toast } = await import('@/components/ui/use-toast');
-    
     // Fetch token details and stats
     const scienceGentData = await fetchScienceGentFromBlockchain(address);
     const tokenStats = await fetchTokenStatsFromBlockchain(address);
@@ -53,6 +46,7 @@ export const syncScienceGent = async (address: string): Promise<boolean> => {
     // Save to Supabase
     await saveScienceGentToSupabase(scienceGentData, tokenStats);
     
+    const { toast } = await import('@/components/ui/use-toast');
     toast({
       title: "Sync Successful",
       description: `${scienceGentData.name} has been synced from the blockchain`
@@ -62,9 +56,7 @@ export const syncScienceGent = async (address: string): Promise<boolean> => {
   } catch (error) {
     console.error("Error syncing ScienceGent:", error);
     
-    // Import toast from UI
     const { toast } = await import('@/components/ui/use-toast');
-    
     toast({
       title: "Sync Failed",
       description: error.message || "Failed to sync ScienceGent",

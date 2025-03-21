@@ -3,6 +3,18 @@
 // It's maintained for backward compatibility with existing code
 // New code should import directly from the scienceGent folder
 
+import {
+  fetchScienceGentFromBlockchain,
+  fetchTokenStatsFromBlockchain,
+  syncAllScienceGentsFromBlockchain,
+  syncScienceGent,
+} from './scienceGent';
+
+import {
+  saveScienceGentToSupabase,
+  fetchScienceGentFromSupabase,
+} from './scienceGent/supabase';
+
 export {
   // Blockchain interactions
   fetchScienceGentFromBlockchain,
