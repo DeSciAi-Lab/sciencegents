@@ -40,8 +40,8 @@ export const fetchScienceGentFromSupabase = async (address: string) => {
       token_price: data.token_price ? parseFloat(String(data.token_price)) : 0,
       // Add maturity progress calculation if not available
       maturity_progress: data.maturity_progress || (
-        data.virtual_eth && data.collected_fees 
-          ? calculateMaturityProgress(String(data.virtual_eth), String(data.collected_fees)) 
+        data.virtual_eth && data.virtual_eth > 0 
+          ? calculateMaturityProgress(String(data.virtual_eth), String(data.collected_fees || '0')) 
           : 0
       ),
       // Add any other derived fields from TokenStats
@@ -49,7 +49,7 @@ export const fetchScienceGentFromSupabase = async (address: string) => {
         ? Math.floor(Date.now() / 1000) - new Date(data.created_on_chain_at).getTime() / 1000
         : 0,
       remainingMaturityTime: data.maturity_deadline 
-        ? Math.max(0, parseInt(String(data.maturity_deadline)) - Math.floor(Date.now() / 1000))
+        ? Math.max(0, parseInt(String(data.maturity_deadline || '0')) - Math.floor(Date.now() / 1000))
         : 0
     };
     
@@ -62,14 +62,14 @@ export const fetchScienceGentFromSupabase = async (address: string) => {
 
 /**
  * Calculate maturity progress percentage
- * @param collectedFees Collected fees in the pool
  * @param virtualETH Virtual ETH amount
+ * @param collectedFees Collected fees in the pool
  * @returns Progress percentage (0-100)
  */
 const calculateMaturityProgress = (virtualETH: string, collectedFees: string): number => {
   try {
-    const fees = parseFloat(collectedFees);
-    const vETH = parseFloat(virtualETH);
+    const fees = parseFloat(collectedFees || '0');
+    const vETH = parseFloat(virtualETH || '0');
     
     if (vETH === 0) return 0;
     
@@ -101,26 +101,10 @@ export const saveScienceGentToSupabase = async (
     // Transform the data to Supabase format
     const { scienceGent, scienceGentStats } = transformBlockchainToSupabaseFormat(scienceGentData, tokenStats);
     
-    // Add enhanced fields to scienceGent object
-    const enhancedScienceGent = {
-      ...scienceGent,
-      // Add maturity progress calculation
-      maturity_progress: tokenStats.maturityProgress || 
-        calculateMaturityProgress(tokenStats.virtualETH, tokenStats.collectedFees),
-      // Add remaining time calculation
-      remaining_maturity_time: tokenStats.remainingMaturityTime || 
-        (parseInt(tokenStats.maturityDeadline) - Math.floor(Date.now() / 1000)),
-      // Add token age
-      token_age: tokenStats.tokenAge || 
-        (Math.floor(Date.now() / 1000) - parseInt(tokenStats.creationTimestamp)),
-      // Add migration eligibility
-      migration_eligible: tokenStats.migrationEligible || false
-    };
-    
     // Insert or update the ScienceGent
     const { data, error } = await supabase
       .from('sciencegents')
-      .upsert(enhancedScienceGent)
+      .upsert(scienceGent)
       .select();
     
     if (error) {
