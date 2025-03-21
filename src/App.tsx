@@ -11,6 +11,7 @@ import ExploreCapabilities from "./pages/ExploreCapabilities";
 import CapabilityDetails from "./pages/CapabilityDetails";
 import CreateCapability from "./pages/CreateCapability";
 import CreateScienceGent from "./pages/CreateScienceGent";
+import Dashboard from "./pages/Dashboard";
 import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
 
@@ -30,6 +31,7 @@ const App = () => (
           <Route path="/capability/:id" element={<CapabilityDetails />} />
           <Route path="/create-capability" element={<CreateCapability />} />
           <Route path="/create-sciencegent" element={<CreateScienceGent />} />
+          <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/admin" element={<Admin />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
