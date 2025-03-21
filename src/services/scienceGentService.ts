@@ -1,3 +1,4 @@
+
 import { ethers } from "ethers";
 import { contractConfig, factoryABI, dsiTokenABI } from "@/utils/contractConfig";
 import { ScienceGentFormData } from "@/types/sciencegent";
@@ -150,11 +151,10 @@ export const extractTokenAddressFromReceipt = async (transactionHash: string): P
     );
     
     // Get the TokenCreated event signature
-    const tokenCreatedEvent = factoryContract.interface.events['TokenCreated(address,string,string,uint256)'];
-    const eventSignature = tokenCreatedEvent.topic;
+    const eventSignatureHash = ethers.utils.id("TokenCreated(address,string,string,uint256)");
     
     for (const log of receipt.logs) {
-      if (log.topics[0] === eventSignature) {
+      if (log.topics[0] === eventSignatureHash) {
         // The token address is the first indexed parameter
         const tokenAddress = ethers.utils.defaultAbiCoder.decode(['address'], log.topics[1])[0];
         console.log("Extracted token address:", tokenAddress);
