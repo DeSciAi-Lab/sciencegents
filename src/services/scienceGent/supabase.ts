@@ -1,5 +1,5 @@
 
-import { ScienceGentData, TokenStats } from './types';
+import { ScienceGentData, TokenStats, ScienceGentStats } from './types';
 import { supabase } from '@/integrations/supabase/client';
 import { transformBlockchainToSupabaseFormat } from './transformations';
 
@@ -12,6 +12,7 @@ export const fetchScienceGentFromSupabase = async (address: string) => {
   try {
     console.log("Fetching ScienceGent from Supabase:", address);
     
+    // Get the ScienceGent data
     const { data, error } = await supabase
       .from('sciencegents')
       .select(`
@@ -31,23 +32,32 @@ export const fetchScienceGentFromSupabase = async (address: string) => {
     
     if (!data) return null;
     
+    // Fetch associated stats
+    const { data: statsData } = await supabase
+      .from('sciencegent_stats')
+      .select('*')
+      .eq('sciencegent_address', address)
+      .single();
+    
     // Format the data for frontend use (add calculated fields)
     const formattedData = {
       ...data,
       // Convert prices to numbers for easier handling
       token_price: data.token_price ? parseFloat(String(data.token_price)) : 0,
       // Add maturity progress calculation if not available
-      maturity_progress: data.maturity_progress || (
-        data.virtual_eth && data.virtual_eth > 0 
-          ? calculateMaturityProgress(String(data.virtual_eth)) 
-          : 0
-      ),
+      maturity_progress: data.maturity_progress || 0,
       // Add any other derived fields from TokenStats
       tokenAge: data.created_on_chain_at 
         ? Math.floor(Date.now() / 1000) - new Date(data.created_on_chain_at).getTime() / 1000
         : 0,
       // Use a default value of 0 if maturity_deadline is missing
-      remainingMaturityTime: 0
+      remainingMaturityTime: 0,
+      // Include stats data or provide defaults
+      stats: statsData || {
+        transactions: 0,
+        volume_24h: 0,
+        holders: 0
+      }
     };
     
     return formattedData;
