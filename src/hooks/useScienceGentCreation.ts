@@ -10,6 +10,7 @@ import {
 } from "@/services/scienceGentService";
 import { checkIfWalletIsConnected, connectWallet } from "@/utils/walletUtils";
 import { toast } from "@/components/ui/use-toast";
+import { syncSingleScienceGent } from "@/services/scienceGentDataService";
 
 export enum CreationStatus {
   Idle = "idle",
@@ -84,6 +85,14 @@ export const useScienceGentCreation = () => {
         setTokenAddress(result.tokenAddress);
         setStatus(CreationStatus.Success);
         
+        // Try to sync the newly created ScienceGent
+        try {
+          await syncSingleScienceGent(result.tokenAddress);
+        } catch (syncError) {
+          console.error("Failed to sync newly created ScienceGent:", syncError);
+          // Don't block the flow if sync fails
+        }
+        
         // Navigate to ScienceGent details page after 3 seconds
         setTimeout(() => {
           navigate(`/sciencegent/${result.tokenAddress}`);
@@ -106,6 +115,38 @@ export const useScienceGentCreation = () => {
     }
   };
 
+  const refreshScienceGent = async () => {
+    if (!tokenAddress) {
+      toast({
+        title: "Cannot Refresh",
+        description: "Token address not available yet",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    try {
+      toast({
+        title: "Refreshing",
+        description: "Syncing your ScienceGent data from blockchain...",
+      });
+      
+      await syncSingleScienceGent(tokenAddress);
+      
+      toast({
+        title: "Refresh Complete",
+        description: "Your ScienceGent data has been updated",
+      });
+    } catch (error) {
+      console.error("Failed to refresh ScienceGent:", error);
+      toast({
+        title: "Refresh Failed",
+        description: error.message || "Failed to sync ScienceGent data",
+        variant: "destructive",
+      });
+    }
+  };
+
   const resetState = () => {
     setStatus(CreationStatus.Idle);
     setError(null);
@@ -120,6 +161,7 @@ export const useScienceGentCreation = () => {
     tokenAddress,
     launchFee,
     createToken,
+    refreshScienceGent,
     resetState
   };
 };

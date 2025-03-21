@@ -7,6 +7,8 @@ import { validateStep } from '@/components/create-sciencegent/utils';
 import WizardProgress from '@/components/create-sciencegent/WizardProgress';
 import { ScienceGentFormData } from '@/types/sciencegent';
 import Reveal from '@/components/animations/Reveal';
+import useScienceGentCreation, { CreationStatus } from '@/hooks/useScienceGentCreation';
+import TransactionStatus from '@/components/create-sciencegent/TransactionStatus';
 
 // Import step components
 import BasicInfo from '@/components/create-sciencegent/steps/BasicInfo';
@@ -15,7 +17,6 @@ import CapabilitySelection from '@/components/create-sciencegent/steps/Capabilit
 import LiquiditySettings from '@/components/create-sciencegent/steps/LiquiditySettings';
 import ReviewAndLaunch from '@/components/create-sciencegent/steps/ReviewAndLaunch';
 import SuccessScreen from '@/components/create-sciencegent/steps/SuccessScreen';
-import { CreationStatus } from '@/hooks/useScienceGentCreation';
 
 interface ScienceGentWizardProps {
   // No props needed as it manages its own state
@@ -24,7 +25,17 @@ interface ScienceGentWizardProps {
 const ScienceGentWizard: React.FC<ScienceGentWizardProps> = () => {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
-  const [tokenAddress, setTokenAddress] = useState<string | null>(null);
+  const {
+    status,
+    error,
+    transactionHash,
+    tokenAddress,
+    launchFee,
+    createToken,
+    refreshScienceGent,
+    resetState
+  } = useScienceGentCreation();
+  
   const [formData, setFormData] = useState<ScienceGentFormData>({
     name: '',
     symbol: '',
@@ -42,6 +53,13 @@ const ScienceGentWizard: React.FC<ScienceGentWizardProps> = () => {
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [currentStep]);
+
+  useEffect(() => {
+    // If we've successfully created a token, move to the success step
+    if (status === CreationStatus.Success) {
+      setCurrentStep(6);
+    }
+  }, [status]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -79,7 +97,7 @@ const ScienceGentWizard: React.FC<ScienceGentWizardProps> = () => {
   };
 
   const handleLaunch = () => {
-    nextStep(); // Move to success step
+    createToken(formData);
   };
 
   const navigateToDetails = () => {
@@ -130,7 +148,11 @@ const ScienceGentWizard: React.FC<ScienceGentWizardProps> = () => {
         );
       case 6:
         return (
-          <SuccessScreen navigateToDetails={navigateToDetails} />
+          <SuccessScreen 
+            navigateToDetails={navigateToDetails} 
+            tokenAddress={tokenAddress}
+            onRefresh={refreshScienceGent}
+          />
         );
       default:
         return null;
@@ -148,6 +170,17 @@ const ScienceGentWizard: React.FC<ScienceGentWizardProps> = () => {
       <Reveal delay={200}>
         <div className="max-w-3xl mx-auto">
           {renderStep()}
+          
+          {/* Show transaction status during creation */}
+          {status !== CreationStatus.Idle && (
+            <TransactionStatus 
+              status={status}
+              error={error}
+              transactionHash={transactionHash}
+              tokenAddress={tokenAddress}
+              onRefresh={refreshScienceGent}
+            />
+          )}
           
           {currentStep < 5 && (
             <div className="flex justify-between mt-8">

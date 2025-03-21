@@ -1,14 +1,20 @@
 
 import React from 'react';
-import { ArrowRight, Check } from 'lucide-react';
+import { ArrowRight, Check, RefreshCw, ExternalLink } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 
 interface SuccessScreenProps {
   navigateToDetails: () => void;
+  tokenAddress: string | null;
+  onRefresh?: () => void;
 }
 
-const SuccessScreen: React.FC<SuccessScreenProps> = ({ navigateToDetails }) => {
+const SuccessScreen: React.FC<SuccessScreenProps> = ({ 
+  navigateToDetails, 
+  tokenAddress,
+  onRefresh 
+}) => {
   return (
     <Card className="w-full">
       <CardContent className="pt-6">
@@ -18,9 +24,40 @@ const SuccessScreen: React.FC<SuccessScreenProps> = ({ navigateToDetails }) => {
           </div>
           
           <h2 className="text-2xl font-bold mb-2">ScienceGent Created!</h2>
-          <p className="text-muted-foreground mb-8 max-w-md">
-            Congratulations! Your ScienceGent has been successfully created. You will be redirected to your ScienceGent details page momentarily.
+          <p className="text-muted-foreground mb-4 max-w-md">
+            Congratulations! Your ScienceGent has been successfully created.
           </p>
+          
+          {tokenAddress && (
+            <div className="w-full max-w-md bg-slate-50 p-4 rounded-lg mb-6 border border-slate-200">
+              <p className="text-sm font-medium text-slate-600 mb-2">Token Address:</p>
+              <div className="flex items-center justify-between">
+                <code className="text-xs bg-white px-3 py-2 rounded border border-slate-200 font-mono text-slate-800 block text-left overflow-x-auto w-full">
+                  {tokenAddress}
+                </code>
+                <a 
+                  href={`https://sepolia.etherscan.io/address/${tokenAddress}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="ml-2 text-slate-500 hover:text-slate-700"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                </a>
+              </div>
+              
+              {onRefresh && (
+                <Button 
+                  onClick={onRefresh}
+                  size="sm" 
+                  variant="outline" 
+                  className="mt-4 w-full"
+                >
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Refresh My ScienceGent
+                </Button>
+              )}
+            </div>
+          )}
           
           <div className="flex justify-center">
             <Button 
