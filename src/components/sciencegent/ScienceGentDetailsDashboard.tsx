@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import TokenStatistics from "./TokenStatistics";
 import TradingChart from "./TradingChart";
 import TokenSwapInterface from "./TokenSwapInterface";
+import ScienceGentChat from "./ScienceGentChat";
 import { useScienceGentDetails, LoadingStatus } from '@/hooks/useScienceGentDetails';
 
 interface ScienceGentDetailsDashboardProps {
@@ -197,9 +198,7 @@ const ScienceGentDetailsDashboard = ({ address }: ScienceGentDetailsDashboardPro
               </TabsContent>
               
               <TabsContent value="ai-chat">
-                <div className="min-h-[300px] flex items-center justify-center">
-                  <p className="text-muted-foreground">AI Chat interface will be displayed here.</p>
-                </div>
+                <ScienceGentChat scienceGent={scienceGent} />
               </TabsContent>
               
               <TabsContent value="capabilities">

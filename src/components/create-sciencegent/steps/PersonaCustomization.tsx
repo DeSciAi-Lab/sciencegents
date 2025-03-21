@@ -56,6 +56,7 @@ const PersonaCustomization: React.FC<PersonaCustomizationProps> = ({ formData, h
               <li>Define how it should interact with scientific questions</li>
               <li>Specify both what it should do and what it should avoid</li>
               <li>Set clear boundaries for knowledge and capabilities</li>
+              <li>This persona will be used by the AI Chat system when users interact with your ScienceGent</li>
             </ul>
           </div>
         </div>
