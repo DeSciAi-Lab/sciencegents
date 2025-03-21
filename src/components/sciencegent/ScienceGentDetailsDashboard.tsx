@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { LoadingStatus } from '@/hooks/useScienceGentDetails';
@@ -9,6 +9,7 @@ import TokenSwapInterface from './TokenSwapInterface';
 import ScienceGentChat from './ScienceGentChat';
 import CapabilitiesList from './CapabilitiesList';
 import MaturityTracker from './MaturityTracker';
+import { Badge } from '@/components/ui/badge';
 
 interface ScienceGentDetailsDashboardProps {
   address: string;
@@ -36,14 +37,27 @@ const ScienceGentDetailsDashboard: React.FC<ScienceGentDetailsDashboardProps> = 
     return <ErrorDashboard address={address} />;
   }
 
+  const hasPersona = Boolean(scienceGentData?.persona);
+  const capabilitiesCount = scienceGentData?.capabilities?.length || 0;
+
   return (
     <div className="space-y-6">
       <Tabs defaultValue="overview" className="w-full">
         <TabsList className="grid grid-cols-4 mb-6">
           <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="chat">Chat</TabsTrigger>
+          <TabsTrigger value="chat">
+            Chat
+            {hasPersona && (
+              <Badge variant="outline" className="ml-2 text-xs">Custom Persona</Badge>
+            )}
+          </TabsTrigger>
           <TabsTrigger value="trade">Trade</TabsTrigger>
-          <TabsTrigger value="capabilities">Capabilities</TabsTrigger>
+          <TabsTrigger value="capabilities">
+            Capabilities
+            {capabilitiesCount > 0 && (
+              <Badge variant="outline" className="ml-2 text-xs">{capabilitiesCount}</Badge>
+            )}
+          </TabsTrigger>
         </TabsList>
         
         <TabsContent value="overview" className="space-y-6">
@@ -107,6 +121,10 @@ const ScienceGentDetailsDashboard: React.FC<ScienceGentDetailsDashboardProps> = 
           <Card>
             <CardHeader>
               <CardTitle>Chat with {scienceGentData?.name || "ScienceGent"}</CardTitle>
+              <CardDescription>
+                This AI agent {hasPersona ? 'has a custom persona' : 'uses a default scientific assistant persona'} 
+                {capabilitiesCount > 0 ? ` and ${capabilitiesCount} specialized capabilities` : ''}
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <ScienceGentChat 
@@ -135,6 +153,11 @@ const ScienceGentDetailsDashboard: React.FC<ScienceGentDetailsDashboardProps> = 
           <Card>
             <CardHeader>
               <CardTitle>Capabilities</CardTitle>
+              <CardDescription>
+                {capabilitiesCount > 0 
+                  ? `This ScienceGent has ${capabilitiesCount} specialized capabilities` 
+                  : "This ScienceGent doesn't have any specialized capabilities yet"}
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <CapabilitiesList 

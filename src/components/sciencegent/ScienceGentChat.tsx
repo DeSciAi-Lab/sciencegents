@@ -4,10 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Loader2, Send, RefreshCw, Bot, User, Brain } from "lucide-react";
+import { Loader2, Send, RefreshCw, Bot, User, Brain, Info } from "lucide-react";
 import { type ChatMessage } from '@/hooks/useScienceGentChat';
 import useScienceGentChat from '@/hooks/useScienceGentChat';
-import { toast } from '@/components/ui/use-toast';
+import { Badge } from '@/components/ui/badge';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface ScienceGentChatProps {
   scienceGent: any;
@@ -21,12 +23,15 @@ const ScienceGentChat: React.FC<ScienceGentChatProps> = ({
   const [inputValue, setInputValue] = useState('');
   const chatEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const [showPersonaInfo, setShowPersonaInfo] = useState(false);
   
   const {
     messages,
     isLoading,
     error,
-    sendMessage
+    sendMessage,
+    clearChat,
+    isInitializing
   } = useScienceGentChat(address, scienceGent);
 
   const handleSendMessage = async () => {
@@ -43,24 +48,12 @@ const ScienceGentChat: React.FC<ScienceGentChatProps> = ({
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      handleKeyPress();
+      handleSendMessage();
     }
   };
   
-  const handleKeyPress = () => {
-    if (!inputValue.trim() || isLoading) return;
-    handleSendMessage();
-  };
-  
-  const clearChat = () => {
-    if (window.confirm('Are you sure you want to clear the chat history?')) {
-      localStorage.removeItem(`chat_${address}`);
-      window.location.reload();
-      toast({
-        title: "Chat cleared",
-        description: "Your chat history has been cleared."
-      });
-    }
+  const togglePersonaInfo = () => {
+    setShowPersonaInfo(!showPersonaInfo);
   };
 
   // Scroll to bottom when messages change
@@ -72,8 +65,17 @@ const ScienceGentChat: React.FC<ScienceGentChatProps> = ({
   
   // Focus input on component mount
   useEffect(() => {
-    inputRef.current?.focus();
-  }, []);
+    if (!isInitializing && !isLoading) {
+      inputRef.current?.focus();
+    }
+  }, [isInitializing, isLoading]);
+
+  const hasPersona = Boolean(scienceGent?.persona);
+  
+  // Show a truncated version of the persona for the tooltip
+  const truncatedPersona = scienceGent?.persona ? 
+    (scienceGent.persona.length > 150 ? scienceGent.persona.substring(0, 150) + '...' : scienceGent.persona) 
+    : 'No custom persona defined';
 
   return (
     <div className="flex flex-col h-[600px] border rounded-lg shadow-sm">
@@ -81,7 +83,31 @@ const ScienceGentChat: React.FC<ScienceGentChatProps> = ({
         <div className="flex items-center gap-2">
           <Brain className="h-5 w-5 text-science-600" />
           <h3 className="font-medium">{scienceGent?.name || 'ScienceGent'} Chat</h3>
+          {hasPersona && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="h-6 w-6 p-0" 
+                    onClick={togglePersonaInfo}
+                  >
+                    <Info className="h-4 w-4 text-muted-foreground" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p className="max-w-xs">{truncatedPersona}</p>
+                  <p className="text-xs mt-1">Click to view full persona</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+          {hasPersona && (
+            <Badge variant="outline" className="text-xs">Custom Persona</Badge>
+          )}
         </div>
+        
         {messages.length > 0 && (
           <Button 
             variant="ghost" 
@@ -94,8 +120,29 @@ const ScienceGentChat: React.FC<ScienceGentChatProps> = ({
         )}
       </div>
       
+      {showPersonaInfo && scienceGent?.persona && (
+        <div className="p-4 bg-muted/30 border-b">
+          <h4 className="text-sm font-medium mb-2">Custom Persona Definition</h4>
+          <p className="text-sm whitespace-pre-wrap">{scienceGent.persona}</p>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={togglePersonaInfo}
+            className="mt-3"
+          >
+            Close
+          </Button>
+        </div>
+      )}
+      
       <div className="flex-1 overflow-y-auto mb-4 space-y-4 p-4 bg-secondary/10">
-        {messages.length === 0 ? (
+        {isInitializing ? (
+          <div className="space-y-4">
+            <Skeleton className="h-14 w-3/4" />
+            <Skeleton className="h-10 w-1/2 ml-auto" />
+            <Skeleton className="h-14 w-3/4" />
+          </div>
+        ) : messages.length === 0 ? (
           <div className="flex items-center justify-center h-full">
             <div className="text-center text-muted-foreground">
               <div className="mx-auto w-12 h-12 rounded-full bg-science-100 flex items-center justify-center mb-3">
@@ -139,11 +186,11 @@ const ScienceGentChat: React.FC<ScienceGentChatProps> = ({
             placeholder={`Ask ${scienceGent?.name || 'ScienceGent'} a question...`}
             className="resize-none min-h-[60px]"
             rows={2}
-            disabled={isLoading}
+            disabled={isLoading || isInitializing}
           />
           <Button 
             onClick={handleSendMessage} 
-            disabled={!inputValue.trim() || isLoading}
+            disabled={!inputValue.trim() || isLoading || isInitializing}
             className="bg-science-600 hover:bg-science-700 self-end h-[60px] px-4"
             aria-label="Send message"
           >

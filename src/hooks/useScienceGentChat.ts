@@ -15,6 +15,7 @@ const useScienceGentChat = (
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isInitializing, setIsInitializing] = useState(true);
   
   // Load chat history from localStorage on mount
   useEffect(() => {
@@ -26,6 +27,8 @@ const useScienceGentChat = (
         }
       } catch (e) {
         console.error('Error loading chat history:', e);
+      } finally {
+        setIsInitializing(false);
       }
     }
   }, [scienceGentAddress]);
@@ -54,7 +57,14 @@ const useScienceGentChat = (
       setMessages(prev => [...prev, userMessage]);
       
       // Get the persona from the scienceGent if available
-      const persona = scienceGent?.persona || scienceGent?.description || '';
+      const persona = scienceGent?.persona || '';
+      
+      // Log the persona for debugging
+      if (persona) {
+        console.log("Using persona from scienceGent:", persona.substring(0, 100) + "...");
+      } else {
+        console.log("No persona found in scienceGent object. Falling back to description.");
+      }
       
       // Fetch capabilities to enhance persona
       const { data: capabilityLinks } = await supabase
@@ -81,14 +91,12 @@ const useScienceGentChat = (
           ).join('\n')}` 
         : '';
       
-      console.log("Sending chat with persona:", persona?.substring(0, 50) + "...");
-      
       // Call the Edge Function with scienceGentAddress
       const { data, error: functionError } = await supabase.functions.invoke('generateChatResponse', {
         body: {
           messages: [...messages, userMessage],
           scienceGentName: scienceGent?.name || 'ScienceGent',
-          persona, // The edge function will prioritize getting this from the database directly
+          persona: persona, // Now correctly retrieving the persona from the db
           capabilities: capabilitiesText,
           scienceGentAddress // Add the address to create or reuse the assistant
         }
@@ -105,7 +113,7 @@ const useScienceGentChat = (
       
       setMessages(prev => [...prev, assistantMessage]);
       
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error in chat:', err);
       setError(err.message || 'Failed to get a response');
       toast({
@@ -118,11 +126,25 @@ const useScienceGentChat = (
     }
   };
   
+  // Clear chat history
+  const clearChat = () => {
+    if (scienceGentAddress) {
+      localStorage.removeItem(`chat_${scienceGentAddress}`);
+      setMessages([]);
+      toast({
+        title: "Chat cleared",
+        description: "Your chat history has been cleared.",
+      });
+    }
+  };
+  
   return {
     messages,
     isLoading,
     error,
-    sendMessage
+    sendMessage,
+    clearChat,
+    isInitializing
   };
 };
 
