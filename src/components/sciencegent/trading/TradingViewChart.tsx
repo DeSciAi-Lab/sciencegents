@@ -87,7 +87,22 @@ const TradingViewChart: React.FC<TradingViewChartProps> = ({
         const creationTimestamp = parseInt(stats[6].toString());
         
         // Process price history data from Supabase
-        let priceHistory: PricePoint[] = statsData?.price_history || [];
+        // Fix the type issue by ensuring price_history is treated as an array
+        let priceHistory: PricePoint[] = [];
+        
+        if (statsData?.price_history) {
+          // Check if price_history is an array and validate each item
+          const rawHistory = statsData.price_history;
+          if (Array.isArray(rawHistory)) {
+            priceHistory = rawHistory.map(item => ({
+              price: typeof item.price === 'number' ? item.price : 0,
+              timestamp: typeof item.timestamp === 'number' ? item.timestamp : 0,
+              volume: typeof item.volume === 'number' ? item.volume : 0
+            }));
+          } else {
+            console.warn("Price history is not an array:", rawHistory);
+          }
+        }
         
         // If we have no price history or very limited data, generate some initial historical data
         if (priceHistory.length < 10) {
@@ -111,7 +126,13 @@ const TradingViewChart: React.FC<TradingViewChartProps> = ({
           }, (payload) => {
             // If price_history has changed, update the chart
             if (payload.new && payload.new.price_history) {
-              const newHistory: PricePoint[] = payload.new.price_history;
+              const newHistory = Array.isArray(payload.new.price_history) 
+                ? payload.new.price_history.map(item => ({
+                    price: typeof item.price === 'number' ? item.price : 0,
+                    timestamp: typeof item.timestamp === 'number' ? item.timestamp : 0,
+                    volume: typeof item.volume === 'number' ? item.volume : 0
+                  }))
+                : [];
               const updatedCandleData = convertPriceHistoryToCandleData(newHistory, currentPrice);
               setChartData(updatedCandleData);
             }
