@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlertCircle, Loader2 } from 'lucide-react';
@@ -135,10 +134,6 @@ const TradingViewChart: React.FC<TradingViewChartProps> = ({
           type: 'volume',
         },
         priceScaleId: '',
-        scaleMargins: {
-          top: 0.8,
-          bottom: 0,
-        },
       });
       
       volumeSeries.setData(
