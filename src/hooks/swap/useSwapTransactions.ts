@@ -113,32 +113,66 @@ export const useSwapTransactions = (tokenAddress: string, onSuccess: () => Promi
         signer
       );
       
-      // Handle very large token amounts
+      // Parse token amount more safely
       let tokenAmountWei;
       try {
-        // For large integers, use parseUnits with 0 decimals first to avoid precision issues
-        if (tokenAmount.includes('.')) {
-          // If it has a decimal point, use regular parseEther
+        // Strategy 1: Handle integer tokens without decimals
+        if (!tokenAmount.includes('.') && tokenAmount.length > 15) {
+          // For large integers, create a BigNumber directly and multiply by WeiPerEther
+          const tokenAmountBN = ethers.BigNumber.from(tokenAmount);
+          tokenAmountWei = tokenAmountBN.mul(ethers.constants.WeiPerEther);
+          console.log("Using BigNumber directly for large integer:", tokenAmount);
+        } 
+        // Strategy 2: Round token amount to avoid precision issues
+        else if (tokenAmount.includes('.') && tokenAmount.length > 15) {
+          // For large decimal numbers, round to a reasonable precision (6 decimals)
+          const parts = tokenAmount.split('.');
+          const integerPart = parts[0];
+          const decimalPart = parts[1].substring(0, 6); // Keep only 6 decimal places
+          const roundedAmount = `${integerPart}.${decimalPart}`;
+          tokenAmountWei = ethers.utils.parseEther(roundedAmount);
+          console.log("Using rounded decimal amount:", roundedAmount);
+          
+          // Notify user about rounding
+          toast({
+            title: "Amount Adjusted",
+            description: "The token amount has been rounded to 6 decimal places to prevent errors.",
+            variant: "default",
+          });
+        }
+        // Strategy 3: Standard parsing for reasonable numbers
+        else {
           tokenAmountWei = ethers.utils.parseEther(tokenAmount);
-        } else {
-          // For large integers without decimals, convert safely
-          const bigIntValue = ethers.BigNumber.from(tokenAmount);
-          tokenAmountWei = bigIntValue.mul(ethers.constants.WeiPerEther);
+          console.log("Using standard parseEther for amount:", tokenAmount);
         }
       } catch (parseError) {
-        console.log('Error parsing token amount, trying alternative method:', parseError);
-        // Alternative approach: remove all non-numeric characters and parse as string
-        const cleanedAmount = tokenAmount.replace(/[^\d.]/g, '');
-        // If value is too large, truncate to a reasonable amount of digits
-        const truncatedAmount = cleanedAmount.substring(0, 18);
-        tokenAmountWei = ethers.utils.parseEther(truncatedAmount);
+        console.error('Error parsing token amount:', parseError);
         
-        // Show warning about amount adjustment
-        toast({
-          title: "Amount Adjusted",
-          description: "The token amount was too large and has been adjusted to prevent errors.",
-          variant: "warning",
-        });
+        // Fallback strategy for extreme cases
+        try {
+          // Convert to a simpler representation (e.g., 15000000 instead of 15000000.123456789)
+          const numValue = Math.floor(parseFloat(tokenAmount));
+          const simpleAmount = numValue.toString();
+          console.log("Fallback: Using simplified integer amount:", simpleAmount);
+          
+          // If it's very large, create as string and convert to BN
+          if (simpleAmount.length > 15) {
+            // Handle very large integers by dividing into chunks
+            const tokenAmountBN = ethers.BigNumber.from(simpleAmount);
+            tokenAmountWei = tokenAmountBN.mul(ethers.constants.WeiPerEther);
+          } else {
+            tokenAmountWei = ethers.utils.parseEther(simpleAmount);
+          }
+          
+          toast({
+            title: "Amount Simplified",
+            description: "The token amount was simplified to prevent errors. Decimal places were removed.",
+            variant: "default",
+          });
+        } catch (fallbackError) {
+          console.error('Even fallback parsing failed:', fallbackError);
+          throw new Error("Unable to process this token amount. Please try a smaller or simpler amount (with fewer decimal places).");
+        }
       }
       
       const toastId = toast({
@@ -215,8 +249,8 @@ export const useSwapTransactions = (tokenAddress: string, onSuccess: () => Promi
         errorMsg = 'Insufficient token balance for this transaction.';
       } else if (errorMsg.includes('slippage')) {
         errorMsg = 'Transaction would result in too much slippage. Try a smaller amount or increase slippage tolerance.';
-      } else if (errorMsg.includes('NUMERIC_FAULT') || errorMsg.includes('fractional component')) {
-        errorMsg = 'The token amount is too large or has too many decimal places. Try a smaller amount or a rounded number.';
+      } else if (errorMsg.includes('NUMERIC_FAULT') || errorMsg.includes('fractional component') || errorMsg.includes('decimal places')) {
+        errorMsg = 'The token amount is too large or has too many decimal places. Try using a rounded number without decimal places.';
       }
       
       setError(errorMsg);

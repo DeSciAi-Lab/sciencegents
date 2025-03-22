@@ -52,7 +52,7 @@ export const useTokenSwap = (tokenAddress: string) => {
         toast({
           title: "Large Amount Warning",
           description: "Very large token amounts may cause estimation errors",
-          variant: "warning",
+          variant: "default",
         });
       }
       

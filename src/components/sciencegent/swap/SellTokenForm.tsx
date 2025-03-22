@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ArrowDownUp, Loader2, Settings2 } from "lucide-react";
+import { ArrowDownUp, Loader2, Settings2, Info } from "lucide-react";
 import { 
   Popover,
   PopoverContent,
@@ -10,6 +10,12 @@ import {
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
+import { 
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface SellTokenFormProps {
   tokenSymbol: string;
@@ -34,34 +40,66 @@ const SellTokenForm: React.FC<SellTokenFormProps> = ({
   onSlippageChange,
   onSwap
 }) => {
-  const formattedTokenBalance = parseFloat(tokenBalance) > 1e18 
-    ? parseFloat(tokenBalance).toExponential(6) 
-    : parseFloat(tokenBalance).toFixed(6);
+  const [isAmountSimplified, setIsAmountSimplified] = useState(false);
+  
+  const formattedTokenBalance = (() => {
+    const numericBalance = parseFloat(tokenBalance);
+    if (isNaN(numericBalance)) return "0";
+    
+    if (numericBalance > 1e9) {
+      return `${(numericBalance / 1e9).toFixed(2)}B`;
+    } else if (numericBalance > 1e6) {
+      return `${(numericBalance / 1e6).toFixed(2)}M`;
+    } else if (numericBalance > 1e3) {
+      return `${(numericBalance / 1e3).toFixed(2)}K`;
+    } else {
+      return numericBalance.toFixed(6);
+    }
+  })();
 
   const handleMaxClick = () => {
-    if (parseFloat(tokenBalance) > 0) {
-      if (parseFloat(tokenBalance) > 1e15) {
-        const safeAmount = Math.floor(parseFloat(tokenBalance) * 0.999).toString();
-        onInputChange(safeAmount);
-      } else {
-        onInputChange(tokenBalance);
-      }
+    if (parseFloat(tokenBalance) <= 0) return;
+    
+    if (parseFloat(tokenBalance) > 1e9) {
+      const safeAmount = Math.floor(parseFloat(tokenBalance)).toString();
+      onInputChange(safeAmount);
+      setIsAmountSimplified(true);
+    } else if (parseFloat(tokenBalance) > 1e6) {
+      const safeAmount = Math.floor(parseFloat(tokenBalance) * 0.999).toString();
+      onInputChange(safeAmount);
+      setIsAmountSimplified(true);
+    } else {
+      onInputChange(tokenBalance);
+      setIsAmountSimplified(false);
     }
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     
-    if (value.replace(/\D/g, '').length > 18) {
+    if (value.replace(/\D/g, '').length > 12) {
       return;
     }
     
     const decimalParts = value.split('.');
-    if (decimalParts.length > 1 && decimalParts[1].length > 8) {
+    if (decimalParts.length > 1 && decimalParts[1].length > 4) {
       return;
     }
     
+    setIsAmountSimplified(false);
     onInputChange(value);
+  };
+
+  const handleRoundClick = () => {
+    if (!inputValue || parseFloat(inputValue) <= 0) return;
+    
+    try {
+      const roundedValue = Math.floor(parseFloat(inputValue)).toString();
+      onInputChange(roundedValue);
+      setIsAmountSimplified(true);
+    } catch (error) {
+      console.error("Error rounding value:", error);
+    }
   };
 
   return (
@@ -69,13 +107,33 @@ const SellTokenForm: React.FC<SellTokenFormProps> = ({
       <div className="space-y-2">
         <div className="flex justify-between items-center">
           <p className="text-sm font-medium">{tokenSymbol} Amount</p>
-          <button 
-            type="button" 
-            onClick={handleMaxClick}
-            className="text-xs text-science-600 hover:text-science-700"
-          >
-            Max
-          </button>
+          <div className="flex items-center gap-2">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button 
+                    type="button" 
+                    onClick={handleRoundClick}
+                    className="text-xs text-science-600 hover:text-science-700"
+                    disabled={isPending || !inputValue || parseFloat(inputValue) <= 0}
+                  >
+                    Round
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Round to a whole number to avoid precision errors</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            
+            <button 
+              type="button" 
+              onClick={handleMaxClick}
+              className="text-xs text-science-600 hover:text-science-700"
+            >
+              Max
+            </button>
+          </div>
         </div>
         
         <Input
@@ -85,8 +143,19 @@ const SellTokenForm: React.FC<SellTokenFormProps> = ({
           onChange={handleInputChange}
           min="0"
           disabled={isPending}
+          className={isAmountSimplified ? "bg-blue-50" : ""}
         />
-        <p className="text-xs text-muted-foreground text-right">Balance: {formattedTokenBalance} {tokenSymbol}</p>
+        
+        <div className="flex justify-between items-center">
+          <p className="text-xs text-muted-foreground">Balance: {formattedTokenBalance} {tokenSymbol}</p>
+          
+          {isAmountSimplified && (
+            <div className="flex items-center gap-1 text-xs text-blue-600">
+              <Info className="h-3 w-3" />
+              <span>Amount simplified to avoid errors</span>
+            </div>
+          )}
+        </div>
       </div>
       
       <div className="flex justify-center my-2">
@@ -136,6 +205,15 @@ const SellTokenForm: React.FC<SellTokenFormProps> = ({
         {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
         {isPending ? "Processing..." : `Sell ${tokenSymbol}`}
       </Button>
+      
+      {parseFloat(tokenBalance) > 1e9 && (
+        <div className="p-3 rounded-lg bg-amber-50 border border-amber-200">
+          <p className="text-xs text-amber-700 flex items-center">
+            <Info className="h-3 w-3 mr-1" />
+            <span>You have a very large token balance. To prevent errors, try selling smaller amounts (below 1 billion) or use the "Round" button.</span>
+          </p>
+        </div>
+      )}
     </div>
   );
 };

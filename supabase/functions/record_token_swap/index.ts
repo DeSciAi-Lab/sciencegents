@@ -89,14 +89,34 @@ async function recordTradeFromEvent(event: any, tokenAddress: string, supabase: 
     let safeTokenAmount, safeEthAmount;
     
     try {
-      // Handle potentially very large token amounts
-      if (typeof tokenAmount === 'string' && tokenAmount.length > 15) {
-        // For extremely large numbers, use scientific notation
-        safeTokenAmount = parseFloat(Number(tokenAmount).toExponential(6));
+      // Safe conversion for token amount
+      if (typeof tokenAmount === 'string') {
+        if (tokenAmount.length > 15) {
+          // For very large numbers, try to get a reasonable representation
+          if (tokenAmount.includes('.')) {
+            // If it has decimals, use scientific notation
+            safeTokenAmount = parseFloat(Number(tokenAmount).toExponential(6));
+          } else {
+            // For integers, trim to the most significant digits
+            const numVal = Number(tokenAmount);
+            if (!isNaN(numVal)) {
+              safeTokenAmount = numVal;
+            } else {
+              // If conversion to Number fails, use a string representation
+              const firstDigits = tokenAmount.substring(0, 15);
+              safeTokenAmount = parseFloat(firstDigits);
+            }
+          }
+        } else {
+          safeTokenAmount = parseFloat(tokenAmount);
+        }
+      } else if (typeof tokenAmount === 'number') {
+        safeTokenAmount = tokenAmount;
       } else {
-        safeTokenAmount = parseFloat(tokenAmount);
+        safeTokenAmount = 0;
       }
       
+      // Simple conversion for ETH amount (usually smaller)
       safeEthAmount = parseFloat(ethAmount);
       
       // Validate that we have valid numbers
@@ -118,6 +138,14 @@ async function recordTradeFromEvent(event: any, tokenAddress: string, supabase: 
       // Handle potential floating point issues for very small numbers
       if (price < 1e-18) {
         price = 1e-18; // Set a minimum price to avoid DB issues
+      }
+      
+      // Handle potential issues with very large token amounts resulting in extremely small prices
+      if (safeTokenAmount > 1e15 && price < 1e-15) {
+        // If token amount is extremely large and price very small, 
+        // use a more reasonable representation to avoid precision issues
+        console.log(`Very small price detected: ${price}. Using minimum value.`);
+        price = 1e-15;
       }
     }
     
