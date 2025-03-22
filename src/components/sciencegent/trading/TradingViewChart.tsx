@@ -8,6 +8,7 @@ import { createChart, ColorType, CandlestickData, Time } from 'lightweight-chart
 import { ethers } from 'ethers';
 import { contractConfig } from '@/utils/contractConfig';
 import { supabase } from '@/integrations/supabase/client';
+import { Json } from '@/integrations/supabase/types';
 
 interface TradingViewChartProps {
   tokenAddress: string;
@@ -31,6 +32,30 @@ interface PricePoint {
   timestamp: number;
   volume: number;
 }
+
+// Helper function to safely extract price history item properties
+const extractPricePointFromJson = (item: Json): PricePoint => {
+  // Default values if properties don't exist or aren't numbers
+  const defaultPoint: PricePoint = { price: 0, timestamp: 0, volume: 0 };
+  
+  // If not an object, return default
+  if (typeof item !== 'object' || item === null) {
+    return defaultPoint;
+  }
+  
+  // Get properties safely, with defaults if they don't exist or aren't numbers
+  return {
+    price: typeof (item as Record<string, unknown>).price === 'number' 
+      ? (item as Record<string, number>).price 
+      : defaultPoint.price,
+    timestamp: typeof (item as Record<string, unknown>).timestamp === 'number' 
+      ? (item as Record<string, number>).timestamp 
+      : defaultPoint.timestamp,
+    volume: typeof (item as Record<string, unknown>).volume === 'number' 
+      ? (item as Record<string, number>).volume 
+      : defaultPoint.volume
+  };
+};
 
 const TradingViewChart: React.FC<TradingViewChartProps> = ({
   tokenAddress,
@@ -87,20 +112,14 @@ const TradingViewChart: React.FC<TradingViewChartProps> = ({
         const creationTimestamp = parseInt(stats[6].toString());
         
         // Process price history data from Supabase
-        // Fix the type issue by ensuring price_history is treated as an array
         let priceHistory: PricePoint[] = [];
         
         if (statsData?.price_history) {
-          // Check if price_history is an array and validate each item
-          const rawHistory = statsData.price_history;
-          if (Array.isArray(rawHistory)) {
-            priceHistory = rawHistory.map(item => ({
-              price: typeof item.price === 'number' ? item.price : 0,
-              timestamp: typeof item.timestamp === 'number' ? item.timestamp : 0,
-              volume: typeof item.volume === 'number' ? item.volume : 0
-            }));
+          // Check if price_history is an array and parse each item
+          if (Array.isArray(statsData.price_history)) {
+            priceHistory = (statsData.price_history as Json[]).map(extractPricePointFromJson);
           } else {
-            console.warn("Price history is not an array:", rawHistory);
+            console.warn("Price history is not an array:", statsData.price_history);
           }
         }
         
@@ -126,13 +145,13 @@ const TradingViewChart: React.FC<TradingViewChartProps> = ({
           }, (payload) => {
             // If price_history has changed, update the chart
             if (payload.new && payload.new.price_history) {
-              const newHistory = Array.isArray(payload.new.price_history) 
-                ? payload.new.price_history.map(item => ({
-                    price: typeof item.price === 'number' ? item.price : 0,
-                    timestamp: typeof item.timestamp === 'number' ? item.timestamp : 0,
-                    volume: typeof item.volume === 'number' ? item.volume : 0
-                  }))
-                : [];
+              let newHistory: PricePoint[] = [];
+              
+              // Safely parse the new price history
+              if (Array.isArray(payload.new.price_history)) {
+                newHistory = (payload.new.price_history as Json[]).map(extractPricePointFromJson);
+              }
+              
               const updatedCandleData = convertPriceHistoryToCandleData(newHistory, currentPrice);
               setChartData(updatedCandleData);
             }
