@@ -6,9 +6,11 @@ import {
   TrendingUp, 
   Beaker, 
   Clock, 
-  DollarSign
+  DollarSign,
+  GitMerge
 } from 'lucide-react';
 import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 interface ScienceGentCardProps {
   id: string;
@@ -21,6 +23,8 @@ interface ScienceGentCardProps {
   roi: number;
   domain: string;
   featured?: boolean;
+  isMigrated?: boolean;
+  migrationEligible?: boolean;
 }
 
 const ScienceGentCard: React.FC<ScienceGentCardProps> = ({
@@ -33,7 +37,9 @@ const ScienceGentCard: React.FC<ScienceGentCardProps> = ({
   age,
   roi,
   domain,
-  featured = false
+  featured = false,
+  isMigrated = false,
+  migrationEligible = false
 }) => {
   const navigate = useNavigate();
   
@@ -45,16 +51,16 @@ const ScienceGentCard: React.FC<ScienceGentCardProps> = ({
   // Format market cap for display
   const formatMarketCap = (value: number) => {
     if (value >= 1000000) {
-      return `$${(value / 1000000).toFixed(2)}M`;
+      return `${(value / 1000000).toFixed(2)}M ETH`;
     } else if (value >= 1000) {
-      return `$${(value / 1000).toFixed(2)}K`;
+      return `${(value / 1000).toFixed(2)}K ETH`;
     }
-    return `$${value.toFixed(4)}`;
+    return `${value.toFixed(4)} ETH`;
   };
 
   // Format token price for display
   const formatTokenPrice = (value: number) => {
-    return `$${value.toFixed(6)}`;
+    return `${value.toFixed(4)} ETH`;
   };
 
   // Format ROI for display with + or - sign
@@ -105,9 +111,23 @@ const ScienceGentCard: React.FC<ScienceGentCardProps> = ({
             </div>
           </div>
           
-          <div className="flex items-center gap-1 text-xs font-medium text-science-700 bg-science-50 px-2 py-1 rounded-full">
-            <Beaker size={12} />
-            <span>{domain}</span>
+          <div className="flex flex-col items-end gap-1">
+            <div className="flex items-center gap-1 text-xs font-medium text-science-700 bg-science-50 px-2 py-1 rounded-full">
+              <Beaker size={12} />
+              <span>{domain}</span>
+            </div>
+            {isMigrated && (
+              <Badge className="bg-green-100 text-green-800 flex items-center">
+                <GitMerge size={10} className="mr-1" />
+                Uniswap
+              </Badge>
+            )}
+            {!isMigrated && migrationEligible && (
+              <Badge className="bg-blue-100 text-blue-800 flex items-center">
+                <GitMerge size={10} className="mr-1" />
+                Ready for Migration
+              </Badge>
+            )}
           </div>
         </div>
         

@@ -11,7 +11,8 @@ import CapabilitiesList from './CapabilitiesList';
 import MaturityTracker from './MaturityTracker';
 import MigrationPanel from './MigrationPanel';
 import { Badge } from '@/components/ui/badge';
-import { Bot, MessageCircle, Brain, GitMerge } from 'lucide-react';
+import { Bot, MessageCircle, Brain, GitMerge, BarChart3, ExternalLink } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface ScienceGentDetailsDashboardProps {
   address: string;
@@ -43,11 +44,20 @@ const ScienceGentDetailsDashboard: React.FC<ScienceGentDetailsDashboardProps> = 
   const capabilitiesCount = scienceGentData?.capabilities?.length || 0;
   const isMigrated = scienceGentData?.is_migrated || false;
 
+  // Get Uniswap link for the token
+  const getUniswapLink = () => {
+    if (!address) return "#";
+    return `https://app.uniswap.org/explore/tokens/ethereum_sepolia/${address.toLowerCase()}`;
+  };
+
   return (
     <div className="space-y-6">
       <Tabs defaultValue="overview" className="w-full">
         <TabsList className="grid grid-cols-5 mb-6">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="overview" className="flex items-center gap-1.5">
+            <BarChart3 className="h-4 w-4" />
+            <span>Overview</span>
+          </TabsTrigger>
           <TabsTrigger value="chat" className="flex items-center gap-1.5">
             <MessageCircle className="h-4 w-4" />
             <span>Chat</span>
@@ -58,10 +68,22 @@ const ScienceGentDetailsDashboard: React.FC<ScienceGentDetailsDashboardProps> = 
               </Badge>
             )}
           </TabsTrigger>
-          <TabsTrigger value="trade">Trade</TabsTrigger>
+          <TabsTrigger value="trade" className="flex items-center gap-1.5">
+            <span>Trade</span>
+            {isMigrated && (
+              <Badge variant="outline" className="ml-1 text-xs bg-green-50 text-green-700 border-green-200">
+                Uniswap
+              </Badge>
+            )}
+          </TabsTrigger>
           <TabsTrigger value="migrate" className="flex items-center gap-1.5">
             <GitMerge className="h-4 w-4" />
             <span>Migration</span>
+            {isMigrated && (
+              <Badge variant="outline" className="ml-1 text-xs bg-green-50 text-green-700 border-green-200">
+                Completed
+              </Badge>
+            )}
           </TabsTrigger>
           <TabsTrigger value="capabilities" className="flex items-center gap-1.5">
             <span>Capabilities</span>
@@ -78,7 +100,7 @@ const ScienceGentDetailsDashboard: React.FC<ScienceGentDetailsDashboardProps> = 
             refreshData={refreshData} 
           />
           
-          {/* Add maturity details section */}
+          {/* Display migration info if not migrated */}
           {scienceGentData && !scienceGentData.is_migrated && (
             <Card>
               <CardHeader>
@@ -126,6 +148,65 @@ const ScienceGentDetailsDashboard: React.FC<ScienceGentDetailsDashboardProps> = 
               </CardContent>
             </Card>
           )}
+          
+          {/* If migrated, display Uniswap info */}
+          {scienceGentData && scienceGentData.is_migrated && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Uniswap Details</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="bg-blue-50 border border-blue-200 rounded-md p-4 mb-4">
+                  <p className="text-blue-800 mb-3">
+                    This ScienceGent has been migrated to Uniswap and is now tradable on the external DEX.
+                  </p>
+                  <Button 
+                    variant="outline"
+                    className="flex items-center gap-2"
+                    asChild
+                  >
+                    <a 
+                      href={getUniswapLink()} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                    >
+                      Trade on Uniswap
+                      <ExternalLink className="h-4 w-4" />
+                    </a>
+                  </Button>
+                </div>
+                
+                {scienceGentData.uniswap_pair && (
+                  <div className="space-y-4">
+                    <div>
+                      <h3 className="font-medium mb-2">Uniswap Pair</h3>
+                      <p className="text-sm">
+                        LP Token Address: 
+                        <a
+                          href={`https://sepolia.etherscan.io/address/${scienceGentData.uniswap_pair}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="ml-2 text-science-600 hover:underline"
+                        >
+                          {scienceGentData.uniswap_pair}
+                        </a>
+                      </p>
+                    </div>
+                    
+                    <div>
+                      <h3 className="font-medium mb-2">LP Token Lock</h3>
+                      <p className="text-sm">LP tokens are locked for 10 years after migration.</p>
+                      {scienceGentData.lp_unlock_time && (
+                        <p className="text-sm mt-1">
+                          Unlock date: {new Date(scienceGentData.lp_unlock_time).toLocaleDateString()}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
         
         <TabsContent value="chat">
@@ -161,6 +242,11 @@ const ScienceGentDetailsDashboard: React.FC<ScienceGentDetailsDashboardProps> = 
           <Card>
             <CardHeader>
               <CardTitle>Trade {scienceGentData?.symbol || "Tokens"}</CardTitle>
+              {isMigrated && (
+                <CardDescription>
+                  This token has been migrated to Uniswap and trading is now available on the external DEX.
+                </CardDescription>
+              )}
             </CardHeader>
             <CardContent>
               <TokenSwapInterface 

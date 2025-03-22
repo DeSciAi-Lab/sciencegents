@@ -6,14 +6,26 @@ import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import Reveal from '@/components/animations/Reveal';
 import useScienceGentDetails, { LoadingStatus } from '@/hooks/useScienceGentDetails';
-import { ExternalLink, ChevronLeft } from 'lucide-react';
+import { ExternalLink, ChevronLeft, Beaker, Calendar, BookOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import ScienceGentDetailsDashboard from '@/components/sciencegent/ScienceGentDetailsDashboard';
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const ScienceGentDetails: React.FC = () => {
   const { address } = useParams<{ address: string }>();
   const { scienceGent, status, isRefreshing, refreshData } = useScienceGentDetails(address);
+
+  const formatDate = (timestamp: string | number) => {
+    if (!timestamp) return 'Unknown';
+    const date = new Date(timestamp);
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -31,41 +43,71 @@ const ScienceGentDetails: React.FC = () => {
               </Link>
               
               {status !== LoadingStatus.Loading && scienceGent && (
-                <div className="flex justify-between items-center mb-6">
-                  <div>
-                    <h1 className="text-3xl font-bold">{scienceGent.name}</h1>
-                    <div className="flex items-center mt-2">
-                      <p className="text-muted-foreground mr-2">{scienceGent.symbol}</p>
-                      <a 
-                        href={`https://sepolia.etherscan.io/address/${scienceGent.address}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-xs text-muted-foreground flex items-center hover:underline"
-                      >
-                        {scienceGent.address.substring(0, 8)}...{scienceGent.address.substring(36)}
-                        <ExternalLink className="ml-1 h-3 w-3" />
-                      </a>
+                <div className="mb-6">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h1 className="text-3xl font-bold mb-1">{scienceGent.name}</h1>
+                      <div className="flex items-center gap-3 mt-2">
+                        <p className="text-muted-foreground">{scienceGent.symbol}</p>
+                        <a 
+                          href={`https://sepolia.etherscan.io/address/${scienceGent.address}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs text-muted-foreground flex items-center hover:underline"
+                        >
+                          {scienceGent.address.substring(0, 8)}...{scienceGent.address.substring(36)}
+                          <ExternalLink className="ml-1 h-3 w-3" />
+                        </a>
+                      </div>
+                    </div>
+                    
+                    <div className="flex flex-col items-end gap-2">
+                      {scienceGent.website && (
+                        <a
+                          href={scienceGent.website}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-science-600 hover:text-science-700 flex items-center text-sm"
+                        >
+                          Visit Website
+                          <ExternalLink className="ml-1 h-3 w-3" />
+                        </a>
+                      )}
+                      
+                      <div className="flex gap-2">
+                        {scienceGent.domain && (
+                          <Badge variant="outline" className="flex items-center gap-1">
+                            <Beaker className="h-3 w-3" />
+                            {scienceGent.domain}
+                          </Badge>
+                        )}
+                        {scienceGent.created_on_chain_at && (
+                          <Badge variant="outline" className="flex items-center gap-1">
+                            <Calendar className="h-3 w-3" />
+                            Created {formatDate(scienceGent.created_on_chain_at)}
+                          </Badge>
+                        )}
+                      </div>
                     </div>
                   </div>
                   
-                  {scienceGent.website && (
-                    <a
-                      href={scienceGent.website}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-science-600 hover:text-science-700 flex items-center text-sm"
-                    >
-                      Visit Website
-                      <ExternalLink className="ml-1 h-3 w-3" />
-                    </a>
+                  {scienceGent.description && (
+                    <div className="mt-4 bg-muted/50 p-4 rounded-lg">
+                      <div className="flex items-center gap-2 mb-2 text-muted-foreground">
+                        <BookOpen className="h-4 w-4" />
+                        <span className="font-medium">Description</span>
+                      </div>
+                      <p className="text-sm text-muted-foreground">{scienceGent.description}</p>
+                    </div>
                   )}
                 </div>
               )}
               
               {status === LoadingStatus.Loading && (
                 <div className="mb-8">
-                  <div className="h-8 w-60 bg-muted rounded animate-pulse mb-2"></div>
-                  <div className="h-4 w-40 bg-muted rounded animate-pulse"></div>
+                  <Skeleton className="h-8 w-60 mb-2" />
+                  <Skeleton className="h-4 w-40 mb-4" />
+                  <Skeleton className="h-24 w-full" />
                 </div>
               )}
             </div>

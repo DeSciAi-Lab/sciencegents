@@ -80,7 +80,7 @@ const TokenStatistics: React.FC<TokenStatisticsProps> = ({
       <CardContent className="p-6">
         <div className="flex justify-between items-start mb-6">
           <div>
-            <h2 className="text-2xl font-bold mb-1">{tokenPrice} ETH</h2>
+            <h2 className="text-2xl font-bold mb-1">{tokenPrice.toFixed(4)} ETH</h2>
             <div className="flex items-center">
               <Badge className={priceChange24h >= 0 ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}>
                 {priceChange24h >= 0 ? <TrendingUp className="h-3 w-3 mr-1" /> : <TrendingDown className="h-3 w-3 mr-1" />}
@@ -156,28 +156,55 @@ const TokenStatistics: React.FC<TokenStatisticsProps> = ({
             remainingMaturityTime={scienceGent.remaining_maturity_time}
           />
           
-          {scienceGent.address && (isMigrated || scienceGent.is_migrated) && scienceGent.uniswap_pair && (
+          {scienceGent.address && (isMigrated || scienceGent.is_migrated) && (
             <div className="pt-4 border-t">
-              <div className="flex justify-between items-center">
-                <h3 className="font-medium">Uniswap Pair</h3>
-                <div className="flex items-center gap-2">
-                  <a
-                    href={`https://sepolia.etherscan.io/address/${scienceGent.uniswap_pair || ''}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center text-science-600 hover:text-science-700"
-                  >
-                    View on Etherscan <ExternalLink className="ml-1 h-3 w-3" />
-                  </a>
-                  <a
-                    href={getUniswapLink()}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center text-science-600 hover:text-science-700"
-                  >
-                    Trade on Uniswap <ExternalLink className="ml-1 h-3 w-3" />
-                  </a>
+              <div className="flex flex-col space-y-4">
+                <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
+                  <p className="text-blue-800 mb-3">
+                    This ScienceGent has been migrated to Uniswap and is now tradable on the external DEX.
+                  </p>
+                  <div className="flex flex-wrap gap-3">
+                    {scienceGent.uniswap_pair && (
+                      <a
+                        href={`https://sepolia.etherscan.io/address/${scienceGent.uniswap_pair}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center text-science-600 hover:text-science-700 text-sm"
+                      >
+                        View LP on Etherscan <ExternalLink className="ml-1 h-3 w-3" />
+                      </a>
+                    )}
+                    <a
+                      href={getUniswapLink()}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center text-science-600 hover:text-science-700 text-sm"
+                    >
+                      Trade on Uniswap <ExternalLink className="ml-1 h-3 w-3" />
+                    </a>
+                  </div>
                 </div>
+                
+                {scienceGent.uniswap_pair && (
+                  <div className="flex justify-between items-center">
+                    <h3 className="font-medium">Uniswap LP Details</h3>
+                    <div>
+                      <p className="text-sm text-muted-foreground">LP Token Address: 
+                        <a
+                          href={`https://sepolia.etherscan.io/address/${scienceGent.uniswap_pair}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="ml-2 text-science-600 hover:underline"
+                        >
+                          {scienceGent.uniswap_pair.substring(0, 8)}...{scienceGent.uniswap_pair.substring(36)}
+                        </a>
+                      </p>
+                      {scienceGent.lp_unlock_time && (
+                        <p className="text-sm text-muted-foreground">LP Unlock Time: {new Date(scienceGent.lp_unlock_time).toLocaleDateString()}</p>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}
