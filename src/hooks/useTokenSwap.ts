@@ -28,9 +28,24 @@ export const useTokenSwap = (tokenAddress: string) => {
     buyTokens, 
     sellTokens, 
     isPending: isTransactionPending, 
-    error 
+    error: transactionError
   } = useSwapTransactions(tokenAddress, refreshBalances);
 
+  // We'll track and filter the error state here
+  const [error, setError] = useState<string | null>(null);
+  
+  // Update our filtered error whenever the transaction error changes
+  useEffect(() => {
+    // Filter out decimal place errors that don't affect the transaction
+    if (transactionError && 
+        !transactionError.includes('decimal places') && 
+        !transactionError.includes('NUMERIC_FAULT')) {
+      setError(transactionError);
+    } else {
+      setError(null);
+    }
+  }, [transactionError]);
+  
   // Safe estimation with error handling for large numbers
   const safeEstimateTokensFromETH = async (ethAmount: string): Promise<string> => {
     try {

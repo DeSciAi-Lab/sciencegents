@@ -8,7 +8,12 @@ interface SwapErrorProps {
 }
 
 const SwapError: React.FC<SwapErrorProps> = ({ error }) => {
-  if (!error) return null;
+  // Only show errors that are actually relevant
+  if (!error || 
+      error.includes('decimal places') || // Skip showing decimal errors 
+      error.includes('NUMERIC_FAULT')) {
+    return null;
+  }
   
   return (
     <Alert variant="destructive" className="mt-4">

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTokenSwap, SwapDirection } from "@/hooks/useTokenSwap";
@@ -92,15 +91,18 @@ const TokenSwapInterface: React.FC<TokenSwapInterfaceProps> = ({
       const minOutput = parseFloat(outputValue) * (1 - slippageTolerance / 100);
       const minOutputStr = minOutput.toString();
 
+      let success = false;
       if (activeTab === 'buy') {
-        await buyTokens(inputValue, minOutputStr);
+        success = await buyTokens(inputValue, minOutputStr);
       } else {
-        await sellTokens(inputValue, minOutputStr);
+        success = await sellTokens(inputValue, minOutputStr);
       }
       
       // Reset form after successful swap
-      setInputValue('');
-      setOutputValue('0');
+      if (success) {
+        setInputValue('');
+        setOutputValue('0');
+      }
     } catch (err) {
       console.error('Swap error:', err);
     }
