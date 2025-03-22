@@ -35,7 +35,16 @@ export const useScienceGentDetails = (address: string | undefined) => {
       const dbData = await fetchScienceGentFromSupabase(address);
       
       if (dbData) {
-        setScienceGent(dbData);
+        // Calculate additional properties if needed
+        const enrichedData = {
+          ...dbData,
+          // Format token age
+          formattedAge: formatTokenAge(dbData.created_on_chain_at),
+          // Format maturity status
+          maturityStatus: getMaturityStatus(dbData)
+        };
+        
+        setScienceGent(enrichedData);
         setStatus(LoadingStatus.Loaded);
       } else {
         // If not found in Supabase, fetch from blockchain and save
@@ -48,7 +57,13 @@ export const useScienceGentDetails = (address: string | undefined) => {
           // Fetch the saved data from Supabase
           const savedData = await fetchScienceGentFromSupabase(address);
           if (savedData) {
-            setScienceGent(savedData);
+            const enrichedData = {
+              ...savedData,
+              formattedAge: formatTokenAge(savedData.created_on_chain_at),
+              maturityStatus: getMaturityStatus(savedData)
+            };
+            
+            setScienceGent(enrichedData);
             setStatus(LoadingStatus.Loaded);
           } else {
             setStatus(LoadingStatus.Error);
@@ -65,6 +80,44 @@ export const useScienceGentDetails = (address: string | undefined) => {
         description: "Failed to load ScienceGent details",
         variant: "destructive",
       });
+    }
+  };
+
+  // Helper function to format token age from creation timestamp
+  const formatTokenAge = (creationTimestamp: string | number | undefined): string => {
+    if (!creationTimestamp) return 'Unknown';
+    
+    const creationDate = new Date(creationTimestamp);
+    const now = new Date();
+    const diffInMs = now.getTime() - creationDate.getTime();
+    
+    // Calculate days, hours, etc.
+    const days = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+    
+    if (days > 365) {
+      const years = Math.floor(days / 365);
+      return `${years} year${years !== 1 ? 's' : ''}`;
+    } else if (days > 30) {
+      const months = Math.floor(days / 30);
+      return `${months} month${months !== 1 ? 's' : ''}`;
+    } else if (days > 0) {
+      return `${days} day${days !== 1 ? 's' : ''}`;
+    } else {
+      const hours = Math.floor(diffInMs / (1000 * 60 * 60));
+      return `${hours} hour${hours !== 1 ? 's' : ''}`;
+    }
+  };
+
+  // Helper function to determine maturity status
+  const getMaturityStatus = (data: any): string => {
+    if (data.is_migrated) {
+      return 'Migrated';
+    } else if (data.migration_eligible) {
+      return 'Ready for Migration';
+    } else if (data.maturity_progress >= 50) {
+      return 'Near Maturity';
+    } else {
+      return 'Immature';
     }
   };
 
@@ -85,7 +138,13 @@ export const useScienceGentDetails = (address: string | undefined) => {
         // Fetch the updated data from Supabase
         const updatedData = await fetchScienceGentFromSupabase(address);
         if (updatedData) {
-          setScienceGent(updatedData);
+          const enrichedData = {
+            ...updatedData,
+            formattedAge: formatTokenAge(updatedData.created_on_chain_at),
+            maturityStatus: getMaturityStatus(updatedData)
+          };
+          
+          setScienceGent(enrichedData);
           toast({
             title: "Refresh Successful",
             description: "ScienceGent data has been updated",

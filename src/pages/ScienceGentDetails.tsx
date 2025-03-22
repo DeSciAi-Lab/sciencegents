@@ -6,7 +6,7 @@ import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import Reveal from '@/components/animations/Reveal';
 import useScienceGentDetails, { LoadingStatus } from '@/hooks/useScienceGentDetails';
-import { ExternalLink, ChevronLeft, Beaker, Calendar, BookOpen } from 'lucide-react';
+import { ExternalLink, ChevronLeft, Beaker, Calendar, BookOpen, GitMerge, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import ScienceGentDetailsDashboard from '@/components/sciencegent/ScienceGentDetailsDashboard';
@@ -19,7 +19,7 @@ const ScienceGentDetails: React.FC = () => {
 
   const formatDate = (timestamp: string | number) => {
     if (!timestamp) return 'Unknown';
-    const date = new Date(timestamp);
+    const date = new Date(typeof timestamp === 'string' ? timestamp : Number(timestamp));
     return date.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
@@ -58,6 +58,20 @@ const ScienceGentDetails: React.FC = () => {
                           {scienceGent.address.substring(0, 8)}...{scienceGent.address.substring(36)}
                           <ExternalLink className="ml-1 h-3 w-3" />
                         </a>
+                        
+                        {scienceGent.is_migrated && (
+                          <Badge variant="outline" className="bg-green-100 text-green-800 flex items-center gap-1">
+                            <GitMerge className="h-3 w-3 mr-1" />
+                            Migrated to Uniswap
+                          </Badge>
+                        )}
+                        
+                        {!scienceGent.is_migrated && scienceGent.migration_eligible && (
+                          <Badge variant="outline" className="bg-blue-100 text-blue-800 flex items-center gap-1">
+                            <ShieldCheck className="h-3 w-3 mr-1" />
+                            Ready for Migration
+                          </Badge>
+                        )}
                       </div>
                     </div>
                     
@@ -100,6 +114,22 @@ const ScienceGentDetails: React.FC = () => {
                       <p className="text-sm text-muted-foreground">{scienceGent.description}</p>
                     </div>
                   )}
+                  
+                  {/* ScienceGent Lifecycle Status */}
+                  <div className="mt-4 grid sm:grid-cols-3 gap-4">
+                    <div className="p-3 rounded-lg border bg-card/50">
+                      <p className="text-xs text-muted-foreground mb-1">Token Price</p>
+                      <p className="font-medium">{scienceGent.token_price?.toFixed(4) || '0.0000'} ETH</p>
+                    </div>
+                    <div className="p-3 rounded-lg border bg-card/50">
+                      <p className="text-xs text-muted-foreground mb-1">Market Cap</p>
+                      <p className="font-medium">{scienceGent.market_cap?.toFixed(4) || '0.0000'} ETH</p>
+                    </div>
+                    <div className="p-3 rounded-lg border bg-card/50">
+                      <p className="text-xs text-muted-foreground mb-1">Maturity Progress</p>
+                      <p className="font-medium">{scienceGent.maturity_progress || 0}%</p>
+                    </div>
+                  </div>
                 </div>
               )}
               

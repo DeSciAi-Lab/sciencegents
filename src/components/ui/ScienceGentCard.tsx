@@ -7,7 +7,8 @@ import {
   Beaker, 
   Clock, 
   DollarSign,
-  GitMerge
+  GitMerge,
+  ShieldCheck
 } from 'lucide-react';
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -124,7 +125,7 @@ const ScienceGentCard: React.FC<ScienceGentCardProps> = ({
             )}
             {!isMigrated && migrationEligible && (
               <Badge className="bg-blue-100 text-blue-800 flex items-center">
-                <GitMerge size={10} className="mr-1" />
+                <ShieldCheck size={10} className="mr-1" />
                 Ready for Migration
               </Badge>
             )}
@@ -174,8 +175,18 @@ const ScienceGentCard: React.FC<ScienceGentCardProps> = ({
         </div>
       </div>
       
+      {/* Status indicator for migrated tokens */}
+      {isMigrated && (
+        <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-green-400 to-green-600" />
+      )}
+      
+      {/* Status indicator for migration-eligible tokens */}
+      {!isMigrated && migrationEligible && (
+        <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-400 to-blue-600" />
+      )}
+      
       {/* Gradient border indicator for featured cards */}
-      {featured && (
+      {featured && !isMigrated && !migrationEligible && (
         <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-science-400 to-science-600" />
       )}
     </Card>
