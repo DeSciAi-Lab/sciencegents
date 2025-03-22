@@ -276,7 +276,23 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      add_price_point: {
+        Args: {
+          token_address: string
+          price: number
+          record_timestamp?: string
+        }
+        Returns: undefined
+      }
+      record_trade: {
+        Args: {
+          token_address: string
+          price: number
+          volume: number
+          record_timestamp?: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never

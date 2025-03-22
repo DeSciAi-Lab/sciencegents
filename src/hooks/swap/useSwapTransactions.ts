@@ -3,6 +3,7 @@ import { useState, useCallback } from 'react';
 import { ethers } from 'ethers';
 import { toast } from '@/components/ui/use-toast';
 import { contractConfig } from '@/utils/contractConfig';
+import { recordTokenSwap } from '@/services/priceHistoryService';
 
 export const useSwapTransactions = (tokenAddress: string, onSuccess: () => Promise<void>) => {
   const [isPending, setIsPending] = useState(false);
@@ -18,6 +19,7 @@ export const useSwapTransactions = (tokenAddress: string, onSuccess: () => Promi
     try {
       const provider = new ethers.providers.Web3Provider(window.ethereum);
       const signer = provider.getSigner();
+      const userAddress = await signer.getAddress();
       
       const swapContract = new ethers.Contract(
         contractConfig.addresses.ScienceGentsSwap,
@@ -44,12 +46,22 @@ export const useSwapTransactions = (tokenAddress: string, onSuccess: () => Promi
         description: "Your purchase is being processed...",
       });
       
-      await tx.wait();
+      const receipt = await tx.wait();
       
       toast({
         title: "Purchase Successful",
         description: `You have successfully purchased approximately ${parseFloat(minTokensOut).toFixed(6)} tokens.`,
       });
+      
+      // Record the trade for price history
+      await recordTokenSwap(
+        tokenAddress,
+        true, // isBuy
+        minTokensOut, // approximate token amount
+        ethAmount,
+        tx.hash,
+        userAddress
+      );
       
       await onSuccess();
       return true;
@@ -92,6 +104,7 @@ export const useSwapTransactions = (tokenAddress: string, onSuccess: () => Promi
     try {
       const provider = new ethers.providers.Web3Provider(window.ethereum);
       const signer = provider.getSigner();
+      const userAddress = await signer.getAddress();
       
       // First approve the swap contract to spend tokens
       const tokenContract = new ethers.Contract(
@@ -144,12 +157,22 @@ export const useSwapTransactions = (tokenAddress: string, onSuccess: () => Promi
         description: "Your sale is being processed...",
       });
       
-      await tx.wait();
+      const receipt = await tx.wait();
       
       toast({
         title: "Sale Successful",
         description: `You have successfully sold ${tokenAmount} tokens for approximately ${parseFloat(minEthOut).toFixed(6)} ETH.`,
       });
+      
+      // Record the trade for price history
+      await recordTokenSwap(
+        tokenAddress,
+        false, // isBuy = false for sell
+        tokenAmount,
+        minEthOut, // approximate ETH amount
+        tx.hash,
+        userAddress
+      );
       
       await onSuccess();
       return true;

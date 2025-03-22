@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlertCircle, Loader2 } from 'lucide-react';
@@ -6,6 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { createChart, ColorType, CandlestickData, Time } from 'lightweight-charts';
 import { ethers } from 'ethers';
 import { contractConfig } from '@/utils/contractConfig';
+import { supabase } from '@/integrations/supabase/client';
 
 interface TradingViewChartProps {
   tokenAddress: string;
@@ -23,6 +25,13 @@ interface TokenCandleData {
   volume?: number;
 }
 
+// Interface for price history data from Supabase
+interface PricePoint {
+  price: number;
+  timestamp: number;
+  volume: number;
+}
+
 const TradingViewChart: React.FC<TradingViewChartProps> = ({
   tokenAddress,
   tokenSymbol,
@@ -35,7 +44,7 @@ const TradingViewChart: React.FC<TradingViewChartProps> = ({
   const chartRef = useRef<any>(null);
   const candlestickSeriesRef = useRef<any>(null);
 
-  // Fetch candle data from your internal DEX
+  // Fetch price history data from Supabase and contract
   useEffect(() => {
     if (isMigrated) return;
     
@@ -43,13 +52,25 @@ const TradingViewChart: React.FC<TradingViewChartProps> = ({
       try {
         setIsLoading(true);
         
+        // Step 1: Fetch price history from Supabase
+        const { data: statsData, error: statsError } = await supabase
+          .from('sciencegent_stats')
+          .select('price_history, volume_24h, transactions')
+          .eq('sciencegent_address', tokenAddress)
+          .single();
+        
+        if (statsError) {
+          console.error("Error fetching price history:", statsError);
+          throw new Error("Failed to load price history data");
+        }
+
+        // Step 2: Also get current token stats from blockchain for latest price
         if (!window.ethereum) {
           throw new Error("No Ethereum provider found");
         }
         
         const provider = new ethers.providers.Web3Provider(window.ethereum);
         
-        // Get token stats from blockchain
         const swapABI = [
           "function getTokenStats(address token) external view returns (uint256 tokenReserve, uint256 ethReserve, uint256 virtualETH, uint256 collectedFees, bool tradingEnabled, address creator, uint256 creationTimestamp, uint256 maturityDeadline, bool migrated, uint256 lpUnlockTime, uint256 lockedLPAmount, uint256 currentPrice, bool migrationEligible)"
         ];
@@ -65,12 +86,43 @@ const TradingViewChart: React.FC<TradingViewChartProps> = ({
         const currentPrice = parseFloat(ethers.utils.formatEther(stats[11]));
         const creationTimestamp = parseInt(stats[6].toString());
         
-        // Since internal DEX doesn't store historical prices, we'll generate demo data
-        // In a real implementation, you would fetch this from your backend or events
-        const data = generateDemoData(currentPrice, creationTimestamp);
-        setChartData(data);
+        // Process price history data from Supabase
+        let priceHistory: PricePoint[] = statsData?.price_history || [];
+        
+        // If we have no price history or very limited data, generate some initial historical data
+        if (priceHistory.length < 10) {
+          // Use the current price from blockchain and a generated history
+          const data = generateDemoData(currentPrice, creationTimestamp);
+          setChartData(data);
+        } else {
+          // Convert price history to chart data
+          const candleData = convertPriceHistoryToCandleData(priceHistory, currentPrice);
+          setChartData(candleData);
+        }
+
+        // Setup real-time subscription for price updates
+        const priceUpdateChannel = supabase
+          .channel('price-updates')
+          .on('postgres_changes', {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'sciencegent_stats',
+            filter: `sciencegent_address=eq.${tokenAddress}`
+          }, (payload) => {
+            // If price_history has changed, update the chart
+            if (payload.new && payload.new.price_history) {
+              const newHistory: PricePoint[] = payload.new.price_history;
+              const updatedCandleData = convertPriceHistoryToCandleData(newHistory, currentPrice);
+              setChartData(updatedCandleData);
+            }
+          })
+          .subscribe();
         
         setIsLoading(false);
+        
+        return () => {
+          supabase.removeChannel(priceUpdateChannel);
+        };
       } catch (error) {
         console.error("Error fetching token trade data:", error);
         setChartError("Failed to load trading data. Please try again later.");
@@ -157,7 +209,72 @@ const TradingViewChart: React.FC<TradingViewChartProps> = ({
     };
   }, [chartData, isLoading, isMigrated, chartError]);
 
-  // Generate demo data function (replace with real data in production)
+  // Convert Supabase price history to candle data
+  const convertPriceHistoryToCandleData = (
+    priceHistory: PricePoint[],
+    currentPrice: number
+  ): TokenCandleData[] => {
+    // Sort the price history by timestamp (oldest first)
+    const sortedHistory = [...priceHistory].sort((a, b) => a.timestamp - b.timestamp);
+    
+    // If no history, return empty array
+    if (sortedHistory.length === 0) return [];
+    
+    // Group data points by day for daily candles
+    const dailyCandles: Record<string, PricePoint[]> = {};
+    
+    sortedHistory.forEach(point => {
+      // Convert timestamp to date string (YYYY-MM-DD)
+      const date = new Date(point.timestamp * 1000);
+      const dateString = date.toISOString().split('T')[0];
+      
+      if (!dailyCandles[dateString]) {
+        dailyCandles[dateString] = [];
+      }
+      
+      dailyCandles[dateString].push(point);
+    });
+    
+    // Convert daily points to OHLC candles
+    const candleData: TokenCandleData[] = Object.entries(dailyCandles).map(([dateString, points]) => {
+      // Sort points by timestamp for this day
+      const sortedPoints = points.sort((a, b) => a.timestamp - b.timestamp);
+      
+      // Get open, high, low, close values
+      const open = sortedPoints[0].price;
+      const close = sortedPoints[sortedPoints.length - 1].price;
+      const high = Math.max(...sortedPoints.map(p => p.price));
+      const low = Math.min(...sortedPoints.map(p => p.price));
+      
+      // Calculate total volume for the day
+      const volume = sortedPoints.reduce((sum, point) => sum + (point.volume || 0), 0);
+      
+      // Convert date string to timestamp (seconds)
+      const time = Math.floor(new Date(dateString).getTime() / 1000) as Time;
+      
+      return {
+        time,
+        open,
+        high,
+        low,
+        close,
+        volume
+      };
+    });
+    
+    // Ensure the last candle has the current price as close value
+    if (candleData.length > 0) {
+      const lastCandle = candleData[candleData.length - 1];
+      lastCandle.close = currentPrice;
+      // Update high/low if necessary
+      if (currentPrice > lastCandle.high) lastCandle.high = currentPrice;
+      if (currentPrice < lastCandle.low) lastCandle.low = currentPrice;
+    }
+    
+    return candleData;
+  };
+
+  // Generate demo data function (for when we don't have enough real data)
   const generateDemoData = (currentPrice: number, creationTimestamp: number): TokenCandleData[] => {
     const data: TokenCandleData[] = [];
     const now = Math.floor(Date.now() / 1000);
