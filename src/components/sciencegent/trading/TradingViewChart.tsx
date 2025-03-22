@@ -5,10 +5,28 @@ import { AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 
+// Define the proper type for TradingViewWidget props
+interface TradingViewWidgetProps {
+  symbol?: string;
+  theme?: string;
+  locale?: string;
+  autosize?: boolean;
+  interval?: string;
+  timezone?: string;
+  style?: string;
+  toolbar_bg?: string;
+  enable_publishing?: boolean;
+  hide_side_toolbar?: boolean;
+  allow_symbol_change?: boolean;
+  studies?: string[];
+  container_id?: string;
+}
+
 // Dynamic import of TradingView widget to avoid SSR issues
 const TradingViewWidget = React.lazy(() => 
   import('react-tradingview-widget').then(module => ({
-    default: module.default
+    // Cast the default export to our properly typed component
+    default: module.default as React.ComponentType<TradingViewWidgetProps>
   }))
 );
 
