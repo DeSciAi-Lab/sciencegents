@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,10 +34,34 @@ const SellTokenForm: React.FC<SellTokenFormProps> = ({
   onSlippageChange,
   onSwap
 }) => {
+  const formattedTokenBalance = parseFloat(tokenBalance) > 1e18 
+    ? parseFloat(tokenBalance).toExponential(6) 
+    : parseFloat(tokenBalance).toFixed(6);
+
   const handleMaxClick = () => {
     if (parseFloat(tokenBalance) > 0) {
-      onInputChange(tokenBalance);
+      if (parseFloat(tokenBalance) > 1e15) {
+        const safeAmount = Math.floor(parseFloat(tokenBalance) * 0.999).toString();
+        onInputChange(safeAmount);
+      } else {
+        onInputChange(tokenBalance);
+      }
     }
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    
+    if (value.replace(/\D/g, '').length > 18) {
+      return;
+    }
+    
+    const decimalParts = value.split('.');
+    if (decimalParts.length > 1 && decimalParts[1].length > 8) {
+      return;
+    }
+    
+    onInputChange(value);
   };
 
   return (
@@ -59,11 +82,11 @@ const SellTokenForm: React.FC<SellTokenFormProps> = ({
           type="number"
           placeholder="0.0"
           value={inputValue}
-          onChange={(e) => onInputChange(e.target.value)}
+          onChange={handleInputChange}
           min="0"
           disabled={isPending}
         />
-        <p className="text-xs text-muted-foreground text-right">Balance: {parseFloat(tokenBalance).toFixed(6)} {tokenSymbol}</p>
+        <p className="text-xs text-muted-foreground text-right">Balance: {formattedTokenBalance} {tokenSymbol}</p>
       </div>
       
       <div className="flex justify-center my-2">

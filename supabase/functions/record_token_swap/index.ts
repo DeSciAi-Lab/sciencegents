@@ -1,3 +1,4 @@
+
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
 import { ethers } from 'https://esm.sh/ethers@5.7.2'
@@ -84,19 +85,47 @@ async function recordTradeFromEvent(event: any, tokenAddress: string, supabase: 
       transactionHash
     } = event
     
-    // Calculate price in ETH per token
-    let price
-    if (parseFloat(tokenAmount) > 0) {
-      price = parseFloat(ethAmount) / parseFloat(tokenAmount)
-    } else {
-      return // Skip if we can't calculate a valid price
+    // Safely handle token and ETH amounts
+    let safeTokenAmount, safeEthAmount;
+    
+    try {
+      // Handle potentially very large token amounts
+      if (typeof tokenAmount === 'string' && tokenAmount.length > 15) {
+        // For extremely large numbers, use scientific notation
+        safeTokenAmount = parseFloat(Number(tokenAmount).toExponential(6));
+      } else {
+        safeTokenAmount = parseFloat(tokenAmount);
+      }
+      
+      safeEthAmount = parseFloat(ethAmount);
+      
+      // Validate that we have valid numbers
+      if (isNaN(safeTokenAmount) || isNaN(safeEthAmount)) {
+        throw new Error('Invalid number conversion');
+      }
+    } catch (parseError) {
+      console.error('Error parsing amounts:', parseError);
+      // Fallback to safe defaults
+      safeTokenAmount = 0;
+      safeEthAmount = 0;
+    }
+    
+    // Calculate price in ETH per token (safely)
+    let price = 0;
+    if (safeTokenAmount > 0) {
+      price = safeEthAmount / safeTokenAmount;
+      
+      // Handle potential floating point issues for very small numbers
+      if (price < 1e-18) {
+        price = 1e-18; // Set a minimum price to avoid DB issues
+      }
     }
     
     // Call the record_trade function in Supabase
     const { data, error } = await supabase.rpc('record_trade', {
       token_address: tokenAddress,
       price: price,
-      volume: parseFloat(ethAmount),
+      volume: safeEthAmount,
       record_timestamp: new Date(timestamp * 1000).toISOString()
     })
     
@@ -105,7 +134,7 @@ async function recordTradeFromEvent(event: any, tokenAddress: string, supabase: 
       throw error
     }
     
-    console.log(`Successfully recorded trade for ${tokenAddress}: ${ethAmount} ETH at price ${price}`)
+    console.log(`Successfully recorded trade for ${tokenAddress}: ${safeEthAmount} ETH at price ${price}`)
     
     // Also record the transaction in user_interactions for additional tracking
     if (transactionHash && event.user) {
@@ -115,9 +144,9 @@ async function recordTradeFromEvent(event: any, tokenAddress: string, supabase: 
         interaction_type: isBuy ? 'BUY' : 'SELL',
         interaction_data: {
           tx_hash: transactionHash,
-          token_amount: tokenAmount,
-          eth_amount: ethAmount,
-          price: price,
+          token_amount: safeTokenAmount.toString(),
+          eth_amount: safeEthAmount.toString(),
+          price: price.toString(),
           timestamp: timestamp
         }
       })

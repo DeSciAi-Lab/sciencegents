@@ -113,7 +113,33 @@ export const useSwapTransactions = (tokenAddress: string, onSuccess: () => Promi
         signer
       );
       
-      const tokenAmountWei = ethers.utils.parseEther(tokenAmount);
+      // Handle very large token amounts
+      let tokenAmountWei;
+      try {
+        // For large integers, use parseUnits with 0 decimals first to avoid precision issues
+        if (tokenAmount.includes('.')) {
+          // If it has a decimal point, use regular parseEther
+          tokenAmountWei = ethers.utils.parseEther(tokenAmount);
+        } else {
+          // For large integers without decimals, convert safely
+          const bigIntValue = ethers.BigNumber.from(tokenAmount);
+          tokenAmountWei = bigIntValue.mul(ethers.constants.WeiPerEther);
+        }
+      } catch (parseError) {
+        console.log('Error parsing token amount, trying alternative method:', parseError);
+        // Alternative approach: remove all non-numeric characters and parse as string
+        const cleanedAmount = tokenAmount.replace(/[^\d.]/g, '');
+        // If value is too large, truncate to a reasonable amount of digits
+        const truncatedAmount = cleanedAmount.substring(0, 18);
+        tokenAmountWei = ethers.utils.parseEther(truncatedAmount);
+        
+        // Show warning about amount adjustment
+        toast({
+          title: "Amount Adjusted",
+          description: "The token amount was too large and has been adjusted to prevent errors.",
+          variant: "warning",
+        });
+      }
       
       const toastId = toast({
         title: "Preparing Transaction",
@@ -161,7 +187,7 @@ export const useSwapTransactions = (tokenAddress: string, onSuccess: () => Promi
       
       toast({
         title: "Sale Successful",
-        description: `You have successfully sold ${tokenAmount} tokens for approximately ${parseFloat(minEthOut).toFixed(6)} ETH.`,
+        description: `You have successfully sold tokens for approximately ${parseFloat(minEthOut).toFixed(6)} ETH.`,
       });
       
       // Record the trade for price history
@@ -189,6 +215,8 @@ export const useSwapTransactions = (tokenAddress: string, onSuccess: () => Promi
         errorMsg = 'Insufficient token balance for this transaction.';
       } else if (errorMsg.includes('slippage')) {
         errorMsg = 'Transaction would result in too much slippage. Try a smaller amount or increase slippage tolerance.';
+      } else if (errorMsg.includes('NUMERIC_FAULT') || errorMsg.includes('fractional component')) {
+        errorMsg = 'The token amount is too large or has too many decimal places. Try a smaller amount or a rounded number.';
       }
       
       setError(errorMsg);
