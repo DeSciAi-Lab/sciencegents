@@ -34,7 +34,7 @@ const useScienceGentChat = (
             .from('sciencegent_assistants')
             .select('assistant_id')
             .eq('sciencegent_address', scienceGentAddress)
-            .single();
+            .maybeSingle();
             
           if (assistantData) {
             console.log("Found existing assistant ID:", assistantData.assistant_id);
@@ -76,18 +76,18 @@ const useScienceGentChat = (
         interaction_data: { message_length: content.length }
       });
       
-      // Update chat count in sciencegent_stats
-      // Use the Edge Function to update the chat count instead of direct RPC call
+      // Update chat count in sciencegent_stats using the edge function
       try {
-        const { error } = await supabase.functions.invoke('increment_chat_count', {
+        const response = await supabase.functions.invoke('increment_chat_count', {
           body: { sciencegent_address: scienceGentAddress }
         });
         
-        if (error) {
-          console.error('Failed to update chat count:', error);
+        if (response.error) {
+          console.error('Failed to update chat count:', response.error);
         }
       } catch (err) {
         console.error('Failed to invoke increment_chat_count function:', err);
+        // Non-critical error, we'll continue with the chat
       }
     } catch (e) {
       console.error('Error tracking interaction:', e);
@@ -107,8 +107,11 @@ const useScienceGentChat = (
       const userMessage: ChatMessage = { role: 'user', content };
       setMessages(prev => [...prev, userMessage]);
       
-      // Track this interaction
-      trackInteraction(content);
+      // Track this interaction (but don't wait for it)
+      trackInteraction(content).catch(err => {
+        console.error('Error tracking interaction:', err);
+        // Non-critical, continue with chat
+      });
       
       // Get the persona from the scienceGent if available
       const persona = scienceGent?.persona || '';
@@ -146,7 +149,7 @@ const useScienceGentChat = (
         : '';
       
       // Call the Edge Function with scienceGentAddress and assistantId (if exists)
-      const { data, error: functionError } = await supabase.functions.invoke('generateChatResponse', {
+      const response = await supabase.functions.invoke('generateChatResponse', {
         body: {
           messages: [...messages, userMessage],
           scienceGentName: scienceGent?.name || 'ScienceGent',
@@ -157,8 +160,14 @@ const useScienceGentChat = (
         }
       });
       
-      if (functionError) throw new Error(functionError.message);
-      if (!data || !data.message) throw new Error('Invalid response from AI');
+      if (response.error) {
+        throw new Error(response.error.message || "Error from edge function");
+      }
+      
+      const data = response.data;
+      if (!data || !data.message) {
+        throw new Error('Invalid response from AI');
+      }
       
       // Store the assistantId if it's returned and we don't have it yet
       if (data.assistantId && !assistantId) {

@@ -33,23 +33,46 @@ serve(async (req) => {
       );
     }
     
-    // Call the increment_chat_count RPC function to update the chat count
-    const { data, error } = await supabase
-      .rpc('increment_chat_count', { address: sciencegent_address });
+    console.log(`Incrementing chat count for ScienceGent: ${sciencegent_address}`);
     
-    if (error) {
-      console.error("Error incrementing chat count:", error);
-      return new Response(
-        JSON.stringify({ error: error.message }),
-        { 
-          status: 500, 
-          headers: { ...corsHeaders, "Content-Type": "application/json" } 
-        }
-      );
+    // First check if a record exists
+    const { data: existingRecord, error: checkError } = await supabase
+      .from('sciencegent_stats')
+      .select('id')
+      .eq('sciencegent_address', sciencegent_address)
+      .maybeSingle();
+    
+    let result;
+    
+    if (checkError) {
+      console.error("Error checking for existing record:", checkError);
+      throw new Error(checkError.message);
+    }
+    
+    if (existingRecord) {
+      // Update existing record
+      const { error } = await supabase
+        .from('sciencegent_stats')
+        .update({ chat_count: supabase.rpc('increment', { amount: 1, column: 'chat_count' }) })
+        .eq('sciencegent_address', sciencegent_address);
+      
+      if (error) throw new Error(error.message);
+      result = { updated: true };
+    } else {
+      // Insert new record
+      const { error } = await supabase
+        .from('sciencegent_stats')
+        .insert({
+          sciencegent_address,
+          chat_count: 1
+        });
+      
+      if (error) throw new Error(error.message);
+      result = { inserted: true };
     }
     
     return new Response(
-      JSON.stringify({ success: true }),
+      JSON.stringify({ success: true, result }),
       { 
         status: 200, 
         headers: { ...corsHeaders, "Content-Type": "application/json" } 
@@ -59,7 +82,7 @@ serve(async (req) => {
   } catch (error) {
     console.error("Unexpected error:", error);
     return new Response(
-      JSON.stringify({ error: "Internal Server Error" }),
+      JSON.stringify({ error: error.message || "Internal Server Error" }),
       { 
         status: 500, 
         headers: { ...corsHeaders, "Content-Type": "application/json" } 
