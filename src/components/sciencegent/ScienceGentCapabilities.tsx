@@ -9,7 +9,7 @@ interface ScienceGentCapabilitiesProps {
 
 const ScienceGentCapabilities: React.FC<ScienceGentCapabilitiesProps> = ({ scienceGent }) => {
   // Sample capabilities for display
-  const capabilities = scienceGent.capabilities || [];
+  const capabilities = scienceGent?.capabilities || [];
   
   // Map capability IDs to more user-friendly names and categories
   const capabilityMap: Record<string, { name: string, category?: string }> = {
@@ -31,36 +31,27 @@ const ScienceGentCapabilities: React.FC<ScienceGentCapabilitiesProps> = ({ scien
   };
 
   return (
-    <Card>
-      <CardContent className="p-4">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="font-medium">
-            {displayCapabilities.length} Capabilities:
-          </h3>
-        </div>
+    <div className="border rounded-xl p-4">
+      <div className="text-xl font-medium mb-2">{displayCapabilities.length} Capabilities:</div>
+      <div className="flex flex-wrap gap-2">
+        {displayCapabilities.slice(0, 4).map((cap: string) => (
+          <Badge 
+            key={cap} 
+            className="bg-white border rounded-full px-3 py-1 hover:bg-gray-100"
+          >
+            {getCapabilityName(cap)}
+          </Badge>
+        ))}
         
-        <div className="flex flex-wrap gap-2">
-          {displayCapabilities.slice(0, 5).map((cap: string) => (
-            <Badge 
-              key={cap} 
-              variant="outline" 
-              className="bg-gray-50 hover:bg-gray-100"
-            >
-              {getCapabilityName(cap)}
-            </Badge>
-          ))}
-          
-          {displayCapabilities.length > 5 && (
-            <Badge 
-              variant="outline" 
-              className="bg-gray-50 hover:bg-gray-100 cursor-pointer"
-            >
-              more
-            </Badge>
-          )}
-        </div>
-      </CardContent>
-    </Card>
+        {displayCapabilities.length > 4 && (
+          <Badge 
+            className="bg-white border rounded-full px-3 py-1 hover:bg-gray-100 cursor-pointer"
+          >
+            more
+          </Badge>
+        )}
+      </div>
+    </div>
   );
 };
 

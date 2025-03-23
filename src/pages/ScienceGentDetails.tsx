@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useParams } from 'react-router-dom';
 import Navbar from '@/components/layout/Navbar';
@@ -99,7 +100,7 @@ const ScienceGentDetails: React.FC = () => {
 
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
-                      <h1 className="text-2xl font-bold">ScienceGent Name</h1>
+                      <h1 className="text-2xl font-bold">{scienceGent?.name || "ScienceGent Name"}</h1>
                       <Badge className="ml-2 bg-gray-100 text-gray-800 font-medium border-0 rounded">${symbol}</Badge>
                     </div>
 
@@ -142,7 +143,7 @@ const ScienceGentDetails: React.FC = () => {
                     </div>
 
                     <div className="bg-white border rounded-full px-4 py-1.5 w-full md:max-w-[500px] text-sm text-gray-600">
-                      Description ----- ---- ----- ------ ----- ------ ---
+                      {scienceGent?.description || "Description ----- ---- ----- ------ ----- ------ ---"}
                       <button className="text-blue-500 ml-1 text-xs">see more</button>
                     </div>
                   </div>
@@ -194,22 +195,12 @@ const ScienceGentDetails: React.FC = () => {
               
               <div className="border-l">
                 <div className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <span className="font-medium">Price {tokenPrice} ETH</span>
-                      <span className="text-gray-500">${priceUSD}</span>
-                    </div>
-                    <div className="bg-gray-100 rounded-full px-2 py-1 text-xs flex items-center">
-                      <Settings2 size={12} className="mr-1" />
-                      <span>Slippage 1%</span>
-                    </div>
-                  </div>
-                  
                   <TokenSwapInterface 
                     tokenAddress={address || ''}
                     tokenSymbol={symbol}
                     isMigrated={scienceGent?.is_migrated || false}
                     uniswapPair={scienceGent?.uniswapPair}
+                    scienceGent={scienceGent}
                   />
                 </div>
               </div>

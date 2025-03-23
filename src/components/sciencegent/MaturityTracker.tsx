@@ -26,16 +26,6 @@ const MaturityTracker: React.FC<MaturityTrackerProps> = ({
   const requiredFees = virtualETH * 2 + capabilityFees;
   const feesPercentage = (collectedFees / requiredFees) * 100;
   
-  // Calculate time remaining display
-  const formatTimeRemaining = () => {
-    if (!remainingMaturityTime || remainingMaturityTime <= 0) return "Maturity reached";
-    
-    const days = Math.floor(remainingMaturityTime / (60 * 60 * 24));
-    const hours = Math.floor((remainingMaturityTime % (60 * 60 * 24)) / (60 * 60));
-    
-    return `${days}d ${hours}h remaining`;
-  };
-  
   // Determine status text and color
   const getStatusInfo = () => {
     if (isMigrated) {
@@ -72,48 +62,16 @@ const MaturityTracker: React.FC<MaturityTrackerProps> = ({
   const status = getStatusInfo();
   
   return (
-    <div className="space-y-2">
-      <div className="flex justify-between items-center">
-        <div className="flex items-center space-x-2">
-          <h3 className="font-medium">Maturity Progress</h3>
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger>
-                <Info className="h-4 w-4 text-muted-foreground" />
-              </TooltipTrigger>
-              <TooltipContent className="max-w-[300px]">
-                <p>ScienceGents tokens have a 2-year maturity period. Once a token has collected enough trading fees (2x virtual ETH + capability fees), it can be migrated to Uniswap.</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        </div>
-        <Badge className={status.color}>{status.text}</Badge>
+    <div className="border rounded-xl p-4">
+      <div className="text-center mb-2">
+        <div className="text-xl font-medium">Maturity Status</div>
+        <div className="text-2xl font-bold">{maturityProgress}%</div>
       </div>
-      
-      <Progress value={status.progress} className="h-2" />
-      
-      {!isMigrated && (
-        <div className="grid grid-cols-2 gap-4 mt-3">
-          <div>
-            <p className="text-xs text-muted-foreground">Time Progress</p>
-            <div className="flex justify-between">
-              <p className="text-sm font-medium">{maturityProgress}%</p>
-              {remainingMaturityTime !== undefined && (
-                <p className="text-xs text-muted-foreground">{formatTimeRemaining()}</p>
-              )}
-            </div>
-          </div>
-          <div>
-            <p className="text-xs text-muted-foreground">Fee Progress</p>
-            <div className="flex justify-between">
-              <p className="text-sm font-medium">{Math.min(Math.round(feesPercentage), 100)}%</p>
-              <p className="text-xs text-muted-foreground">
-                {collectedFees.toFixed(4)}/{requiredFees.toFixed(4)} ETH
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
+      <Progress value={status.progress} className="h-2 bg-gray-200" />
+      <p className="mt-3 text-sm">
+        The ScienceGent will become eligible to migrate to Uniswap on generating {requiredFees.toFixed(4)} ETH in trading fee (
+        2x virtualETH ={virtualETH * 2} + capability fees ={capabilityFees})
+      </p>
     </div>
   );
 };

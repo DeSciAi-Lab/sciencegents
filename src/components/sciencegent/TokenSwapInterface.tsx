@@ -1,28 +1,33 @@
-
 import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTokenSwap, SwapDirection } from "@/hooks/useTokenSwap";
-import { ArrowDown, ChevronDown, Settings, Loader2, ExternalLink } from 'lucide-react';
+import { ArrowDown, ChevronDown, Loader2, ExternalLink, Settings2 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import ScienceGentCapabilities from "./ScienceGentCapabilities";
+import MaturityTracker from "./MaturityTracker";
 
 interface TokenSwapInterfaceProps {
   tokenAddress: string;
   tokenSymbol: string;
   isMigrated?: boolean;
   uniswapPair?: string;
+  scienceGent?: any;
 }
 
 const TokenSwapInterface: React.FC<TokenSwapInterfaceProps> = ({
   tokenAddress,
   tokenSymbol,
   isMigrated = false,
-  uniswapPair
+  uniswapPair,
+  scienceGent
 }) => {
   const [activeTab, setActiveTab] = useState<SwapDirection>('sell');
-  const [inputValue, setInputValue] = useState<string>('');
-  const [outputValue, setOutputValue] = useState<string>('');
+  const [inputValue, setInputValue] = useState<string>('0.0001');
+  const [outputValue, setOutputValue] = useState<string>('0.19807');
   const [slippageTolerance, setSlippageTolerance] = useState<number>(1); // 1% default slippage
   
   const {
@@ -38,13 +43,16 @@ const TokenSwapInterface: React.FC<TokenSwapInterfaceProps> = ({
     refreshBalances
   } = useTokenSwap(tokenAddress);
 
-  // Reset form when tab changes
   useEffect(() => {
-    setInputValue('');
-    setOutputValue('0');
+    if (activeTab === 'buy') {
+      setInputValue('0.0001');
+      setOutputValue('0.19807');
+    } else {
+      setInputValue('0.0001');
+      setOutputValue('0.001');
+    }
   }, [activeTab]);
 
-  // Update output estimate when input changes
   useEffect(() => {
     const updateEstimate = async () => {
       if (!inputValue || parseFloat(inputValue) <= 0) {
@@ -54,11 +62,9 @@ const TokenSwapInterface: React.FC<TokenSwapInterfaceProps> = ({
 
       try {
         if (activeTab === 'buy') {
-          // ETH to Token
           const tokensOut = await estimateTokensFromETH(inputValue);
           setOutputValue(tokensOut);
         } else {
-          // Token to ETH
           const ethOut = await estimateETHFromTokens(inputValue);
           setOutputValue(ethOut);
         }
@@ -72,7 +78,6 @@ const TokenSwapInterface: React.FC<TokenSwapInterfaceProps> = ({
     return () => clearTimeout(debounceTimer);
   }, [inputValue, activeTab, estimateTokensFromETH, estimateETHFromTokens]);
 
-  // Get Uniswap link for the token
   const getUniswapLink = () => {
     if (!tokenAddress) return "#";
     return `https://app.uniswap.org/explore/tokens/ethereum_sepolia/${tokenAddress.toLowerCase()}`;
@@ -97,161 +102,153 @@ const TokenSwapInterface: React.FC<TokenSwapInterfaceProps> = ({
     );
   }
 
-  // Price header section
   const PriceHeader = () => (
     <div className="flex items-center justify-between mb-4">
-      <div className="flex items-center gap-2 px-2 py-1 bg-gray-100 rounded-full">
-        <span>Price 0.0000004 ETH</span>
+      <div className="flex items-center gap-2 border rounded-full px-4 py-2 bg-gray-50">
+        <span className="font-medium">Price 0.000004 ETH</span>
         <span className="text-gray-500">$0.0003</span>
       </div>
-      <div className="flex items-center gap-1 text-xs px-2 py-1 bg-gray-100 rounded-full">
-        <Settings size={12} />
-        <span>Slippage {slippageTolerance}%</span>
+      <div className="flex items-center gap-1 px-3 py-2 border rounded-full">
+        <Settings2 className="h-5 w-5 mr-1" />
+        <span>Slippage</span>
       </div>
     </div>
   );
 
   return (
-    <div className="p-4 space-y-4">
+    <div className="space-y-4">
       <PriceHeader />
       
       <Tabs defaultValue="sell" value={activeTab} onValueChange={(val) => setActiveTab(val as SwapDirection)} className="w-full">
-        <TabsList className="w-full mb-4 grid grid-cols-2">
-          <TabsTrigger value="sell">Sell</TabsTrigger>
-          <TabsTrigger value="buy">Buy</TabsTrigger>
+        <TabsList className="w-full mb-4 grid grid-cols-2 bg-transparent p-0">
+          <TabsTrigger 
+            value="sell" 
+            className={`rounded-none border-b-2 ${activeTab === 'sell' ? 'border-primary' : 'border-transparent'} px-0`}
+          >
+            Sell
+          </TabsTrigger>
+          <TabsTrigger 
+            value="buy" 
+            className={`rounded-none border-b-2 ${activeTab === 'buy' ? 'border-primary' : 'border-transparent'} px-0`}
+          >
+            Buy
+          </TabsTrigger>
         </TabsList>
         
-        <TabsContent value="sell" className="space-y-4">
-          <div>
-            <p className="text-gray-500 mb-1">Sell</p>
-            <div className="p-3 bg-gray-50 rounded-lg border">
-              <div className="flex justify-between mb-1">
-                <p className="text-xs text-gray-400">You sell</p>
-                <p className="text-xs text-gray-400">Balance: {parseFloat(tokenBalance).toFixed(4)}</p>
-              </div>
-              <div className="flex justify-between items-center">
-                <Input
-                  type="number"
-                  value={inputValue}
-                  onChange={(e) => setInputValue(e.target.value)}
-                  placeholder="0.0001"
-                  className="text-2xl font-medium border-0 p-0 h-auto bg-transparent w-3/5"
-                />
-                <div className="flex items-center gap-1 bg-white border rounded-lg px-2 py-1">
-                  <div className="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center text-white">
-                    <span className="text-xs">{tokenSymbol.substring(0, 1)}</span>
-                  </div>
-                  <span className="font-medium">{tokenSymbol}</span>
-                  <ChevronDown size={14} />
+        <TabsContent value="sell" className="space-y-4 px-0 pt-4">
+          <div className="bg-white rounded-none p-0">
+            <div className="flex justify-between items-center">
+              <Input
+                type="number"
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                placeholder="0.0001"
+                className="text-5xl font-medium border-0 p-0 h-auto bg-transparent w-3/5 focus-visible:ring-0 focus-visible:ring-offset-0"
+              />
+              <div className="flex items-center gap-1 bg-white border rounded-full px-3 py-2">
+                <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center">
+                  <img src="https://ethereum.org/favicon-32x32.png" alt="ETH" className="w-5 h-5" />
                 </div>
+                <span className="font-medium">ETH</span>
+                <ChevronDown className="h-4 w-4 ml-1" />
               </div>
-              <div className="text-xs text-gray-400 mt-1">$0.20</div>
+            </div>
+            <div className="text-sm text-gray-500 mt-1">$0.20</div>
+            <div className="flex justify-between mt-1">
+              <div></div>
+              <div className="flex items-center text-sm text-gray-500">
+                <span>&lt;0.001 ETH</span>
+                <Button variant="ghost" className="h-6 px-2 py-0 text-sm ml-1">
+                  Max
+                </Button>
+              </div>
             </div>
           </div>
           
-          <div className="flex justify-center">
-            <div className="bg-gray-100 p-1 rounded-full">
-              <ArrowDown size={16} />
+          <div className="flex justify-center my-6">
+            <div className="bg-gray-100 p-2 rounded-full">
+              <ArrowDown size={24} />
             </div>
           </div>
           
-          <div>
-            <div className="p-3 bg-gray-50 rounded-lg border">
-              <div className="flex justify-between mb-1">
-                <p className="text-xs text-gray-400">You receive</p>
-                <p className="text-xs text-gray-400">Balance: {parseFloat(ethBalance).toFixed(4)}</p>
-              </div>
-              <div className="flex justify-between items-center">
-                <Input
-                  type="text"
-                  value={outputValue}
-                  readOnly
-                  placeholder="0.0"
-                  className="text-2xl font-medium border-0 p-0 h-auto bg-transparent w-3/5"
-                />
-                <div className="flex items-center gap-1 bg-white border rounded-lg px-2 py-1">
-                  <div className="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center">
-                    <img src="https://ethereum.org/favicon-32x32.png" alt="ETH" className="w-3 h-3" />
-                  </div>
-                  <span className="font-medium">ETH</span>
-                  <ChevronDown size={14} />
+          <div className="bg-gray-50 rounded-none p-0">
+            <div className="flex justify-between items-center">
+              <Input
+                type="text"
+                value={outputValue}
+                readOnly
+                placeholder="0.19807"
+                className="text-5xl font-medium border-0 p-0 h-auto bg-transparent w-3/5 focus-visible:ring-0 focus-visible:ring-offset-0"
+              />
+              <div className="flex items-center gap-1 bg-white border rounded-full px-3 py-2">
+                <div className="w-8 h-8 rounded-full bg-teal-500 flex items-center justify-center text-white">
+                  <span className="text-lg">$</span>
                 </div>
+                <span className="font-medium">USDT</span>
+                <ChevronDown className="h-4 w-4 ml-1" />
               </div>
-              <div className="text-xs text-gray-400 mt-1">$0.20</div>
             </div>
+            <div className="text-sm text-gray-500 mt-1">$0.20</div>
           </div>
         </TabsContent>
         
-        <TabsContent value="buy" className="space-y-4">
-          <div>
-            <p className="text-gray-500 mb-1">Buy</p>
-            <div className="p-3 bg-gray-50 rounded-lg border">
-              <div className="flex justify-between mb-1">
-                <p className="text-xs text-gray-400">You pay</p>
-                <p className="text-xs text-gray-400">Balance: {parseFloat(ethBalance).toFixed(4)}</p>
-              </div>
-              <div className="flex justify-between items-center">
-                <Input
-                  type="number"
-                  value={inputValue}
-                  onChange={(e) => setInputValue(e.target.value)}
-                  placeholder="0.0"
-                  className="text-2xl font-medium border-0 p-0 h-auto bg-transparent w-3/5"
-                />
-                <div className="flex items-center gap-1 bg-white border rounded-lg px-2 py-1">
-                  <div className="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center">
-                    <img src="https://ethereum.org/favicon-32x32.png" alt="ETH" className="w-3 h-3" />
-                  </div>
-                  <span className="font-medium">ETH</span>
-                  <ChevronDown size={14} />
+        <TabsContent value="buy" className="space-y-4 px-0 pt-4">
+          <div className="bg-white rounded-none p-0">
+            <div className="flex justify-between items-center">
+              <Input
+                type="number"
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                placeholder="0.0"
+                className="text-5xl font-medium border-0 p-0 h-auto bg-transparent w-3/5 focus-visible:ring-0 focus-visible:ring-offset-0"
+              />
+              <div className="flex items-center gap-1 bg-white border rounded-full px-3 py-2">
+                <div className="w-8 h-8 rounded-full bg-teal-500 flex items-center justify-center text-white">
+                  <span className="text-lg">$</span>
                 </div>
+                <span className="font-medium">USDT</span>
+                <ChevronDown className="h-4 w-4 ml-1" />
               </div>
-              <div className="text-xs text-gray-400 mt-1">$0.20</div>
+            </div>
+            <div className="text-sm text-gray-500 mt-1">$0.20</div>
+          </div>
+          
+          <div className="flex justify-center my-6">
+            <div className="bg-gray-100 p-2 rounded-full">
+              <ArrowDown size={24} />
             </div>
           </div>
           
-          <div className="flex justify-center">
-            <div className="bg-gray-100 p-1 rounded-full">
-              <ArrowDown size={16} />
-            </div>
-          </div>
-          
-          <div>
-            <div className="p-3 bg-gray-50 rounded-lg border">
-              <div className="flex justify-between mb-1">
-                <p className="text-xs text-gray-400">You receive</p>
-                <p className="text-xs text-gray-400">Balance: {parseFloat(tokenBalance).toFixed(4)}</p>
-              </div>
-              <div className="flex justify-between items-center">
-                <Input
-                  type="text"
-                  value={outputValue}
-                  readOnly
-                  placeholder="0.19807"
-                  className="text-2xl font-medium border-0 p-0 h-auto bg-transparent w-3/5"
-                />
-                <div className="flex items-center gap-1 bg-white border rounded-lg px-2 py-1">
-                  <div className="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center text-white">
-                    <span className="text-xs">{tokenSymbol.substring(0, 1)}</span>
-                  </div>
-                  <span className="font-medium">{tokenSymbol}</span>
-                  <ChevronDown size={14} />
+          <div className="bg-gray-50 rounded-none p-0">
+            <div className="flex justify-between items-center">
+              <Input
+                type="text"
+                value={outputValue}
+                readOnly
+                placeholder="0.19807"
+                className="text-5xl font-medium border-0 p-0 h-auto bg-transparent w-3/5 focus-visible:ring-0 focus-visible:ring-offset-0"
+              />
+              <div className="flex items-center gap-1 bg-white border rounded-full px-3 py-2">
+                <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center">
+                  <img src="https://ethereum.org/favicon-32x32.png" alt="ETH" className="w-5 h-5" />
                 </div>
+                <span className="font-medium">ETH</span>
+                <ChevronDown className="h-4 w-4 ml-1" />
               </div>
-              <div className="text-xs text-gray-400 mt-1">$0.20</div>
             </div>
+            <div className="text-sm text-gray-500 mt-1">$0.20</div>
           </div>
         </TabsContent>
       </Tabs>
       
       <Button 
-        className="w-full h-12 bg-[#f471ff] hover:bg-[#d44ae9] text-white font-medium rounded-full" 
+        className="w-full h-14 bg-[#f471ff] hover:bg-[#d44ae9] text-white font-medium rounded-full text-lg" 
         onClick={() => activeTab === 'buy' ? buyTokens(inputValue, outputValue) : sellTokens(inputValue, outputValue)}
         disabled={isPending || !inputValue || parseFloat(inputValue) <= 0}
       >
         {isPending ? (
           <>
-            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            <Loader2 className="h-5 w-5 mr-2 animate-spin" />
             {activeTab === 'buy' ? 'Buying...' : 'Selling...'}
           </>
         ) : (
@@ -268,6 +265,44 @@ const TokenSwapInterface: React.FC<TokenSwapInterfaceProps> = ({
           {error}
         </div>
       )}
+
+      <div className="border rounded-xl p-4 mt-6">
+        <div className="text-center mb-2">
+          <div className="text-xl font-medium">Maturity Status</div>
+          <div className="text-2xl font-bold">75%</div>
+        </div>
+        <Progress value={75} className="h-2 bg-gray-200" />
+        <p className="mt-3 text-sm">
+          The ScienceGent will become eligible to migrate to Uniswap on generating _____ ETH in trading fee (
+          2x virtualETH =___ + capability fees =___)
+        </p>
+      </div>
+
+      <div className="grid grid-cols-3 gap-2 mt-4">
+        <div className="border rounded-xl p-3 text-center">
+          <div className="text-xl font-bold">1273</div>
+          <div className="text-sm text-gray-500">Users</div>
+        </div>
+        <div className="border rounded-xl p-3 text-center">
+          <div className="text-xl font-bold">1273</div>
+          <div className="text-sm text-gray-500">Interactions</div>
+        </div>
+        <div className="border rounded-xl p-3 text-center">
+          <div className="text-xl font-bold">1273</div>
+          <div className="text-sm text-gray-500">Revenue</div>
+        </div>
+      </div>
+
+      <div className="border rounded-xl p-4">
+        <div className="text-xl font-medium mb-2">5 Capabilities:</div>
+        <div className="flex flex-wrap gap-2">
+          <Badge className="bg-white border rounded-full px-3 py-1">Chat</Badge>
+          <Badge className="bg-white border rounded-full px-3 py-1">Molecular Vision</Badge>
+          <Badge className="bg-white border rounded-full px-3 py-1">LLAMPS</Badge>
+          <Badge className="bg-white border rounded-full px-3 py-1">Bose-Einstein Simulation</Badge>
+          <Badge className="bg-white border rounded-full px-3 py-1">more</Badge>
+        </div>
+      </div>
     </div>
   );
 };
