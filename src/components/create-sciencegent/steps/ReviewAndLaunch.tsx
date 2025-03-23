@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { ScienceGentFormData } from '@/types/sciencegent';
 import { Capability } from '@/types/capability';
 import { Loader2 } from 'lucide-react';
@@ -21,15 +21,40 @@ const ReviewAndLaunch: React.FC<ReviewAndLaunchProps> = ({
   capabilities,
   status
 }) => {
+  const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null);
+  const [tradingFeeAmount, setTradingFeeAmount] = useState<string>("0");
+  
+  // Calculate total capability fees
   const totalCapabilityFees = calculateTotalCapabilityFeesSynchronous(
     formData.selectedCapabilities,
     capabilities
   );
   
+  // Get names of selected capabilities
   const selectedCapabilityNames = formData.selectedCapabilities.map(capId => {
     const cap = capabilities.find(c => c.id === capId);
     return cap ? cap.name : capId;
   });
+  
+  // Calculate trading fee (2x virtualETH + capability fees)
+  useEffect(() => {
+    if (formData.initialLiquidity) {
+      const virtualEth = parseFloat(formData.initialLiquidity);
+      const tradingFee = (2 * virtualEth) + totalCapabilityFees;
+      setTradingFeeAmount(tradingFee.toFixed(2));
+    }
+  }, [formData.initialLiquidity, totalCapabilityFees]);
+  
+  // Load profile image if available
+  useEffect(() => {
+    if (formData.profileImage) {
+      const url = URL.createObjectURL(formData.profileImage);
+      setProfileImageUrl(url);
+      
+      // Clean up URL when component unmounts
+      return () => URL.revokeObjectURL(url);
+    }
+  }, [formData.profileImage]);
   
   const handleLaunch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,9 +78,15 @@ const ReviewAndLaunch: React.FC<ReviewAndLaunchProps> = ({
       <form id="review-form" onSubmit={handleLaunch}>
         <div className="bg-blue-50 rounded-md p-6 mb-6">
           <div className="flex justify-center">
-            <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center text-2xl text-white font-bold mb-4">
-              {formData.symbol?.charAt(0) || "SG"}
-            </div>
+            {profileImageUrl ? (
+              <div className="w-20 h-20 rounded-full overflow-hidden mb-4">
+                <img src={profileImageUrl} alt="Profile" className="w-full h-full object-cover" />
+              </div>
+            ) : (
+              <div className="w-20 h-20 bg-blue-600 rounded-full flex items-center justify-center text-2xl text-white font-bold mb-4">
+                {formData.symbol?.charAt(0) || "SG"}
+              </div>
+            )}
           </div>
           
           <div className="space-y-4">
@@ -85,6 +116,24 @@ const ReviewAndLaunch: React.FC<ReviewAndLaunchProps> = ({
                 <div>
                   <p className="text-gray-500">Website</p>
                   <p className="font-medium">{formData.website || "N/A"}</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-white rounded-md p-4 border border-gray-200">
+              <h3 className="font-medium text-gray-700 mb-2">Social Links</h3>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <p className="text-gray-500">Twitter</p>
+                  <p className="font-medium">{formData.twitter || "N/A"}</p>
+                </div>
+                <div>
+                  <p className="text-gray-500">GitHub</p>
+                  <p className="font-medium">{formData.github || "N/A"}</p>
+                </div>
+                <div>
+                  <p className="text-gray-500">Telegram</p>
+                  <p className="font-medium">{formData.telegram || "N/A"}</p>
                 </div>
               </div>
             </div>
@@ -144,7 +193,7 @@ const ReviewAndLaunch: React.FC<ReviewAndLaunchProps> = ({
               </div>
               <div className="bg-white rounded-md p-3 border border-gray-200">
                 <p className="text-xs text-gray-500">Migration Condition</p>
-                <p className="text-xs font-medium">Trading Fee = 2 × vETH + Capability Fee</p>
+                <p className="text-xs font-medium">{tradingFeeAmount} ETH</p>
               </div>
             </div>
           </div>

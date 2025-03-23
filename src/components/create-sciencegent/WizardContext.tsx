@@ -66,8 +66,8 @@ export const WizardProvider: React.FC<{children: React.ReactNode}> = ({ children
     window.scrollTo(0, 0);
   }, [currentStep]);
 
+  // Move to success screen when creation starts
   useEffect(() => {
-    // If we've successfully created a token, move to the success step
     if (status === CreationStatus.Creating || 
         status === CreationStatus.WaitingConfirmation || 
         status === CreationStatus.Success) {
@@ -80,8 +80,8 @@ export const WizardProvider: React.FC<{children: React.ReactNode}> = ({ children
     }
   }, [status]);
 
+  // Navigate to details page when token is successfully synced
   useEffect(() => {
-    // Navigate to details page when token is successfully synced
     if (status === CreationStatus.Success && tokenAddress && !isSyncing) {
       // Small delay to show success state before redirecting
       const redirectTimer = setTimeout(() => {

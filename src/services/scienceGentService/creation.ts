@@ -110,6 +110,9 @@ export const createScienceGent = async (formData: ScienceGentFormData & { transa
     if (tokenAddress) {
       // Save to Supabase
       try {
+        // Parse agent fee if it exists
+        const agentFee = formData.agentFee ? parseFloat(formData.agentFee) : 2;
+        
         // Save basic info to Supabase immediately
         const { error } = await supabase
           .from('sciencegents')
@@ -125,7 +128,7 @@ export const createScienceGent = async (formData: ScienceGentFormData & { transa
               telegram: formData.telegram || ""
             },
             domain: formData.domain || "General Science",
-            agent_fee: parseFloat(formData.agentFee || "2"),
+            agent_fee: agentFee,
             total_supply: parseFloat(formData.totalSupply),
             virtual_eth: parseFloat(formData.initialLiquidity),
             creator_address: signerAddress,
@@ -160,6 +163,40 @@ export const createScienceGent = async (formData: ScienceGentFormData & { transa
             await supabase
               .from('sciencegent_capabilities')
               .insert(capabilityRows);
+          }
+          
+          // Upload profile image if available
+          if (formData.profileImage) {
+            try {
+              // Upload to storage and get public URL
+              const fileName = `${tokenAddress}_profile_${Date.now()}`;
+              const fileExt = formData.profileImage.name.split('.').pop();
+              const filePath = `profile_images/${fileName}.${fileExt}`;
+              
+              // Upload file
+              const { error: uploadError } = await supabase.storage
+                .from('sciencegents')
+                .upload(filePath, formData.profileImage);
+                
+              if (!uploadError) {
+                // Get public URL
+                const { data: publicUrlData } = supabase.storage
+                  .from('sciencegents')
+                  .getPublicUrl(filePath);
+                  
+                if (publicUrlData) {
+                  // Update sciencegent with profile pic URL
+                  await supabase
+                    .from('sciencegents')
+                    .update({ profile_pic: publicUrlData.publicUrl })
+                    .eq('address', tokenAddress);
+                }
+              } else {
+                console.error("Error uploading profile image:", uploadError);
+              }
+            } catch (imageError) {
+              console.error("Error processing image:", imageError);
+            }
           }
         }
       } catch (dbError) {
