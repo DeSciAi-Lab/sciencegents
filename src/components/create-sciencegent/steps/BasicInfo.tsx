@@ -1,11 +1,10 @@
 
 import React from 'react';
-import { Image } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Image, Link } from 'lucide-react';
+import { ScienceGentFormData } from '@/types/sciencegent';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { ScienceGentFormData } from '@/types/sciencegent';
 
 interface BasicInfoProps {
   formData: ScienceGentFormData;
@@ -13,136 +12,148 @@ interface BasicInfoProps {
   handleFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
-const BasicInfo: React.FC<BasicInfoProps> = ({ formData, handleInputChange, handleFileChange }) => {
+const BasicInfo: React.FC<BasicInfoProps> = ({ 
+  formData, 
+  handleInputChange, 
+  handleFileChange 
+}) => {
   return (
-    <Card className="w-full">
-      <CardHeader>
-        <CardTitle>Basic Information</CardTitle>
-        <CardDescription>
-          Enter the basic details for your ScienceGent and its associated token
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="grid gap-6">
-          <div className="grid gap-3">
-            <Label htmlFor="name">Name</Label>
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+          <Label htmlFor="name">ScienceGent Name</Label>
+          <Input 
+            id="name" 
+            name="name" 
+            placeholder="e.g. Spectrum AI" 
+            value={formData.name} 
+            onChange={handleInputChange} 
+            className="mt-2"
+          />
+        </div>
+        
+        <div>
+          <Label htmlFor="symbol">Ticker</Label>
+          <Input 
+            id="symbol" 
+            name="symbol" 
+            placeholder="e.g. SPEC" 
+            maxLength={6}
+            value={formData.symbol} 
+            onChange={handleInputChange} 
+            className="mt-2"
+          />
+        </div>
+      </div>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+          <Label htmlFor="totalSupply">Total Supply</Label>
+          <Input 
+            id="totalSupply" 
+            name="totalSupply" 
+            type="number" 
+            placeholder="e.g. 1000000000" 
+            value={formData.totalSupply} 
+            onChange={handleInputChange} 
+            className="mt-2"
+          />
+        </div>
+        
+        <div>
+          <Label htmlFor="profileImage">Logo</Label>
+          <div className="flex items-center gap-4 mt-2">
+            {formData.profileImage ? (
+              <div className="relative w-12 h-12 rounded-full overflow-hidden">
+                <img 
+                  src={URL.createObjectURL(formData.profileImage)} 
+                  alt="Profile" 
+                  className="w-full h-full object-cover" 
+                />
+              </div>
+            ) : (
+              <div className="w-12 h-12 rounded-full bg-secondary flex items-center justify-center">
+                <Image className="w-6 h-6 text-muted-foreground" />
+              </div>
+            )}
             <Input 
-              id="name" 
-              name="name" 
-              placeholder="e.g., SpectrumAI" 
-              value={formData.name} 
-              onChange={handleInputChange} 
+              id="profileImage" 
+              type="file" 
+              accept="image/*" 
+              onChange={handleFileChange} 
             />
-            <p className="text-xs text-muted-foreground">
-              This will be used for both your AI agent and token
-            </p>
           </div>
-          
-          <div className="grid gap-3">
-            <Label htmlFor="symbol">Token Symbol</Label>
+        </div>
+      </div>
+      
+      <div>
+        <Label htmlFor="description">Description</Label>
+        <Textarea 
+          id="description" 
+          name="description" 
+          placeholder="Short Description of your ScienceGents (40 words)" 
+          value={formData.description} 
+          onChange={handleInputChange} 
+          rows={3}
+          className="mt-2"
+        />
+      </div>
+      
+      <div>
+        <h3 className="text-lg font-medium mb-3">Socials of Agent</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <Label htmlFor="twitter">Twitter (optional)</Label>
             <Input 
-              id="symbol" 
-              name="symbol" 
-              placeholder="e.g., SPEC" 
-              maxLength={6}
-              value={formData.symbol} 
+              id="twitter" 
+              name="twitter" 
+              placeholder="https://..." 
+              value={formData.twitter} 
               onChange={handleInputChange} 
+              className="mt-2"
             />
-            <p className="text-xs text-muted-foreground">
-              A short symbol for your token (max 6 characters)
-            </p>
           </div>
           
-          <div className="grid gap-3">
-            <Label htmlFor="totalSupply">Total Supply</Label>
+          <div>
+            <Label htmlFor="telegram">Telegram (optional)</Label>
             <Input 
-              id="totalSupply" 
-              name="totalSupply" 
-              type="number" 
-              placeholder="e.g., 1000000" 
-              value={formData.totalSupply} 
+              id="telegram" 
+              name="telegram" 
+              placeholder="https://..." 
+              value={formData.telegram || ''} 
               onChange={handleInputChange} 
-            />
-            <p className="text-xs text-muted-foreground">
-              The total number of tokens that will be created
-            </p>
-          </div>
-          
-          <div className="grid gap-3">
-            <Label htmlFor="description">Description</Label>
-            <Textarea 
-              id="description" 
-              name="description" 
-              placeholder="Describe what your ScienceGent does and its purpose..." 
-              value={formData.description} 
-              onChange={handleInputChange} 
-              rows={4}
+              className="mt-2"
             />
           </div>
-          
-          <div className="grid gap-3">
-            <Label htmlFor="profileImage">Profile Picture</Label>
-            <div className="flex items-center gap-4">
-              {formData.profileImage ? (
-                <div className="relative w-20 h-20 rounded-full overflow-hidden">
-                  <img 
-                    src={URL.createObjectURL(formData.profileImage)} 
-                    alt="Profile" 
-                    className="w-full h-full object-cover" 
-                  />
-                </div>
-              ) : (
-                <div className="w-20 h-20 rounded-full bg-secondary flex items-center justify-center">
-                  <Image className="w-8 h-8 text-muted-foreground" />
-                </div>
-              )}
-              <Input 
-                id="profileImage" 
-                type="file" 
-                accept="image/*" 
-                onChange={handleFileChange} 
-                className="max-w-xs"
-              />
-            </div>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+          <div>
+            <Label htmlFor="github">Github (optional)</Label>
+            <Input 
+              id="github" 
+              name="github" 
+              placeholder="https://..." 
+              value={formData.github} 
+              onChange={handleInputChange} 
+              className="mt-2"
+            />
           </div>
           
-          <div className="grid gap-3">
-            <Label htmlFor="website">Website (Optional)</Label>
+          <div>
+            <Label htmlFor="website">Website (optional)</Label>
             <Input 
               id="website" 
               name="website" 
               placeholder="https://..." 
               value={formData.website} 
               onChange={handleInputChange} 
+              className="mt-2"
             />
           </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="grid gap-3">
-              <Label htmlFor="twitter">Twitter (Optional)</Label>
-              <Input 
-                id="twitter" 
-                name="twitter" 
-                placeholder="https://twitter.com/..." 
-                value={formData.twitter} 
-                onChange={handleInputChange} 
-              />
-            </div>
-            
-            <div className="grid gap-3">
-              <Label htmlFor="github">GitHub (Optional)</Label>
-              <Input 
-                id="github" 
-                name="github" 
-                placeholder="https://github.com/..." 
-                value={formData.github} 
-                onChange={handleInputChange} 
-              />
-            </div>
-          </div>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 };
 

@@ -1,6 +1,5 @@
 
 import { Capability } from "@/types/capability";
-import { getAllCapabilities } from "@/data/capabilities";
 
 // Launch fee (1000 DSI tokens)
 export const LAUNCH_FEE = 1000;
@@ -27,12 +26,12 @@ export const calculateTotalCapabilityFeesSynchronous = (selectedCapabilities: st
   }, 0);
 };
 
-export const stepInfo = [
-  { title: 'Basic Information', description: 'Set name, symbol, and description' },
-  { title: 'Persona Customization', description: 'Define AI behavior and personality' },
-  { title: 'Capability Selection', description: 'Choose specialized capabilities' },
-  { title: 'Liquidity Settings', description: 'Set initial token economics' },
-  { title: 'Review & Launch', description: 'Verify details and launch' },
+export const wizardSteps = [
+  { id: 1, title: 'Basic Info' },
+  { id: 2, title: 'Persona Customization' },
+  { id: 3, title: 'Capability' },
+  { id: 4, title: 'Liquidity' },
+  { id: 5, title: 'Review' }
 ];
 
 export const validateStep = (step: number, formData: any): boolean => {
@@ -51,3 +50,6 @@ export const validateStep = (step: number, formData: any): boolean => {
       return false;
   }
 };
+
+// Import function from the right location - make sure this exists
+import { getAllCapabilities } from '@/data/capabilities';

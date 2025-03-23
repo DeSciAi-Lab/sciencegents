@@ -1,8 +1,9 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useWizard } from './WizardContext';
-import TransactionStatus from './TransactionStatus';
 import { CreationStatus } from '@/hooks/useScienceGentCreation';
+import { Capability } from '@/types/capability';
+import { getAllCapabilities } from '@/data/capabilities';
 
 // Import step components
 import BasicInfo from './steps/BasicInfo';
@@ -26,6 +27,21 @@ const WizardStepRenderer: React.FC = () => {
     handleLaunch,
     isLaunching
   } = useWizard();
+  
+  const [capabilities, setCapabilities] = useState<Capability[]>([]);
+  
+  useEffect(() => {
+    const fetchCapabilities = async () => {
+      try {
+        const data = await getAllCapabilities();
+        setCapabilities(data);
+      } catch (error) {
+        console.error('Error fetching capabilities:', error);
+      }
+    };
+    
+    fetchCapabilities();
+  }, []);
 
   const renderStep = () => {
     switch (currentStep) {
@@ -63,7 +79,9 @@ const WizardStepRenderer: React.FC = () => {
           <ReviewAndLaunch 
             formData={formData}
             onSubmit={handleLaunch}
-            isLaunching={isLaunching || status !== CreationStatus.Idle}
+            isLaunching={isLaunching}
+            capabilities={capabilities}
+            status={status}
           />
         );
       case 6:
@@ -81,18 +99,8 @@ const WizardStepRenderer: React.FC = () => {
   };
 
   return (
-    <div className="max-w-3xl mx-auto">
+    <div>
       {renderStep()}
-      
-      {/* Show transaction status during creation (except on success screen) */}
-      {status !== CreationStatus.Idle && currentStep !== 6 && (
-        <TransactionStatus 
-          status={status}
-          error={error}
-          transactionHash={transactionHash}
-          tokenAddress={tokenAddress}
-        />
-      )}
     </div>
   );
 };

@@ -2,7 +2,7 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ScienceGentFormData } from '@/types/sciencegent';
-import { validateStep } from '@/components/create-sciencegent/utils';
+import { validateStep, wizardSteps } from '@/components/create-sciencegent/utils';
 import useScienceGentCreation, { CreationStatus } from '@/hooks/useScienceGentCreation';
 
 // Initial form data
@@ -15,6 +15,9 @@ const initialFormData: ScienceGentFormData = {
   website: '',
   twitter: '',
   github: '',
+  telegram: '',
+  domain: '',
+  agentFee: '2',
   persona: '',
   selectedCapabilities: [],
   initialLiquidity: ''
@@ -116,11 +119,15 @@ export const WizardProvider: React.FC<{children: React.ReactNode}> = ({ children
   };
 
   const nextStep = () => {
-    setCurrentStep(prev => Math.min(prev + 1, 6));
+    if (currentStep < wizardSteps.length) {
+      setCurrentStep(prev => prev + 1);
+    }
   };
 
   const prevStep = () => {
-    setCurrentStep(prev => Math.max(prev - 1, 1));
+    if (currentStep > 1) {
+      setCurrentStep(prev => prev - 1);
+    }
   };
 
   const handleLaunch = async () => {

@@ -1,176 +1,149 @@
 
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import React from 'react';
 import { ScienceGentFormData } from '@/types/sciencegent';
-import { LAUNCH_FEE, calculateTotalCapabilityFeesSynchronous } from '../utils';
-import { getAllCapabilities } from '@/data/capabilities';
 import { Capability } from '@/types/capability';
 import { Loader2 } from 'lucide-react';
-import useScienceGentCreation, { CreationStatus } from '@/hooks/useScienceGentCreation';
-import TransactionStatus from '../TransactionStatus';
+import { calculateTotalCapabilityFeesSynchronous } from '../utils';
+import { CreationStatus } from '@/hooks/useScienceGentCreation';
 
 interface ReviewAndLaunchProps {
   formData: ScienceGentFormData;
   onSubmit: () => void;
   isLaunching?: boolean;
+  capabilities: Capability[];
+  status: CreationStatus;
 }
 
-const ReviewAndLaunch: React.FC<ReviewAndLaunchProps> = ({ formData, onSubmit, isLaunching = false }) => {
-  const [capabilities, setCapabilities] = useState<Capability[]>([]);
-  const [loadingCapabilities, setLoadingCapabilities] = useState(true);
-  const { status, error, createToken, launchFee, tokenAddress, transactionHash } = useScienceGentCreation();
-
-  useEffect(() => {
-    const fetchCapabilities = async () => {
-      try {
-        setLoadingCapabilities(true);
-        const fetchedCapabilities = await getAllCapabilities();
-        setCapabilities(fetchedCapabilities);
-      } catch (error) {
-        console.error('Error fetching capabilities:', error);
-      } finally {
-        setLoadingCapabilities(false);
-      }
-    };
-
-    fetchCapabilities();
-  }, []);
-
-  const handleLaunch = async () => {
-    // Prevent multiple clicks
-    if (isLaunching) {
-      console.log("Launch already in progress, ignoring click");
-      return;
-    }
-    onSubmit();
-  };
-
+const ReviewAndLaunch: React.FC<ReviewAndLaunchProps> = ({ 
+  formData, 
+  onSubmit, 
+  isLaunching = false,
+  capabilities,
+  status
+}) => {
   const totalCapabilityFees = calculateTotalCapabilityFeesSynchronous(
     formData.selectedCapabilities,
     capabilities
   );
-
+  
   const selectedCapabilityNames = formData.selectedCapabilities.map(capId => {
     const cap = capabilities.find(c => c.id === capId);
     return cap ? cap.name : capId;
   });
-
-  const isLoading = loadingCapabilities || status === CreationStatus.CheckingWallet ||
-    status === CreationStatus.CheckingAllowance || status === CreationStatus.ApprovingDSI ||
-    status === CreationStatus.Creating || status === CreationStatus.WaitingConfirmation;
-
-  const isButtonDisabled = isLoading || status === CreationStatus.Success || status === CreationStatus.Error || isLaunching;
+  
+  const handleLaunch = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSubmit();
+  };
+  
+  const isButtonDisabled = isLaunching || 
+    status === CreationStatus.Creating || 
+    status === CreationStatus.WaitingConfirmation || 
+    status === CreationStatus.Success;
 
   return (
-    <Card className="w-full">
-      <CardHeader>
-        <CardTitle>Review & Launch</CardTitle>
-        <CardDescription>
-          Review your ScienceGent details and launch
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        {status !== CreationStatus.Idle && (
-          <div className="mb-6">
-            <TransactionStatus 
-              status={status} 
-              error={error} 
-              tokenAddress={tokenAddress} 
-              transactionHash={transactionHash} 
-            />
-          </div>
-        )}
-
-        <div className="space-y-6">
-          <div className="grid gap-4">
-            <div className="p-4 rounded-lg border bg-muted/30">
-              <h3 className="font-medium mb-1">Basic Information</h3>
-              <div className="grid grid-cols-2 gap-x-4 gap-y-2">
-                <div>
-                  <p className="text-xs text-muted-foreground">Name</p>
-                  <p className="text-sm">{formData.name}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Symbol</p>
-                  <p className="text-sm">{formData.symbol}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Total Supply</p>
-                  <p className="text-sm">{formData.totalSupply} tokens</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Initial Liquidity</p>
-                  <p className="text-sm">{formData.initialLiquidity} ETH</p>
-                </div>
-              </div>
-            </div>
-            
-            <div className="p-4 rounded-lg border bg-muted/30">
-              <h3 className="font-medium mb-1">AI Agent Persona</h3>
-              <p className="text-sm whitespace-pre-wrap">{formData.persona}</p>
-            </div>
-            
-            <div className="p-4 rounded-lg border bg-muted/30">
-              <h3 className="font-medium mb-1">Selected Capabilities</h3>
-              {loadingCapabilities ? (
-                <div className="flex items-center gap-2 py-2">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  <span className="text-sm text-muted-foreground">Loading capabilities...</span>
-                </div>
-              ) : (
-                <>
-                  {selectedCapabilityNames.length > 0 ? (
-                    <ul className="list-disc list-inside text-sm space-y-1">
-                      {selectedCapabilityNames.map((name, index) => (
-                        <li key={index}>{name}</li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">No capabilities selected</p>
-                  )}
-                </>
-              )}
-            </div>
-            
-            <div className="p-4 rounded-lg border bg-science-50 border-science-200">
-              <h3 className="font-medium mb-3">Launch Fees</h3>
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span>Platform Fee</span>
-                  <span>{launchFee} DSI</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span>Virtual ETH (Initial Pool)</span>
-                  <span>{formData.initialLiquidity} ETH</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span>Capability Fees</span>
-                  <span>{totalCapabilityFees.toFixed(4)} ETH</span>
-                </div>
-                <div className="border-t pt-2 flex justify-between font-medium">
-                  <span>Total Launch Fee</span>
-                  <span>{launchFee} DSI</span>
-                </div>
-                <p className="text-xs text-muted-foreground mt-2">
-                  Note: Virtual ETH and capability fees are not charged upfront. They will be 
-                  covered by trading fees collected from your token.
-                </p>
-              </div>
+    <div className="space-y-6">
+      <form id="review-form" onSubmit={handleLaunch}>
+        <div className="bg-blue-50 rounded-md p-6 mb-6">
+          <div className="flex justify-center">
+            <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center text-2xl text-white font-bold mb-4">
+              {formData.symbol?.charAt(0) || "LO"}
             </div>
           </div>
           
-          <Button 
-            onClick={handleLaunch}
-            disabled={isButtonDisabled}
-            className="w-full bg-science-600 hover:bg-science-700 text-white"
-          >
-            {(isLoading || isLaunching) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Launch ScienceGent
-          </Button>
+          <div className="space-y-4">
+            <div className="bg-white rounded-md p-4 border border-gray-200">
+              <h3 className="font-medium text-gray-700 mb-2">Basic Information</h3>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <p className="text-gray-500">Name</p>
+                  <p className="font-medium">{formData.name}</p>
+                </div>
+                <div>
+                  <p className="text-gray-500">Ticker</p>
+                  <p className="font-medium">{formData.symbol}</p>
+                </div>
+                <div>
+                  <p className="text-gray-500">Total Supply</p>
+                  <p className="font-medium">{formData.totalSupply}</p>
+                </div>
+                <div>
+                  <p className="text-gray-500">Description</p>
+                  <p className="font-medium">{formData.description || "N/A"}</p>
+                </div>
+                <div>
+                  <p className="text-gray-500">Twitter</p>
+                  <p className="font-medium">{formData.twitter || "N/A"}</p>
+                </div>
+                <div>
+                  <p className="text-gray-500">Website</p>
+                  <p className="font-medium">{formData.website || "N/A"}</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-white rounded-md p-4 border border-gray-200">
+              <h3 className="font-medium text-gray-700 mb-2">Persona</h3>
+              <p className="text-sm line-clamp-3">{formData.persona}</p>
+            </div>
+            
+            <div className="bg-white rounded-md p-4 border border-gray-200">
+              <h3 className="font-medium text-gray-700 mb-2">Selected Capabilities</h3>
+              {selectedCapabilityNames.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {selectedCapabilityNames.map((name, idx) => (
+                    <span key={idx} className="bg-blue-100 text-blue-700 text-xs py-1 px-2 rounded">
+                      {name}
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-gray-500">No capabilities selected</p>
+              )}
+              <p className="mt-2 text-sm font-medium">
+                Total capability Fee = {totalCapabilityFees.toFixed(2)} ETH
+              </p>
+            </div>
+            
+            <div className="bg-white rounded-md p-4 border border-gray-200">
+              <h3 className="font-medium text-gray-700 mb-2">Initial Liquidity</h3>
+              <p className="text-lg font-medium">{formData.initialLiquidity} virtual ETH</p>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-2 text-center">
+              <div className="bg-white rounded-md p-3 border border-gray-200">
+                <p className="text-xs text-gray-500">Agent Fee per Interaction</p>
+                <p className="font-medium">2 DSI</p>
+              </div>
+              <div className="bg-white rounded-md p-3 border border-gray-200">
+                <p className="text-xs text-gray-500">Launch Fee</p>
+                <p className="font-medium">1000 DSI</p>
+              </div>
+              <div className="bg-white rounded-md p-3 border border-gray-200">
+                <p className="text-xs text-gray-500">Trading Fee</p>
+                <p className="font-medium">5 %</p>
+              </div>
+              <div className="bg-white rounded-md p-3 border border-gray-200">
+                <p className="text-xs text-gray-500">Migration Condition</p>
+                <p className="text-xs font-medium">Trading FEE = 2 x vETH + Total Capability FEE</p>
+              </div>
+            </div>
+          </div>
         </div>
-      </CardContent>
-    </Card>
+        
+        {/* Hidden submit button for form submission - actual button is in WizardLayout */}
+        <button type="submit" className="hidden" disabled={isButtonDisabled}></button>
+      </form>
+      
+      {(isLaunching || status !== CreationStatus.Idle) && (
+        <div className="flex justify-center">
+          <div className="flex items-center gap-2 text-blue-700">
+            <Loader2 className="animate-spin h-5 w-5" />
+            <span>Processing your request...</span>
+          </div>
+        </div>
+      )}
+    </div>
   );
 };
 
