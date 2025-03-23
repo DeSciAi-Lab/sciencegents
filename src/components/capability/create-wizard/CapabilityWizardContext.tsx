@@ -17,6 +17,10 @@ const initialFormData = {
   description: '',
   fee: '',
   creatorAddress: '',
+  twitter: '',         // Added missing property
+  telegram: '',        // Added missing property
+  github: '',          // Added missing property
+  website: '',         // Added missing property
   developerName: '',
   developerEmail: '',
   bio: '',

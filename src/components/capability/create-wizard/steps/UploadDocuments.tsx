@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Upload, FileText, Plus } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/ui/button';  // Added missing import
 import { useCapabilityWizard } from '../CapabilityWizardContext';
 
 const UploadDocuments: React.FC = () => {

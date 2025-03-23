@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Info } from 'lucide-react';
 import { useCapabilityWizard } from '../CapabilityWizardContext';
+import { Button } from '@/components/ui/button';  // Added missing import
 import {
   Select,
   SelectContent,
