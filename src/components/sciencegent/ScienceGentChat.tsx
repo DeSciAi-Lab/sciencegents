@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
-import { Bot, Send, User, Trash2, ExternalLink, Info, Search, Edit, ThumbsUp, ThumbsDown, PencilLine } from "lucide-react";
+import { Bot, Send, User, Trash2, ExternalLink, Info, Search, Edit, ThumbsUp, ThumbsDown, PencilLine, Copy, Check } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import useScienceGentChat from '@/hooks/useScienceGentChat';
 import { Skeleton } from "@/components/ui/skeleton";
