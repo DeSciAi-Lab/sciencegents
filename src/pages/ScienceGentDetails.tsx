@@ -75,6 +75,9 @@ const ScienceGentDetails: React.FC = () => {
   const symbol = scienceGent?.symbol || "TICKER";
   const tokenPrice = scienceGent?.tokenPrice || "0.000004";
   const priceUSD = scienceGent?.tokenPriceUSD || "0.0003";
+  const priceChange24h = scienceGent?.priceChange24h || -942.38;
+  const highPrice24h = scienceGent?.highPrice24h || 47444.1;
+  const lowPrice24h = scienceGent?.lowPrice24h || 45555.1;
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
@@ -87,8 +90,8 @@ const ScienceGentDetails: React.FC = () => {
               {/* Left section with profile and stats */}
               <div className="md:col-span-2 p-5">
                 {/* Profile Section */}
-                <div className="flex gap-4 mb-4">
-                  <div className="w-[90px] h-[90px] rounded-full overflow-hidden bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center">
+                <div className="flex items-start gap-4 mb-4">
+                  <div className="w-24 h-24 rounded-full overflow-hidden bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center">
                     {scienceGent?.profilePic ? (
                       <img src={scienceGent.profilePic} alt={scienceGent.name} className="w-full h-full object-cover" />
                     ) : (
@@ -157,14 +160,14 @@ const ScienceGentDetails: React.FC = () => {
                   <div className="flex items-center justify-between mb-6">
                     <div className="flex items-center">
                       <div className="text-lg font-bold flex items-center">
-                        TICKER/ETH <span className="ml-1">▼</span>
+                        {symbol}/ETH <span className="ml-1">▼</span>
                       </div>
                       <div className="ml-8">
                         <span className="text-gray-600 mr-2">Price</span>
-                        <span className="text-[#00bfa5] text-2xl font-medium mr-1">0.0000004</span>
+                        <span className="text-[#00bfa5] text-2xl font-medium mr-1">{tokenPrice}</span>
                         <span className="text-gray-800">ETH</span>
                         <div>
-                          <span className="text-[#00bfa5]">$0.0003</span>
+                          <span className="text-[#00bfa5]">${priceUSD}</span>
                         </div>
                       </div>
                     </div>
@@ -172,22 +175,22 @@ const ScienceGentDetails: React.FC = () => {
                     <div className="flex gap-10">
                       <div className="text-right">
                         <p className="text-xs text-gray-500">24h change</p>
-                        <p className="font-medium text-red-500">-942.38</p>
+                        <p className="font-medium text-red-500">{priceChange24h}</p>
                       </div>
                       <div className="text-right">
                         <p className="text-xs text-gray-500">24h high</p>
-                        <p className="font-medium">47,444.1</p>
+                        <p className="font-medium">{highPrice24h}</p>
                       </div>
                       <div className="text-right">
                         <p className="text-xs text-gray-500">24h low</p>
-                        <p className="font-medium">45,555.1</p>
+                        <p className="font-medium">{lowPrice24h}</p>
                       </div>
                     </div>
                   </div>
                   
                   <div className="bg-white rounded-md h-[300px] border p-4 flex items-center justify-center">
                     <img 
-                      src="/lovable-uploads/403c4f1c-7590-4f7a-8f3f-425f7d58285a.png" 
+                      src="/lovable-uploads/805373ea-b8fd-4d94-827d-c33afa2bcf0c.png" 
                       alt="Trading chart" 
                       className="max-h-full w-auto object-contain"
                     />
@@ -196,13 +199,26 @@ const ScienceGentDetails: React.FC = () => {
               </div>
               
               {/* Right section with swap panel */}
-              <div className="border-l p-4">
-                <TokenSwapInterface 
-                  tokenAddress={address || ''}
-                  tokenSymbol={symbol}
-                  isMigrated={scienceGent?.is_migrated || false}
-                  uniswapPair={scienceGent?.uniswapPair}
-                />
+              <div className="border-l">
+                <div className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <span className="font-medium">Price {tokenPrice} ETH</span>
+                      <span className="text-gray-500">${priceUSD}</span>
+                    </div>
+                    <div className="bg-gray-100 rounded-full px-2 py-1 text-xs flex items-center">
+                      <Settings size={12} className="mr-1" />
+                      <span>Slippage 1%</span>
+                    </div>
+                  </div>
+                  
+                  <TokenSwapInterface 
+                    tokenAddress={address || ''}
+                    tokenSymbol={symbol}
+                    isMigrated={scienceGent?.is_migrated || false}
+                    uniswapPair={scienceGent?.uniswapPair}
+                  />
+                </div>
               </div>
             </div>
           </div>

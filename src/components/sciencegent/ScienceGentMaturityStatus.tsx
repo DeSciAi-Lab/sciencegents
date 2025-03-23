@@ -7,43 +7,35 @@ interface ScienceGentMaturityStatusProps {
   virtualETH: number;
   collectedFees: number;
   isMigrated: boolean;
+  capabilityFees?: number;
 }
 
 const ScienceGentMaturityStatus: React.FC<ScienceGentMaturityStatusProps> = ({
   maturityProgress,
   virtualETH,
   collectedFees,
-  isMigrated
+  isMigrated,
+  capabilityFees = 1
 }) => {
   // If values are not defined, use defaults
   const progress = maturityProgress || 75;
-  const vETH = virtualETH || 0;
+  const vETH = virtualETH || 1;
   const fees = collectedFees || 0;
-  
-  // Calculate the remaining ETH needed
-  const requiredETH = vETH * 2;
-  const capabilityFees = 1; // Placeholder
   
   return (
     <div className="space-y-3">
-      <div className="text-center font-medium text-lg mb-1">
+      <div className="text-center font-medium text-lg">
         Maturity Status
+        <span className="ml-2">{progress}%</span>
       </div>
       
       <div>
-        <div className="flex justify-between items-center mb-1">
-          <div className="w-full">
-            <Progress value={progress} className="h-2 bg-gray-200" />
-          </div>
-          <span className="ml-2 font-bold">{progress}%</span>
-        </div>
+        <Progress value={progress} className="h-2 bg-gray-200" />
       </div>
       
       <div className="text-sm text-gray-600">
         {isMigrated ? (
           "This ScienceGent has been migrated to Uniswap."
-        ) : progress >= 100 ? (
-          "This ScienceGent is eligible to migrate to Uniswap."
         ) : (
           <>
             The ScienceGent will become eligible to migrate to Uniswap on generating _____ ETH in trading fee (

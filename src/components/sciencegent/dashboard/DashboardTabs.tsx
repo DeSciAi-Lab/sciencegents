@@ -6,7 +6,6 @@ import OverviewTab from './OverviewTab';
 import TradeTab from './TradeTab';
 import ChatTab from './ChatTab';
 import CapabilitiesTab from './CapabilitiesTab';
-import MigrationTab from './MigrationTab';
 
 interface DashboardTabsProps {
   address: string;

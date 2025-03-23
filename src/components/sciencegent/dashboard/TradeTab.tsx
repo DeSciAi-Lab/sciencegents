@@ -1,7 +1,6 @@
 
 import React from 'react';
 import { Card, CardContent } from "@/components/ui/card";
-import TokenSwapInterface from '../TokenSwapInterface';
 import TradingViewChart from '../trading/TradingViewChart';
 
 interface TradeTabProps {
@@ -17,14 +16,11 @@ const TradeTab: React.FC<TradeTabProps> = ({ address, scienceGentData }) => {
   
   // Mock data for the tradebook
   const tradeData = [
-    { date: 'Mar 23 21:27:59', type: 'buy', price: '$0.0243', total: '$19.91', priceETH: '0.0211', amountSAR: '1,187,711', amountETH: '0.0099', maker: '0x7f7...c05f' },
-    { date: 'Mar 23 21:27:59', type: 'sell', price: '$0.0241', total: '$0.5939', priceETH: '0.0200', amountSAR: '246,598.00', amountETH: '0.0003', maker: '0x000...0000' },
-    { date: 'Mar 23 21:27:59', type: 'sell', price: '$0.0241', total: '$0.5943', priceETH: '0.0200', amountSAR: '246,598.00', amountETH: '0.0003', maker: '0x000...0000' },
-    { date: 'Mar 23 21:27:35', type: 'buy', price: '$0.0241', total: '$0.5943', priceETH: '0.0200', amountSAR: '246,598.00', amountETH: '0.0003', maker: '0x000...0000' },
+    { date: 'Mar 23 21:27:59', type: 'buy', price: '$0.0243', total: '$19.91', priceETH: '0.0121', amountSAR: '8,187,711', amountETH: '0.0099', maker: '0x7f7...c05f' },
+    { date: 'Mar 23 21:27:59', type: 'sell', price: '$0.0241', total: '$0.5939', priceETH: '0.0120', amountSAR: '246,598.00', amountETH: '0.0003', maker: '0x000...0000' },
+    { date: 'Mar 23 21:27:59', type: 'sell', price: '$0.0241', total: '$0.5943', priceETH: '0.0120', amountSAR: '246,598.00', amountETH: '0.0003', maker: '0x000...0000' },
+    { date: 'Mar 23 21:27:35', type: 'buy', price: '$0.0241', total: '$0.5943', priceETH: '0.0120', amountSAR: '246,598.00', amountETH: '0.0003', maker: '0x000...0000' },
   ];
-  
-  // Table headers
-  const headers = ['Date', 'Price', 'Total', 'Price ETH', 'Amount SAR', 'Amount ETH', 'Maker'];
   
   return (
     <div className="space-y-4">
@@ -34,11 +30,13 @@ const TradeTab: React.FC<TradeTabProps> = ({ address, scienceGentData }) => {
           <table className="w-full text-sm">
             <thead>
               <tr>
-                {headers.map((header, index) => (
-                  <th key={index} className="text-left font-normal px-2 py-1">
-                    {header} {index === 0 && '▼'}
-                  </th>
-                ))}
+                <th className="text-left font-normal px-2 py-1">Date ▼</th>
+                <th className="text-left font-normal px-2 py-1">Price</th>
+                <th className="text-left font-normal px-2 py-1">Total</th>
+                <th className="text-left font-normal px-2 py-1">Price ETH</th>
+                <th className="text-left font-normal px-2 py-1">Amount SAR</th>
+                <th className="text-left font-normal px-2 py-1">Amount ETH</th>
+                <th className="text-left font-normal px-2 py-1">Maker</th>
               </tr>
             </thead>
             <tbody>
