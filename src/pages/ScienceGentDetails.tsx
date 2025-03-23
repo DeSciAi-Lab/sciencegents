@@ -230,7 +230,10 @@ const ScienceGentDetails: React.FC = () => {
                 </TabsContent>
                 
                 <TabsContent value="agent" className="p-0">
-                  <ScienceGentChat address={scienceGent.address} scienceGentData={scienceGent} />
+                  <ScienceGentChat 
+                    address={scienceGent.address} 
+                    scienceGent={scienceGent} 
+                  />
                 </TabsContent>
               </Tabs>
             </div>
