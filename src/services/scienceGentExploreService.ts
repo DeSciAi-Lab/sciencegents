@@ -14,6 +14,15 @@ export interface ScienceGentListItem {
   roi: number;
   domain: string;
   featured?: boolean;
+  isMigrated?: boolean;
+  migrationEligible?: boolean;
+  symbol?: string;
+  volume24h: number;
+  revenue: number;
+  priceChange24h: number;
+  rating: number;
+  maturityStatus: string;
+  isCurated?: boolean;
 }
 
 /**
@@ -36,7 +45,12 @@ export const fetchScienceGents = async (): Promise<ScienceGentListItem[]> => {
         created_on_chain_at, 
         domain, 
         virtual_eth,
-        stats:sciencegent_stats(volume_24h, transactions, holders)
+        symbol,
+        price_change_24h,
+        is_migrated,
+        migration_eligible,
+        maturity_progress,
+        stats:sciencegent_stats(volume_24h, transactions, holders, trade_volume_eth)
       `)
       .order('market_cap', { ascending: false });
 
@@ -73,6 +87,23 @@ export const fetchScienceGents = async (): Promise<ScienceGentListItem[]> => {
 
       // Featured status based on market cap or other criteria
       const featured = item.market_cap > 500000;
+      
+      // Determine maturity status
+      let maturityStatus = "Immature";
+      if (item.is_migrated) {
+        maturityStatus = "Migrated";
+      } else if (item.migration_eligible) {
+        maturityStatus = "Ready";
+      } else if (item.maturity_progress && item.maturity_progress >= 50) {
+        maturityStatus = "Near";
+      }
+
+      // Calculate random revenue for demo purposes
+      // In production, this would come from actual data
+      const revenue = Math.floor(item.market_cap * 0.1);
+      
+      // Random rating between 3-5 for demo
+      const rating = Math.floor(Math.random() * (5 - 3 + 1) + 3);
 
       return {
         id: item.id,
@@ -84,7 +115,16 @@ export const fetchScienceGents = async (): Promise<ScienceGentListItem[]> => {
         age,
         roi,
         domain: item.domain || "General",
-        featured
+        featured,
+        isMigrated: item.is_migrated || false,
+        migrationEligible: item.migration_eligible || false,
+        symbol: item.symbol || `${item.name.substring(0, 3).toUpperCase()}`,
+        volume24h: item.stats?.[0]?.volume_24h || 0,
+        revenue: revenue,
+        priceChange24h: item.price_change_24h || 0,
+        rating,
+        maturityStatus,
+        isCurated: Math.random() > 0.5 // Random for demo
       };
     });
   } catch (error) {
@@ -115,7 +155,8 @@ export const filterScienceGents = (
     const query = searchQuery.toLowerCase();
     result = result.filter(gent => 
       gent.name.toLowerCase().includes(query) || 
-      gent.address.toLowerCase().includes(query)
+      gent.address.toLowerCase().includes(query) ||
+      gent.symbol?.toLowerCase().includes(query)
     );
   }
   
@@ -140,4 +181,40 @@ export const sortScienceGents = (
       return valueA < valueB ? 1 : -1;
     }
   });
+};
+
+/**
+ * Get platform statistics from ScienceGents data
+ */
+export const getPlatformStats = (scienceGents: ScienceGentListItem[]) => {
+  // Calculate total stats
+  const totalScienceGents = scienceGents.length;
+  
+  // Sum up volumes across all tokens for "transactions"
+  const totalTransactions = scienceGents.reduce((sum, gent) => sum + Math.floor(gent.volume24h / 100), 0);
+  
+  // Sum up market caps for "total liquidity"
+  const totalLiquidity = scienceGents.reduce((sum, gent) => sum + gent.marketCap, 0);
+  
+  // Sum up revenues for "total revenue"
+  const totalRevenue = scienceGents.reduce((sum, gent) => sum + gent.revenue, 0);
+  
+  return {
+    totalScienceGents: formatStatValue(totalScienceGents),
+    totalTransactions: formatStatValue(totalTransactions),
+    totalLiquidity: formatStatValue(totalLiquidity),
+    totalRevenue: formatStatValue(totalRevenue)
+  };
+};
+
+/**
+ * Format stat values for display
+ */
+const formatStatValue = (value: number): string => {
+  if (value >= 1_000_000) {
+    return `${Math.round(value / 1_000_000)}M`;
+  } else if (value >= 1_000) {
+    return `${Math.round(value / 1_000)}k`;
+  }
+  return value.toString();
 };

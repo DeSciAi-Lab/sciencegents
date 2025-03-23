@@ -1,21 +1,37 @@
 
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Filter, ArrowUpDown, PlusCircle, RefreshCcw } from 'lucide-react';
+import { Search, Filter, ArrowUpDown, PlusCircle, RefreshCcw, ChevronDown, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
-import ScienceGentCard from '@/components/ui/ScienceGentCard';
 import Reveal from '@/components/animations/Reveal';
 import { 
   fetchScienceGents, 
   filterScienceGents, 
   sortScienceGents,
+  getPlatformStats,
   type ScienceGentListItem
 } from '@/services/scienceGentExploreService';
 import { Skeleton } from '@/components/ui/skeleton';
 import { syncAllScienceGents } from '@/services/scienceGentDataService';
 import { toast } from '@/components/ui/use-toast';
+import ScienceGentTable from '@/components/sciencegent/ScienceGentTable';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+  PaginationEllipsis,
+} from "@/components/ui/pagination";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const Explore = () => {
   const navigate = useNavigate();
@@ -27,6 +43,14 @@ const Explore = () => {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [isLoading, setIsLoading] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [page, setPage] = useState(1);
+  const [itemsPerPage] = useState(10);
+  const [stats, setStats] = useState({
+    totalScienceGents: '0',
+    totalTransactions: '0',
+    totalLiquidity: '0',
+    totalRevenue: '0'
+  });
 
   // Fetch science gents on initial load
   useEffect(() => {
@@ -38,7 +62,17 @@ const Explore = () => {
     const filtered = filterScienceGents(scienceGents, searchQuery, activeFilter);
     const sorted = sortScienceGents(filtered, sortBy, sortOrder);
     setFilteredGents(sorted);
+
+    // Reset to first page when filters change
+    setPage(1);
   }, [scienceGents, searchQuery, activeFilter, sortBy, sortOrder]);
+
+  // Calculate platform stats when scienceGents data changes
+  useEffect(() => {
+    if (scienceGents.length > 0) {
+      setStats(getPlatformStats(scienceGents));
+    }
+  }, [scienceGents]);
 
   // Fetch data from Supabase
   const fetchData = async () => {
@@ -80,14 +114,22 @@ const Explore = () => {
     }
   };
 
-  // Toggle sort order
-  const toggleSort = (key: keyof ScienceGentListItem) => {
-    if (sortBy === key) {
+  // Toggle sort order and column
+  const handleSortChange = (column: keyof ScienceGentListItem) => {
+    if (sortBy === column) {
       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
     } else {
-      setSortBy(key);
+      setSortBy(column);
       setSortOrder('desc');
     }
+  };
+
+  // Handle clearing all filters
+  const clearFilters = () => {
+    setSearchQuery('');
+    setActiveFilter('all');
+    setSortBy('marketCap');
+    setSortOrder('desc');
   };
 
   // Available domain filters
@@ -102,86 +144,150 @@ const Explore = () => {
     { value: 'general', label: 'General' }
   ];
 
-  // Generate skeleton cards for loading state
-  const renderSkeletons = () => {
-    return Array(6).fill(0).map((_, index) => (
-      <div key={`skeleton-${index}`} className="p-6 border rounded-lg">
-        <div className="flex items-start justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <Skeleton className="w-10 h-10 rounded-full" />
-            <div>
-              <Skeleton className="h-5 w-32 mb-1" />
-              <Skeleton className="h-3 w-24" />
-            </div>
-          </div>
-          <Skeleton className="h-5 w-20" />
-        </div>
-        <div className="grid grid-cols-2 gap-4 mb-4">
-          <div>
-            <Skeleton className="h-3 w-20 mb-1" />
-            <Skeleton className="h-5 w-16" />
-          </div>
-          <div>
-            <Skeleton className="h-3 w-20 mb-1" />
-            <Skeleton className="h-5 w-16" />
-          </div>
-          <div>
-            <Skeleton className="h-3 w-20 mb-1" />
-            <Skeleton className="h-5 w-16" />
-          </div>
-          <div>
-            <Skeleton className="h-3 w-20 mb-1" />
-            <Skeleton className="h-5 w-16" />
-          </div>
-        </div>
-        <div className="flex justify-end">
-          <Skeleton className="h-5 w-24" />
-        </div>
+  // Generate skeleton for loading state
+  const renderSkeleton = () => (
+    <div className="bg-white p-6 rounded-lg">
+      <div className="space-y-2">
+        <Skeleton className="h-8 w-full" />
+        <Skeleton className="h-8 w-full" />
+        <Skeleton className="h-8 w-full" />
+        <Skeleton className="h-8 w-full" />
+        <Skeleton className="h-8 w-full" />
       </div>
-    ));
+    </div>
+  );
+
+  // Generate pagination numbers
+  const generatePaginationItems = () => {
+    const totalPages = Math.ceil(filteredGents.length / itemsPerPage);
+    const items = [];
+
+    // Add numeric pages
+    for (let i = 1; i <= totalPages; i++) {
+      // Show first, last, and pages around current
+      if (
+        i === 1 ||
+        i === totalPages ||
+        (i >= page - 1 && i <= page + 1)
+      ) {
+        items.push(
+          <PaginationItem key={i}>
+            <PaginationLink
+              onClick={() => setPage(i)}
+              isActive={page === i}
+            >
+              {i}
+            </PaginationLink>
+          </PaginationItem>
+        );
+      } else if (
+        (i === page - 2 && page > 3) ||
+        (i === page + 2 && page < totalPages - 2)
+      ) {
+        // Add ellipsis
+        items.push(
+          <PaginationItem key={`ellipsis-${i}`}>
+            <PaginationEllipsis />
+          </PaginationItem>
+        );
+      }
+    }
+
+    return items;
   };
+
+  // Get current page items
+  const getCurrentPageItems = () => {
+    const startIndex = (page - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return filteredGents.slice(startIndex, endIndex);
+  };
+
+  // Dropdown menus for filters
+  const renderFilterDropdown = (title: string, options: { value: string, label: string }[], activeValue: string, onChange: (value: string) => void) => (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="outline" className="bg-white">
+          {title} <ChevronDown className="ml-2 h-4 w-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        {options.map(option => (
+          <DropdownMenuItem 
+            key={option.value}
+            className={activeValue === option.value ? "bg-gray-100" : ""}
+            onClick={() => onChange(option.value)}
+          >
+            {option.label}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
 
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
       
       <main className="flex-grow pt-24 pb-16">
-        <div className="container mx-auto px-6">
-          {/* Header */}
+        <div className="container mx-auto px-6 max-w-[1200px]">
+          {/* Header and Stats Section */}
           <Reveal>
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
-              <div>
-                <h1 className="text-3xl font-bold mb-3">Explore ScienceGents</h1>
-                <p className="text-muted-foreground">
-                  Discover and interact with AI agents specialized in scientific domains
-                </p>
+            <div className="flex flex-col gap-8 mb-8">
+              <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center">
+                <div>
+                  <h1 className="text-3xl font-bold mb-2">Explore ScienceGents</h1>
+                  <p className="text-muted-foreground">
+                    Discover and interact with AI agents specialized in scientific domains
+                  </p>
+                </div>
+                
+                <div className="flex gap-3 mt-4 lg:mt-0">
+                  <Button 
+                    onClick={handleSync}
+                    variant="outline"
+                    disabled={isSyncing}
+                  >
+                    <RefreshCcw className={`mr-2 h-4 w-4 ${isSyncing ? 'animate-spin' : ''}`} />
+                    {isSyncing ? 'Syncing...' : 'Sync'}
+                  </Button>
+                  <Button 
+                    onClick={() => navigate('/create-sciencegent')}
+                    className="bg-science-600 hover:bg-science-700 text-white"
+                  >
+                    <PlusCircle className="mr-2 h-4 w-4" />
+                    Create ScienceGent
+                  </Button>
+                </div>
               </div>
               
-              <div className="flex gap-3 mt-4 md:mt-0">
-                <Button 
-                  onClick={handleSync}
-                  variant="outline"
-                  disabled={isSyncing}
-                >
-                  <RefreshCcw className={`mr-2 h-4 w-4 ${isSyncing ? 'animate-spin' : ''}`} />
-                  {isSyncing ? 'Syncing...' : 'Sync'}
-                </Button>
-                <Button 
-                  onClick={() => navigate('/create-sciencegent')}
-                  className="bg-science-600 hover:bg-science-700 text-white"
-                >
-                  <PlusCircle className="mr-2 h-4 w-4" />
-                  Create ScienceGent
-                </Button>
+              {/* Platform Stats */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="p-4 bg-gray-50 rounded-lg">
+                  <p className="text-3xl font-bold">{stats.totalScienceGents}</p>
+                  <p className="text-sm text-gray-500">Total ScienceGents</p>
+                </div>
+                <div className="p-4 bg-gray-50 rounded-lg">
+                  <p className="text-3xl font-bold">{stats.totalTransactions}</p>
+                  <p className="text-sm text-gray-500">Total Transactions</p>
+                </div>
+                <div className="p-4 bg-gray-50 rounded-lg">
+                  <p className="text-3xl font-bold">{stats.totalLiquidity}</p>
+                  <p className="text-sm text-gray-500">Total Liquidity</p>
+                </div>
+                <div className="p-4 bg-gray-50 rounded-lg">
+                  <p className="text-3xl font-bold">{stats.totalRevenue}</p>
+                  <p className="text-sm text-gray-500">Total Revenue</p>
+                </div>
               </div>
             </div>
           </Reveal>
           
-          {/* Filters and search */}
+          {/* Search and Filters */}
           <Reveal delay={100}>
-            <div className="mb-8 p-6 glass-card">
-              <div className="flex flex-col md:flex-row gap-4">
-                <div className="relative flex-grow">
+            <div className="mb-6 border rounded-lg p-4 bg-white">
+              <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center">
+                <div className="relative flex-grow w-full lg:w-auto">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <input
                     type="text"
@@ -192,86 +298,115 @@ const Explore = () => {
                   />
                 </div>
                 
-                <div className="flex gap-4 overflow-x-auto hidden-scrollbar pb-1">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Filter className="h-4 w-4" />
-                    <span>Domain:</span>
-                  </div>
+                <div className="flex gap-2 w-full lg:w-auto overflow-x-auto">
+                  <Button 
+                    variant="outline" 
+                    className="bg-white min-w-max"
+                    onClick={() => setSortBy('marketCap')}
+                  >
+                    Market cap {sortBy === 'marketCap' ? (sortOrder === 'asc' ? '↑' : '↓') : ''}
+                  </Button>
                   
-                  {domainFilters.map(filter => (
-                    <button
-                      key={filter.value}
-                      onClick={() => setActiveFilter(filter.value)}
-                      className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
-                        activeFilter === filter.value
-                          ? 'bg-science-100 text-science-800'
-                          : 'bg-secondary text-muted-foreground hover:bg-secondary/70'
-                      }`}
-                    >
-                      {filter.label}
-                    </button>
-                  ))}
+                  <Button 
+                    variant="outline" 
+                    className="bg-white min-w-max"
+                    onClick={() => setSortBy('age')}
+                  >
+                    Age {sortBy === 'age' ? (sortOrder === 'asc' ? '↑' : '↓') : ''}
+                  </Button>
+                  
+                  <Button 
+                    variant="outline" 
+                    className="bg-white min-w-max"
+                    onClick={() => setSortBy('revenue')}
+                  >
+                    Revenue {sortBy === 'revenue' ? (sortOrder === 'asc' ? '↑' : '↓') : ''}
+                  </Button>
                 </div>
               </div>
               
-              <div className="flex gap-4 mt-4 overflow-x-auto hidden-scrollbar">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <ArrowUpDown className="h-4 w-4" />
-                  <span>Sort by:</span>
-                </div>
+              <div className="flex flex-wrap gap-2 items-center mt-4">
+                {renderFilterDropdown('Curation', [
+                  { value: 'all', label: 'All' },
+                  { value: 'curated', label: 'Curated' },
+                  { value: 'uncurated', label: 'Uncurated' }
+                ], activeFilter === 'curated' || activeFilter === 'uncurated' ? activeFilter : 'all', 
+                (value) => setActiveFilter(value))}
                 
-                <button
-                  onClick={() => toggleSort('marketCap')}
-                  className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
-                    sortBy === 'marketCap'
-                      ? 'bg-science-100 text-science-800'
-                      : 'bg-secondary text-muted-foreground hover:bg-secondary/70'
-                  }`}
-                >
-                  Market Cap {sortBy === 'marketCap' && (sortOrder === 'asc' ? '↑' : '↓')}
-                </button>
+                {renderFilterDropdown('Maturity', [
+                  { value: 'all', label: 'All' },
+                  { value: 'migrated', label: 'Migrated' },
+                  { value: 'ready', label: 'Ready for Migration' },
+                  { value: 'immature', label: 'Immature' }
+                ], activeFilter === 'migrated' || activeFilter === 'ready' || activeFilter === 'immature' ? activeFilter : 'all',
+                (value) => setActiveFilter(value))}
                 
-                <button
-                  onClick={() => toggleSort('tokenPrice')}
-                  className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
-                    sortBy === 'tokenPrice'
-                      ? 'bg-science-100 text-science-800'
-                      : 'bg-secondary text-muted-foreground hover:bg-secondary/70'
-                  }`}
-                >
-                  Token Price {sortBy === 'tokenPrice' && (sortOrder === 'asc' ? '↑' : '↓')}
-                </button>
+                {renderFilterDropdown('Roles', [
+                  { value: 'all', label: 'All Roles' },
+                  { value: 'researcher', label: 'Researcher' },
+                  { value: 'reviewer', label: 'Reviewer' },
+                  { value: 'assistant', label: 'Assistant' }
+                ], activeFilter === 'researcher' || activeFilter === 'reviewer' || activeFilter === 'assistant' ? activeFilter : 'all',
+                (value) => setActiveFilter(value))}
                 
-                <button
-                  onClick={() => toggleSort('roi')}
-                  className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
-                    sortBy === 'roi'
-                      ? 'bg-science-100 text-science-800'
-                      : 'bg-secondary text-muted-foreground hover:bg-secondary/70'
-                  }`}
-                >
-                  Capability ROI {sortBy === 'roi' && (sortOrder === 'asc' ? '↑' : '↓')}
-                </button>
+                {renderFilterDropdown('Domain', domainFilters, activeFilter, setActiveFilter)}
+                
+                {(searchQuery || activeFilter !== 'all') && (
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={clearFilters}
+                    className="ml-auto"
+                  >
+                    <X className="h-4 w-4 mr-1" /> Clear filters
+                  </Button>
+                )}
               </div>
             </div>
           </Reveal>
           
-          {/* Results */}
+          {/* Results Table */}
           {isLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {renderSkeletons()}
-            </div>
+            renderSkeleton()
           ) : filteredGents.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredGents.map((gent, index) => (
-                <Reveal key={gent.id} delay={150 + (index * 50)} direction="up">
-                  <ScienceGentCard {...gent} />
-                </Reveal>
-              ))}
-            </div>
+            <Reveal delay={150}>
+              <div className="bg-white rounded-lg border overflow-hidden">
+                <ScienceGentTable 
+                  scienceGents={getCurrentPageItems()} 
+                  onSortChange={handleSortChange}
+                  sortBy={sortBy}
+                  sortOrder={sortOrder}
+                />
+                
+                {/* Pagination */}
+                <div className="p-2 border-t flex items-center justify-between bg-gray-50">
+                  <div className="text-sm text-gray-500 ml-4">
+                    Showing {Math.min((page - 1) * itemsPerPage + 1, filteredGents.length)} to {Math.min(page * itemsPerPage, filteredGents.length)} of {filteredGents.length} results
+                  </div>
+                  
+                  <Pagination>
+                    <PaginationContent>
+                      {page > 1 && (
+                        <PaginationItem>
+                          <PaginationPrevious onClick={() => setPage(p => Math.max(1, p - 1))} />
+                        </PaginationItem>
+                      )}
+                      
+                      {generatePaginationItems()}
+                      
+                      {page < Math.ceil(filteredGents.length / itemsPerPage) && (
+                        <PaginationItem>
+                          <PaginationNext onClick={() => setPage(p => Math.min(Math.ceil(filteredGents.length / itemsPerPage), p + 1))} />
+                        </PaginationItem>
+                      )}
+                    </PaginationContent>
+                  </Pagination>
+                </div>
+              </div>
+            </Reveal>
           ) : (
             <Reveal>
-              <div className="text-center py-12">
+              <div className="text-center bg-white p-12 rounded-lg border">
                 <h3 className="text-xl font-medium mb-2">No ScienceGents found</h3>
                 <p className="text-muted-foreground mb-6">
                   {searchQuery || activeFilter !== 'all' 
@@ -280,13 +415,7 @@ const Explore = () => {
                 </p>
                 <div className="flex gap-4 justify-center">
                   {(searchQuery || activeFilter !== 'all') && (
-                    <Button 
-                      onClick={() => {
-                        setSearchQuery('');
-                        setActiveFilter('all');
-                      }}
-                      variant="outline"
-                    >
+                    <Button onClick={clearFilters} variant="outline">
                       Reset Filters
                     </Button>
                   )}
