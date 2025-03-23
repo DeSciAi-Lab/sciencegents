@@ -16,6 +16,7 @@ import ScienceGentCapabilities from '@/components/sciencegent/ScienceGentCapabil
 import ScienceGentStatsCards from '@/components/sciencegent/ScienceGentStatsCards';
 import ScienceGentSwapPanel from '@/components/sciencegent/ScienceGentSwapPanel';
 import ScienceGentChat from '@/components/sciencegent/ScienceGentChat';
+import { toast } from '@/components/ui/use-toast';
 
 const ScienceGentDetails: React.FC = () => {
   const { address } = useParams<{ address: string }>();
@@ -24,9 +25,21 @@ const ScienceGentDetails: React.FC = () => {
   const [activeTab, setActiveTab] = useState('overview');
 
   const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    if (!text) return;
+    
+    navigator.clipboard.writeText(text)
+      .then(() => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      })
+      .catch(err => {
+        console.error('Failed to copy: ', err);
+        toast({
+          title: "Copy Failed",
+          description: "Could not copy to clipboard",
+          variant: "destructive"
+        });
+      });
   };
 
   const formatAddress = (address: string) => {
@@ -68,12 +81,15 @@ const ScienceGentDetails: React.FC = () => {
           <div className="p-6 bg-destructive/10 rounded-lg text-center">
             <h2 className="text-2xl font-bold mb-2">Error Loading ScienceGent</h2>
             <p>Unable to load details for this ScienceGent. Please try again later.</p>
+            <p className="text-sm text-gray-500 mt-2">Address: {address}</p>
           </div>
         </main>
         <Footer />
       </div>
     );
   }
+
+  console.log("Rendering ScienceGent:", scienceGent);
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -261,15 +277,15 @@ const ScienceGentDetails: React.FC = () => {
               <div className="grid grid-cols-3 border-b">
                 <div className="p-4 text-center border-r">
                   <p className="text-sm text-gray-500 mb-1">Users</p>
-                  <p className="font-bold">1273</p>
+                  <p className="font-bold">{scienceGent.stats?.[0]?.holders || 0}</p>
                 </div>
                 <div className="p-4 text-center border-r">
                   <p className="text-sm text-gray-500 mb-1">Interactions</p>
-                  <p className="font-bold">1273</p>
+                  <p className="font-bold">{scienceGent.stats?.[0]?.transactions || 0}</p>
                 </div>
                 <div className="p-4 text-center">
                   <p className="text-sm text-gray-500 mb-1">Revenue</p>
-                  <p className="font-bold">1273</p>
+                  <p className="font-bold">{scienceGent.stats?.[0]?.trade_volume_eth?.toFixed(4) || 0}</p>
                 </div>
               </div>
             </Card>

@@ -7,7 +7,7 @@ import ErrorDashboard from './dashboard/ErrorDashboard';
 
 interface ScienceGentDetailsDashboardProps {
   address: string;
-  scienceGentData: any;
+  scienceGentData: any; // This should be renamed to match ScienceGentDetails
   status: LoadingStatus;
   isRefreshing: boolean;
   refreshData: () => Promise<void>;
@@ -15,7 +15,7 @@ interface ScienceGentDetailsDashboardProps {
 
 const ScienceGentDetailsDashboard: React.FC<ScienceGentDetailsDashboardProps> = ({
   address,
-  scienceGentData,
+  scienceGentData, // We'll keep this consistent with DashboardTabs
   status,
   isRefreshing,
   refreshData

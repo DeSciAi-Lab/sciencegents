@@ -1,14 +1,12 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from '@/components/ui/badge';
-import { BarChart3, MessageCircle, Brain, GitMerge } from 'lucide-react';
-import OverviewTab from './OverviewTab';
-import ChatTab from './ChatTab';
-import TradeTab from './TradeTab';
-import MigrationTab from './MigrationTab';
-import CapabilitiesTab from './CapabilitiesTab';
 import { LoadingStatus } from '@/hooks/useScienceGentDetails';
+import OverviewTab from './OverviewTab';
+import TradeTab from './TradeTab';
+import ChatTab from './ChatTab';
+import CapabilitiesTab from './CapabilitiesTab';
+import MigrationTab from './MigrationTab';
 
 interface DashboardTabsProps {
   address: string;
@@ -25,85 +23,50 @@ const DashboardTabs: React.FC<DashboardTabsProps> = ({
   isRefreshing,
   refreshData
 }) => {
-  const hasPersona = Boolean(scienceGentData?.persona);
-  const capabilitiesCount = scienceGentData?.capabilities?.length || 0;
-  const isMigrated = scienceGentData?.is_migrated || false;
+  const [activeTab, setActiveTab] = useState('overview');
 
   return (
-    <Tabs defaultValue="overview" className="w-full">
-      <TabsList className="grid grid-cols-5 mb-6">
-        <TabsTrigger value="overview" className="flex items-center gap-1.5">
-          <BarChart3 className="h-4 w-4" />
-          <span>Overview</span>
-        </TabsTrigger>
-        <TabsTrigger value="chat" className="flex items-center gap-1.5">
-          <MessageCircle className="h-4 w-4" />
-          <span>Chat</span>
-          {hasPersona && (
-            <Badge variant="outline" className="ml-1 text-xs bg-purple-50 text-purple-700 border-purple-200">
-              <Brain className="h-3 w-3 mr-1" />
-              Custom Persona
-            </Badge>
+    <Tabs value={activeTab} onValueChange={setActiveTab}>
+      <div className="mb-4 border-b">
+        <TabsList className="w-full justify-start">
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="trade">Trade</TabsTrigger>
+          <TabsTrigger value="chat">Chat</TabsTrigger>
+          <TabsTrigger value="capabilities">Capabilities</TabsTrigger>
+          {scienceGentData?.isMigrationEligible && (
+            <TabsTrigger value="migration">Migration</TabsTrigger>
           )}
-        </TabsTrigger>
-        <TabsTrigger value="trade" className="flex items-center gap-1.5">
-          <span>Trade</span>
-          {isMigrated && (
-            <Badge variant="outline" className="ml-1 text-xs bg-green-50 text-green-700 border-green-200">
-              Uniswap
-            </Badge>
-          )}
-        </TabsTrigger>
-        <TabsTrigger value="migrate" className="flex items-center gap-1.5">
-          <GitMerge className="h-4 w-4" />
-          <span>Migration</span>
-          {isMigrated && (
-            <Badge variant="outline" className="ml-1 text-xs bg-green-50 text-green-700 border-green-200">
-              Completed
-            </Badge>
-          )}
-        </TabsTrigger>
-        <TabsTrigger value="capabilities" className="flex items-center gap-1.5">
-          <span>Capabilities</span>
-          {capabilitiesCount > 0 && (
-            <Badge variant="outline" className="ml-1 text-xs">{capabilitiesCount}</Badge>
-          )}
-        </TabsTrigger>
-      </TabsList>
-      
+        </TabsList>
+      </div>
+
       <TabsContent value="overview">
-        <OverviewTab 
-          scienceGentData={scienceGentData}
-          isRefreshing={isRefreshing}
-          refreshData={refreshData}
-        />
+        <OverviewTab scienceGentData={scienceGentData} />
       </TabsContent>
-      
-      <TabsContent value="chat">
-        <ChatTab 
-          scienceGentData={scienceGentData}
-          address={address}
-        />
-      </TabsContent>
-      
+
       <TabsContent value="trade">
         <TradeTab 
-          address={address}
-          scienceGentData={scienceGentData}
+          address={address} 
+          tokenSymbol={scienceGentData?.symbol} 
+          isMigrated={scienceGentData?.isMigrated}
         />
       </TabsContent>
 
-      <TabsContent value="migrate">
-        <MigrationTab 
-          tokenAddress={address}
-          scienceGent={scienceGentData}
-          refreshData={refreshData}
+      <TabsContent value="chat">
+        <ChatTab 
+          address={address} 
+          scienceGent={scienceGentData} 
         />
       </TabsContent>
-      
+
       <TabsContent value="capabilities">
-        <CapabilitiesTab 
-          scienceGent={scienceGentData}
+        <CapabilitiesTab scienceGentData={scienceGentData} />
+      </TabsContent>
+
+      <TabsContent value="migration">
+        <MigrationTab 
+          address={address} 
+          scienceGentData={scienceGentData} 
+          refreshData={refreshData}
         />
       </TabsContent>
     </Tabs>
