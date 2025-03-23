@@ -37,12 +37,22 @@ const ScienceGentHeader: React.FC<ScienceGentHeaderProps> = ({ scienceGent, addr
   };
 
   const symbol = scienceGent?.symbol || "TICKER";
+  const domain = scienceGent?.domain || "General";
 
   return (
     <div className="flex items-start gap-4 mb-4">
       <div className="w-24 h-24 rounded-full overflow-hidden bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center">
-        {scienceGent?.profilePic ? (
-          <img src={scienceGent.profilePic} alt={scienceGent.name} className="w-full h-full object-cover" />
+        {scienceGent?.profile_pic ? (
+          <img 
+            src={scienceGent.profile_pic} 
+            alt={scienceGent.name} 
+            className="w-full h-full object-cover"
+            onError={(e) => {
+              // Fallback to the first letter if image fails to load
+              e.currentTarget.style.display = 'none';
+              e.currentTarget.parentElement!.innerHTML = `<div class="w-24 h-24 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center text-white text-4xl font-bold">${scienceGent?.name?.charAt(0) || '?'}</div>`;
+            }}
+          />
         ) : (
           <div className="w-24 h-24 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center text-white text-4xl font-bold">
             {scienceGent?.name?.charAt(0) || '?'}
@@ -69,16 +79,19 @@ const ScienceGentHeader: React.FC<ScienceGentHeaderProps> = ({ scienceGent, addr
 
           <div className="flex items-center ml-3 gap-2">
             <Button size="sm" variant="outline" className="h-7 rounded-md px-3">
-              Domain
+              {domain}
             </Button>
             
-            <Button size="sm" variant="outline" className="rounded-full bg-[#1DA1F2] text-white h-7 w-7 p-0 flex items-center justify-center">
-              <Twitter className="h-3.5 w-3.5" />
-            </Button>
-            
-            <Button size="sm" variant="outline" className="rounded-full bg-[#4267B2] text-white h-7 w-7 p-0 flex items-center justify-center">
-              <Facebook className="h-3.5 w-3.5" />
-            </Button>
+            {scienceGent?.twitter && (
+              <Button 
+                size="sm"
+                variant="outline" 
+                className="rounded-full bg-[#1DA1F2] text-white h-7 w-7 p-0 flex items-center justify-center"
+                onClick={() => window.open(scienceGent.twitter, '_blank')}
+              >
+                <Twitter className="h-3.5 w-3.5" />
+              </Button>
+            )}
             
             <div className="flex items-center gap-2 ml-2">
               <Button variant="outline" size="sm" className="h-7 rounded-md px-3 flex items-center gap-1">
@@ -86,10 +99,17 @@ const ScienceGentHeader: React.FC<ScienceGentHeaderProps> = ({ scienceGent, addr
                 <span>Share</span>
               </Button>
 
-              <Button variant="outline" size="sm" className="h-7 rounded-md px-3 flex items-center gap-1">
-                <ExternalLink className="h-3.5 w-3.5" />
-                <span>Save</span>
-              </Button>
+              {scienceGent?.website && (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="h-7 rounded-md px-3 flex items-center gap-1"
+                  onClick={() => window.open(scienceGent.website, '_blank')}
+                >
+                  <ExternalLink className="h-3.5 w-3.5" />
+                  <span>Website</span>
+                </Button>
+              )}
             </div>
           </div>
         </div>

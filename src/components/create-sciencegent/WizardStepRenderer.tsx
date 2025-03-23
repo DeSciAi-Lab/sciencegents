@@ -26,8 +26,9 @@ const WizardStepRenderer: React.FC = () => {
     error,
     transactionHash,
     tokenAddress,
-    handleLaunch,
-    isLaunching
+    handleApproveAndLaunch,
+    isLaunching,
+    isDSIApproved
   } = useWizard();
   
   const [capabilities, setCapabilities] = useState<Capability[]>([]);
@@ -88,7 +89,7 @@ const WizardStepRenderer: React.FC = () => {
         return (
           <ReviewAndLaunch 
             formData={formData}
-            onSubmit={handleLaunch}
+            onSubmit={handleApproveAndLaunch}
             isLaunching={isLaunching}
             capabilities={capabilities}
             status={status}

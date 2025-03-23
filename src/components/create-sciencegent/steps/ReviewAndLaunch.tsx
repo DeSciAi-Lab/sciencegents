@@ -178,6 +178,10 @@ const ReviewAndLaunch: React.FC<ReviewAndLaunchProps> = ({
                   <p className="text-gray-500">Telegram</p>
                   <p className="font-medium">{formData.telegram || "N/A"}</p>
                 </div>
+                <div>
+                  <p className="text-gray-500">Website</p>
+                  <p className="font-medium">{formData.website || "N/A"}</p>
+                </div>
               </div>
             </div>
             

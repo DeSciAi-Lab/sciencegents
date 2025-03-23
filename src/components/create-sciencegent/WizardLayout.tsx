@@ -1,69 +1,121 @@
 
 import React from 'react';
-import { wizardSteps } from './utils';
-import WizardProgress from './WizardProgress';
-import { ArrowRight, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
+import WizardProgress from './WizardProgress';
 import { useWizard } from './WizardContext';
+import { wizardSteps } from './utils';
+import { CreationStatus } from '@/hooks/useScienceGentCreation';
 
 interface WizardLayoutProps {
   children: React.ReactNode;
 }
 
 const WizardLayout: React.FC<WizardLayoutProps> = ({ children }) => {
-  const { currentStep, nextStep, prevStep, canProceed } = useWizard();
+  const { 
+    currentStep, 
+    prevStep, 
+    nextStep,
+    canProceed,
+    handleApproveAndLaunch,
+    isLaunching,
+    status,
+    isDSIApproved,
+    isCheckingAllowance
+  } = useWizard();
   
-  const showNavigation = currentStep < 6;
+  const isLastStep = currentStep === wizardSteps.length;
+  const isFirstStep = currentStep === 1;
+  const isSuccessStep = currentStep === wizardSteps.length + 1;
+  
+  const isDisabled = isLaunching || !canProceed || 
+    status === CreationStatus.Creating || 
+    status === CreationStatus.WaitingConfirmation || 
+    status === CreationStatus.Success;
+  
+  const renderNextButton = () => {
+    if (isLastStep) {
+      if (isCheckingAllowance) {
+        return (
+          <Button disabled className="min-w-[120px]">
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            Checking
+          </Button>
+        );
+      }
+      
+      if (!isDSIApproved) {
+        return (
+          <Button 
+            onClick={handleApproveAndLaunch} 
+            disabled={isDisabled}
+            className="min-w-[180px]"
+          >
+            {isLaunching && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Approve DSI Spending
+          </Button>
+        );
+      }
+      
+      return (
+        <Button 
+          onClick={handleApproveAndLaunch} 
+          disabled={isDisabled}
+          className="min-w-[120px]"
+        >
+          {isLaunching && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          Launch
+        </Button>
+      );
+    }
+    
+    return (
+      <Button onClick={nextStep} disabled={!canProceed}>
+        Next
+        <ChevronRight className="ml-2 h-4 w-4" />
+      </Button>
+    );
+  };
   
   return (
-    <div className="container max-w-6xl mx-auto px-6 py-8">
-      <h1 className="text-3xl font-bold mb-8">Create Sciencegent</h1>
-      
-      <div className="flex flex-col md:flex-row gap-10">
-        <div className="md:w-1/4">
-          <WizardProgress currentStep={currentStep} steps={wizardSteps} />
+    <div className="max-w-3xl mx-auto">
+      <div className="bg-white rounded-lg shadow-sm border">
+        {!isSuccessStep && (
+          <div className="p-6 border-b">
+            <h2 className="text-2xl font-bold text-gray-800">Create ScienceGent</h2>
+            <p className="text-gray-600 mt-1">
+              Build, deploy, and monetize your science-focused AI agent
+            </p>
+            
+            <div className="mt-6">
+              <WizardProgress 
+                steps={wizardSteps} 
+                currentStep={currentStep} 
+              />
+            </div>
+          </div>
+        )}
+        
+        <div className="p-6">
+          {children}
         </div>
         
-        <div className="md:w-3/4">
-          {children}
-          
-          {showNavigation && (
-            <div className="flex justify-between mt-8">
-              {currentStep > 1 ? (
-                <Button 
-                  variant="outline" 
-                  onClick={prevStep}
-                  className="flex items-center gap-2"
-                >
-                  <ArrowLeft className="h-4 w-4" />
+        {!isSuccessStep && (
+          <div className="px-6 py-4 bg-gray-50 border-t rounded-b-lg flex justify-between">
+            <div>
+              {!isFirstStep && (
+                <Button variant="outline" onClick={prevStep}>
+                  <ChevronLeft className="mr-2 h-4 w-4" />
                   Back
-                </Button>
-              ) : (
-                <div></div>
-              )}
-              
-              {currentStep < 5 ? (
-                <Button 
-                  className="bg-science-600 hover:bg-science-700 text-white flex items-center gap-2"
-                  onClick={nextStep}
-                  disabled={!canProceed}
-                >
-                  Continue
-                  <ArrowRight className="h-4 w-4" />
-                </Button>
-              ) : (
-                <Button 
-                  className="bg-science-600 hover:bg-science-700 text-white"
-                  disabled={!canProceed}
-                  type="submit"
-                  form="review-form" // Connect to the form in ReviewAndLaunch
-                >
-                  Launch
                 </Button>
               )}
             </div>
-          )}
-        </div>
+            
+            <div>
+              {renderNextButton()}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

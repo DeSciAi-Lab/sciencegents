@@ -109,6 +109,52 @@ export const useScienceGentCreation = () => {
     }
   };
 
+  // Separate approve DSI function
+  const approveDSI = async (): Promise<boolean> => {
+    // Check if already processing
+    if (isProcessingRef.current || status !== CreationStatus.Idle) {
+      console.log("Already processing a transaction, skipping duplicate call");
+      return false;
+    }
+    
+    isProcessingRef.current = true;
+    setStatus(CreationStatus.CheckingWallet);
+    setError(null);
+    
+    try {
+      // Check if wallet is connected
+      const isWalletConnected = await checkIfWalletIsConnected();
+      if (!isWalletConnected) {
+        const account = await connectWallet();
+        if (!account) {
+          throw new Error("Failed to connect wallet");
+        }
+      }
+      
+      // Request approval
+      setStatus(CreationStatus.ApprovingDSI);
+      await approveDSIForFactory(launchFee);
+      
+      // Reset status
+      setStatus(CreationStatus.Idle);
+      isProcessingRef.current = false;
+      return true;
+    } catch (err: any) {
+      const errorMessage = err.message || "An unknown error occurred";
+      setError(errorMessage);
+      setStatus(CreationStatus.Error);
+      
+      toast({
+        title: "Error Approving DSI",
+        description: errorMessage,
+        variant: "destructive",
+      });
+      
+      isProcessingRef.current = false;
+      return false;
+    }
+  };
+
   const createToken = async (formData: ScienceGentFormData) => {
     // Check if already processing a transaction to prevent duplicate calls
     if (isProcessingRef.current || status !== CreationStatus.Idle) {
@@ -132,15 +178,8 @@ export const useScienceGentCreation = () => {
         }
       }
       
-      // Check if user has enough DSI and has approved the factory
-      setStatus(CreationStatus.CheckingAllowance);
-      const hasAllowance = await checkDSIAllowance(launchFee);
-      
-      // If user hasn't approved, request approval
-      if (!hasAllowance) {
-        setStatus(CreationStatus.ApprovingDSI);
-        await approveDSIForFactory(launchFee);
-      }
+      // We're assuming DSI has already been approved at this point
+      // since we separated the approval process
       
       // Create the token
       setStatus(CreationStatus.Creating);
@@ -198,7 +237,8 @@ export const useScienceGentCreation = () => {
     launchFee,
     isSyncing,
     createToken,
-    resetCreation
+    resetCreation,
+    approveDSI
   };
 };
 

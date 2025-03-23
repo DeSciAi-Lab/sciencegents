@@ -21,6 +21,7 @@ const ScienceGentMaturityStatus: React.FC<ScienceGentMaturityStatusProps> = ({
   const progress = maturityProgress || 75;
   const vETH = virtualETH || 1;
   const fees = collectedFees || 0;
+  const totalRequiredFees = (2 * vETH) + capabilityFees;
   
   return (
     <div className="space-y-3">
@@ -38,8 +39,8 @@ const ScienceGentMaturityStatus: React.FC<ScienceGentMaturityStatusProps> = ({
           "This ScienceGent has been migrated to Uniswap."
         ) : (
           <>
-            The ScienceGent will become eligible to migrate to Uniswap on generating _____ ETH in trading fee (
-            2x virtualETH = {vETH * 2} + capability fees = {capabilityFees})
+            The ScienceGent will become eligible to migrate to Uniswap on generating {totalRequiredFees.toFixed(2)} ETH in trading fees
+            (2x virtualETH = {(vETH * 2).toFixed(2)} + capability fees = {capabilityFees.toFixed(2)})
           </>
         )}
       </div>
