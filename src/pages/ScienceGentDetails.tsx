@@ -1,11 +1,10 @@
-
 import React from 'react';
 import { useParams } from 'react-router-dom';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Copy, Check, Twitter, Facebook, Share2, ExternalLink } from 'lucide-react';
+import { Copy, Check, Twitter, Facebook, Share2, ExternalLink, Settings2 } from 'lucide-react';
 import useScienceGentDetails, { LoadingStatus } from '@/hooks/useScienceGentDetails';
 import ScienceGentDetailsDashboard from '@/components/sciencegent/ScienceGentDetailsDashboard';
 import ScienceGentStatsCards from '@/components/sciencegent/ScienceGentStatsCards';
@@ -84,12 +83,9 @@ const ScienceGentDetails: React.FC = () => {
       <Navbar />
       <main className="flex-grow">
         <div className="container mx-auto px-4 py-4">
-          {/* ScienceGent Header Section */}
           <div className="bg-white rounded-lg border overflow-hidden mb-4">
             <div className="grid md:grid-cols-3">
-              {/* Left section with profile and stats */}
               <div className="md:col-span-2 p-5">
-                {/* Profile Section */}
                 <div className="flex items-start gap-4 mb-4">
                   <div className="w-24 h-24 rounded-full overflow-hidden bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center">
                     {scienceGent?.profilePic ? (
@@ -152,10 +148,8 @@ const ScienceGentDetails: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Stats Cards */}
                 <ScienceGentStatsCards scienceGent={scienceGent} />
 
-                {/* Price and Chart Section */}
                 <div className="mt-8">
                   <div className="flex items-center justify-between mb-6">
                     <div className="flex items-center">
@@ -198,7 +192,6 @@ const ScienceGentDetails: React.FC = () => {
                 </div>
               </div>
               
-              {/* Right section with swap panel */}
               <div className="border-l">
                 <div className="p-4">
                   <div className="flex items-center justify-between">
@@ -207,7 +200,7 @@ const ScienceGentDetails: React.FC = () => {
                       <span className="text-gray-500">${priceUSD}</span>
                     </div>
                     <div className="bg-gray-100 rounded-full px-2 py-1 text-xs flex items-center">
-                      <Settings size={12} className="mr-1" />
+                      <Settings2 size={12} className="mr-1" />
                       <span>Slippage 1%</span>
                     </div>
                   </div>
@@ -223,7 +216,6 @@ const ScienceGentDetails: React.FC = () => {
             </div>
           </div>
 
-          {/* Dashboard Content */}
           <ScienceGentDetailsDashboard
             address={address || ''}
             scienceGentData={scienceGent}
