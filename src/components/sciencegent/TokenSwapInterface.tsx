@@ -6,11 +6,12 @@ import TokenBalanceInfo from "./swap/TokenBalanceInfo";
 import BuyTokenForm from "./swap/BuyTokenForm";
 import SellTokenForm from "./swap/SellTokenForm";
 import SwapError from "./swap/SwapError";
-import { AlertCircle, Loader2, ExternalLink, Settings } from 'lucide-react';
+import { ArrowDown, ChevronDown, Settings, Loader2, ExternalLink } from 'lucide-react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 interface TokenSwapInterfaceProps {
   tokenAddress: string;
@@ -78,37 +79,6 @@ const TokenSwapInterface: React.FC<TokenSwapInterfaceProps> = ({
     return () => clearTimeout(debounceTimer);
   }, [inputValue, activeTab, estimateTokensFromETH, estimateETHFromTokens]);
 
-  // Switch between buy and sell tabs
-  const handleTabChange = (value: string) => {
-    setActiveTab(value as SwapDirection);
-  };
-
-  // Execute swap
-  const handleSwap = async () => {
-    if (!inputValue || parseFloat(inputValue) <= 0) return;
-
-    try {
-      // Apply slippage tolerance to minimum output
-      const minOutput = parseFloat(outputValue) * (1 - slippageTolerance / 100);
-      const minOutputStr = minOutput.toString();
-
-      let success = false;
-      if (activeTab === 'buy') {
-        success = await buyTokens(inputValue, minOutputStr);
-      } else {
-        success = await sellTokens(inputValue, minOutputStr);
-      }
-      
-      // Reset form after successful swap
-      if (success) {
-        setInputValue('');
-        setOutputValue('0');
-      }
-    } catch (err) {
-      console.error('Swap error:', err);
-    }
-  };
-
   // Get Uniswap link for the token
   const getUniswapLink = () => {
     if (!tokenAddress) return "#";
@@ -140,105 +110,193 @@ const TokenSwapInterface: React.FC<TokenSwapInterfaceProps> = ({
               </Button>
             </div>
           </Alert>
-          
-          <TokenBalanceInfo
-            tokenSymbol={tokenSymbol}
-            tokenPrice={tokenPrice}
-            tokenBalance={tokenBalance}
-            ethBalance={ethBalance}
-            isPending={isPending}
-            onRefresh={refreshBalances}
-          />
         </CardContent>
       </Card>
     );
   }
 
-  return (
-    <Card className="overflow-hidden rounded-md">
-      {/* Price header */}
-      <div className="p-4 border-b flex justify-between items-center">
-        <div className="flex items-center space-x-2">
-          <div>
-            <div className="flex items-baseline space-x-2">
-              <span className="text-lg font-bold">Price {tokenPrice}</span>
-              <span className="text-sm text-gray-500">ETH</span>
-              <span className="text-sm text-gray-500">$0.0003</span>
+  // Price header section
+  const PriceHeader = () => (
+    <div className="flex items-center justify-between border rounded-lg py-2 px-3 mb-4 bg-gray-50">
+      <div>
+        <span className="text-sm">Price 0.000004 ETH</span>
+        <span className="block text-sm text-gray-500">$0.0003</span>
+      </div>
+      <div className="text-xs bg-gray-100 px-2 py-1 rounded flex items-center gap-1">
+        <Settings size={12} />
+        <span>Slippage {slippageTolerance}%</span>
+      </div>
+    </div>
+  );
+
+  // Sell tab content
+  const SellTabContent = () => (
+    <div className="space-y-4">
+      <div>
+        <p className="text-gray-500 mb-1">Sell</p>
+        <div className="p-3 bg-gray-50 rounded-lg border">
+          <div className="flex justify-between mb-1">
+            <p className="text-xs text-gray-400">You sell</p>
+            <p className="text-xs text-gray-400">Balance: {parseFloat(tokenBalance).toFixed(4)}</p>
+          </div>
+          <div className="flex justify-between items-center">
+            <Input
+              type="number"
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              placeholder="0.0001"
+              className="text-2xl font-medium border-0 p-0 h-auto bg-transparent w-3/5"
+            />
+            <div className="flex items-center gap-1 bg-white border rounded-lg px-2 py-1">
+              <div className="w-5 h-5 rounded-full bg-[#6159dc] flex items-center justify-center text-white">
+                <span className="text-xs">{tokenSymbol.substring(0, 1)}</span>
+              </div>
+              <span className="font-medium">{tokenSymbol}</span>
+              <ChevronDown size={14} />
             </div>
           </div>
+          <div className="text-xs text-gray-400 mt-1">$0.20</div>
         </div>
-        <Button variant="outline" size="sm" className="gap-1 px-2">
-          <Settings size={16} />
-          <span>Slippage</span>
-        </Button>
       </div>
       
-      <CardContent className="p-4 space-y-4">
-        <div className="grid">
-          <div className="mb-2">
-            <span className="text-gray-500">{activeTab === 'sell' ? 'Sell' : 'Buy'}</span>
+      <div className="flex justify-center">
+        <div className="bg-gray-100 p-1 rounded-full">
+          <ArrowDown size={16} />
+        </div>
+      </div>
+      
+      <div>
+        <div className="p-3 bg-gray-50 rounded-lg border">
+          <div className="flex justify-between mb-1">
+            <p className="text-xs text-gray-400">You receive</p>
+            <p className="text-xs text-gray-400">Balance: {parseFloat(ethBalance).toFixed(4)}</p>
           </div>
-          
-          <Tabs defaultValue="buy" onValueChange={handleTabChange} className="w-full">
-            <div className="hidden">
-              <TabsList>
-                <TabsTrigger value="buy">Buy</TabsTrigger>
-                <TabsTrigger value="sell">Sell</TabsTrigger>
-              </TabsList>
+          <div className="flex justify-between items-center">
+            <Input
+              type="text"
+              value={outputValue}
+              placeholder="0.0"
+              readOnly
+              className="text-2xl font-medium border-0 p-0 h-auto bg-transparent w-3/5"
+            />
+            <div className="flex items-center gap-1 bg-white border rounded-lg px-2 py-1">
+              <div className="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center">
+                <img src="https://ethereum.org/favicon-32x32.png" alt="ETH" className="w-3 h-3" />
+              </div>
+              <span className="font-medium">ETH</span>
+              <ChevronDown size={14} />
             </div>
-            
-            <TabsContent value="buy" className="mt-0">
-              <BuyTokenForm
-                tokenSymbol={tokenSymbol}
-                inputValue={inputValue}
-                outputValue={outputValue}
-                ethBalance={ethBalance}
-                isPending={isPending}
-                slippageTolerance={slippageTolerance}
-                onInputChange={setInputValue}
-                onSlippageChange={setSlippageTolerance}
-                onSwap={handleSwap}
-              />
-            </TabsContent>
-            
-            <TabsContent value="sell" className="mt-0">
-              <SellTokenForm
-                tokenSymbol={tokenSymbol}
-                inputValue={inputValue}
-                outputValue={outputValue}
-                tokenBalance={tokenBalance}
-                isPending={isPending}
-                slippageTolerance={slippageTolerance}
-                onInputChange={setInputValue}
-                onSlippageChange={setSlippageTolerance}
-                onSwap={handleSwap}
-              />
-            </TabsContent>
-          </Tabs>
+          </div>
+          <div className="text-xs text-gray-400 mt-1">$0.20</div>
         </div>
-        
-        <Button 
-          className="w-full h-12 mt-4 bg-purple-500 hover:bg-purple-600" 
-          onClick={handleSwap}
-          disabled={isPending || !inputValue || parseFloat(inputValue) <= 0}
-        >
-          {isPending ? (
-            <>
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              {activeTab === 'buy' ? 'Buying...' : 'Selling...'}
-            </>
-          ) : (
-            'Review'
-          )}
-        </Button>
-        
-        <div className="text-xs text-gray-500 text-center">
-          1 USDT = 0.00050464 ETH ($1.00)
+      </div>
+    </div>
+  );
+
+  // Buy tab content
+  const BuyTabContent = () => (
+    <div className="space-y-4">
+      <div>
+        <p className="text-gray-500 mb-1">Buy</p>
+        <div className="p-3 bg-gray-50 rounded-lg border">
+          <div className="flex justify-between mb-1">
+            <p className="text-xs text-gray-400">You pay</p>
+            <p className="text-xs text-gray-400">Balance: {parseFloat(ethBalance).toFixed(4)}</p>
+          </div>
+          <div className="flex justify-between items-center">
+            <Input
+              type="number"
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              placeholder="0.0"
+              className="text-2xl font-medium border-0 p-0 h-auto bg-transparent w-3/5"
+            />
+            <div className="flex items-center gap-1 bg-white border rounded-lg px-2 py-1">
+              <div className="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center">
+                <img src="https://ethereum.org/favicon-32x32.png" alt="ETH" className="w-3 h-3" />
+              </div>
+              <span className="font-medium">ETH</span>
+              <ChevronDown size={14} />
+            </div>
+          </div>
+          <div className="text-xs text-gray-400 mt-1">$0.20</div>
         </div>
+      </div>
+      
+      <div className="flex justify-center">
+        <div className="bg-gray-100 p-1 rounded-full">
+          <ArrowDown size={16} />
+        </div>
+      </div>
+      
+      <div>
+        <div className="p-3 bg-gray-50 rounded-lg border">
+          <div className="flex justify-between mb-1">
+            <p className="text-xs text-gray-400">You receive</p>
+            <p className="text-xs text-gray-400">Balance: {parseFloat(tokenBalance).toFixed(4)}</p>
+          </div>
+          <div className="flex justify-between items-center">
+            <Input
+              type="text"
+              value={outputValue}
+              readOnly
+              placeholder="0.19807"
+              className="text-2xl font-medium border-0 p-0 h-auto bg-transparent w-3/5"
+            />
+            <div className="flex items-center gap-1 bg-white border rounded-lg px-2 py-1">
+              <div className="w-5 h-5 rounded-full bg-[#6159dc] flex items-center justify-center text-white">
+                <span className="text-xs">{tokenSymbol.substring(0, 1)}</span>
+              </div>
+              <span className="font-medium">{tokenSymbol}</span>
+              <ChevronDown size={14} />
+            </div>
+          </div>
+          <div className="text-xs text-gray-400 mt-1">$0.20</div>
+        </div>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="space-y-4">
+      <PriceHeader />
+      
+      <Tabs defaultValue="sell" onValueChange={(val) => setActiveTab(val as SwapDirection)} className="w-full">
+        <TabsList className="w-full mb-4 grid grid-cols-2">
+          <TabsTrigger value="sell">Sell</TabsTrigger>
+          <TabsTrigger value="buy">Buy</TabsTrigger>
+        </TabsList>
         
-        <SwapError error={error} />
-      </CardContent>
-    </Card>
+        <TabsContent value="sell">
+          <SellTabContent />
+        </TabsContent>
+        
+        <TabsContent value="buy">
+          <BuyTabContent />
+        </TabsContent>
+      </Tabs>
+      
+      <Button 
+        className="w-full h-12 bg-[#e963fc] hover:bg-[#d44ae9] text-white font-medium rounded-full" 
+        onClick={() => activeTab === 'buy' ? buyTokens(inputValue, outputValue) : sellTokens(inputValue, outputValue)}
+        disabled={isPending || !inputValue || parseFloat(inputValue) <= 0}
+      >
+        {isPending ? (
+          <>
+            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            {activeTab === 'buy' ? 'Buying...' : 'Selling...'}
+          </>
+        ) : (
+          'Review'
+        )}
+      </Button>
+      
+      <div className="text-xs text-center text-gray-500 mt-2">
+        1 USDT = 0.00050464 ETH ($1.00)
+      </div>
+      
+      <SwapError error={error} />
+    </div>
   );
 };
 

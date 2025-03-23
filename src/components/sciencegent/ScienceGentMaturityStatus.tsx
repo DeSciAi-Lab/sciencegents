@@ -25,17 +25,21 @@ const ScienceGentMaturityStatus: React.FC<ScienceGentMaturityStatusProps> = ({
   const capabilityFees = 1; // Placeholder
   
   return (
-    <div className="bg-white rounded-md p-4 border space-y-3">
-      <div>
-        <div className="flex justify-between items-center mb-1">
-          <h3 className="font-medium">Maturity Status</h3>
-          <span className="font-bold">{progress}%</span>
-        </div>
-        
-        <Progress value={progress} className="h-2 bg-gray-200" />
+    <div className="space-y-3">
+      <div className="text-center font-medium text-lg mb-1">
+        Maturity Status
       </div>
       
-      <p className="text-sm text-gray-600">
+      <div>
+        <div className="flex justify-between items-center mb-1">
+          <div className="w-full">
+            <Progress value={progress} className="h-2 bg-gray-200" />
+          </div>
+          <span className="ml-2 font-bold">{progress}%</span>
+        </div>
+      </div>
+      
+      <div className="text-sm text-gray-600">
         {isMigrated ? (
           "This ScienceGent has been migrated to Uniswap."
         ) : progress >= 100 ? (
@@ -46,9 +50,9 @@ const ScienceGentMaturityStatus: React.FC<ScienceGentMaturityStatusProps> = ({
             2x virtualETH = {vETH * 2} + capability fees = {capabilityFees})
           </>
         )}
-      </p>
+      </div>
       
-      <div className="grid grid-cols-3 gap-2 mt-4">
+      <div className="grid grid-cols-3 gap-2 mt-2">
         <div className="bg-gray-50 border rounded-md p-3 text-center">
           <p className="text-sm text-gray-500">Users</p>
           <p className="font-medium">1273</p>
@@ -63,7 +67,7 @@ const ScienceGentMaturityStatus: React.FC<ScienceGentMaturityStatusProps> = ({
         </div>
       </div>
       
-      <div className="mt-2">
+      <div>
         <h4 className="text-sm mb-2">5 Capabilities:</h4>
         <div className="flex flex-wrap gap-2">
           <div className="bg-white border rounded-full px-3 py-1 text-sm">Chat</div>

@@ -23,47 +23,33 @@ const DashboardTabs: React.FC<DashboardTabsProps> = ({
   isRefreshing,
   refreshData
 }) => {
-  const [activeTab, setActiveTab] = useState('overview');
-  const [activeSubTab, setActiveSubTab] = useState('tradebook');
+  const [activeTab, setActiveTab] = useState('trades');
+  const [activeTradeTab, setActiveTradeTab] = useState('tradebook');
   
   return (
     <div className="bg-white rounded-lg border overflow-hidden">
       {/* Main Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <div className="border-b">
-          <TabsList className="w-full bg-white justify-start rounded-none border-0 p-0">
+          <TabsList className="w-full justify-start bg-white rounded-none p-0">
             <TabsTrigger 
               value="overview"
-              className="data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:bg-white rounded-none px-6 py-3 text-gray-700"
+              className="rounded-none px-6 py-3 text-gray-700 data-[state=active]:border-b-2 data-[state=active]:border-blue-600"
             >
               Overview
             </TabsTrigger>
             <TabsTrigger 
               value="trades"
-              className="data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:bg-white rounded-none px-6 py-3 text-gray-700"
+              className="rounded-none px-6 py-3 text-gray-700 data-[state=active]:border-b-2 data-[state=active]:border-blue-600"
             >
               Trades
             </TabsTrigger>
             <TabsTrigger 
-              value="chat"
-              className="data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:bg-white rounded-none px-6 py-3 text-gray-700"
+              value="agent"
+              className="rounded-none px-6 py-3 text-gray-700 data-[state=active]:border-b-2 data-[state=active]:border-blue-600"
             >
               Agent Interface
             </TabsTrigger>
-            <TabsTrigger 
-              value="capabilities"
-              className="data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:bg-white rounded-none px-6 py-3 text-gray-700"
-            >
-              Capabilities
-            </TabsTrigger>
-            {scienceGentData?.isMigrationEligible && (
-              <TabsTrigger 
-                value="migration"
-                className="data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:bg-white rounded-none px-6 py-3 text-gray-700"
-              >
-                Migration
-              </TabsTrigger>
-            )}
           </TabsList>
         </div>
 
@@ -72,30 +58,30 @@ const DashboardTabs: React.FC<DashboardTabsProps> = ({
           <OverviewTab 
             scienceGentData={scienceGentData} 
             isRefreshing={isRefreshing} 
-            refreshData={refreshData} 
+            refreshData={refreshData}
           />
         </TabsContent>
 
         <TabsContent value="trades">
           {/* Secondary Tabs for Trades */}
-          <Tabs value={activeSubTab} onValueChange={setActiveSubTab} className="w-full">
+          <Tabs value={activeTradeTab} onValueChange={setActiveTradeTab} className="w-full">
             <div className="border-b">
-              <TabsList className="w-full bg-white justify-start rounded-none border-0 p-0">
+              <TabsList className="w-full bg-white justify-start rounded-none p-0">
                 <TabsTrigger 
                   value="tradebook"
-                  className="data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:bg-white rounded-none px-6 py-3 text-sm"
+                  className="rounded-none px-6 py-2 text-sm data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:bg-white"
                 >
                   Tradebook
                 </TabsTrigger>
                 <TabsTrigger 
                   value="holders"
-                  className="data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:bg-white rounded-none px-6 py-3 text-sm"
+                  className="rounded-none px-6 py-2 text-sm data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:bg-white"
                 >
                   Holders
                 </TabsTrigger>
                 <TabsTrigger 
                   value="transactions"
-                  className="data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:bg-white rounded-none px-6 py-3 text-sm"
+                  className="rounded-none px-6 py-2 text-sm data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:bg-white"
                 >
                   Transactions
                 </TabsTrigger>
@@ -123,28 +109,12 @@ const DashboardTabs: React.FC<DashboardTabsProps> = ({
           </Tabs>
         </TabsContent>
 
-        <TabsContent value="chat">
+        <TabsContent value="agent">
           <ChatTab 
             address={address} 
             scienceGent={scienceGentData} 
           />
         </TabsContent>
-
-        <TabsContent value="capabilities">
-          <CapabilitiesTab 
-            scienceGent={scienceGentData}
-          />
-        </TabsContent>
-
-        {scienceGentData?.isMigrationEligible && (
-          <TabsContent value="migration">
-            <MigrationTab 
-              tokenAddress={address}
-              scienceGent={scienceGentData} 
-              refreshData={refreshData}
-            />
-          </TabsContent>
-        )}
       </Tabs>
     </div>
   );

@@ -15,76 +15,52 @@ const TradeTab: React.FC<TradeTabProps> = ({ address, scienceGentData }) => {
   const tokenPrice = scienceGentData?.tokenPrice || 0.000004;
   const priceUSD = scienceGentData?.tokenPriceUSD || 0.0003;
   
-  // Stats from image
-  const stats = {
-    change: "-942.38",
-    high: "47,444.1",
-    low: "45,555.1"
-  };
+  // Mock data for the tradebook
+  const tradeData = [
+    { date: 'Mar 23 21:27:59', type: 'buy', price: '$0.0243', total: '$19.91', priceETH: '0.0211', amountSAR: '1,187,711', amountETH: '0.0099', maker: '0x7f7...c05f' },
+    { date: 'Mar 23 21:27:59', type: 'sell', price: '$0.0241', total: '$0.5939', priceETH: '0.0200', amountSAR: '246,598.00', amountETH: '0.0003', maker: '0x000...0000' },
+    { date: 'Mar 23 21:27:59', type: 'sell', price: '$0.0241', total: '$0.5943', priceETH: '0.0200', amountSAR: '246,598.00', amountETH: '0.0003', maker: '0x000...0000' },
+    { date: 'Mar 23 21:27:35', type: 'buy', price: '$0.0241', total: '$0.5943', priceETH: '0.0200', amountSAR: '246,598.00', amountETH: '0.0003', maker: '0x000...0000' },
+  ];
+  
+  // Table headers
+  const headers = ['Date', 'Price', 'Total', 'Price ETH', 'Amount SAR', 'Amount ETH', 'Maker'];
   
   return (
-    <div className="space-y-0">
-      {/* Header with price and stats */}
-      <div className="flex items-center justify-between border-b p-4">
-        <div className="flex items-baseline gap-2">
-          <h3 className="text-gray-700 font-medium">Price</h3>
-          <div className="flex items-baseline">
-            <span className="text-2xl font-bold text-teal-500">{tokenPrice.toFixed(7)}</span>
-            <span className="ml-1 text-gray-500">ETH</span>
-          </div>
-          <span className="text-gray-400">${priceUSD.toFixed(4)}</span>
-        </div>
-        
-        <div className="flex gap-8">
-          <div className="text-right">
-            <p className="text-sm text-gray-500">24h change</p>
-            <p className="font-medium text-red-500">{stats.change}</p>
-          </div>
-          <div className="text-right">
-            <p className="text-sm text-gray-500">24h high</p>
-            <p className="font-medium">{stats.high}</p>
-          </div>
-          <div className="text-right">
-            <p className="text-sm text-gray-500">24h low</p>
-            <p className="font-medium">{stats.low}</p>
-          </div>
-        </div>
-      </div>
-      
-      {/* TICKER/ETH filter */}
-      <div className="p-4 pb-0 flex items-center">
-        <div className="flex items-center font-medium text-gray-800">
-          <span>TICKER/ETH</span>
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-          </svg>
-        </div>
-      </div>
-      
-      {/* Trading Chart */}
-      <div className="p-4">
-        <TradingViewChart 
-          tokenAddress={address}
-          tokenSymbol={symbol}
-          isMigrated={isMigrated}
-        />
-      </div>
-      
-      <div className="grid grid-cols-2 gap-4 p-4 pt-0">
-        <div className="col-span-1">
-          <TokenSwapInterface 
-            tokenAddress={address}
-            tokenSymbol={symbol}
-            isMigrated={isMigrated}
-            uniswapPair={scienceGentData?.uniswapPair}
-          />
-        </div>
-        
-        <div className="col-span-1">
-          {/* Tradebook table would go here */}
-          <div className="h-full border rounded-lg flex items-center justify-center bg-gray-50">
-            <p className="text-gray-500">Trade history will appear here</p>
-          </div>
+    <div className="space-y-4">
+      {/* Tradebook Table */}
+      <div className="rounded-md border overflow-hidden">
+        <div className="bg-gray-950 text-white p-2">
+          <table className="w-full text-sm">
+            <thead>
+              <tr>
+                {headers.map((header, index) => (
+                  <th key={index} className="text-left font-normal px-2 py-1">
+                    {header} {index === 0 && '▼'}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {tradeData.map((trade, index) => (
+                <tr key={index} className="hover:bg-gray-800">
+                  <td className="px-2 py-1">{trade.date}</td>
+                  <td className="px-2 py-1">
+                    <span className={trade.type === 'buy' ? 'text-green-500' : 'text-red-500'}>
+                      {trade.type}
+                    </span> {trade.price}
+                  </td>
+                  <td className="px-2 py-1">{trade.total}</td>
+                  <td className="px-2 py-1">{trade.priceETH}</td>
+                  <td className="px-2 py-1">{trade.amountSAR}</td>
+                  <td className="px-2 py-1">{trade.amountETH}</td>
+                  <td className="px-2 py-1">
+                    <span className="text-blue-400">{trade.maker}</span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>

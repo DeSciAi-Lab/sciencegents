@@ -17,35 +17,45 @@ const ScienceGentStatsCards: React.FC<ScienceGentStatsCardsProps> = ({ scienceGe
     return `$${(ethValue * 3000).toFixed(2)}k`;
   };
 
+  const CardWithRoundedCorner = ({ title, ethValue, dollarValue, value }: { title: string, ethValue?: number, dollarValue?: string, value?: number }) => (
+    <div className="bg-white rounded-md p-3 border relative">
+      <p className="text-sm text-gray-500 mb-1">{title}</p>
+      {ethValue !== undefined ? (
+        <>
+          <p className="font-medium">{ethValue.toFixed(2)} ETH</p>
+          <p className="text-xs text-gray-500">{dollarValue}</p>
+        </>
+      ) : (
+        <p className="font-medium">{value}</p>
+      )}
+      <div className="absolute bottom-0 right-0 w-8 h-8 bg-gray-100 rounded-tl-lg"></div>
+    </div>
+  );
+
   return (
-    <div className="grid grid-cols-4 gap-4 mt-4">
-      <div className="bg-white rounded-md p-3 border relative overflow-hidden">
-        <p className="text-sm text-gray-500 mb-1">Market Cap</p>
-        <p className="font-medium">{marketCap.toFixed(2)} ETH</p>
-        <p className="text-xs text-gray-500">{formatDollars(marketCap)}</p>
-        <div className="absolute bottom-0 right-0 w-8 h-8 bg-gray-100 rounded-tl-lg flex items-center justify-center opacity-30"></div>
-      </div>
+    <div className="grid grid-cols-4 gap-3">
+      <CardWithRoundedCorner 
+        title="Market Cap" 
+        ethValue={marketCap} 
+        dollarValue={formatDollars(marketCap)} 
+      />
       
-      <div className="bg-white rounded-md p-3 border relative overflow-hidden">
-        <p className="text-sm text-gray-500 mb-1">Liquidity</p>
-        <p className="font-medium">{liquidity.toFixed(2)} ETH</p>
-        <p className="text-xs text-gray-500">{formatDollars(liquidity)}</p>
-        <div className="absolute bottom-0 right-0 w-8 h-8 bg-gray-100 rounded-tl-lg flex items-center justify-center opacity-30"></div>
-      </div>
+      <CardWithRoundedCorner 
+        title="Liquidity" 
+        ethValue={liquidity} 
+        dollarValue={formatDollars(liquidity)} 
+      />
       
-      <div className="bg-white rounded-md p-3 border relative overflow-hidden">
-        <p className="text-sm text-gray-500 mb-1">24h volume</p>
-        <p className="font-medium">{volume24h.toFixed(2)} ETH</p>
-        <p className="text-xs text-gray-500">{formatDollars(volume24h)}</p>
-        <div className="absolute bottom-0 right-0 w-8 h-8 bg-gray-100 rounded-tl-lg flex items-center justify-center opacity-30"></div>
-      </div>
+      <CardWithRoundedCorner 
+        title="24h volume" 
+        ethValue={volume24h} 
+        dollarValue={formatDollars(volume24h)} 
+      />
       
-      <div className="bg-white rounded-md p-3 border relative overflow-hidden">
-        <p className="text-sm text-gray-500 mb-1">Holders</p>
-        <p className="font-medium">{holders}</p>
-        <p className="text-xs text-gray-500">&nbsp;</p>
-        <div className="absolute bottom-0 right-0 w-8 h-8 bg-gray-100 rounded-tl-lg flex items-center justify-center opacity-30"></div>
-      </div>
+      <CardWithRoundedCorner 
+        title="Holders" 
+        value={holders} 
+      />
     </div>
   );
 };

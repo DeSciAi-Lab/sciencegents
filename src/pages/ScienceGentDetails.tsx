@@ -5,11 +5,12 @@ import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Copy, Check, Twitter, Facebook, Share2, Save } from 'lucide-react';
+import { Copy, Check, Twitter, Facebook, Share2, ExternalLink } from 'lucide-react';
 import useScienceGentDetails, { LoadingStatus } from '@/hooks/useScienceGentDetails';
 import ScienceGentDetailsDashboard from '@/components/sciencegent/ScienceGentDetailsDashboard';
+import ScienceGentStatsCards from '@/components/sciencegent/ScienceGentStatsCards';
 import { toast } from '@/components/ui/use-toast';
-import { Progress } from '@/components/ui/progress';
+import TokenSwapInterface from '@/components/sciencegent/TokenSwapInterface';
 
 const ScienceGentDetails: React.FC = () => {
   const { address } = useParams<{ address: string }>();
@@ -36,20 +37,18 @@ const ScienceGentDetails: React.FC = () => {
 
   const formatAddress = (address: string) => {
     if (!address) return '';
-    return `${address.substring(0, 6)}...${address.slice(-4)}`;
+    return `${address.substring(0, 8)}...${address.slice(-5)}`;
   };
 
   if (status === LoadingStatus.Loading) {
     return (
-      <div className="min-h-screen flex flex-col">
+      <div className="min-h-screen flex flex-col bg-gray-50">
         <Navbar />
-        <main className="flex-grow container mx-auto px-4 pt-20 pb-10">
-          <div className="p-8 bg-white rounded-lg shadow-sm border">
-            <div className="animate-pulse space-y-4">
-              <div className="h-12 bg-gray-200 rounded w-1/4"></div>
-              <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-              <div className="h-48 bg-gray-200 rounded"></div>
-            </div>
+        <main className="flex-grow container mx-auto px-4 pt-6 pb-10">
+          <div className="animate-pulse space-y-4">
+            <div className="h-12 bg-gray-200 rounded w-1/4"></div>
+            <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+            <div className="h-48 bg-gray-200 rounded"></div>
           </div>
         </main>
         <Footer />
@@ -59,9 +58,9 @@ const ScienceGentDetails: React.FC = () => {
 
   if (status === LoadingStatus.Error || status === LoadingStatus.NotFound) {
     return (
-      <div className="min-h-screen flex flex-col">
+      <div className="min-h-screen flex flex-col bg-gray-50">
         <Navbar />
-        <main className="flex-grow container mx-auto px-4 pt-20 pb-10">
+        <main className="flex-grow container mx-auto px-4 pt-6 pb-10">
           <div className="p-6 bg-destructive/10 rounded-lg text-center">
             <h2 className="text-2xl font-bold mb-2">Error Loading ScienceGent</h2>
             <p>Unable to load details for this ScienceGent. Please try again later.</p>
@@ -73,168 +72,150 @@ const ScienceGentDetails: React.FC = () => {
     );
   }
 
-  // Stats for UI display
-  const marketCap = scienceGent?.marketCap || 4.32;
-  const liquidity = scienceGent?.liquidity || 2.14;
-  const volume24h = scienceGent?.volume24h || 4.32;
-  const holders = scienceGent?.holders || 877;
-  const maturityProgress = scienceGent?.maturityProgress || 75;
-  const virtualETH = scienceGent?.virtualETH || 2;
-  const capabilityFees = scienceGent?.capabilityFees || 1;
-  
-  // Format dollar values
-  const formatDollars = (ethValue: number) => {
-    return `$${(ethValue * 3000).toFixed(2)}k`;
-  };
+  const symbol = scienceGent?.symbol || "TICKER";
+  const tokenPrice = scienceGent?.tokenPrice || "0.000004";
+  const priceUSD = scienceGent?.tokenPriceUSD || "0.0003";
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       <Navbar />
-      <main className="flex-grow container mx-auto px-4 py-6">
-        {/* ScienceGent Header */}
-        <div className="bg-white rounded-lg p-6 shadow-sm border mb-6">
-          <div className="flex flex-col space-y-4">
-            {/* Top section with profile and basic info */}
-            <div className="flex items-start gap-4">
-              <div className="w-16 h-16 rounded-full overflow-hidden bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white flex-shrink-0">
-                {scienceGent?.profilePic ? (
-                  <img src={scienceGent.profilePic} alt={scienceGent.name} className="w-full h-full object-cover" />
-                ) : (
-                  <span className="text-2xl font-bold">{scienceGent?.name?.charAt(0) || '?'}</span>
-                )}
-              </div>
-              
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <h1 className="text-xl font-semibold">{scienceGent?.name || 'ScienceGent Name'}</h1>
-                  <Badge className="bg-gray-100 text-gray-800 border-gray-200">${scienceGent?.symbol || 'STICKER'}</Badge>
+      <main className="flex-grow">
+        <div className="container mx-auto px-4 py-4">
+          {/* ScienceGent Header Section */}
+          <div className="bg-white rounded-lg border overflow-hidden mb-4">
+            <div className="grid md:grid-cols-3">
+              {/* Left section with profile and stats */}
+              <div className="md:col-span-2 p-5">
+                {/* Profile Section */}
+                <div className="flex gap-4 mb-4">
+                  <div className="w-[90px] h-[90px] rounded-full overflow-hidden bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center">
+                    {scienceGent?.profilePic ? (
+                      <img src={scienceGent.profilePic} alt={scienceGent.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-24 h-24 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center text-white text-4xl font-bold">
+                        {scienceGent?.name?.charAt(0) || '?'}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      <h1 className="text-2xl font-bold">ScienceGent Name</h1>
+                      <Badge className="ml-2 bg-gray-100 text-gray-800 font-medium border-0 rounded">${symbol}</Badge>
+                    </div>
+
+                    <div className="flex items-center mb-3">
+                      <div className="flex items-center bg-gray-100 rounded px-2 py-1 max-w-[220px]">
+                        <span className="text-sm text-gray-600 mr-1">{formatAddress(address || '')}</span>
+                        <button 
+                          onClick={() => address && copyToClipboard(address)}
+                          className="ml-1 text-gray-500 hover:text-gray-700"
+                        >
+                          {copied ? <Check size={14} /> : <Copy size={14} />}
+                        </button>
+                      </div>
+
+                      <div className="flex items-center ml-3 gap-2">
+                        <Button size="sm" variant="outline" className="h-7 rounded-md px-3">
+                          Domain
+                        </Button>
+                        
+                        <Button size="sm" variant="outline" className="rounded-full bg-[#1DA1F2] text-white h-7 w-7 p-0 flex items-center justify-center">
+                          <Twitter className="h-3.5 w-3.5" />
+                        </Button>
+                        
+                        <Button size="sm" variant="outline" className="rounded-full bg-[#4267B2] text-white h-7 w-7 p-0 flex items-center justify-center">
+                          <Facebook className="h-3.5 w-3.5" />
+                        </Button>
+                        
+                        <div className="flex items-center gap-2 ml-2">
+                          <Button variant="outline" size="sm" className="h-7 rounded-md px-3 flex items-center gap-1">
+                            <Share2 className="h-3.5 w-3.5" />
+                            <span>Share</span>
+                          </Button>
+
+                          <Button variant="outline" size="sm" className="h-7 rounded-md px-3 flex items-center gap-1">
+                            <ExternalLink className="h-3.5 w-3.5" />
+                            <span>Save</span>
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-white border rounded-full px-4 py-1.5 w-full md:max-w-[500px] text-sm text-gray-600">
+                      Description ----- ---- ----- ------ ----- ------ ---
+                      <button className="text-blue-500 ml-1 text-xs">see more</button>
+                    </div>
+                  </div>
                 </div>
-                
-                <div className="flex items-center gap-2 mt-1">
-                  <div className="flex items-center bg-gray-100 rounded-md px-2 py-1">
-                    <span className="text-sm text-gray-600">{formatAddress(scienceGent?.address || '')}</span>
-                    <button 
-                      onClick={() => scienceGent?.address && copyToClipboard(scienceGent.address)}
-                      className="ml-1 text-gray-500 hover:text-gray-700"
-                    >
-                      {copied ? <Check size={14} /> : <Copy size={14} />}
-                    </button>
+
+                {/* Stats Cards */}
+                <ScienceGentStatsCards scienceGent={scienceGent} />
+
+                {/* Price and Chart Section */}
+                <div className="mt-8">
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center">
+                      <div className="text-lg font-bold flex items-center">
+                        TICKER/ETH <span className="ml-1">▼</span>
+                      </div>
+                      <div className="ml-8">
+                        <span className="text-gray-600 mr-2">Price</span>
+                        <span className="text-[#00bfa5] text-2xl font-medium mr-1">0.0000004</span>
+                        <span className="text-gray-800">ETH</span>
+                        <div>
+                          <span className="text-[#00bfa5]">$0.0003</span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="flex gap-10">
+                      <div className="text-right">
+                        <p className="text-xs text-gray-500">24h change</p>
+                        <p className="font-medium text-red-500">-942.38</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs text-gray-500">24h high</p>
+                        <p className="font-medium">47,444.1</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs text-gray-500">24h low</p>
+                        <p className="font-medium">45,555.1</p>
+                      </div>
+                    </div>
                   </div>
                   
-                  <Button size="sm" variant="outline" className="rounded-md h-7 px-4">
-                    Domain
-                  </Button>
-                  
-                  <Button size="sm" variant="outline" className="rounded-full bg-blue-500 text-white hover:bg-blue-600 h-7 w-7 p-0">
-                    <Twitter className="h-3.5 w-3.5" />
-                  </Button>
-                  
-                  <Button size="sm" variant="outline" className="rounded-full bg-blue-700 text-white hover:bg-blue-800 h-7 w-7 p-0">
-                    <Facebook className="h-3.5 w-3.5" />
-                  </Button>
-                  
-                  <Button size="sm" variant="outline" className="rounded-md h-7">
-                    <Share2 className="h-3.5 w-3.5 mr-1" />
-                    <span>Share</span>
-                  </Button>
-                  
-                  <Button size="sm" variant="outline" className="rounded-md h-7">
-                    <Save className="h-3.5 w-3.5 mr-1" />
-                    <span>Save</span>
-                  </Button>
-                </div>
-                
-                <div className="mt-2">
-                  <p className="text-sm text-gray-600 line-clamp-1">
-                    Description ----- ---- ----- ------ ----- ------ ---
-                    <button className="text-blue-500 ml-1 text-xs">see more</button>
-                  </p>
-                </div>
-              </div>
-            </div>
-            
-            {/* Stats Cards */}
-            <div className="grid grid-cols-4 gap-4">
-              <div className="bg-white rounded-md p-3 border relative overflow-hidden">
-                <p className="text-sm text-gray-500 mb-1">Market Cap</p>
-                <p className="font-medium">{marketCap.toFixed(2)} ETH</p>
-                <p className="text-xs text-gray-500">{formatDollars(marketCap)}</p>
-                <div className="absolute bottom-0 right-0 w-8 h-8 bg-gray-100 rounded-tl-lg flex items-center justify-center opacity-30"></div>
-              </div>
-              
-              <div className="bg-white rounded-md p-3 border relative overflow-hidden">
-                <p className="text-sm text-gray-500 mb-1">Liquidity</p>
-                <p className="font-medium">{liquidity.toFixed(2)} ETH</p>
-                <p className="text-xs text-gray-500">{formatDollars(liquidity)}</p>
-                <div className="absolute bottom-0 right-0 w-8 h-8 bg-gray-100 rounded-tl-lg flex items-center justify-center opacity-30"></div>
-              </div>
-              
-              <div className="bg-white rounded-md p-3 border relative overflow-hidden">
-                <p className="text-sm text-gray-500 mb-1">24h volume</p>
-                <p className="font-medium">{volume24h.toFixed(2)} ETH</p>
-                <p className="text-xs text-gray-500">{formatDollars(volume24h)}</p>
-                <div className="absolute bottom-0 right-0 w-8 h-8 bg-gray-100 rounded-tl-lg flex items-center justify-center opacity-30"></div>
-              </div>
-              
-              <div className="bg-white rounded-md p-3 border relative overflow-hidden">
-                <p className="text-sm text-gray-500 mb-1">Holders</p>
-                <p className="font-medium">{holders}</p>
-                <p className="text-xs text-gray-500">&nbsp;</p>
-                <div className="absolute bottom-0 right-0 w-8 h-8 bg-gray-100 rounded-tl-lg flex items-center justify-center opacity-30"></div>
-              </div>
-            </div>
-            
-            {/* Maturity status section */}
-            <div className="bg-white rounded-md p-4 border">
-              <div className="flex justify-between items-center mb-1">
-                <h3 className="font-medium">Maturity Status</h3>
-                <span className="font-bold">{maturityProgress}%</span>
-              </div>
-              
-              <Progress value={maturityProgress} className="h-2 bg-gray-200" />
-              
-              <p className="text-sm text-gray-600 mt-3">
-                The ScienceGent will become eligible to migrate to Uniswap on generating _____ ETH in trading fee (
-                2x virtualETH = {virtualETH * 2} + capability fees = {capabilityFees})
-              </p>
-              
-              <div className="grid grid-cols-3 gap-4 mt-4">
-                <div className="bg-gray-50 border rounded-md p-3 text-center">
-                  <p className="text-sm text-gray-500">Users</p>
-                  <p className="font-medium">1273</p>
-                </div>
-                <div className="bg-gray-50 border rounded-md p-3 text-center">
-                  <p className="text-sm text-gray-500">Interactions</p>
-                  <p className="font-medium">1273</p>
-                </div>
-                <div className="bg-gray-50 border rounded-md p-3 text-center">
-                  <p className="text-sm text-gray-500">Revenue</p>
-                  <p className="font-medium">1273</p>
+                  <div className="bg-white rounded-md h-[300px] border p-4 flex items-center justify-center">
+                    <img 
+                      src="/lovable-uploads/403c4f1c-7590-4f7a-8f3f-425f7d58285a.png" 
+                      alt="Trading chart" 
+                      className="max-h-full w-auto object-contain"
+                    />
+                  </div>
                 </div>
               </div>
               
-              <div className="mt-4">
-                <h4 className="text-sm mb-2">5 Capabilities:</h4>
-                <div className="flex flex-wrap gap-2">
-                  <div className="bg-white border rounded-full px-3 py-1 text-sm">Chat</div>
-                  <div className="bg-white border rounded-full px-3 py-1 text-sm">Molecular Vision</div>
-                  <div className="bg-white border rounded-full px-3 py-1 text-sm">LLAMPS</div>
-                  <div className="bg-white border rounded-full px-3 py-1 text-sm">Bose-Einstein Simulation</div>
-                  <div className="bg-white border rounded-full px-3 py-1 text-sm">more</div>
-                </div>
+              {/* Right section with swap panel */}
+              <div className="border-l p-4">
+                <TokenSwapInterface 
+                  tokenAddress={address || ''}
+                  tokenSymbol={symbol}
+                  isMigrated={scienceGent?.is_migrated || false}
+                  uniswapPair={scienceGent?.uniswapPair}
+                />
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Dashboard Content */}
-        <ScienceGentDetailsDashboard
-          address={address || ''}
-          scienceGentData={scienceGent}
-          status={status}
-          isRefreshing={isRefreshing}
-          refreshData={refreshData}
-        />
+          {/* Dashboard Content */}
+          <ScienceGentDetailsDashboard
+            address={address || ''}
+            scienceGentData={scienceGent}
+            status={status}
+            isRefreshing={isRefreshing}
+            refreshData={refreshData}
+          />
+        </div>
       </main>
       <Footer />
     </div>
