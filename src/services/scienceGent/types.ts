@@ -1,4 +1,3 @@
-
 // Import ethers for BigNumber type compatibility
 import { BigNumber } from "ethers";
 
@@ -25,6 +24,14 @@ export interface ScienceGentData {
   persona?: string;
   domain?: string;
   agentFee?: number;
+  // New developer information fields
+  developerName?: string;
+  developerEmail?: string;
+  bio?: string;
+  developerTwitter?: string;
+  developerTelegram?: string;
+  developerGithub?: string;
+  developerWebsite?: string;
 }
 
 // Token statistics from blockchain

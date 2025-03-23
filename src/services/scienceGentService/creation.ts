@@ -1,4 +1,3 @@
-
 import { ethers } from "ethers";
 import { contractConfig, factoryABI } from "@/utils/contractConfig";
 import { ScienceGentFormData } from "@/types/sciencegent";
@@ -134,7 +133,14 @@ export const createScienceGent = async (formData: ScienceGentFormData & { transa
             creator_address: signerAddress,
             created_on_chain_at: new Date().toISOString(),
             last_synced_at: new Date().toISOString(),
-            persona: formData.persona || ""
+            persona: formData.persona || "",
+            developer_name: formData.developerName || "",
+            developer_email: formData.developerEmail || "",
+            bio: formData.bio || "",
+            developer_twitter: formData.developerTwitter || "",
+            developer_telegram: formData.developerTelegram || "",
+            developer_github: formData.developerGithub || "",
+            developer_website: formData.developerWebsite || ""
           });
           
         if (error) {

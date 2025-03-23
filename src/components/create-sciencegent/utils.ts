@@ -28,23 +28,26 @@ export const calculateTotalCapabilityFeesSynchronous = (selectedCapabilities: st
 
 export const wizardSteps = [
   { id: 1, title: 'Basic Info' },
-  { id: 2, title: 'Persona Customization' },
-  { id: 3, title: 'Capability' },
-  { id: 4, title: 'Liquidity' },
-  { id: 5, title: 'Review' }
+  { id: 2, title: 'Personal Info' }, // New step
+  { id: 3, title: 'Persona Customization' },
+  { id: 4, title: 'Capability' },
+  { id: 5, title: 'Liquidity' },
+  { id: 6, title: 'Review' }
 ];
 
 export const validateStep = (step: number, formData: any): boolean => {
   switch (step) {
     case 1: // Basic Information
       return Boolean(formData.name && formData.symbol && formData.totalSupply);
-    case 2: // Persona Customization
+    case 2: // Personal Information
+      return Boolean(formData.developerName && formData.developerEmail); // Require at least name and email
+    case 3: // Persona Customization
       return formData.persona.length >= 10;
-    case 3: // Capability Selection
+    case 4: // Capability Selection
       return formData.selectedCapabilities.length > 0;
-    case 4: // Liquidity Settings
+    case 5: // Liquidity Settings
       return formData.initialLiquidity && !isNaN(parseFloat(formData.initialLiquidity));
-    case 5: // Review & Launch
+    case 6: // Review & Launch
       return true;
     default:
       return false;

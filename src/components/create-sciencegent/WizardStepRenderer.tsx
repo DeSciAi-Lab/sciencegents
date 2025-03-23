@@ -7,6 +7,7 @@ import { getAllCapabilities } from '@/data/capabilities';
 
 // Import step components
 import BasicInfo from './steps/BasicInfo';
+import PersonalInfo from './steps/PersonalInfo'; // Import new step
 import PersonaCustomization from './steps/PersonaCustomization';
 import CapabilitySelection from './steps/CapabilitySelection';
 import LiquiditySettings from './steps/LiquiditySettings';
@@ -57,26 +58,33 @@ const WizardStepRenderer: React.FC = () => {
         );
       case 2:
         return (
+          <PersonalInfo
+            formData={formData}
+            handleInputChange={handleInputChange}
+          />
+        );
+      case 3:
+        return (
           <PersonaCustomization 
             formData={formData} 
             handleInputChange={handleInputChange}
           />
         );
-      case 3:
+      case 4:
         return (
           <CapabilitySelection 
             formData={formData} 
             handleCapabilityToggle={handleCapabilityToggle}
           />
         );
-      case 4:
+      case 5:
         return (
           <LiquiditySettings 
             formData={formData} 
             handleInputChange={handleInputChange}
           />
         );
-      case 5:
+      case 6:
         return (
           <ReviewAndLaunch 
             formData={formData}
@@ -86,7 +94,7 @@ const WizardStepRenderer: React.FC = () => {
             status={status}
           />
         );
-      case 6:
+      case 7:
         return (
           <SuccessScreen 
             navigateToDetails={() => window.location.href = `/sciencegent/${tokenAddress}`}

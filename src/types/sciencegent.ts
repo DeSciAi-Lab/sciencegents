@@ -14,6 +14,14 @@ export interface ScienceGentFormData {
   persona: string;
   selectedCapabilities: string[];
   initialLiquidity: string;
+  // New developer information fields
+  developerName?: string;
+  developerEmail?: string;
+  bio?: string;
+  developerTwitter?: string;
+  developerTelegram?: string;
+  developerGithub?: string;
+  developerWebsite?: string;
 }
 
 export interface Capability {

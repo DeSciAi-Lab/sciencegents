@@ -20,7 +20,15 @@ const initialFormData: ScienceGentFormData = {
   agentFee: '2',
   persona: '',
   selectedCapabilities: [],
-  initialLiquidity: ''
+  initialLiquidity: '',
+  // New developer information fields
+  developerName: '',
+  developerEmail: '',
+  bio: '',
+  developerTwitter: '',
+  developerTelegram: '',
+  developerGithub: '',
+  developerWebsite: ''
 };
 
 interface WizardContextType {

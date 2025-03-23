@@ -1,4 +1,3 @@
-
 import { ScienceGentData, TokenStats, FormattedScienceGent } from './types';
 import { ethers } from 'ethers';
 
@@ -70,7 +69,14 @@ export const transformBlockchainToSupabaseFormat = (
     last_synced_at: new Date().toISOString(),
     domain: blockchainData.domain || "General Science",
     agent_fee: blockchainData.agentFee || 2,
-    persona: blockchainData.persona || null
+    persona: blockchainData.persona || null,
+    developer_name: blockchainData.developerName || null,
+    developer_email: blockchainData.developerEmail || null,
+    bio: blockchainData.bio || null,
+    developer_twitter: blockchainData.developerTwitter || null,
+    developer_telegram: blockchainData.developerTelegram || null,
+    developer_github: blockchainData.developerGithub || null,
+    developer_website: blockchainData.developerWebsite || null
   };
   
   // Stats data for the sciencegent_stats table

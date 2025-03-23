@@ -158,11 +158,18 @@ export type Database = {
         Row: {
           address: string
           agent_fee: number | null
+          bio: string | null
           collected_fees: number | null
           created_at: string | null
           created_on_chain_at: string | null
           creator_address: string | null
           description: string | null
+          developer_email: string | null
+          developer_github: string | null
+          developer_name: string | null
+          developer_telegram: string | null
+          developer_twitter: string | null
+          developer_website: string | null
           domain: string | null
           id: string
           is_migrated: boolean | null
@@ -188,11 +195,18 @@ export type Database = {
         Insert: {
           address: string
           agent_fee?: number | null
+          bio?: string | null
           collected_fees?: number | null
           created_at?: string | null
           created_on_chain_at?: string | null
           creator_address?: string | null
           description?: string | null
+          developer_email?: string | null
+          developer_github?: string | null
+          developer_name?: string | null
+          developer_telegram?: string | null
+          developer_twitter?: string | null
+          developer_website?: string | null
           domain?: string | null
           id?: string
           is_migrated?: boolean | null
@@ -218,11 +232,18 @@ export type Database = {
         Update: {
           address?: string
           agent_fee?: number | null
+          bio?: string | null
           collected_fees?: number | null
           created_at?: string | null
           created_on_chain_at?: string | null
           creator_address?: string | null
           description?: string | null
+          developer_email?: string | null
+          developer_github?: string | null
+          developer_name?: string | null
+          developer_telegram?: string | null
+          developer_twitter?: string | null
+          developer_website?: string | null
           domain?: string | null
           id?: string
           is_migrated?: boolean | null

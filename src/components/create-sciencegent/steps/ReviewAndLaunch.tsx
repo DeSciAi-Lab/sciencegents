@@ -120,6 +120,49 @@ const ReviewAndLaunch: React.FC<ReviewAndLaunchProps> = ({
               </div>
             </div>
             
+            {/* Developer Information Section */}
+            <div className="bg-white rounded-md p-4 border border-gray-200">
+              <h3 className="font-medium text-gray-700 mb-2">Developer Information</h3>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <p className="text-gray-500">Name</p>
+                  <p className="font-medium">{formData.developerName || "N/A"}</p>
+                </div>
+                <div>
+                  <p className="text-gray-500">Email</p>
+                  <p className="font-medium">{formData.developerEmail || "N/A"}</p>
+                </div>
+                {formData.bio && (
+                  <div className="col-span-2">
+                    <p className="text-gray-500">Bio</p>
+                    <p className="font-medium">{formData.bio}</p>
+                  </div>
+                )}
+              </div>
+              
+              <div className="mt-3">
+                <p className="text-gray-500 text-sm">Developer Social Links</p>
+                <div className="grid grid-cols-2 gap-2 mt-1 text-sm">
+                  <div>
+                    <p className="text-gray-500">Twitter</p>
+                    <p className="font-medium">{formData.developerTwitter || "N/A"}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500">GitHub</p>
+                    <p className="font-medium">{formData.developerGithub || "N/A"}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500">Telegram</p>
+                    <p className="font-medium">{formData.developerTelegram || "N/A"}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500">Website</p>
+                    <p className="font-medium">{formData.developerWebsite || "N/A"}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
             <div className="bg-white rounded-md p-4 border border-gray-200">
               <h3 className="font-medium text-gray-700 mb-2">Social Links</h3>
               <div className="grid grid-cols-2 gap-4 text-sm">
