@@ -157,6 +157,7 @@ export type Database = {
       sciencegents: {
         Row: {
           address: string
+          agent_fee: number | null
           collected_fees: number | null
           created_at: string | null
           created_on_chain_at: string | null
@@ -186,6 +187,7 @@ export type Database = {
         }
         Insert: {
           address: string
+          agent_fee?: number | null
           collected_fees?: number | null
           created_at?: string | null
           created_on_chain_at?: string | null
@@ -215,6 +217,7 @@ export type Database = {
         }
         Update: {
           address?: string
+          agent_fee?: number | null
           collected_fees?: number | null
           created_at?: string | null
           created_on_chain_at?: string | null

@@ -8,12 +8,12 @@ export interface ScienceGentFormData {
   website: string;
   twitter: string;
   github: string;
-  telegram?: string; // Added telegram field
+  telegram?: string;
+  domain?: string;
+  agentFee?: string;
   persona: string;
   selectedCapabilities: string[];
   initialLiquidity: string;
-  domain?: string; // Added domain field
-  agentFee?: string; // Added agent fee field
 }
 
 export interface Capability {

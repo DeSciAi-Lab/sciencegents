@@ -1,3 +1,4 @@
+
 // Import ethers for BigNumber type compatibility
 import { BigNumber } from "ethers";
 
@@ -21,7 +22,9 @@ export interface ScienceGentData {
   adminLockAmount?: string;
   adminLockRemainingTime?: string;
   isAdminTokensUnlocked?: boolean;
-  persona?: string; // Added persona field
+  persona?: string;
+  domain?: string;
+  agentFee?: number;
 }
 
 // Token statistics from blockchain
@@ -84,5 +87,7 @@ export interface FormattedScienceGent {
   migrationEligible?: boolean;
   capabilities?: string[];
   tokenAge?: number;
-  persona?: string; // Added persona field
+  persona?: string;
+  domain?: string;
+  agentFee?: number;
 }

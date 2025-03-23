@@ -68,6 +68,8 @@ export const transformBlockchainToSupabaseFormat = (
     virtual_eth: tokenStats.virtualETH ? parseFloat(ethers.utils.formatEther(tokenStats.virtualETH)) : 0,
     collected_fees: tokenStats.collectedFees ? parseFloat(ethers.utils.formatEther(tokenStats.collectedFees)) : 0,
     last_synced_at: new Date().toISOString(),
+    domain: blockchainData.domain || "General Science",
+    agent_fee: blockchainData.agentFee || 2,
     persona: blockchainData.persona || null
   };
   
@@ -136,6 +138,8 @@ export const transformSupabaseToFormattedScienceGent = (
     migrationEligible: supabaseData.migration_eligible,
     capabilities,
     tokenAge: supabaseData.tokenAge || 0,
+    domain: supabaseData.domain || "General Science",
+    agentFee: supabaseData.agent_fee || 2,
     persona: supabaseData.persona
   };
 };

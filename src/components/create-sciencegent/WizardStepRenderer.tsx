@@ -19,6 +19,7 @@ const WizardStepRenderer: React.FC = () => {
     formData, 
     handleInputChange, 
     handleFileChange, 
+    handleSelectChange,
     handleCapabilityToggle,
     status,
     error,
@@ -51,6 +52,7 @@ const WizardStepRenderer: React.FC = () => {
             formData={formData} 
             handleInputChange={handleInputChange}
             handleFileChange={handleFileChange}
+            handleSelectChange={handleSelectChange}
           />
         );
       case 2:

@@ -16,7 +16,7 @@ const initialFormData: ScienceGentFormData = {
   twitter: '',
   github: '',
   telegram: '',
-  domain: '',
+  domain: 'General Science',
   agentFee: '2',
   persona: '',
   selectedCapabilities: [],
@@ -34,6 +34,7 @@ interface WizardContextType {
   isSyncing: boolean;
   handleInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
   handleFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  handleSelectChange: (name: string, value: string) => void;
   handleCapabilityToggle: (capabilityId: string) => void;
   nextStep: () => void;
   prevStep: () => void;
@@ -102,6 +103,10 @@ export const WizardProvider: React.FC<{children: React.ReactNode}> = ({ children
     }
   };
 
+  const handleSelectChange = (name: string, value: string) => {
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
   const handleCapabilityToggle = (capabilityId: string) => {
     setFormData(prev => {
       if (prev.selectedCapabilities.includes(capabilityId)) {
@@ -153,6 +158,7 @@ export const WizardProvider: React.FC<{children: React.ReactNode}> = ({ children
       isSyncing,
       handleInputChange,
       handleFileChange,
+      handleSelectChange,
       handleCapabilityToggle,
       nextStep,
       prevStep,

@@ -43,11 +43,18 @@ const ReviewAndLaunch: React.FC<ReviewAndLaunchProps> = ({
 
   return (
     <div className="space-y-6">
+      <div>
+        <h3 className="text-lg font-semibold mb-4">Review & Launch</h3>
+        <p className="text-sm text-gray-500 mb-6">
+          Review all the details of your ScienceGent before launching. Once launched, some properties cannot be changed.
+        </p>
+      </div>
+      
       <form id="review-form" onSubmit={handleLaunch}>
         <div className="bg-blue-50 rounded-md p-6 mb-6">
           <div className="flex justify-center">
             <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center text-2xl text-white font-bold mb-4">
-              {formData.symbol?.charAt(0) || "LO"}
+              {formData.symbol?.charAt(0) || "SG"}
             </div>
           </div>
           
@@ -68,18 +75,23 @@ const ReviewAndLaunch: React.FC<ReviewAndLaunchProps> = ({
                   <p className="font-medium">{formData.totalSupply}</p>
                 </div>
                 <div>
-                  <p className="text-gray-500">Description</p>
-                  <p className="font-medium">{formData.description || "N/A"}</p>
+                  <p className="text-gray-500">Domain</p>
+                  <p className="font-medium">{formData.domain || "General Science"}</p>
                 </div>
                 <div>
-                  <p className="text-gray-500">Twitter</p>
-                  <p className="font-medium">{formData.twitter || "N/A"}</p>
+                  <p className="text-gray-500">Agent Fee</p>
+                  <p className="font-medium">{formData.agentFee || "2"} DSI</p>
                 </div>
                 <div>
                   <p className="text-gray-500">Website</p>
                   <p className="font-medium">{formData.website || "N/A"}</p>
                 </div>
               </div>
+            </div>
+            
+            <div className="bg-white rounded-md p-4 border border-gray-200">
+              <h3 className="font-medium text-gray-700 mb-2">Description</h3>
+              <p className="text-sm">{formData.description || "No description provided"}</p>
             </div>
             
             <div className="bg-white rounded-md p-4 border border-gray-200">
@@ -101,19 +113,26 @@ const ReviewAndLaunch: React.FC<ReviewAndLaunchProps> = ({
                 <p className="text-sm text-gray-500">No capabilities selected</p>
               )}
               <p className="mt-2 text-sm font-medium">
-                Total capability Fee = {totalCapabilityFees.toFixed(2)} ETH
+                Total Capability Fee: {totalCapabilityFees.toFixed(2)} ETH
               </p>
             </div>
             
             <div className="bg-white rounded-md p-4 border border-gray-200">
               <h3 className="font-medium text-gray-700 mb-2">Initial Liquidity</h3>
               <p className="text-lg font-medium">{formData.initialLiquidity} virtual ETH</p>
+              <p className="text-sm text-gray-500">
+                Initial Price: {
+                  formData.initialLiquidity && formData.totalSupply
+                    ? (parseFloat(formData.initialLiquidity) / (parseFloat(formData.totalSupply) * 0.99)).toFixed(8)
+                    : "0.00000000"
+                } ETH
+              </p>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-4 gap-2 text-center">
               <div className="bg-white rounded-md p-3 border border-gray-200">
                 <p className="text-xs text-gray-500">Agent Fee per Interaction</p>
-                <p className="font-medium">2 DSI</p>
+                <p className="font-medium">{formData.agentFee || "2"} DSI</p>
               </div>
               <div className="bg-white rounded-md p-3 border border-gray-200">
                 <p className="text-xs text-gray-500">Launch Fee</p>
@@ -121,11 +140,11 @@ const ReviewAndLaunch: React.FC<ReviewAndLaunchProps> = ({
               </div>
               <div className="bg-white rounded-md p-3 border border-gray-200">
                 <p className="text-xs text-gray-500">Trading Fee</p>
-                <p className="font-medium">5 %</p>
+                <p className="font-medium">5%</p>
               </div>
               <div className="bg-white rounded-md p-3 border border-gray-200">
                 <p className="text-xs text-gray-500">Migration Condition</p>
-                <p className="text-xs font-medium">Trading FEE = 2 x vETH + Total Capability FEE</p>
+                <p className="text-xs font-medium">Trading Fee = 2 × vETH + Capability Fee</p>
               </div>
             </div>
           </div>

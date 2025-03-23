@@ -121,14 +121,17 @@ export const createScienceGent = async (formData: ScienceGentFormData & { transa
             website: formData.website || "",
             socials: {
               twitter: formData.twitter || "",
-              github: formData.github || ""
+              github: formData.github || "",
+              telegram: formData.telegram || ""
             },
+            domain: formData.domain || "General Science",
+            agent_fee: parseFloat(formData.agentFee || "2"),
             total_supply: parseFloat(formData.totalSupply),
             virtual_eth: parseFloat(formData.initialLiquidity),
             creator_address: signerAddress,
             created_on_chain_at: new Date().toISOString(),
             last_synced_at: new Date().toISOString(),
-            persona: formData.persona || "" // Store the persona customization
+            persona: formData.persona || ""
           });
           
         if (error) {
