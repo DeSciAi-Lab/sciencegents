@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { ScienceGentFormData } from '@/types/sciencegent';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { InfoCircle } from 'lucide-react';
+import { Info } from 'lucide-react';
 
 interface LiquiditySettingsProps {
   formData: ScienceGentFormData;
@@ -51,7 +51,7 @@ const LiquiditySettings: React.FC<LiquiditySettingsProps> = ({ formData, handleI
       
       <div className="bg-blue-50 rounded-md p-4 border border-blue-100 mt-6">
         <div className="flex items-start gap-3">
-          <InfoCircle className="w-5 h-5 text-blue-600 mt-0.5" />
+          <Info className="w-5 h-5 text-blue-600 mt-0.5" />
           <div>
             <h3 className="font-medium text-blue-800 mb-1">What is virtualETH?</h3>
             <p className="text-sm text-blue-700">
