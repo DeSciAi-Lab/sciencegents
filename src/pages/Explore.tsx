@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Filter, ArrowUpDown, PlusCircle, RefreshCcw, ChevronDown, X } from 'lucide-react';
+import { Search, Filter, ChevronDown, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
@@ -164,32 +164,36 @@ const Explore = () => {
 
     // Add numeric pages
     for (let i = 1; i <= totalPages; i++) {
-      // Show first, last, and pages around current
-      if (
-        i === 1 ||
-        i === totalPages ||
-        (i >= page - 1 && i <= page + 1)
-      ) {
+      items.push(
+        <PaginationItem key={i}>
+          <PaginationLink
+            onClick={() => setPage(i)}
+            isActive={page === i}
+            className={page === i ? "bg-blue-500 text-white" : ""}
+          >
+            {i}
+          </PaginationLink>
+        </PaginationItem>
+      );
+      
+      // Add ellipsis after page 5 if there are more pages
+      if (i === 5 && totalPages > 6) {
         items.push(
-          <PaginationItem key={i}>
-            <PaginationLink
-              onClick={() => setPage(i)}
-              isActive={page === i}
-            >
-              {i}
-            </PaginationLink>
-          </PaginationItem>
-        );
-      } else if (
-        (i === page - 2 && page > 3) ||
-        (i === page + 2 && page < totalPages - 2)
-      ) {
-        // Add ellipsis
-        items.push(
-          <PaginationItem key={`ellipsis-${i}`}>
+          <PaginationItem key="ellipsis">
             <PaginationEllipsis />
           </PaginationItem>
         );
+        // Add the last page
+        if (totalPages > 6) {
+          items.push(
+            <PaginationItem key={totalPages}>
+              <PaginationLink onClick={() => setPage(totalPages)}>
+                {totalPages}
+              </PaginationLink>
+            </PaginationItem>
+          );
+        }
+        break;
       }
     }
 
@@ -203,11 +207,11 @@ const Explore = () => {
     return filteredGents.slice(startIndex, endIndex);
   };
 
-  // Dropdown menus for filters
+  // Dropdown for filters
   const renderFilterDropdown = (title: string, options: { value: string, label: string }[], activeValue: string, onChange: (value: string) => void) => (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" className="bg-white">
+        <Button variant="outline" className="bg-white border-gray-200">
           {title} <ChevronDown className="ml-2 h-4 w-4" />
         </Button>
       </DropdownMenuTrigger>
@@ -225,211 +229,169 @@ const Explore = () => {
     </DropdownMenu>
   );
 
+  // Sort buttons
+  const renderSortButton = (label: string, column: keyof ScienceGentListItem) => (
+    <Button 
+      variant="outline" 
+      className="bg-white border-gray-200"
+      onClick={() => handleSortChange(column)}
+    >
+      {label} {sortBy === column ? (sortOrder === 'asc' ? '↑' : '↓') : ''}
+    </Button>
+  );
+
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-gray-50">
       <Navbar />
       
       <main className="flex-grow pt-24 pb-16">
-        <div className="container mx-auto px-6 max-w-[1200px]">
-          {/* Header and Stats Section */}
-          <Reveal>
-            <div className="flex flex-col gap-8 mb-8">
-              <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center">
-                <div>
-                  <h1 className="text-3xl font-bold mb-2">Explore ScienceGents</h1>
-                  <p className="text-muted-foreground">
-                    Discover and interact with AI agents specialized in scientific domains
-                  </p>
-                </div>
-                
-                <div className="flex gap-3 mt-4 lg:mt-0">
-                  <Button 
-                    onClick={handleSync}
-                    variant="outline"
-                    disabled={isSyncing}
-                  >
-                    <RefreshCcw className={`mr-2 h-4 w-4 ${isSyncing ? 'animate-spin' : ''}`} />
-                    {isSyncing ? 'Syncing...' : 'Sync'}
-                  </Button>
-                  <Button 
-                    onClick={() => navigate('/create-sciencegent')}
-                    className="bg-science-600 hover:bg-science-700 text-white"
-                  >
-                    <PlusCircle className="mr-2 h-4 w-4" />
-                    Create ScienceGent
-                  </Button>
-                </div>
+        <div className="container mx-auto px-4 max-w-7xl">
+          <div className="mb-6">
+            <h1 className="text-2xl font-medium mb-8">Explore ScienceGents</h1>
+            
+            {/* Stats Section */}
+            <div className="grid grid-cols-4 gap-4 mb-6">
+              <div className="p-4 bg-white rounded-lg shadow-sm">
+                <p className="text-4xl font-bold">{stats.totalScienceGents}</p>
+                <p className="text-sm text-gray-500">Total ScienceGents</p>
               </div>
-              
-              {/* Platform Stats */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="p-4 bg-gray-50 rounded-lg">
-                  <p className="text-3xl font-bold">{stats.totalScienceGents}</p>
-                  <p className="text-sm text-gray-500">Total ScienceGents</p>
-                </div>
-                <div className="p-4 bg-gray-50 rounded-lg">
-                  <p className="text-3xl font-bold">{stats.totalTransactions}</p>
-                  <p className="text-sm text-gray-500">Total Transactions</p>
-                </div>
-                <div className="p-4 bg-gray-50 rounded-lg">
-                  <p className="text-3xl font-bold">{stats.totalLiquidity}</p>
-                  <p className="text-sm text-gray-500">Total Liquidity</p>
-                </div>
-                <div className="p-4 bg-gray-50 rounded-lg">
-                  <p className="text-3xl font-bold">{stats.totalRevenue}</p>
-                  <p className="text-sm text-gray-500">Total Revenue</p>
-                </div>
+              <div className="p-4 bg-white rounded-lg shadow-sm">
+                <p className="text-4xl font-bold">{stats.totalTransactions}</p>
+                <p className="text-sm text-gray-500">Total Transactions</p>
+              </div>
+              <div className="p-4 bg-white rounded-lg shadow-sm">
+                <p className="text-4xl font-bold">{stats.totalLiquidity}</p>
+                <p className="text-sm text-gray-500">Total Liquidity</p>
+              </div>
+              <div className="p-4 bg-white rounded-lg shadow-sm">
+                <p className="text-4xl font-bold">{stats.totalRevenue}</p>
+                <p className="text-sm text-gray-500">Total Revenue</p>
               </div>
             </div>
-          </Reveal>
-          
-          {/* Search and Filters */}
-          <Reveal delay={100}>
-            <div className="mb-6 border rounded-lg p-4 bg-white">
-              <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center">
-                <div className="relative flex-grow w-full lg:w-auto">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <input
-                    type="text"
-                    placeholder="Search by name or address..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 border border-border rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-science-500/20 focus:border-science-500 transition-colors"
-                  />
-                </div>
-                
-                <div className="flex gap-2 w-full lg:w-auto overflow-x-auto">
-                  <Button 
-                    variant="outline" 
-                    className="bg-white min-w-max"
-                    onClick={() => setSortBy('marketCap')}
-                  >
-                    Market cap {sortBy === 'marketCap' ? (sortOrder === 'asc' ? '↑' : '↓') : ''}
-                  </Button>
-                  
-                  <Button 
-                    variant="outline" 
-                    className="bg-white min-w-max"
-                    onClick={() => setSortBy('age')}
-                  >
-                    Age {sortBy === 'age' ? (sortOrder === 'asc' ? '↑' : '↓') : ''}
-                  </Button>
-                  
-                  <Button 
-                    variant="outline" 
-                    className="bg-white min-w-max"
-                    onClick={() => setSortBy('revenue')}
-                  >
-                    Revenue {sortBy === 'revenue' ? (sortOrder === 'asc' ? '↑' : '↓') : ''}
-                  </Button>
-                </div>
-              </div>
-              
-              <div className="flex flex-wrap gap-2 items-center mt-4">
-                {renderFilterDropdown('Curation', [
-                  { value: 'all', label: 'All' },
-                  { value: 'curated', label: 'Curated' },
-                  { value: 'uncurated', label: 'Uncurated' }
-                ], activeFilter === 'curated' || activeFilter === 'uncurated' ? activeFilter : 'all', 
-                (value) => setActiveFilter(value))}
-                
-                {renderFilterDropdown('Maturity', [
-                  { value: 'all', label: 'All' },
-                  { value: 'migrated', label: 'Migrated' },
-                  { value: 'ready', label: 'Ready for Migration' },
-                  { value: 'immature', label: 'Immature' }
-                ], activeFilter === 'migrated' || activeFilter === 'ready' || activeFilter === 'immature' ? activeFilter : 'all',
-                (value) => setActiveFilter(value))}
-                
-                {renderFilterDropdown('Roles', [
-                  { value: 'all', label: 'All Roles' },
-                  { value: 'researcher', label: 'Researcher' },
-                  { value: 'reviewer', label: 'Reviewer' },
-                  { value: 'assistant', label: 'Assistant' }
-                ], activeFilter === 'researcher' || activeFilter === 'reviewer' || activeFilter === 'assistant' ? activeFilter : 'all',
-                (value) => setActiveFilter(value))}
-                
-                {renderFilterDropdown('Domain', domainFilters, activeFilter, setActiveFilter)}
-                
-                {(searchQuery || activeFilter !== 'all') && (
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    onClick={clearFilters}
-                    className="ml-auto"
-                  >
-                    <X className="h-4 w-4 mr-1" /> Clear filters
-                  </Button>
-                )}
-              </div>
-            </div>
-          </Reveal>
-          
-          {/* Results Table */}
-          {isLoading ? (
-            renderSkeleton()
-          ) : filteredGents.length > 0 ? (
-            <Reveal delay={150}>
-              <div className="bg-white rounded-lg border overflow-hidden">
-                <ScienceGentTable 
-                  scienceGents={getCurrentPageItems()} 
-                  onSortChange={handleSortChange}
-                  sortBy={sortBy}
-                  sortOrder={sortOrder}
-                />
-                
-                {/* Pagination */}
-                <div className="p-2 border-t flex items-center justify-between bg-gray-50">
-                  <div className="text-sm text-gray-500 ml-4">
-                    Showing {Math.min((page - 1) * itemsPerPage + 1, filteredGents.length)} to {Math.min(page * itemsPerPage, filteredGents.length)} of {filteredGents.length} results
+            
+            {/* Table container */}
+            <div className="bg-white rounded-lg border border-gray-200">
+              {/* Search and Filters */}
+              <div className="p-4 border-b border-gray-200">
+                <div className="flex flex-wrap gap-4">
+                  <div className="relative flex-grow max-w-md">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <input
+                      type="text"
+                      placeholder="Search"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-md bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    />
                   </div>
                   
-                  <Pagination>
-                    <PaginationContent>
-                      {page > 1 && (
-                        <PaginationItem>
-                          <PaginationPrevious onClick={() => setPage(p => Math.max(1, p - 1))} />
-                        </PaginationItem>
-                      )}
-                      
-                      {generatePaginationItems()}
-                      
-                      {page < Math.ceil(filteredGents.length / itemsPerPage) && (
-                        <PaginationItem>
-                          <PaginationNext onClick={() => setPage(p => Math.min(Math.ceil(filteredGents.length / itemsPerPage), p + 1))} />
-                        </PaginationItem>
-                      )}
-                    </PaginationContent>
-                  </Pagination>
+                  <div className="flex gap-2 flex-wrap">
+                    {renderSortButton('Market cap', 'marketCap')}
+                    {renderSortButton('Age', 'age')}
+                    {renderSortButton('Revenue', 'revenue')}
+                    
+                    {renderFilterDropdown('Curation', [
+                      { value: 'all', label: 'All' },
+                      { value: 'curated', label: 'Curated' },
+                      { value: 'uncurated', label: 'Uncurated' }
+                    ], activeFilter === 'curated' || activeFilter === 'uncurated' ? activeFilter : 'all', 
+                    (value) => setActiveFilter(value))}
+                    
+                    {renderFilterDropdown('Maturity', [
+                      { value: 'all', label: 'All' },
+                      { value: 'migrated', label: 'Migrated' },
+                      { value: 'ready', label: 'Ready for Migration' },
+                      { value: 'immature', label: 'Immature' }
+                    ], activeFilter === 'migrated' || activeFilter === 'ready' || activeFilter === 'immature' ? activeFilter : 'all',
+                    (value) => setActiveFilter(value))}
+                    
+                    {renderFilterDropdown('Roles', [
+                      { value: 'all', label: 'All Roles' },
+                      { value: 'researcher', label: 'Researcher' },
+                      { value: 'reviewer', label: 'Reviewer' },
+                      { value: 'assistant', label: 'Assistant' }
+                    ], activeFilter === 'researcher' || activeFilter === 'reviewer' || activeFilter === 'assistant' ? activeFilter : 'all',
+                    (value) => setActiveFilter(value))}
+                    
+                    {renderFilterDropdown('Domain', domainFilters, activeFilter, setActiveFilter)}
+                    
+                    {(searchQuery || activeFilter !== 'all') && (
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={clearFilters}
+                        className="ml-auto flex items-center"
+                      >
+                        <X className="h-4 w-4 mr-1" /> Clear filters
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </div>
-            </Reveal>
-          ) : (
-            <Reveal>
-              <div className="text-center bg-white p-12 rounded-lg border">
-                <h3 className="text-xl font-medium mb-2">No ScienceGents found</h3>
-                <p className="text-muted-foreground mb-6">
-                  {searchQuery || activeFilter !== 'all' 
-                    ? "No matches for your current search criteria."
-                    : "There are no ScienceGents in the database yet. Try syncing from the blockchain or creating a new one."}
-                </p>
-                <div className="flex gap-4 justify-center">
-                  {(searchQuery || activeFilter !== 'all') && (
-                    <Button onClick={clearFilters} variant="outline">
-                      Reset Filters
+              
+              {/* Results Table */}
+              {isLoading ? (
+                renderSkeleton()
+              ) : filteredGents.length > 0 ? (
+                <>
+                  <ScienceGentTable 
+                    scienceGents={getCurrentPageItems()} 
+                    onSortChange={handleSortChange}
+                    sortBy={sortBy}
+                    sortOrder={sortOrder}
+                  />
+                  
+                  {/* Pagination */}
+                  <div className="p-4 border-t border-gray-200 flex items-center justify-between">
+                    <div className="text-sm text-gray-500">
+                      Showing {Math.min((page - 1) * itemsPerPage + 1, filteredGents.length)} to {Math.min(page * itemsPerPage, filteredGents.length)} of {filteredGents.length} results
+                    </div>
+                    
+                    <Pagination>
+                      <PaginationContent>
+                        {page > 1 && (
+                          <PaginationItem>
+                            <PaginationPrevious onClick={() => setPage(p => Math.max(1, p - 1))} />
+                          </PaginationItem>
+                        )}
+                        
+                        {generatePaginationItems()}
+                        
+                        {page < Math.ceil(filteredGents.length / itemsPerPage) && (
+                          <PaginationItem>
+                            <PaginationNext onClick={() => setPage(p => Math.min(Math.ceil(filteredGents.length / itemsPerPage), p + 1))} />
+                          </PaginationItem>
+                        )}
+                      </PaginationContent>
+                    </Pagination>
+                  </div>
+                </>
+              ) : (
+                <div className="text-center p-12">
+                  <h3 className="text-xl font-medium mb-2">No ScienceGents found</h3>
+                  <p className="text-gray-500 mb-6">
+                    {searchQuery || activeFilter !== 'all' 
+                      ? "No matches for your current search criteria."
+                      : "There are no ScienceGents in the database yet. Try syncing from the blockchain or creating a new one."}
+                  </p>
+                  <div className="flex gap-4 justify-center">
+                    {(searchQuery || activeFilter !== 'all') && (
+                      <Button onClick={clearFilters} variant="outline">
+                        Reset Filters
+                      </Button>
+                    )}
+                    <Button 
+                      onClick={handleSync}
+                      disabled={isSyncing}
+                      className="bg-blue-500 hover:bg-blue-600 text-white"
+                    >
+                      {isSyncing ? 'Syncing...' : 'Sync from Blockchain'}
                     </Button>
-                  )}
-                  <Button 
-                    onClick={handleSync}
-                    disabled={isSyncing}
-                  >
-                    <RefreshCcw className={`mr-2 h-4 w-4 ${isSyncing ? 'animate-spin' : ''}`} />
-                    {isSyncing ? 'Syncing...' : 'Sync from Blockchain'}
-                  </Button>
+                  </div>
                 </div>
-              </div>
-            </Reveal>
-          )}
+              )}
+            </div>
+          </div>
         </div>
       </main>
       

@@ -36,16 +36,16 @@ const ScienceGentTable: React.FC<ScienceGentTableProps> = ({
 
   const formatCurrency = (value: number) => {
     if (value >= 1000000) {
-      return `${(value / 1000000).toFixed(2)}M`;
+      return `${(value / 1000000).toFixed(0)}M`;
     } else if (value >= 1000) {
-      return `${(value / 1000).toFixed(1)}k`;
+      return `${(value / 1000).toFixed(0)}k`;
     }
-    return value.toFixed(2);
+    return value.toFixed(0);
   };
 
   const formatPriceChange = (value: number) => {
     const sign = value > 0 ? '+' : '';
-    return `${sign}${value.toFixed(1)}%`;
+    return `${sign}${value.toFixed(0)}%`;
   };
 
   // Render star rating (1-5)
@@ -65,36 +65,14 @@ const ScienceGentTable: React.FC<ScienceGentTableProps> = ({
 
   // Render maturity progress
   const renderMaturityProgress = (status: string) => {
-    let color = "bg-gray-200";
-    let width = "w-1/5";
-    let textColor = "text-gray-600";
-    
-    switch (status) {
-      case "Migrated":
-        color = "bg-green-500";
-        width = "w-full";
-        textColor = "text-green-700";
-        break;
-      case "Ready":
-        color = "bg-blue-500";
-        width = "w-4/5";
-        textColor = "text-blue-700";
-        break;
-      case "Near":
-        color = "bg-yellow-400";
-        width = "w-3/5";
-        textColor = "text-yellow-700";
-        break;
-      default:
-        // Use defaults
-    }
-    
     return (
-      <div className="flex flex-col">
-        <div className="w-32 h-2 bg-gray-100 rounded-full overflow-hidden">
-          <div className={`h-full ${color} ${width}`}></div>
+      <div className="w-full max-w-[150px]">
+        <div className="h-2 bg-gray-200 rounded-full">
+          <div 
+            className={`h-full rounded-full ${status === 'Ready' ? 'bg-blue-500' : status === 'Migrated' ? 'bg-green-500' : 'bg-purple-500'}`} 
+            style={{ width: status === 'Migrated' ? '100%' : status === 'Ready' ? '80%' : '30%' }}
+          />
         </div>
-        <span className={`text-xs ${textColor} mt-1`}>{status}</span>
       </div>
     );
   };
@@ -119,12 +97,12 @@ const ScienceGentTable: React.FC<ScienceGentTableProps> = ({
     <div className="overflow-auto">
       <Table>
         <TableHeader>
-          <TableRow>
+          <TableRow className="border-b border-gray-200">
             <TableHead className="w-[40px]">
               <Checkbox />
             </TableHead>
             <TableHead className="w-[60px]">Logo</TableHead>
-            <TableHead className="w-[200px]">
+            <TableHead className="w-[250px]">
               {renderSortableHeader('NAME', 'name')}
             </TableHead>
             <TableHead>{renderSortableHeader('Age', 'age')}</TableHead>
@@ -142,18 +120,18 @@ const ScienceGentTable: React.FC<ScienceGentTableProps> = ({
           {scienceGents.map((gent) => (
             <TableRow 
               key={gent.id}
-              className="cursor-pointer hover:bg-gray-50"
+              className="cursor-pointer hover:bg-gray-50 border-b border-gray-100"
               onClick={() => navigate(`/sciencegent/${gent.address}`)}
             >
-              <TableCell>
+              <TableCell className="py-2">
                 <Checkbox onClick={(e) => e.stopPropagation()} />
               </TableCell>
-              <TableCell>
+              <TableCell className="py-2">
                 <div
                   className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-medium ${
                     gent.profilePic 
                       ? '' 
-                      : 'bg-gradient-to-br from-science-400 to-science-600'
+                      : 'bg-gradient-to-br from-purple-400 to-purple-600'
                   }`}
                 >
                   {gent.profilePic ? (
@@ -164,11 +142,13 @@ const ScienceGentTable: React.FC<ScienceGentTableProps> = ({
                       loading="lazy" 
                     />
                   ) : (
-                    gent.name.substring(0, 1).toUpperCase()
+                    <div className="w-10 h-10 rounded-full flex items-center justify-center">
+                      {gent.name.substring(0, 1).toUpperCase()}
+                    </div>
                   )}
                 </div>
               </TableCell>
-              <TableCell>
+              <TableCell className="py-2">
                 <div>
                   <div className="font-medium flex items-center gap-2">
                     {gent.name}
@@ -178,25 +158,27 @@ const ScienceGentTable: React.FC<ScienceGentTableProps> = ({
                       </Badge>
                     )}
                   </div>
-                  <div className="text-sm text-muted-foreground flex items-center gap-2">
+                  <div className="text-sm text-muted-foreground flex items-center gap-1">
                     <span className="font-semibold">${gent.symbol}</span>
-                    <span className="text-xs text-gray-400">{formatAddress(gent.address)}</span>
+                    <span className="text-xs text-gray-400">
+                      {formatAddress(gent.address)}
+                    </span>
                   </div>
                 </div>
               </TableCell>
-              <TableCell>{gent.age}</TableCell>
-              <TableCell>{formatCurrency(gent.marketCap)}</TableCell>
-              <TableCell className={gent.priceChange24h >= 0 ? 'text-green-600' : 'text-red-600'}>
+              <TableCell className="py-2">{gent.age}</TableCell>
+              <TableCell className="py-2">{formatCurrency(gent.marketCap)}</TableCell>
+              <TableCell className={`py-2 ${gent.priceChange24h >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                 {formatPriceChange(gent.priceChange24h)}
               </TableCell>
-              <TableCell>{formatCurrency(gent.volume24h)}</TableCell>
-              <TableCell>{formatCurrency(gent.revenue)} DSI</TableCell>
-              <TableCell>{gent.tokenPrice.toFixed(3)}</TableCell>
-              <TableCell>{renderRating(gent.rating)}</TableCell>
-              <TableCell>{renderMaturityProgress(gent.maturityStatus)}</TableCell>
-              <TableCell>
+              <TableCell className="py-2">{formatCurrency(gent.volume24h)}</TableCell>
+              <TableCell className="py-2">{formatCurrency(gent.revenue)} DSI</TableCell>
+              <TableCell className="py-2">{gent.tokenPrice.toFixed(3)}</TableCell>
+              <TableCell className="py-2">{renderRating(gent.rating)}</TableCell>
+              <TableCell className="py-2">{renderMaturityProgress(gent.maturityStatus)}</TableCell>
+              <TableCell className="py-2">
                 <Badge variant="outline" className="bg-gray-50">
-                  {gent.domain}
+                  {gent.domain.toLowerCase()}
                 </Badge>
               </TableCell>
             </TableRow>

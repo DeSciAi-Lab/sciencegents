@@ -16,7 +16,7 @@ export interface ScienceGentListItem {
   featured?: boolean;
   isMigrated?: boolean;
   migrationEligible?: boolean;
-  symbol?: string;
+  symbol: string;
   volume24h: number;
   revenue: number;
   priceChange24h: number;
@@ -69,13 +69,10 @@ export const fetchScienceGents = async (): Promise<ScienceGentListItem[]> => {
     // Format the data for the UI
     return data.map(item => {
       // Calculate ROI (simplified calculation for now)
-      // In a real app, this would be based on actual trading data
       const virtualEth = item.virtual_eth || 0;
       const volume = item.stats?.[0]?.volume_24h || 0;
-      const transactions = item.stats?.[0]?.transactions || 0;
       
       // Simple ROI formula: (volume / virtual_eth * 10) limited to reasonable range
-      // This is just a placeholder - real calculation would be more complex
       const roi = virtualEth > 0 
         ? Math.min(Math.max((volume / virtualEth * 10) - 5, -50), 100) 
         : 0;
@@ -98,8 +95,7 @@ export const fetchScienceGents = async (): Promise<ScienceGentListItem[]> => {
         maturityStatus = "Near";
       }
 
-      // Calculate random revenue for demo purposes
-      // In production, this would come from actual data
+      // Calculate revenue for demo purposes based on market cap
       const revenue = Math.floor(item.market_cap * 0.1);
       
       // Random rating between 3-5 for demo
@@ -124,7 +120,7 @@ export const fetchScienceGents = async (): Promise<ScienceGentListItem[]> => {
         priceChange24h: item.price_change_24h || 0,
         rating,
         maturityStatus,
-        isCurated: Math.random() > 0.5 // Random for demo
+        isCurated: Math.random() > 0.7 // Random for demo
       };
     });
   } catch (error) {
@@ -143,11 +139,33 @@ export const filterScienceGents = (
 ): ScienceGentListItem[] => {
   let result = [...scienceGents];
   
-  // Apply domain filter
-  if (activeFilter !== 'all') {
+  // Apply domain filter if it's a domain
+  if (activeFilter !== 'all' && ['chemistry', 'genomics', 'physics', 'materials science', 'protein analysis', 'drug discovery', 'general'].includes(activeFilter)) {
     result = result.filter(gent => 
       gent.domain.toLowerCase() === activeFilter.toLowerCase()
     );
+  }
+  
+  // Apply curation filter
+  if (activeFilter === 'curated') {
+    result = result.filter(gent => gent.isCurated);
+  } else if (activeFilter === 'uncurated') {
+    result = result.filter(gent => !gent.isCurated);
+  }
+  
+  // Apply maturity filter
+  if (activeFilter === 'migrated') {
+    result = result.filter(gent => gent.maturityStatus === 'Migrated');
+  } else if (activeFilter === 'ready') {
+    result = result.filter(gent => gent.maturityStatus === 'Ready');
+  } else if (activeFilter === 'immature') {
+    result = result.filter(gent => gent.maturityStatus === 'Immature' || gent.maturityStatus === 'Near');
+  }
+  
+  // Apply role filter (simplified for demo)
+  if (activeFilter === 'researcher' || activeFilter === 'reviewer' || activeFilter === 'assistant') {
+    // In a real app, this would filter based on actual role data
+    result = result.filter(() => Math.random() > 0.5);
   }
   
   // Apply search query
@@ -156,7 +174,7 @@ export const filterScienceGents = (
     result = result.filter(gent => 
       gent.name.toLowerCase().includes(query) || 
       gent.address.toLowerCase().includes(query) ||
-      gent.symbol?.toLowerCase().includes(query)
+      gent.symbol.toLowerCase().includes(query)
     );
   }
   
