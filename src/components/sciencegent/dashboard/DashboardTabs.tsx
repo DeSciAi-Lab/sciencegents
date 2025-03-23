@@ -40,14 +40,17 @@ const DashboardTabs: React.FC<DashboardTabsProps> = ({
       </div>
 
       <TabsContent value="overview">
-        <OverviewTab scienceGentData={scienceGentData} />
+        <OverviewTab 
+          scienceGent={scienceGentData} 
+          isRefreshing={isRefreshing} 
+          refreshData={refreshData} 
+        />
       </TabsContent>
 
       <TabsContent value="trade">
         <TradeTab 
           address={address} 
-          tokenSymbol={scienceGentData?.symbol} 
-          isMigrated={scienceGentData?.isMigrated}
+          token={scienceGentData}
         />
       </TabsContent>
 
@@ -59,13 +62,14 @@ const DashboardTabs: React.FC<DashboardTabsProps> = ({
       </TabsContent>
 
       <TabsContent value="capabilities">
-        <CapabilitiesTab scienceGentData={scienceGentData} />
+        <CapabilitiesTab 
+          scienceGent={scienceGentData}
+        />
       </TabsContent>
 
       <TabsContent value="migration">
         <MigrationTab 
-          address={address} 
-          scienceGentData={scienceGentData} 
+          scienceGent={scienceGentData} 
           refreshData={refreshData}
         />
       </TabsContent>

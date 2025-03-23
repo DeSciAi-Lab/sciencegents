@@ -7,7 +7,7 @@ import ErrorDashboard from './dashboard/ErrorDashboard';
 
 interface ScienceGentDetailsDashboardProps {
   address: string;
-  scienceGentData: any; // This should be renamed to match ScienceGentDetails
+  scienceGentData: any;
   status: LoadingStatus;
   isRefreshing: boolean;
   refreshData: () => Promise<void>;
@@ -15,7 +15,7 @@ interface ScienceGentDetailsDashboardProps {
 
 const ScienceGentDetailsDashboard: React.FC<ScienceGentDetailsDashboardProps> = ({
   address,
-  scienceGentData, // We'll keep this consistent with DashboardTabs
+  scienceGentData,
   status,
   isRefreshing,
   refreshData
@@ -23,12 +23,34 @@ const ScienceGentDetailsDashboard: React.FC<ScienceGentDetailsDashboardProps> = 
   const isLoading = status === LoadingStatus.Loading;
   const isError = status === LoadingStatus.Error || status === LoadingStatus.NotFound;
 
+  // Add debug logging
+  console.log('ScienceGentDetailsDashboard render:', { address, status, isRefreshing });
+  
+  if (scienceGentData) {
+    console.log('ScienceGentData:', JSON.stringify(scienceGentData, null, 2));
+  }
+
   if (isLoading) {
     return <LoadingDashboard />;
   }
 
   if (isError) {
     return <ErrorDashboard address={address} />;
+  }
+
+  // Make sure scienceGentData exists and is not null or undefined
+  if (!scienceGentData) {
+    console.error('ScienceGentData is null or undefined');
+    return <ErrorDashboard address={address} />;
+  }
+
+  // Check for capabilities array to prevent rendering errors
+  if (scienceGentData.capabilities && !Array.isArray(scienceGentData.capabilities)) {
+    console.error('Capabilities is not an array:', scienceGentData.capabilities);
+    // Convert to array if it's an object or null/undefined
+    scienceGentData.capabilities = Array.isArray(scienceGentData.capabilities) 
+      ? scienceGentData.capabilities 
+      : [];
   }
 
   return (
