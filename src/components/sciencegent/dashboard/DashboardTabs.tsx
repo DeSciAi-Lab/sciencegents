@@ -26,48 +26,40 @@ const DashboardTabs: React.FC<DashboardTabsProps> = ({
   const [activeTab, setActiveTab] = useState('overview');
   const [activeSubTab, setActiveSubTab] = useState('tradebook');
   
-  const handleTabChange = (value: string) => {
-    setActiveTab(value);
-  };
-  
-  const handleSubTabChange = (value: string) => {
-    setActiveSubTab(value);
-  };
-
   return (
-    <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
+    <div className="bg-white rounded-lg border overflow-hidden">
       {/* Main Tabs */}
-      <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <div className="border-b">
           <TabsList className="w-full bg-white justify-start rounded-none border-0 p-0">
             <TabsTrigger 
               value="overview"
-              className="data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:bg-white rounded-none px-6 py-4"
+              className="data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:bg-white rounded-none px-6 py-3 text-gray-700"
             >
               Overview
             </TabsTrigger>
             <TabsTrigger 
               value="trades"
-              className="data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:bg-white rounded-none px-6 py-4"
+              className="data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:bg-white rounded-none px-6 py-3 text-gray-700"
             >
               Trades
             </TabsTrigger>
             <TabsTrigger 
               value="chat"
-              className="data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:bg-white rounded-none px-6 py-4"
+              className="data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:bg-white rounded-none px-6 py-3 text-gray-700"
             >
               Agent Interface
             </TabsTrigger>
             <TabsTrigger 
               value="capabilities"
-              className="data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:bg-white rounded-none px-6 py-4"
+              className="data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:bg-white rounded-none px-6 py-3 text-gray-700"
             >
               Capabilities
             </TabsTrigger>
             {scienceGentData?.isMigrationEligible && (
               <TabsTrigger 
                 value="migration"
-                className="data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:bg-white rounded-none px-6 py-4"
+                className="data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:bg-white rounded-none px-6 py-3 text-gray-700"
               >
                 Migration
               </TabsTrigger>
@@ -75,10 +67,19 @@ const DashboardTabs: React.FC<DashboardTabsProps> = ({
           </TabsList>
         </div>
 
-        {/* Secondary Tabs for Trades */}
-        {activeTab === 'trades' && (
-          <div className="border-b">
-            <Tabs value={activeSubTab} onValueChange={handleSubTabChange} className="w-full">
+        {/* Main Tab Content */}
+        <TabsContent value="overview">
+          <OverviewTab 
+            scienceGentData={scienceGentData} 
+            isRefreshing={isRefreshing} 
+            refreshData={refreshData} 
+          />
+        </TabsContent>
+
+        <TabsContent value="trades">
+          {/* Secondary Tabs for Trades */}
+          <Tabs value={activeSubTab} onValueChange={setActiveSubTab} className="w-full">
+            <div className="border-b">
               <TabsList className="w-full bg-white justify-start rounded-none border-0 p-0">
                 <TabsTrigger 
                   value="tradebook"
@@ -99,50 +100,51 @@ const DashboardTabs: React.FC<DashboardTabsProps> = ({
                   Transactions
                 </TabsTrigger>
               </TabsList>
-            </Tabs>
-          </div>
-        )}
-
-        {/* Main Tab Content */}
-        <div className="p-0">
-          <TabsContent value="overview">
-            <OverviewTab 
-              scienceGentData={scienceGentData} 
-              isRefreshing={isRefreshing} 
-              refreshData={refreshData} 
-            />
-          </TabsContent>
-
-          <TabsContent value="trades">
-            <TradeTab 
-              address={address} 
-              scienceGentData={scienceGentData}
-            />
-          </TabsContent>
-
-          <TabsContent value="chat">
-            <ChatTab 
-              address={address} 
-              scienceGent={scienceGentData} 
-            />
-          </TabsContent>
-
-          <TabsContent value="capabilities">
-            <CapabilitiesTab 
-              scienceGent={scienceGentData}
-            />
-          </TabsContent>
-
-          {scienceGentData?.isMigrationEligible && (
-            <TabsContent value="migration">
-              <MigrationTab 
-                tokenAddress={address}
-                scienceGent={scienceGentData} 
-                refreshData={refreshData}
+            </div>
+          
+            <TabsContent value="tradebook">
+              <TradeTab 
+                address={address} 
+                scienceGentData={scienceGentData}
               />
             </TabsContent>
-          )}
-        </div>
+            
+            <TabsContent value="holders">
+              <div className="p-8 flex items-center justify-center h-80">
+                <p className="text-gray-500">Holders information will appear here</p>
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="transactions">
+              <div className="p-8 flex items-center justify-center h-80">
+                <p className="text-gray-500">Transaction history will appear here</p>
+              </div>
+            </TabsContent>
+          </Tabs>
+        </TabsContent>
+
+        <TabsContent value="chat">
+          <ChatTab 
+            address={address} 
+            scienceGent={scienceGentData} 
+          />
+        </TabsContent>
+
+        <TabsContent value="capabilities">
+          <CapabilitiesTab 
+            scienceGent={scienceGentData}
+          />
+        </TabsContent>
+
+        {scienceGentData?.isMigrationEligible && (
+          <TabsContent value="migration">
+            <MigrationTab 
+              tokenAddress={address}
+              scienceGent={scienceGentData} 
+              refreshData={refreshData}
+            />
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   );

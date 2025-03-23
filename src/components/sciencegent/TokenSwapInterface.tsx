@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTokenSwap, SwapDirection } from "@/hooks/useTokenSwap";
@@ -5,7 +6,7 @@ import TokenBalanceInfo from "./swap/TokenBalanceInfo";
 import BuyTokenForm from "./swap/BuyTokenForm";
 import SellTokenForm from "./swap/SellTokenForm";
 import SwapError from "./swap/SwapError";
-import { AlertCircle, Loader2, ExternalLink } from 'lucide-react';
+import { AlertCircle, Loader2, ExternalLink, Settings } from 'lucide-react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -108,10 +109,6 @@ const TokenSwapInterface: React.FC<TokenSwapInterfaceProps> = ({
     }
   };
 
-  const handleSlippageChange = (value: number) => {
-    setSlippageTolerance(value);
-  };
-
   // Get Uniswap link for the token
   const getUniswapLink = () => {
     if (!tokenAddress) return "#";
@@ -120,8 +117,8 @@ const TokenSwapInterface: React.FC<TokenSwapInterfaceProps> = ({
 
   if (isMigrated) {
     return (
-      <Card className={`${isMobile ? 'p-2' : 'p-4'}`}>
-        <CardContent className="space-y-6 pt-4">
+      <Card className="rounded-md">
+        <CardContent className="p-4 space-y-4">
           <Alert className="bg-blue-50 border-blue-200">
             <div className="flex flex-col space-y-4">
               <AlertDescription className="text-blue-800">
@@ -158,61 +155,86 @@ const TokenSwapInterface: React.FC<TokenSwapInterfaceProps> = ({
   }
 
   return (
-    <Card className={`${isMobile ? 'p-2' : 'p-4'}`}>
-      <CardContent className="space-y-6 pt-4">
-        <TokenBalanceInfo
-          tokenSymbol={tokenSymbol}
-          tokenPrice={tokenPrice}
-          tokenBalance={tokenBalance}
-          ethBalance={ethBalance}
-          isPending={isPending}
-          onRefresh={refreshBalances}
-        />
-        
-        {/* Show notification if token price is zero */}
-        {parseFloat(tokenPrice) === 0 && (
-          <Alert variant="destructive" className="my-2">
-            <AlertCircle className="h-4 w-4 mr-2" />
-            <AlertDescription>
-              This token doesn't have liquidity yet or trading is disabled.
-            </AlertDescription>
-          </Alert>
-        )}
-        
-        <Tabs defaultValue="buy" onValueChange={handleTabChange} className="w-full">
-          <TabsList className="grid grid-cols-2 mb-4 w-full">
-            <TabsTrigger value="buy">Buy {tokenSymbol}</TabsTrigger>
-            <TabsTrigger value="sell">Sell {tokenSymbol}</TabsTrigger>
-          </TabsList>
+    <Card className="overflow-hidden rounded-md">
+      {/* Price header */}
+      <div className="p-4 border-b flex justify-between items-center">
+        <div className="flex items-center space-x-2">
+          <div>
+            <div className="flex items-baseline space-x-2">
+              <span className="text-lg font-bold">Price {tokenPrice}</span>
+              <span className="text-sm text-gray-500">ETH</span>
+              <span className="text-sm text-gray-500">$0.0003</span>
+            </div>
+          </div>
+        </div>
+        <Button variant="outline" size="sm" className="gap-1 px-2">
+          <Settings size={16} />
+          <span>Slippage</span>
+        </Button>
+      </div>
+      
+      <CardContent className="p-4 space-y-4">
+        <div className="grid">
+          <div className="mb-2">
+            <span className="text-gray-500">{activeTab === 'sell' ? 'Sell' : 'Buy'}</span>
+          </div>
           
-          <TabsContent value="buy">
-            <BuyTokenForm
-              tokenSymbol={tokenSymbol}
-              inputValue={inputValue}
-              outputValue={outputValue}
-              ethBalance={ethBalance}
-              isPending={isPending}
-              slippageTolerance={slippageTolerance}
-              onInputChange={setInputValue}
-              onSlippageChange={handleSlippageChange}
-              onSwap={handleSwap}
-            />
-          </TabsContent>
-          
-          <TabsContent value="sell">
-            <SellTokenForm
-              tokenSymbol={tokenSymbol}
-              inputValue={inputValue}
-              outputValue={outputValue}
-              tokenBalance={tokenBalance}
-              isPending={isPending}
-              slippageTolerance={slippageTolerance}
-              onInputChange={setInputValue}
-              onSlippageChange={handleSlippageChange}
-              onSwap={handleSwap}
-            />
-          </TabsContent>
-        </Tabs>
+          <Tabs defaultValue="buy" onValueChange={handleTabChange} className="w-full">
+            <div className="hidden">
+              <TabsList>
+                <TabsTrigger value="buy">Buy</TabsTrigger>
+                <TabsTrigger value="sell">Sell</TabsTrigger>
+              </TabsList>
+            </div>
+            
+            <TabsContent value="buy" className="mt-0">
+              <BuyTokenForm
+                tokenSymbol={tokenSymbol}
+                inputValue={inputValue}
+                outputValue={outputValue}
+                ethBalance={ethBalance}
+                isPending={isPending}
+                slippageTolerance={slippageTolerance}
+                onInputChange={setInputValue}
+                onSlippageChange={setSlippageTolerance}
+                onSwap={handleSwap}
+              />
+            </TabsContent>
+            
+            <TabsContent value="sell" className="mt-0">
+              <SellTokenForm
+                tokenSymbol={tokenSymbol}
+                inputValue={inputValue}
+                outputValue={outputValue}
+                tokenBalance={tokenBalance}
+                isPending={isPending}
+                slippageTolerance={slippageTolerance}
+                onInputChange={setInputValue}
+                onSlippageChange={setSlippageTolerance}
+                onSwap={handleSwap}
+              />
+            </TabsContent>
+          </Tabs>
+        </div>
+        
+        <Button 
+          className="w-full h-12 mt-4 bg-purple-500 hover:bg-purple-600" 
+          onClick={handleSwap}
+          disabled={isPending || !inputValue || parseFloat(inputValue) <= 0}
+        >
+          {isPending ? (
+            <>
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              {activeTab === 'buy' ? 'Buying...' : 'Selling...'}
+            </>
+          ) : (
+            'Review'
+          )}
+        </Button>
+        
+        <div className="text-xs text-gray-500 text-center">
+          1 USDT = 0.00050464 ETH ($1.00)
+        </div>
         
         <SwapError error={error} />
       </CardContent>
