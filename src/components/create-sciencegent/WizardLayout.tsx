@@ -71,33 +71,34 @@ const WizardLayout: React.FC<WizardLayoutProps> = ({ children }) => {
     
     return (
       <Button onClick={nextStep} disabled={!canProceed}>
-        Next
+        Continue
         <ChevronRight className="ml-2 h-4 w-4" />
       </Button>
     );
   };
   
   return (
-    <div className="max-w-3xl mx-auto">
+    <div className="max-w-6xl mx-auto">
       <div className="bg-white rounded-lg shadow-sm border">
         {!isSuccessStep && (
           <div className="p-6 border-b">
             <h2 className="text-2xl font-bold text-gray-800">Create ScienceGent</h2>
-            <p className="text-gray-600 mt-1">
-              Build, deploy, and monetize your science-focused AI agent
-            </p>
-            
-            <div className="mt-6">
+          </div>
+        )}
+        
+        <div className="flex">
+          {!isSuccessStep && (
+            <div className="w-72 p-6 border-r">
               <WizardProgress 
                 steps={wizardSteps} 
                 currentStep={currentStep} 
               />
             </div>
+          )}
+          
+          <div className="flex-1 p-6">
+            {children}
           </div>
-        )}
-        
-        <div className="p-6">
-          {children}
         </div>
         
         {!isSuccessStep && (

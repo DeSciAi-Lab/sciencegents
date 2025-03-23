@@ -7,10 +7,10 @@ import { getAllCapabilities } from '@/data/capabilities';
 
 // Import step components
 import BasicInfo from './steps/BasicInfo';
-import PersonalInfo from './steps/PersonalInfo'; // Import new step
 import PersonaCustomization from './steps/PersonaCustomization';
 import CapabilitySelection from './steps/CapabilitySelection';
 import LiquiditySettings from './steps/LiquiditySettings';
+import PersonalInfo from './steps/PersonalInfo';
 import ReviewAndLaunch from './steps/ReviewAndLaunch';
 import SuccessScreen from './steps/SuccessScreen';
 
@@ -59,32 +59,32 @@ const WizardStepRenderer: React.FC = () => {
         );
       case 2:
         return (
-          <PersonalInfo
-            formData={formData}
-            handleInputChange={handleInputChange}
-          />
-        );
-      case 3:
-        return (
           <PersonaCustomization 
             formData={formData} 
             handleInputChange={handleInputChange}
           />
         );
-      case 4:
+      case 3:
         return (
           <CapabilitySelection 
             formData={formData} 
             handleCapabilityToggle={handleCapabilityToggle}
           />
         );
-      case 5:
+      case 4:
         return (
           <LiquiditySettings 
             formData={formData} 
             handleInputChange={handleInputChange}
           />
         );
+      case 5:
+        return (
+          <PersonalInfo
+            formData={formData}
+            handleInputChange={handleInputChange}
+          />
+        );  
       case 6:
         return (
           <ReviewAndLaunch 

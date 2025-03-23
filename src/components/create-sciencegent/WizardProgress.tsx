@@ -10,7 +10,7 @@ interface WizardProgressProps {
 
 const WizardProgress: React.FC<WizardProgressProps> = ({ currentStep, steps }) => {
   return (
-    <div className="flex flex-col space-y-4">
+    <div className="flex flex-col space-y-8">
       {steps.map((step) => {
         const isActive = step.id === currentStep;
         const isCompleted = step.id < currentStep;
