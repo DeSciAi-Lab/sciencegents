@@ -25,119 +25,125 @@ const DashboardTabs: React.FC<DashboardTabsProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState('overview');
   const [activeSubTab, setActiveSubTab] = useState('tradebook');
+  
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+  };
+  
+  const handleSubTabChange = (value: string) => {
+    setActiveSubTab(value);
+  };
 
   return (
     <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
       {/* Main Tabs */}
-      <div className="border-b">
-        <TabsList className="w-full bg-white justify-start rounded-none border-0 p-0">
-          <TabsTrigger 
-            value="overview" 
-            onClick={() => setActiveTab('overview')}
-            className={`data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:bg-white rounded-none px-6 py-4 ${activeTab === 'overview' ? 'border-b-2 border-blue-600 text-blue-600' : ''}`}
-          >
-            Overview
-          </TabsTrigger>
-          <TabsTrigger 
-            value="trades" 
-            onClick={() => setActiveTab('trades')}
-            className={`data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:bg-white rounded-none px-6 py-4 ${activeTab === 'trades' ? 'border-b-2 border-blue-600 text-blue-600' : ''}`}
-          >
-            Trades
-          </TabsTrigger>
-          <TabsTrigger 
-            value="chat" 
-            onClick={() => setActiveTab('chat')}
-            className={`data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:bg-white rounded-none px-6 py-4 ${activeTab === 'chat' ? 'border-b-2 border-blue-600 text-blue-600' : ''}`}
-          >
-            Agent Interface
-          </TabsTrigger>
-          <TabsTrigger 
-            value="capabilities" 
-            onClick={() => setActiveTab('capabilities')}
-            className={`data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:bg-white rounded-none px-6 py-4 ${activeTab === 'capabilities' ? 'border-b-2 border-blue-600 text-blue-600' : ''}`}
-          >
-            Capabilities
-          </TabsTrigger>
-          {scienceGentData?.isMigrationEligible && (
-            <TabsTrigger 
-              value="migration"
-              onClick={() => setActiveTab('migration')}
-              className={`data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:bg-white rounded-none px-6 py-4 ${activeTab === 'migration' ? 'border-b-2 border-blue-600 text-blue-600' : ''}`}
-            >
-              Migration
-            </TabsTrigger>
-          )}
-        </TabsList>
-      </div>
-
-      {/* Secondary Tabs for Trades */}
-      {activeTab === 'trades' && (
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
         <div className="border-b">
           <TabsList className="w-full bg-white justify-start rounded-none border-0 p-0">
             <TabsTrigger 
-              value="tradebook" 
-              onClick={() => setActiveSubTab('tradebook')}
-              className={`data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:bg-white rounded-none px-6 py-3 text-sm ${activeSubTab === 'tradebook' ? 'border-b-2 border-blue-600 text-blue-600' : ''}`}
+              value="overview"
+              className="data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:bg-white rounded-none px-6 py-4"
             >
-              Tradebook
+              Overview
             </TabsTrigger>
             <TabsTrigger 
-              value="holders" 
-              onClick={() => setActiveSubTab('holders')}
-              className={`data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:bg-white rounded-none px-6 py-3 text-sm ${activeSubTab === 'holders' ? 'border-b-2 border-blue-600 text-blue-600' : ''}`}
+              value="trades"
+              className="data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:bg-white rounded-none px-6 py-4"
             >
-              Holders
+              Trades
             </TabsTrigger>
             <TabsTrigger 
-              value="transactions" 
-              onClick={() => setActiveSubTab('transactions')}
-              className={`data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:bg-white rounded-none px-6 py-3 text-sm ${activeSubTab === 'transactions' ? 'border-b-2 border-blue-600 text-blue-600' : ''}`}
+              value="chat"
+              className="data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:bg-white rounded-none px-6 py-4"
             >
-              Transactions
+              Agent Interface
             </TabsTrigger>
+            <TabsTrigger 
+              value="capabilities"
+              className="data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:bg-white rounded-none px-6 py-4"
+            >
+              Capabilities
+            </TabsTrigger>
+            {scienceGentData?.isMigrationEligible && (
+              <TabsTrigger 
+                value="migration"
+                className="data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:bg-white rounded-none px-6 py-4"
+              >
+                Migration
+              </TabsTrigger>
+            )}
           </TabsList>
         </div>
-      )}
 
-      {/* Main Tab Content */}
-      <div className="p-0">
-        {activeTab === 'overview' && (
-          <OverviewTab 
-            scienceGentData={scienceGentData} 
-            isRefreshing={isRefreshing} 
-            refreshData={refreshData} 
-          />
-        )}
-
+        {/* Secondary Tabs for Trades */}
         {activeTab === 'trades' && (
-          <TradeTab 
-            address={address} 
-            scienceGentData={scienceGentData}
-          />
+          <div className="border-b">
+            <Tabs value={activeSubTab} onValueChange={handleSubTabChange} className="w-full">
+              <TabsList className="w-full bg-white justify-start rounded-none border-0 p-0">
+                <TabsTrigger 
+                  value="tradebook"
+                  className="data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:bg-white rounded-none px-6 py-3 text-sm"
+                >
+                  Tradebook
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="holders"
+                  className="data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:bg-white rounded-none px-6 py-3 text-sm"
+                >
+                  Holders
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="transactions"
+                  className="data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:bg-white rounded-none px-6 py-3 text-sm"
+                >
+                  Transactions
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </div>
         )}
 
-        {activeTab === 'chat' && (
-          <ChatTab 
-            address={address} 
-            scienceGent={scienceGentData} 
-          />
-        )}
+        {/* Main Tab Content */}
+        <div className="p-0">
+          <TabsContent value="overview">
+            <OverviewTab 
+              scienceGentData={scienceGentData} 
+              isRefreshing={isRefreshing} 
+              refreshData={refreshData} 
+            />
+          </TabsContent>
 
-        {activeTab === 'capabilities' && (
-          <CapabilitiesTab 
-            scienceGent={scienceGentData}
-          />
-        )}
+          <TabsContent value="trades">
+            <TradeTab 
+              address={address} 
+              scienceGentData={scienceGentData}
+            />
+          </TabsContent>
 
-        {activeTab === 'migration' && scienceGentData?.isMigrationEligible && (
-          <MigrationTab 
-            tokenAddress={address}
-            scienceGent={scienceGentData} 
-            refreshData={refreshData}
-          />
-        )}
-      </div>
+          <TabsContent value="chat">
+            <ChatTab 
+              address={address} 
+              scienceGent={scienceGentData} 
+            />
+          </TabsContent>
+
+          <TabsContent value="capabilities">
+            <CapabilitiesTab 
+              scienceGent={scienceGentData}
+            />
+          </TabsContent>
+
+          {scienceGentData?.isMigrationEligible && (
+            <TabsContent value="migration">
+              <MigrationTab 
+                tokenAddress={address}
+                scienceGent={scienceGentData} 
+                refreshData={refreshData}
+              />
+            </TabsContent>
+          )}
+        </div>
+      </Tabs>
     </div>
   );
 };

@@ -11,7 +11,7 @@ interface TradeTabProps {
 
 const TradeTab: React.FC<TradeTabProps> = ({ address, scienceGentData }) => {
   const isMigrated = scienceGentData?.is_migrated || false;
-
+  
   return (
     <div className="space-y-0">
       {/* Trading Chart */}
@@ -23,10 +23,21 @@ const TradeTab: React.FC<TradeTabProps> = ({ address, scienceGentData }) => {
         />
       </div>
       
-      <div className="p-4 pt-0">
-        {/* Tradebook table would go here */}
-        <div className="h-48 border rounded-lg flex items-center justify-center bg-gray-50">
-          <p className="text-gray-500">Trade history will appear here</p>
+      <div className="grid grid-cols-2 gap-4 p-4 pt-0">
+        <div className="col-span-1">
+          <TokenSwapInterface 
+            tokenAddress={address}
+            tokenSymbol={scienceGentData?.symbol || "TOKEN"}
+            isMigrated={isMigrated}
+            uniswapPair={scienceGentData?.uniswapPair}
+          />
+        </div>
+        
+        <div className="col-span-1">
+          {/* Tradebook table would go here */}
+          <div className="h-full border rounded-lg flex items-center justify-center bg-gray-50">
+            <p className="text-gray-500">Trade history will appear here</p>
+          </div>
         </div>
       </div>
     </div>
