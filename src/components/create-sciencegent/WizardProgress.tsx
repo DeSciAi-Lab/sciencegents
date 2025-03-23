@@ -20,17 +20,17 @@ const WizardProgress: React.FC<WizardProgressProps> = ({ currentStep, steps }) =
             key={step.id}
             className={cn(
               "flex items-center space-x-3", 
-              isActive ? "text-science-600" : isCompleted ? "text-muted-foreground" : "text-muted-foreground/50"
+              isActive ? "text-blue-600" : isCompleted ? "text-muted-foreground" : "text-muted-foreground/50"
             )}
           >
             <div
               className={cn(
                 "w-8 h-8 rounded-full flex items-center justify-center",
                 isActive
-                  ? "bg-science-600 text-white"
+                  ? "bg-blue-600 text-white"
                   : isCompleted
-                  ? "bg-muted-foreground text-white"
-                  : "bg-secondary text-muted-foreground"
+                  ? "bg-gray-400 text-white"
+                  : "bg-gray-200 text-gray-500"
               )}
             >
               {isCompleted ? (

@@ -20,6 +20,17 @@ const PersonalInfo: React.FC<PersonalInfoProps> = ({ formData, handleInputChange
         </p>
       </div>
 
+      <div className="bg-blue-50 p-4 rounded-md flex gap-3 mb-6">
+        <Info className="h-5 w-5 text-blue-500 flex-shrink-0 mt-0.5" />
+        <div>
+          <h4 className="text-sm font-medium text-blue-800">Disclaimer</h4>
+          <p className="text-sm text-blue-700">
+            This information will be publicly visible and completely optional to provide. 
+            They help build trust on developer and connect with you, also contact you.
+          </p>
+        </div>
+      </div>
+
       <div className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
@@ -63,14 +74,6 @@ const PersonalInfo: React.FC<PersonalInfoProps> = ({ formData, handleInputChange
             onChange={handleInputChange}
             rows={3}
           />
-        </div>
-
-        <div className="bg-blue-50 p-4 rounded-md flex gap-3">
-          <Info className="h-5 w-5 text-blue-500 flex-shrink-0 mt-0.5" />
-          <div className="text-sm text-blue-700">
-            This information will be publicly visible and completely optional to provide. 
-            They help build trust on developer and connect with you, also contact you.
-          </div>
         </div>
 
         <h4 className="font-medium text-gray-700 pt-2">Social Links (Optional)</h4>

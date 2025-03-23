@@ -120,6 +120,38 @@ const ReviewAndLaunch: React.FC<ReviewAndLaunchProps> = ({
               </div>
             </div>
             
+            <div className="bg-white rounded-md p-4 border border-gray-200">
+              <h3 className="font-medium text-gray-700 mb-2">Social Links</h3>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <p className="text-gray-500">Twitter</p>
+                  <p className="font-medium">{formData.twitter || "N/A"}</p>
+                </div>
+                <div>
+                  <p className="text-gray-500">GitHub</p>
+                  <p className="font-medium">{formData.github || "N/A"}</p>
+                </div>
+                <div>
+                  <p className="text-gray-500">Telegram</p>
+                  <p className="font-medium">{formData.telegram || "N/A"}</p>
+                </div>
+                <div>
+                  <p className="text-gray-500">Website</p>
+                  <p className="font-medium">{formData.website || "N/A"}</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-white rounded-md p-4 border border-gray-200">
+              <h3 className="font-medium text-gray-700 mb-2">Description</h3>
+              <p className="text-sm">{formData.description || "No description provided"}</p>
+            </div>
+            
+            <div className="bg-white rounded-md p-4 border border-gray-200">
+              <h3 className="font-medium text-gray-700 mb-2">Persona</h3>
+              <p className="text-sm line-clamp-3">{formData.persona}</p>
+            </div>
+            
             {/* Developer Information Section */}
             <div className="bg-white rounded-md p-4 border border-gray-200">
               <h3 className="font-medium text-gray-700 mb-2">Developer Information</h3>
@@ -161,38 +193,6 @@ const ReviewAndLaunch: React.FC<ReviewAndLaunchProps> = ({
                   </div>
                 </div>
               </div>
-            </div>
-            
-            <div className="bg-white rounded-md p-4 border border-gray-200">
-              <h3 className="font-medium text-gray-700 mb-2">Social Links</h3>
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <p className="text-gray-500">Twitter</p>
-                  <p className="font-medium">{formData.twitter || "N/A"}</p>
-                </div>
-                <div>
-                  <p className="text-gray-500">GitHub</p>
-                  <p className="font-medium">{formData.github || "N/A"}</p>
-                </div>
-                <div>
-                  <p className="text-gray-500">Telegram</p>
-                  <p className="font-medium">{formData.telegram || "N/A"}</p>
-                </div>
-                <div>
-                  <p className="text-gray-500">Website</p>
-                  <p className="font-medium">{formData.website || "N/A"}</p>
-                </div>
-              </div>
-            </div>
-            
-            <div className="bg-white rounded-md p-4 border border-gray-200">
-              <h3 className="font-medium text-gray-700 mb-2">Description</h3>
-              <p className="text-sm">{formData.description || "No description provided"}</p>
-            </div>
-            
-            <div className="bg-white rounded-md p-4 border border-gray-200">
-              <h3 className="font-medium text-gray-700 mb-2">Persona</h3>
-              <p className="text-sm line-clamp-3">{formData.persona}</p>
             </div>
             
             <div className="bg-white rounded-md p-4 border border-gray-200">

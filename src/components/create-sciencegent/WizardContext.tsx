@@ -100,22 +100,20 @@ export const WizardProvider: React.FC<{children: React.ReactNode}> = ({ children
     checkAllowance();
   }, [currentStep, launchFee]);
 
-  // Move to success screen when creation starts
+  // Move to success screen when creation is successful
   useEffect(() => {
-    if (status === CreationStatus.Creating || 
-        status === CreationStatus.WaitingConfirmation || 
-        status === CreationStatus.Success) {
-      setCurrentStep(wizardSteps.length);
+    if (status === CreationStatus.Success) {
+      setCurrentStep(wizardSteps.length + 1); // Move to success screen
     }
     
     // Reset launching state when status changes
-    if (status !== CreationStatus.Idle) {
+    if (status !== CreationStatus.Idle && status !== CreationStatus.ApprovingDSI) {
       setIsLaunching(false);
     }
     
     // If DSI is approved, update state
     if (status === CreationStatus.ApprovingDSI) {
-      setIsDSIApproved(false);
+      // Keep launching state true while approving
     } else if (status === CreationStatus.CheckingAllowance) {
       // Keep current state
     } else if (status === CreationStatus.Creating || 
@@ -182,7 +180,7 @@ export const WizardProvider: React.FC<{children: React.ReactNode}> = ({ children
 
   const handleApproveAndLaunch = async () => {
     // Prevent multiple calls
-    if (isLaunching || status !== CreationStatus.Idle) {
+    if (isLaunching) {
       console.log("Already processing, preventing duplicate call");
       return;
     }
@@ -193,15 +191,19 @@ export const WizardProvider: React.FC<{children: React.ReactNode}> = ({ children
     if (!isDSIApproved) {
       try {
         await approveDSI();
-        setIsDSIApproved(true);
-        setIsLaunching(false); // Done with approval, now user can launch
+        // We'll set isDSIApproved in the status effect
       } catch (error) {
         setIsLaunching(false);
         console.error("Failed to approve DSI:", error);
       }
     } else {
       // DSI is already approved, proceed with token creation
-      await createToken(formData);
+      try {
+        await createToken(formData);
+      } catch (error) {
+        setIsLaunching(false);
+        console.error("Failed to create token:", error);
+      }
     }
   };
 

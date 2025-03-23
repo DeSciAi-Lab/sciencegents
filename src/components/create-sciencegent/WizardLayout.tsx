@@ -88,7 +88,7 @@ const WizardLayout: React.FC<WizardLayoutProps> = ({ children }) => {
         
         <div className="flex">
           {!isSuccessStep && (
-            <div className="w-72 p-6 border-r">
+            <div className="w-72 p-6 border-r bg-gray-50">
               <WizardProgress 
                 steps={wizardSteps} 
                 currentStep={currentStep} 
