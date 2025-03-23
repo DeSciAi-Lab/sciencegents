@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlertCircle, Loader2 } from 'lucide-react';
@@ -68,6 +67,15 @@ const TradingViewChart: React.FC<TradingViewChartProps> = ({
   const [chartData, setChartData] = useState<TokenCandleData[]>([]);
   const chartRef = useRef<any>(null);
   const candlestickSeriesRef = useRef<any>(null);
+  
+  // For displaying the trading stats in UI like the reference image
+  const [priceStats, setPriceStats] = useState({
+    currentPrice: 0.000004,
+    priceUSD: 0.0003,
+    change24h: -942.38,
+    high24h: 47444.1,
+    low24h: 45555.1
+  });
 
   // Fetch price history data from Supabase and contract
   useEffect(() => {
@@ -359,33 +367,113 @@ const TradingViewChart: React.FC<TradingViewChartProps> = ({
     return data;
   };
 
+  const timeframes = ['8h', '12h', '16h', '20h'];
+
   if (isMigrated) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Price Chart</CardTitle>
-          <CardDescription>
-            This token has been migrated to Uniswap. Please view chart data on Uniswap.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="min-h-[400px] flex items-center justify-center">
-          <div className="text-center text-muted-foreground">
-            Chart data is available on Uniswap after migration.
+      <Card className="border-0 shadow-none">
+        <CardHeader className="px-0 pt-0">
+          <div className="flex justify-between items-center">
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="font-bold text-xl">TICKER/ETH</h2>
+              </div>
+              <div className="flex items-baseline">
+                <div className="text-lg font-medium">Price {priceStats.currentPrice.toFixed(7)} ETH</div>
+                <div className="ml-2 text-sm text-gray-500">${priceStats.priceUSD.toFixed(4)}</div>
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <div className="text-xs text-gray-500">24h change</div>
+                <div className={`text-sm ${priceStats.change24h < 0 ? 'text-red-500' : 'text-green-500'}`}>
+                  {priceStats.change24h}
+                </div>
+              </div>
+              <div>
+                <div className="text-xs text-gray-500">24h high</div>
+                <div className="text-sm">{priceStats.high24h}</div>
+              </div>
+              <div>
+                <div className="text-xs text-gray-500">24h low</div>
+                <div className="text-sm">{priceStats.low24h}</div>
+              </div>
+            </div>
           </div>
+        </CardHeader>
+        <CardContent className="px-0 pb-0">
+          <div className="flex gap-2 mb-4">
+            {timeframes.map((timeframe) => (
+              <button 
+                key={timeframe}
+                className="px-3 py-1 text-sm rounded-md hover:bg-gray-100"
+              >
+                {timeframe}
+              </button>
+            ))}
+          </div>
+          {chartError ? (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4 mr-2" />
+              <AlertDescription>{chartError}</AlertDescription>
+            </Alert>
+          ) : isLoading ? (
+            <div className="h-[400px] flex items-center justify-center">
+              <div className="text-center">
+                <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2 text-muted-foreground" />
+                <p className="text-sm text-muted-foreground">Loading chart data...</p>
+              </div>
+            </div>
+          ) : (
+            <div ref={chartContainerRef} className="h-[300px] w-full" />
+          )}
         </CardContent>
       </Card>
     );
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Price Chart</CardTitle>
-        <CardDescription>
-          Trading data for {tokenSymbol}/ETH
-        </CardDescription>
+    <Card className="border-0 shadow-none">
+      <CardHeader className="px-0 pt-0">
+        <div className="flex justify-between items-center">
+          <div>
+            <div className="flex items-center gap-2">
+              <h2 className="font-bold text-xl">TICKER/ETH</h2>
+            </div>
+            <div className="flex items-baseline">
+              <div className="text-lg font-medium">Price {priceStats.currentPrice.toFixed(7)} ETH</div>
+              <div className="ml-2 text-sm text-gray-500">${priceStats.priceUSD.toFixed(4)}</div>
+            </div>
+          </div>
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <div className="text-xs text-gray-500">24h change</div>
+              <div className={`text-sm ${priceStats.change24h < 0 ? 'text-red-500' : 'text-green-500'}`}>
+                {priceStats.change24h}
+              </div>
+            </div>
+            <div>
+              <div className="text-xs text-gray-500">24h high</div>
+              <div className="text-sm">{priceStats.high24h}</div>
+            </div>
+            <div>
+              <div className="text-xs text-gray-500">24h low</div>
+              <div className="text-sm">{priceStats.low24h}</div>
+            </div>
+          </div>
+        </div>
       </CardHeader>
-      <CardContent className="relative min-h-[400px]">
+      <CardContent className="px-0 pb-0">
+        <div className="flex gap-2 mb-4">
+          {timeframes.map((timeframe) => (
+            <button 
+              key={timeframe}
+              className="px-3 py-1 text-sm rounded-md hover:bg-gray-100"
+            >
+              {timeframe}
+            </button>
+          ))}
+        </div>
         {chartError ? (
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4 mr-2" />
@@ -399,7 +487,7 @@ const TradingViewChart: React.FC<TradingViewChartProps> = ({
             </div>
           </div>
         ) : (
-          <div ref={chartContainerRef} className="h-[400px]" />
+          <div ref={chartContainerRef} className="h-[300px] w-full" />
         )}
       </CardContent>
     </Card>

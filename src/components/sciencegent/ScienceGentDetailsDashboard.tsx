@@ -22,14 +22,7 @@ const ScienceGentDetailsDashboard: React.FC<ScienceGentDetailsDashboardProps> = 
 }) => {
   const isLoading = status === LoadingStatus.Loading;
   const isError = status === LoadingStatus.Error || status === LoadingStatus.NotFound;
-
-  // Add debug logging
-  console.log('ScienceGentDetailsDashboard render:', { address, status, isRefreshing });
   
-  if (scienceGentData) {
-    console.log('ScienceGentData:', JSON.stringify(scienceGentData, null, 2));
-  }
-
   if (isLoading) {
     return <LoadingDashboard />;
   }
@@ -54,7 +47,7 @@ const ScienceGentDetailsDashboard: React.FC<ScienceGentDetailsDashboardProps> = 
   }
 
   return (
-    <div className="space-y-6">
+    <div>
       <DashboardTabs 
         address={address}
         scienceGentData={scienceGentData}

@@ -9,7 +9,7 @@ interface ChatTabProps {
 
 const ChatTab: React.FC<ChatTabProps> = ({ address, scienceGent }) => {
   return (
-    <div className="overflow-hidden">
+    <div className="w-full">
       <ScienceGentChat 
         address={address} 
         scienceGent={scienceGent} 

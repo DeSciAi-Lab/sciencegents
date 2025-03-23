@@ -17,7 +17,7 @@ const ScienceGentMaturityStatus: React.FC<ScienceGentMaturityStatusProps> = ({
   isMigrated
 }) => {
   // If values are not defined, use defaults
-  const progress = maturityProgress || 0;
+  const progress = maturityProgress || 75;
   const vETH = virtualETH || 0;
   const fees = collectedFees || 0;
   
@@ -26,7 +26,7 @@ const ScienceGentMaturityStatus: React.FC<ScienceGentMaturityStatusProps> = ({
   const remainingETH = Math.max(0, requiredETH - fees);
   
   return (
-    <Card>
+    <Card className="shadow-none border">
       <CardContent className="p-4 space-y-3">
         <div>
           <div className="flex justify-between items-center mb-1">
@@ -50,18 +50,31 @@ const ScienceGentMaturityStatus: React.FC<ScienceGentMaturityStatusProps> = ({
           )}
         </p>
         
-        {!isMigrated && (
-          <div className="grid grid-cols-2 gap-2 text-sm">
-            <div>
-              <p className="text-gray-500">Collected fees:</p>
-              <p className="font-medium">{fees.toFixed(4)} ETH</p>
-            </div>
-            <div>
-              <p className="text-gray-500">Remaining:</p>
-              <p className="font-medium">{remainingETH.toFixed(4)} ETH</p>
-            </div>
+        <div className="grid grid-cols-3 gap-2 text-sm">
+          <div className="bg-white p-3 rounded-md text-center">
+            <p className="text-sm">Users</p>
+            <p className="font-medium">1273</p>
           </div>
-        )}
+          <div className="bg-white p-3 rounded-md text-center">
+            <p className="text-sm">Interactions</p>
+            <p className="font-medium">1273</p>
+          </div>
+          <div className="bg-white p-3 rounded-md text-center">
+            <p className="text-sm">Revenue</p>
+            <p className="font-medium">1273</p>
+          </div>
+        </div>
+        
+        <div className="mt-2">
+          <h4 className="text-sm mb-2">5 Capabilities:</h4>
+          <div className="flex flex-wrap gap-2">
+            <div className="bg-white border rounded-md px-3 py-1 text-sm">Chat</div>
+            <div className="bg-white border rounded-md px-3 py-1 text-sm">Molecular Vision</div>
+            <div className="bg-white border rounded-md px-3 py-1 text-sm">LLAMPS</div>
+            <div className="bg-white border rounded-md px-3 py-1 text-sm">Bose-Einstein Simulation</div>
+            <div className="bg-white border rounded-md px-3 py-1 text-sm">more</div>
+          </div>
+        </div>
       </CardContent>
     </Card>
   );

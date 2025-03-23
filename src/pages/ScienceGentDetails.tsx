@@ -5,7 +5,7 @@ import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Copy, Check, Twitter, Facebook, ExternalLink, Share2 } from 'lucide-react';
+import { Copy, Check, Twitter, Facebook, ExternalLink, Share2, Save } from 'lucide-react';
 import useScienceGentDetails, { LoadingStatus } from '@/hooks/useScienceGentDetails';
 import ScienceGentDetailsDashboard from '@/components/sciencegent/ScienceGentDetailsDashboard';
 import { toast } from '@/components/ui/use-toast';
@@ -79,26 +79,26 @@ const ScienceGentDetails: React.FC = () => {
     <div className="min-h-screen flex flex-col bg-gray-50">
       <Navbar />
       <main className="flex-grow container mx-auto px-4 py-6">
-        {/* ScienceGent Header */}
+        {/* ScienceGent Header - New Layout */}
         <div className="bg-white rounded-lg p-6 shadow-sm border mb-6">
-          <div className="flex flex-col md:flex-row md:items-start gap-6">
-            {/* Left Column with Profile Pic and Info */}
-            <div className="flex items-start gap-4 md:w-2/3">
-              <div className="w-24 h-24 rounded-full overflow-hidden bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white flex-shrink-0">
+          <div className="flex flex-col space-y-4">
+            {/* Top section with profile and basic info */}
+            <div className="flex items-center gap-4">
+              <div className="w-16 h-16 rounded-full overflow-hidden bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white flex-shrink-0">
                 {scienceGent?.profilePic ? (
                   <img src={scienceGent.profilePic} alt={scienceGent.name} className="w-full h-full object-cover" />
                 ) : (
-                  <span className="text-4xl font-bold">{scienceGent?.name?.charAt(0) || '?'}</span>
+                  <span className="text-2xl font-bold">{scienceGent?.name?.charAt(0) || '?'}</span>
                 )}
               </div>
               
               <div className="flex-1">
-                <div className="flex items-center mb-1 gap-2 flex-wrap">
-                  <h1 className="text-2xl font-bold">{scienceGent?.name || 'Unknown ScienceGent'}</h1>
-                  <Badge className="bg-gray-100 text-gray-800 border-gray-200">{scienceGent?.symbol || '???'}</Badge>
+                <div className="flex items-center gap-2">
+                  <h1 className="text-xl font-semibold">{scienceGent?.name || 'ScienceGent Name'}</h1>
+                  <Badge className="bg-gray-100 text-gray-800 border-gray-200">${scienceGent?.symbol || 'STICKER'}</Badge>
                 </div>
                 
-                <div className="flex items-center gap-2 mb-3">
+                <div className="flex items-center gap-2 mt-1">
                   <div className="flex items-center bg-gray-100 rounded-md px-2 py-1">
                     <span className="text-sm text-gray-600">{formatAddress(scienceGent?.address || '')}</span>
                     <button 
@@ -109,73 +109,81 @@ const ScienceGentDetails: React.FC = () => {
                     </button>
                   </div>
                   
-                  <Badge variant="outline" className="bg-gray-50">{scienceGent?.domain || 'General'}</Badge>
+                  <Button size="sm" variant="outline" className="rounded-full h-7">
+                    <span className="px-2">Domain</span>
+                  </Button>
+                  
+                  <Button size="sm" variant="outline" className="rounded-full bg-blue-500 text-white hover:bg-blue-600 h-7">
+                    <Twitter className="h-3.5 w-3.5" />
+                  </Button>
+                  
+                  <Button size="sm" variant="outline" className="rounded-full bg-blue-700 text-white hover:bg-blue-800 h-7">
+                    <Facebook className="h-3.5 w-3.5" />
+                  </Button>
+                  
+                  <Button size="sm" variant="outline" className="rounded-full h-7">
+                    <Share2 className="h-3.5 w-3.5 mr-1" />
+                    <span>Share</span>
+                  </Button>
+                  
+                  <Button size="sm" variant="outline" className="rounded-full h-7">
+                    <Save className="h-3.5 w-3.5 mr-1" />
+                    <span>Save</span>
+                  </Button>
                 </div>
                 
-                <p className="text-sm text-gray-600 mb-3">
-                  {scienceGent?.description || "No description available"}
-                  {scienceGent?.description && scienceGent.description.length > 100 && (
-                    <button className="text-science-600 ml-1 text-xs">...see more</button>
-                  )}
-                </p>
-                
-                <div className="flex flex-wrap gap-2">
-                  <Button size="sm" variant="outline" className="rounded-full">
-                    <Twitter size={16} className="mr-1" />
-                    <span className="sr-only">Twitter</span>
-                  </Button>
-                  <Button size="sm" variant="outline" className="rounded-full">
-                    <Facebook size={16} className="mr-1" />
-                    <span className="sr-only">Facebook</span>
-                  </Button>
-                  <Button size="sm" variant="outline" className="rounded-full">
-                    <Share2 size={16} className="mr-1" />
-                    Share
-                  </Button>
-                  <Button 
-                    size="sm" 
-                    variant="outline" 
-                    className="rounded-full"
-                    onClick={() => refreshData()}
-                    disabled={isRefreshing}
-                  >
-                    {isRefreshing ? 'Refreshing...' : 'Refresh Data'}
-                  </Button>
+                <div className="mt-2">
+                  <p className="text-sm text-gray-600 line-clamp-1">
+                    {scienceGent?.description || "Description ----- ---- ----- ------ ----- ------ ---"}
+                    <button className="text-blue-500 ml-1 text-xs">see more</button>
+                  </p>
+                </div>
+              </div>
+              
+              {/* Current price info */}
+              <div className="bg-gray-50 rounded-lg p-3 border">
+                <div className="text-center">
+                  <div className="flex justify-between items-center">
+                    <p className="text-sm text-gray-500">Price</p>
+                    <Badge className="bg-gray-100 text-gray-800">@ Slippage</Badge>
+                  </div>
+                  <div className="mt-1 flex justify-center items-baseline">
+                    <h2 className="text-2xl font-bold text-gray-900">{(scienceGent?.tokenPrice || 0.000004).toFixed(7)} ETH</h2>
+                  </div>
+                  <div className="text-sm text-gray-500 mt-1">
+                    ${(scienceGent?.tokenPriceUSD || 0.0003).toFixed(4)}
+                  </div>
                 </div>
               </div>
             </div>
-
-            {/* Right Column with Price */}
-            <div className="md:w-1/3 mt-4 md:mt-0 bg-gray-50 p-4 rounded-lg border">
-              <div className="text-center">
-                <p className="text-sm text-gray-500 mb-1">Price</p>
-                <div className="flex justify-center items-baseline gap-2">
-                  <h2 className="text-2xl font-bold">{(scienceGent?.tokenPrice || 0).toFixed(7)} ETH</h2>
-                  <span className="text-gray-500">${(scienceGent?.tokenPriceUSD || 0).toFixed(4)}</span>
-                </div>
-                
-                <div className="border-t border-gray-200 my-3 pt-3">
-                  <div className="flex flex-col gap-2">
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-500">Sell</span>
-                      <span className="font-medium text-red-500">0.0001</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-500">Buy</span>
-                      <span className="font-medium text-green-500">0.0002</span>
-                    </div>
-                  </div>
-                </div>
-                
-                <Button className="w-full mt-3 bg-purple-500 hover:bg-purple-600">
-                  Trade Now
-                </Button>
+            
+            {/* Stats Cards */}
+            <div className="grid grid-cols-4 gap-4">
+              <div className="bg-white rounded-lg p-3 border">
+                <p className="text-sm text-gray-500 mb-1">Market Cap</p>
+                <p className="font-medium">{(scienceGent?.marketCap || 4.32).toFixed(2)} ETH</p>
+                <p className="text-xs text-gray-500">${((scienceGent?.marketCap || 4.32) * 3000).toFixed(2)}</p>
+              </div>
+              
+              <div className="bg-white rounded-lg p-3 border">
+                <p className="text-sm text-gray-500 mb-1">Liquidity</p>
+                <p className="font-medium">{(scienceGent?.liquidity || 2.14).toFixed(2)} ETH</p>
+                <p className="text-xs text-gray-500">${((scienceGent?.liquidity || 2.14) * 3000).toFixed(2)}</p>
+              </div>
+              
+              <div className="bg-white rounded-lg p-3 border">
+                <p className="text-sm text-gray-500 mb-1">24h volume</p>
+                <p className="font-medium">{(scienceGent?.volume24h || 4.32).toFixed(2)} ETH</p>
+                <p className="text-xs text-gray-500">${((scienceGent?.volume24h || 4.32) * 3000).toFixed(2)}</p>
+              </div>
+              
+              <div className="bg-white rounded-lg p-3 border">
+                <p className="text-sm text-gray-500 mb-1">Holders</p>
+                <p className="font-medium">{scienceGent?.holders || 877}</p>
+                <p className="text-xs text-gray-500">&nbsp;</p>
               </div>
             </div>
           </div>
-          
-          {/* Stats Cards */}
-          <ScienceGentStatsCards scienceGent={scienceGent} />
         </div>
 
         {/* Dashboard Content */}

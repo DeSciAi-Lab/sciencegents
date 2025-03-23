@@ -94,13 +94,13 @@ const ScienceGentChat: React.FC<ScienceGentChatProps> = ({ scienceGent, address 
   return (
     <div className="flex h-[700px]">
       {/* Left Sidebar */}
-      <div className="w-64 bg-rose-50 rounded-l-lg border-r overflow-hidden flex flex-col">
-        <div className="p-4 bg-white flex items-center space-x-2">
+      <div className="w-64 bg-gray-50 rounded-l-lg border-r overflow-hidden flex flex-col">
+        <div className="p-4 bg-white flex items-center space-x-2 border-b">
           <Avatar className="h-8 w-8 bg-purple-100">
             <Bot className="h-4 w-4 text-purple-500" />
           </Avatar>
           <div>
-            <p className="font-medium text-sm">AnyChat</p>
+            <p className="font-medium text-sm">Agent Chat</p>
           </div>
           <Button variant="ghost" size="icon" className="ml-auto h-8 w-8">
             <Search className="h-4 w-4" />
@@ -120,20 +120,20 @@ const ScienceGentChat: React.FC<ScienceGentChatProps> = ({ scienceGent, address 
                   <div className="bg-white/50 rounded-md p-2 hover:bg-white transition-colors">
                     <p className="text-xs truncate">
                       <Bot className="h-3 w-3 inline mr-1 text-purple-500" />
-                      Helpful AI Ready
+                      Current Chat
                     </p>
                   </div>
                 )}
                 <div className="bg-white/50 rounded-md p-2 hover:bg-white transition-colors">
                   <p className="text-xs truncate">
                     <Bot className="h-3 w-3 inline mr-1 text-blue-500" />
-                    Bose-Einstein Condensate Analysis
+                    Molecular Analysis
                   </p>
                 </div>
                 <div className="bg-white/50 rounded-md p-2 hover:bg-white transition-colors">
                   <p className="text-xs truncate">
                     <Bot className="h-3 w-3 inline mr-1 text-green-500" />
-                    Movie Streaming Help
+                    Bose-Einstein Simulation
                   </p>
                 </div>
               </div>
@@ -145,30 +145,24 @@ const ScienceGentChat: React.FC<ScienceGentChatProps> = ({ scienceGent, address 
                 <div className="bg-white/50 rounded-md p-2 hover:bg-white transition-colors">
                   <p className="text-xs truncate">
                     <Bot className="h-3 w-3 inline mr-1 text-orange-500" />
-                    A new calculation theory for...
+                    Research question about...
                   </p>
                 </div>
                 <div className="bg-white/50 rounded-md p-2 hover:bg-white transition-colors">
                   <p className="text-xs truncate">
                     <Bot className="h-3 w-3 inline mr-1 text-red-500" />
-                    A new calculation theory for...
+                    Protein folding analysis...
                   </p>
                 </div>
               </div>
             </div>
 
             <div>
-              <h3 className="text-xs font-medium mb-2 text-gray-500">Live Capabilities</h3>
+              <h3 className="text-xs font-medium mb-2 text-gray-500">Capabilities</h3>
               <div className="space-y-1">
                 <div className="bg-white/50 rounded-md p-2 hover:bg-white transition-colors">
                   <p className="text-xs">Chat</p>
                 </div>
-              </div>
-            </div>
-
-            <div>
-              <h3 className="text-xs font-medium mb-2 text-gray-500">Upcoming Capabilities</h3>
-              <div className="space-y-1">
                 <div className="bg-white/50 rounded-md p-2 hover:bg-white transition-colors">
                   <p className="text-xs">Molecular Vision</p>
                 </div>
@@ -204,7 +198,7 @@ const ScienceGentChat: React.FC<ScienceGentChatProps> = ({ scienceGent, address 
         <div className="flex justify-between items-center p-4 border-b">
           <div className="flex items-center gap-2">
             <h2 className="font-medium">
-              Oxygen BE property <Edit className="h-4 w-4 inline ml-1 text-gray-400" />
+              {scienceGent?.name || 'ScienceGent'} <Edit className="h-4 w-4 inline ml-1 text-gray-400" />
             </h2>
           </div>
           
@@ -299,14 +293,18 @@ const ScienceGentChat: React.FC<ScienceGentChatProps> = ({ scienceGent, address 
                     {scienceGent?.name || 'ScienceGent'}
                   </p>
                   <div className="prose prose-sm max-w-none">
-                    <p className="mb-4">The two main reasons why the weather does not stay the same are:</p>
+                    <p className="mb-4">Yes, oxygen (O₂) exhibits paramagnetic behavior under normal conditions due to its unpaired electrons. However, in a Bose-Einstein Condensate (BEC) state, the behavior becomes more complex:</p>
                     
                     <p className="mb-2">
-                      <strong>Atmospheric Dynamics:</strong> The Earth's atmosphere is constantly in motion due to various factors like air circulation, pressure systems, and the interaction of different air masses. These dynamic processes lead to continuous changes in weather patterns as air masses move, mix, and create variations in temperature, pressure, and humidity.
+                      <strong>Standard oxygen (O₂) molecules:</strong> Have two unpaired electrons giving them paramagnetic properties.
                     </p>
                     
                     <p className="mb-2">
-                      <strong>Solar Influence:</strong> The Sun is the primary driver of weather patterns on Earth. Solar radiation heats the Earth unevenly due to its curvature and axial tilt, leading to temperature gradients across different regions. This differential heating causes air to rise, creating low-pressure areas, and air to sink, forming high-pressure areas, which influence the movement of air masses and weather patterns.
+                      <strong>In BEC state:</strong> Oxygen would need to be cooled to extremely low temperatures (near absolute zero). At these temperatures, the quantum mechanical properties dominate and all particles occupy the lowest quantum state.
+                    </p>
+                    
+                    <p className="mb-2">
+                      <strong>Quantum effects:</strong> The magnetic behavior in a BEC becomes governed by quantum statistics rather than classical paramagnetism.
                     </p>
                   </div>
                   

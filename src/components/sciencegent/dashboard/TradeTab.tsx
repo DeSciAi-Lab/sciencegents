@@ -13,33 +13,22 @@ const TradeTab: React.FC<TradeTabProps> = ({ address, scienceGentData }) => {
   const isMigrated = scienceGentData?.is_migrated || false;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-0">
       {/* Trading Chart */}
-      <TradingViewChart 
-        tokenAddress={address}
-        tokenSymbol={scienceGentData?.symbol || "TOKEN"}
-        isMigrated={isMigrated}
-      />
+      <div className="p-4">
+        <TradingViewChart 
+          tokenAddress={address}
+          tokenSymbol={scienceGentData?.symbol || "TOKEN"}
+          isMigrated={isMigrated}
+        />
+      </div>
       
-      {/* Swap Interface */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Trade {scienceGentData?.symbol || "Tokens"}</CardTitle>
-          {isMigrated && (
-            <CardDescription>
-              This token has been migrated to Uniswap and trading is now available on the external DEX.
-            </CardDescription>
-          )}
-        </CardHeader>
-        <CardContent>
-          <TokenSwapInterface 
-            tokenAddress={address}
-            tokenSymbol={scienceGentData?.symbol || "Token"}
-            isMigrated={isMigrated}
-            uniswapPair={scienceGentData?.uniswap_pair}
-          />
-        </CardContent>
-      </Card>
+      <div className="p-4 pt-0">
+        {/* Tradebook table would go here */}
+        <div className="h-48 border rounded-lg flex items-center justify-center bg-gray-50">
+          <p className="text-gray-500">Trade history will appear here</p>
+        </div>
+      </div>
     </div>
   );
 };
