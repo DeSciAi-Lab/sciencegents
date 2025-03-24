@@ -9,7 +9,7 @@ import { contractConfig, factoryABI } from '@/utils/contractConfig';
 import { refreshCapabilities } from '@/data/capabilities';
 import { upsertCapabilityToSupabase } from '@/services/capability';
 
-// Initial form data
+// Initial form data with social links arrays
 const initialFormData = {
   name: '',
   id: '',
@@ -17,17 +17,11 @@ const initialFormData = {
   description: '',
   fee: '',
   creatorAddress: '',
-  twitter: '',
-  telegram: '',
-  github: '',
-  website: '',
+  socialLinks: [] as {type: string, url: string}[],
   developerName: '',
   developerEmail: '',
   bio: '',
-  developerTwitter: '',
-  developerTelegram: '',
-  developerGithub: '',
-  developerWebsite: ''
+  developerSocialLinks: [] as {type: string, url: string}[]
 };
 
 export const wizardSteps = [
@@ -42,19 +36,24 @@ interface CapabilityWizardContextType {
   formData: typeof initialFormData;
   documentation: File | null;
   integrationGuide: File | null;
-  additionalFiles: File | null;
+  additionalFiles: File[] | null;
   profileImage: File | null;
   isSubmitting: boolean;
   handleInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
   handleSelectChange: (name: string, value: string) => void;
   setDocumentation: React.Dispatch<React.SetStateAction<File | null>>;
   setIntegrationGuide: React.Dispatch<React.SetStateAction<File | null>>;
-  setAdditionalFiles: React.Dispatch<React.SetStateAction<File | null>>;
+  setAdditionalFiles: React.Dispatch<React.SetStateAction<File[] | null>>;
   setProfileImage: React.Dispatch<React.SetStateAction<File | null>>;
   nextStep: () => void;
   prevStep: () => void;
   submitCapability: () => Promise<void>;
   canProceed: boolean;
+  addSocialLink: (type: 'socialLinks' | 'developerSocialLinks') => void;
+  removeSocialLink: (type: 'socialLinks' | 'developerSocialLinks', index: number) => void;
+  updateSocialLink: (type: 'socialLinks' | 'developerSocialLinks', index: number, field: string, value: string) => void;
+  addFile: (file: File) => void;
+  removeFile: (index: number) => void;
 }
 
 const CapabilityWizardContext = createContext<CapabilityWizardContextType | undefined>(undefined);
@@ -66,7 +65,7 @@ export const CapabilityWizardProvider: React.FC<{children: React.ReactNode}> = (
   const [formData, setFormData] = useState<typeof initialFormData>(initialFormData);
   const [documentation, setDocumentation] = useState<File | null>(null);
   const [integrationGuide, setIntegrationGuide] = useState<File | null>(null);
-  const [additionalFiles, setAdditionalFiles] = useState<File | null>(null);
+  const [additionalFiles, setAdditionalFiles] = useState<File[] | null>(null);
   const [profileImage, setProfileImage] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -140,6 +139,55 @@ export const CapabilityWizardProvider: React.FC<{children: React.ReactNode}> = (
     }
   };
 
+  const addSocialLink = (type: 'socialLinks' | 'developerSocialLinks') => {
+    setFormData(prev => ({
+      ...prev,
+      [type]: [...prev[type], { type: '', url: '' }]
+    }));
+  };
+
+  const removeSocialLink = (type: 'socialLinks' | 'developerSocialLinks', index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      [type]: prev[type].filter((_, i) => i !== index)
+    }));
+  };
+
+  const updateSocialLink = (type: 'socialLinks' | 'developerSocialLinks', index: number, field: string, value: string) => {
+    setFormData(prev => {
+      const newLinks = [...prev[type]];
+      newLinks[index] = { ...newLinks[index], [field]: value };
+      return {
+        ...prev,
+        [type]: newLinks
+      };
+    });
+  };
+
+  const addFile = (file: File) => {
+    setAdditionalFiles(prev => {
+      const currentFiles = prev || [];
+      if (currentFiles.length >= 5) {
+        toast({
+          title: "Maximum files reached",
+          description: "You can only upload up to 5 additional files.",
+          variant: "destructive"
+        });
+        return currentFiles;
+      }
+      return [...currentFiles, file];
+    });
+  };
+
+  const removeFile = (index: number) => {
+    setAdditionalFiles(prev => {
+      if (!prev) return null;
+      const newFiles = [...prev];
+      newFiles.splice(index, 1);
+      return newFiles.length > 0 ? newFiles : null;
+    });
+  };
+
   const submitCapability = async () => {
     try {
       setIsSubmitting(true);
@@ -194,7 +242,14 @@ export const CapabilityWizardProvider: React.FC<{children: React.ReactNode}> = (
           rating: 0,
           revenue: 0
         },
-        features: []
+        features: [],
+        socialLinks: formData.socialLinks,
+        developerInfo: {
+          name: formData.developerName,
+          email: formData.developerEmail,
+          bio: formData.bio,
+          socialLinks: formData.developerSocialLinks
+        }
       };
       
       // Add to Supabase directly to avoid waiting for sync
@@ -245,7 +300,12 @@ export const CapabilityWizardProvider: React.FC<{children: React.ReactNode}> = (
       nextStep,
       prevStep,
       submitCapability,
-      canProceed
+      canProceed,
+      addSocialLink,
+      removeSocialLink,
+      updateSocialLink,
+      addFile,
+      removeFile
     }}>
       {children}
     </CapabilityWizardContext.Provider>

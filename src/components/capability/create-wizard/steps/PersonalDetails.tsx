@@ -2,12 +2,28 @@
 import React from 'react';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Info, Plus, HelpCircle } from 'lucide-react';
+import { Info, Plus, HelpCircle, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCapabilityWizard } from '../CapabilityWizardContext';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+
+const socialTypes = [
+  { value: "twitter", label: "Twitter" },
+  { value: "telegram", label: "Telegram" },
+  { value: "github", label: "Github" },
+  { value: "website", label: "Website" }
+];
 
 const PersonalDetails: React.FC = () => {
-  const { formData, handleInputChange, profileImage, setProfileImage } = useCapabilityWizard();
+  const { 
+    formData, 
+    handleInputChange, 
+    profileImage, 
+    setProfileImage,
+    addSocialLink,
+    removeSocialLink,
+    updateSocialLink
+  } = useCapabilityWizard();
 
   const handleProfileImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -72,7 +88,7 @@ const PersonalDetails: React.FC = () => {
               <div className="text-center py-4">
                 <Plus className="h-5 w-5 text-muted-foreground mb-2 mx-auto" />
                 <p className="text-sm text-muted-foreground mb-2">
-                  No file choosen (under 1MB)
+                  No file chosen (under 1MB)
                 </p>
                 <Button 
                   type="button" 
@@ -101,7 +117,7 @@ const PersonalDetails: React.FC = () => {
           <Input
             id="developerEmail"
             name="developerEmail"
-            placeholder="e.g. Molecular_vision_44"
+            placeholder="e.g. developer@example.com"
             value={formData.developerEmail}
             onChange={handleInputChange}
             type="email"
@@ -127,56 +143,69 @@ const PersonalDetails: React.FC = () => {
             Socials links of Developer (optional)
           </label>
           
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <label htmlFor="developerTwitter" className="block text-xs text-gray-500">
-                Twitter
-              </label>
-              <Input
-                id="developerTwitter"
-                name="developerTwitter"
-                placeholder="https://..."
-                value={formData.developerTwitter}
-                onChange={handleInputChange}
-              />
+          {formData.developerSocialLinks.length > 0 ? (
+            <div className="space-y-3">
+              {formData.developerSocialLinks.map((social, index) => (
+                <div key={index} className="flex items-center gap-2">
+                  <Select
+                    value={social.type}
+                    onValueChange={(value) => updateSocialLink('developerSocialLinks', index, 'type', value)}
+                  >
+                    <SelectTrigger className="w-1/3">
+                      <SelectValue placeholder="Select type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {socialTypes.map((type) => (
+                        <SelectItem key={type.value} value={type.value}>
+                          {type.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Input
+                    placeholder="https://..."
+                    value={social.url}
+                    onChange={(e) => updateSocialLink('developerSocialLinks', index, 'url', e.target.value)}
+                    className="flex-1"
+                  />
+                  <Button 
+                    variant="ghost" 
+                    size="icon"
+                    onClick={() => removeSocialLink('developerSocialLinks', index)}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
             </div>
-            <div className="space-y-2">
-              <label htmlFor="developerTelegram" className="block text-xs text-gray-500">
-                Telegram
-              </label>
-              <Input
-                id="developerTelegram"
-                name="developerTelegram"
-                placeholder="https://..."
-                value={formData.developerTelegram}
-                onChange={handleInputChange}
-              />
+          ) : (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 opacity-50">
+              <div className="space-y-2">
+                <label className="block text-xs text-gray-500">
+                  Twitter
+                </label>
+                <Input placeholder="https://..." disabled />
+              </div>
+              <div className="space-y-2">
+                <label className="block text-xs text-gray-500">
+                  Telegram
+                </label>
+                <Input placeholder="https://..." disabled />
+              </div>
+              <div className="space-y-2">
+                <label className="block text-xs text-gray-500">
+                  Github
+                </label>
+                <Input placeholder="https://..." disabled />
+              </div>
+              <div className="space-y-2">
+                <label className="block text-xs text-gray-500">
+                  Website
+                </label>
+                <Input placeholder="https://..." disabled />
+              </div>
             </div>
-            <div className="space-y-2">
-              <label htmlFor="developerGithub" className="block text-xs text-gray-500">
-                Github
-              </label>
-              <Input
-                id="developerGithub"
-                name="developerGithub"
-                placeholder="https://..."
-                value={formData.developerGithub}
-                onChange={handleInputChange}
-              />
-            </div>
-            <div className="space-y-2">
-              <label htmlFor="developerWebsite" className="block text-xs text-gray-500">
-                Website
-              </label>
-              <Input
-                id="developerWebsite"
-                name="developerWebsite"
-                placeholder="https://..."
-                value={formData.developerWebsite}
-                onChange={handleInputChange}
-              />
-            </div>
-          </div>
+          )}
         </div>
         
         <div className="flex justify-center pt-4">
@@ -184,9 +213,10 @@ const PersonalDetails: React.FC = () => {
             variant="outline" 
             size="sm"
             className="flex items-center"
+            onClick={() => addSocialLink('developerSocialLinks')}
           >
             <Plus className="h-4 w-4 mr-1" />
-            Add more
+            Add social link
           </Button>
         </div>
       </div>

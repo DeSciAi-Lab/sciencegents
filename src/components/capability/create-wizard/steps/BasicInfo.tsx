@@ -2,7 +2,7 @@
 import React from 'react';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Info, Plus, HelpCircle } from 'lucide-react';
+import { Info, Plus, HelpCircle, X } from 'lucide-react';
 import { useCapabilityWizard } from '../CapabilityWizardContext';
 import { Button } from '@/components/ui/button';
 import {
@@ -23,8 +23,30 @@ const domains = [
   "Genomics"
 ];
 
+const socialTypes = [
+  { value: "twitter", label: "Twitter" },
+  { value: "telegram", label: "Telegram" },
+  { value: "github", label: "Github" },
+  { value: "website", label: "Website" }
+];
+
 const BasicInfo: React.FC = () => {
-  const { formData, handleInputChange, handleSelectChange } = useCapabilityWizard();
+  const { 
+    formData, 
+    handleInputChange, 
+    handleSelectChange, 
+    profileImage, 
+    setProfileImage,
+    addSocialLink,
+    removeSocialLink,
+    updateSocialLink
+  } = useCapabilityWizard();
+
+  const handleProfileImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setProfileImage(e.target.files[0]);
+    }
+  };
 
   return (
     <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
@@ -96,15 +118,47 @@ const BasicInfo: React.FC = () => {
           </div>
           
           <div className="space-y-2">
-            <label htmlFor="profilePicture" className="block text-sm font-medium">
+            <label htmlFor="profileImage" className="block text-sm font-medium">
               Display Picture for capability (optional)
             </label>
             <div className="border border-dashed border-gray-300 rounded-md p-4 flex flex-col items-center justify-center bg-gray-50">
-              <div className="text-center py-4">
-                <Plus className="h-5 w-5 text-muted-foreground mb-2 mx-auto" />
-                <p className="text-sm text-muted-foreground mb-2">No file choosen (under 1MB)</p>
-                <Button variant="outline" size="sm">Select File</Button>
-              </div>
+              {profileImage ? (
+                <div className="flex items-center gap-2 text-sm w-full">
+                  <img
+                    src={URL.createObjectURL(profileImage)}
+                    alt="Profile"
+                    className="h-10 w-10 object-cover rounded-md"
+                  />
+                  <span>{profileImage.name}</span>
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    className="ml-auto"
+                    onClick={() => setProfileImage(null)}
+                  >
+                    Remove
+                  </Button>
+                </div>
+              ) : (
+                <div className="text-center py-4">
+                  <Plus className="h-5 w-5 text-muted-foreground mb-2 mx-auto" />
+                  <p className="text-sm text-muted-foreground mb-2">No file chosen (under 1MB)</p>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => document.getElementById('profileImage')?.click()}
+                  >
+                    Select File
+                  </Button>
+                  <input
+                    id="profileImage"
+                    type="file"
+                    accept="image/png,image/jpeg,image/jpg"
+                    className="hidden"
+                    onChange={handleProfileImageChange}
+                  />
+                </div>
+              )}
             </div>
           </div>
           
@@ -130,7 +184,7 @@ const BasicInfo: React.FC = () => {
           
           <div className="space-y-2">
             <label htmlFor="creatorAddress" className="block text-sm font-medium">
-              Fee recieving address
+              Fee receiving address
             </label>
             <Input
               id="creatorAddress"
@@ -147,59 +201,72 @@ const BasicInfo: React.FC = () => {
          
           <div className="space-y-2">
             <label className="block text-sm font-medium">
-              Socials links for capability (optional)
+              Social links for capability (optional)
             </label>
             
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <label htmlFor="twitter" className="block text-xs text-gray-500">
-                  Twitter
-                </label>
-                <Input
-                  id="twitter"
-                  name="twitter"
-                  placeholder="https://..."
-                  value={formData.twitter}
-                  onChange={handleInputChange}
-                />
+            {formData.socialLinks.length > 0 ? (
+              <div className="space-y-3">
+                {formData.socialLinks.map((social, index) => (
+                  <div key={index} className="flex items-center gap-2">
+                    <Select
+                      value={social.type}
+                      onValueChange={(value) => updateSocialLink('socialLinks', index, 'type', value)}
+                    >
+                      <SelectTrigger className="w-1/3">
+                        <SelectValue placeholder="Select type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {socialTypes.map((type) => (
+                          <SelectItem key={type.value} value={type.value}>
+                            {type.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Input
+                      placeholder="https://..."
+                      value={social.url}
+                      onChange={(e) => updateSocialLink('socialLinks', index, 'url', e.target.value)}
+                      className="flex-1"
+                    />
+                    <Button 
+                      variant="ghost" 
+                      size="icon"
+                      onClick={() => removeSocialLink('socialLinks', index)}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
               </div>
-              <div className="space-y-2">
-                <label htmlFor="telegram" className="block text-xs text-gray-500">
-                  Telegram
-                </label>
-                <Input
-                  id="telegram"
-                  name="telegram"
-                  placeholder="https://..."
-                  value={formData.telegram}
-                  onChange={handleInputChange}
-                />
+            ) : (
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 opacity-50">
+                <div className="space-y-2">
+                  <label className="block text-xs text-gray-500">
+                    Twitter
+                  </label>
+                  <Input placeholder="https://..." disabled />
+                </div>
+                <div className="space-y-2">
+                  <label className="block text-xs text-gray-500">
+                    Telegram
+                  </label>
+                  <Input placeholder="https://..." disabled />
+                </div>
+                <div className="space-y-2">
+                  <label className="block text-xs text-gray-500">
+                    Github
+                  </label>
+                  <Input placeholder="https://..." disabled />
+                </div>
+                <div className="space-y-2">
+                  <label className="block text-xs text-gray-500">
+                    Website
+                  </label>
+                  <Input placeholder="https://..." disabled />
+                </div>
               </div>
-              <div className="space-y-2">
-                <label htmlFor="github" className="block text-xs text-gray-500">
-                  Github
-                </label>
-                <Input
-                  id="github"
-                  name="github"
-                  placeholder="https://..."
-                  value={formData.github}
-                  onChange={handleInputChange}
-                />
-              </div>
-              <div className="space-y-2">
-                <label htmlFor="website" className="block text-xs text-gray-500">
-                  Website
-                </label>
-                <Input
-                  id="website"
-                  name="website"
-                  placeholder="https://..."
-                  value={formData.website}
-                  onChange={handleInputChange}
-                />
-              </div>
-            </div>
+            )}
           </div>
           
           <div className="flex justify-center pt-4">
@@ -207,9 +274,10 @@ const BasicInfo: React.FC = () => {
               variant="outline" 
               size="sm"
               className="flex items-center"
+              onClick={() => addSocialLink('socialLinks')}
             >
               <Plus className="h-4 w-4 mr-1" />
-              Add more
+              Add social link
             </Button>
           </div>
         </div>
