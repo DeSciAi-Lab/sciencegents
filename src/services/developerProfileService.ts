@@ -10,14 +10,17 @@ import { Json } from "@/integrations/supabase/types";
  */
 export const fetchDeveloperProfile = async (walletAddress: string): Promise<DeveloperProfile | null> => {
   try {
-    if (!walletAddress) return null;
+    if (!walletAddress) {
+      console.log("No wallet address provided");
+      return null;
+    }
     
     console.log("Fetching profile for wallet:", walletAddress);
     
     const { data, error } = await supabase
       .from('developer_profiles')
       .select('*')
-      .eq('wallet_address', walletAddress)
+      .eq('wallet_address', walletAddress.toLowerCase())
       .maybeSingle();
     
     if (error) {
@@ -73,10 +76,14 @@ export const fetchDeveloperProfile = async (walletAddress: string): Promise<Deve
 export const upsertDeveloperProfile = async (profile: DeveloperProfile): Promise<DeveloperProfile | null> => {
   try {
     if (!profile.wallet_address) {
+      console.error("Wallet address is required");
       throw new Error("Wallet address is required");
     }
     
-    console.log("Starting profile upsert operation");
+    console.log("Starting profile upsert operation for wallet:", profile.wallet_address);
+    
+    // Always store wallet address in lowercase to ensure consistent lookups
+    const normalizedWalletAddress = profile.wallet_address.toLowerCase();
     
     // Prepare the social links for Supabase
     const socialLinksForSupabase = profile.additional_social_links 
@@ -88,7 +95,7 @@ export const upsertDeveloperProfile = async (profile: DeveloperProfile): Promise
     
     // Create a Supabase-compatible object
     const supabaseData = {
-      wallet_address: profile.wallet_address,
+      wallet_address: normalizedWalletAddress,
       developer_name: profile.developer_name || null,
       developer_email: profile.developer_email || null,
       bio: profile.bio || null,
@@ -97,31 +104,58 @@ export const upsertDeveloperProfile = async (profile: DeveloperProfile): Promise
       developer_telegram: profile.developer_telegram || null,
       developer_github: profile.developer_github || null,
       developer_website: profile.developer_website || null,
-      additional_social_links: socialLinksForSupabase as unknown as Json
+      additional_social_links: socialLinksForSupabase as unknown as Json,
+      updated_at: new Date().toISOString() // Ensure updated_at is set
     };
     
     // Debug to see what we're sending to Supabase
     console.log("Upserting profile with data:", supabaseData);
     
-    const { data, error } = await supabase
+    // Check if profile exists first
+    const { data: existingProfile, error: checkError } = await supabase
       .from('developer_profiles')
-      .upsert(supabaseData)
-      .select();
+      .select('wallet_address')
+      .eq('wallet_address', normalizedWalletAddress)
+      .maybeSingle();
     
-    if (error) {
-      console.error("Error upserting developer profile:", error);
-      throw error;
+    if (checkError) {
+      console.error("Error checking if profile exists:", checkError);
+      throw checkError;
     }
     
-    if (!data || data.length === 0) {
+    let result;
+    
+    if (existingProfile) {
+      // Update existing profile
+      console.log("Updating existing profile for wallet:", normalizedWalletAddress);
+      result = await supabase
+        .from('developer_profiles')
+        .update(supabaseData)
+        .eq('wallet_address', normalizedWalletAddress)
+        .select();
+    } else {
+      // Insert new profile
+      console.log("Creating new profile for wallet:", normalizedWalletAddress);
+      result = await supabase
+        .from('developer_profiles')
+        .insert(supabaseData)
+        .select();
+    }
+    
+    if (result.error) {
+      console.error("Error upserting developer profile:", result.error);
+      throw result.error;
+    }
+    
+    if (!result.data || result.data.length === 0) {
       console.error("No data returned after upsert");
       throw new Error("No data returned after upsert");
     }
     
-    console.log("Upsert response from Supabase:", data);
+    console.log("Upsert response from Supabase:", result.data);
     
     // Transform back to typed DeveloperProfile
-    const transformedData = data[0];
+    const transformedData = result.data[0];
     const socialLinks: SocialLink[] = transformedData.additional_social_links && 
       typeof transformedData.additional_social_links === 'object' && 
       Array.isArray(transformedData.additional_social_links) 
@@ -164,7 +198,10 @@ export const uploadProfilePicture = async (file: File, walletAddress: string): P
       return null;
     }
     
-    console.log("Starting profile picture upload for wallet:", walletAddress);
+    // Always store wallet address in lowercase to ensure consistent lookups
+    const normalizedWalletAddress = walletAddress.toLowerCase();
+    
+    console.log("Starting profile picture upload for wallet:", normalizedWalletAddress);
     
     // Check if sciencegents bucket exists and create it if it doesn't
     try {
@@ -194,7 +231,7 @@ export const uploadProfilePicture = async (file: File, walletAddress: string): P
     
     // Upload the file
     const fileExt = file.name.split('.').pop();
-    const fileName = `${walletAddress}_${Date.now()}.${fileExt}`;
+    const fileName = `${normalizedWalletAddress}_${Date.now()}.${fileExt}`;
     const filePath = `developer_profiles/${fileName}`;
     
     console.log(`Uploading file to ${filePath}`);

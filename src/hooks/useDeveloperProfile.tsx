@@ -82,28 +82,14 @@ export function useDeveloperProfile() {
       if (updated) {
         console.log("Profile updated successfully:", updated);
         setProfile(updated);
-        toast({
-          title: "Success",
-          description: "Profile updated successfully",
-        });
         return updated;
       }
       
       console.error("No data returned from upsertDeveloperProfile");
-      toast({
-        title: "Error",
-        description: "Failed to update profile. No data returned.",
-        variant: "destructive"
-      });
       return null;
     } catch (err) {
       console.error('Error updating developer profile:', err);
-      toast({
-        title: "Error",
-        description: err instanceof Error ? err.message : "Failed to update profile. Please try again.",
-        variant: "destructive"
-      });
-      return null;
+      throw err;
     } finally {
       setIsSaving(false);
     }

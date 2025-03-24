@@ -9,19 +9,24 @@ import { useDeveloperProfile } from '@/hooks/useDeveloperProfile';
 import { uploadProfilePicture } from '@/services/developerProfileService';
 import { toast } from '@/components/ui/use-toast';
 import { useAccount } from 'wagmi';
+import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
+import { useForm } from "react-hook-form";
 
 const DeveloperProfileTab: React.FC = () => {
   const { address } = useAccount();
   const { profile, isLoading, updateProfile, refreshProfile } = useDeveloperProfile();
   
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    bio: '',
-    twitter: '',
-    telegram: '',
-    github: '',
-    website: '',
+  // Setup form with react-hook-form
+  const form = useForm({
+    defaultValues: {
+      name: '',
+      email: '',
+      bio: '',
+      twitter: '',
+      telegram: '',
+      github: '',
+      website: '',
+    }
   });
   
   const [profilePicture, setProfilePicture] = useState<File | null>(null);
@@ -33,7 +38,7 @@ const DeveloperProfileTab: React.FC = () => {
   useEffect(() => {
     if (profile) {
       console.log("Loading profile data into form:", profile);
-      setFormData({
+      form.reset({
         name: profile.developer_name || '',
         email: profile.developer_email || '',
         bio: profile.bio || '',
@@ -47,12 +52,7 @@ const DeveloperProfileTab: React.FC = () => {
         setPictureUrl(profile.profile_pic);
       }
     }
-  }, [profile]);
-  
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-  };
+  }, [profile, form]);
   
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -65,9 +65,7 @@ const DeveloperProfileTab: React.FC = () => {
     }
   };
   
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault(); // This ensures the form doesn't redirect
-    
+  const onSubmit = async (formData: any) => {
     if (!address) {
       toast({
         title: "Error",
@@ -177,144 +175,173 @@ const DeveloperProfileTab: React.FC = () => {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <form className="space-y-6" onSubmit={handleSubmit}>
-          <div className="flex flex-col md:flex-row gap-6">
-            <div className="flex-1 space-y-6">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Display Name</label>
-                <Input 
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <div className="flex flex-col md:flex-row gap-6">
+              <div className="flex-1 space-y-6">
+                <FormField
+                  control={form.control}
                   name="name"
-                  value={formData.name}
-                  onChange={handleInputChange}
-                  placeholder="Your name or pseudonym"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Display Name</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="Your name or pseudonym" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
-              </div>
-              
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Email (not publicly visible)</label>
-                <Input 
+                
+                <FormField
+                  control={form.control}
                   name="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  placeholder="your@email.com"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email (not publicly visible)</FormLabel>
+                      <FormControl>
+                        <Input {...field} type="email" placeholder="your@email.com" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
-              </div>
-              
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Bio</label>
-                <Input 
+                
+                <FormField
+                  control={form.control}
                   name="bio"
-                  value={formData.bio}
-                  onChange={handleInputChange}
-                  placeholder="Brief description about yourself as a developer"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Bio</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="Brief description about yourself as a developer" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="twitter"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Twitter</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="https://twitter.com/username" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="telegram"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Telegram</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="https://t.me/username" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="github"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>GitHub</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="https://github.com/username" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="website"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Website</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="https://yourdomain.com" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Twitter</label>
-                  <Input 
-                    name="twitter"
-                    value={formData.twitter}
-                    onChange={handleInputChange}
-                    placeholder="https://twitter.com/username"
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Telegram</label>
-                  <Input 
-                    name="telegram"
-                    value={formData.telegram}
-                    onChange={handleInputChange}
-                    placeholder="https://t.me/username"
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">GitHub</label>
-                  <Input 
-                    name="github"
-                    value={formData.github}
-                    onChange={handleInputChange}
-                    placeholder="https://github.com/username"
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Website</label>
-                  <Input 
-                    name="website"
-                    value={formData.website}
-                    onChange={handleInputChange}
-                    placeholder="https://yourdomain.com"
-                  />
+                  <FormLabel>Profile Picture</FormLabel>
+                  <div className="flex flex-col items-center gap-4">
+                    <Avatar className="h-32 w-32">
+                      {pictureUrl ? (
+                        <AvatarImage src={pictureUrl} alt="Profile" />
+                      ) : null}
+                      <AvatarFallback className="text-2xl">
+                        {form.getValues("name") ? form.getValues("name")[0]?.toUpperCase() : address?.substring(2, 4).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      onClick={() => document.getElementById('profileUpload')?.click()}
+                      disabled={uploadingImage}
+                    >
+                      {uploadingImage ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Uploading...
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="mr-2 h-4 w-4" />
+                          Upload Image
+                        </>
+                      )}
+                    </Button>
+                    <input
+                      id="profileUpload"
+                      type="file"
+                      hidden
+                      accept="image/*"
+                      onChange={handleFileChange}
+                      disabled={uploadingImage}
+                    />
+                    {profilePicture && (
+                      <p className="text-xs text-muted-foreground">
+                        Selected: {profilePicture.name}
+                      </p>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
             
-            <div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Profile Picture</label>
-                <div className="flex flex-col items-center gap-4">
-                  <Avatar className="h-32 w-32">
-                    {pictureUrl ? (
-                      <AvatarImage src={pictureUrl} alt="Profile" />
-                    ) : null}
-                    <AvatarFallback className="text-2xl">
-                      {formData.name ? formData.name[0]?.toUpperCase() : address?.substring(2, 4).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    onClick={() => document.getElementById('profileUpload')?.click()}
-                    disabled={uploadingImage}
-                  >
-                    {uploadingImage ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Uploading...
-                      </>
-                    ) : (
-                      <>
-                        <Upload className="mr-2 h-4 w-4" />
-                        Upload Image
-                      </>
-                    )}
-                  </Button>
-                  <input
-                    id="profileUpload"
-                    type="file"
-                    hidden
-                    accept="image/*"
-                    onChange={handleFileChange}
-                    disabled={uploadingImage}
-                  />
-                  {profilePicture && (
-                    <p className="text-xs text-muted-foreground">
-                      Selected: {profilePicture.name}
-                    </p>
-                  )}
-                </div>
-              </div>
+            <div className="flex justify-end">
+              <Button type="submit" disabled={isSaving || uploadingImage}>
+                {isSaving ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  'Save Profile'
+                )}
+              </Button>
             </div>
-          </div>
-          
-          <div className="flex justify-end">
-            <Button type="submit" disabled={isSaving || uploadingImage}>
-              {isSaving ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                'Save Profile'
-              )}
-            </Button>
-          </div>
-        </form>
+          </form>
+        </Form>
       </CardContent>
     </Card>
   );

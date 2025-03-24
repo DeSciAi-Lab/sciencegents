@@ -1,109 +1,128 @@
 
-import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
-import { ExternalLink, Twitter, Github, Globe, MessageCircle } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Twitter, Github, Globe, MessageSquare } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { fetchDeveloperProfile } from '@/services/developerProfileService';
+import { DeveloperProfile } from '@/types/profile';
 
 interface DeveloperInfoProps {
-  scienceGent: any;
+  creatorAddress?: string;
+  developerName?: string;
+  developerEmail?: string;
+  bio?: string;
+  developerTwitter?: string;
+  developerGithub?: string;
+  developerWebsite?: string;
+  profilePic?: string;
 }
 
-const DeveloperInfo: React.FC<DeveloperInfoProps> = ({ scienceGent }) => {
-  if (!scienceGent) return null;
-  
-  // Check if developer info exists
-  const hasDeveloperInfo = scienceGent.developer_name || 
-                           scienceGent.developer_email || 
-                           scienceGent.bio || 
-                           scienceGent.developer_twitter || 
-                           scienceGent.developer_telegram || 
-                           scienceGent.developer_github || 
-                           scienceGent.developer_website;
-  
-  if (!hasDeveloperInfo) return null;
-  
-  // Get developer initials for avatar fallback
-  const getInitials = (name: string) => {
-    if (!name) return 'D';
-    return name
-      .split(' ')
-      .map(part => part[0])
-      .join('')
-      .toUpperCase()
-      .substring(0, 2);
-  };
-  
-  const developerName = scienceGent.developer_name || 'Developer';
+const DeveloperInfo: React.FC<DeveloperInfoProps> = ({
+  creatorAddress,
+  developerName,
+  developerEmail,
+  bio,
+  developerTwitter,
+  developerGithub,
+  developerWebsite,
+  profilePic
+}) => {
+  const [developerProfile, setDeveloperProfile] = useState<DeveloperProfile | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Helper to ensure URLs have protocol
-  const formatUrl = (url: string) => {
-    if (!url) return '';
-    if (url.startsWith('http://') || url.startsWith('https://')) {
-      return url;
+  useEffect(() => {
+    const loadDeveloperProfile = async () => {
+      if (!creatorAddress) return;
+      
+      setIsLoading(true);
+      try {
+        const profile = await fetchDeveloperProfile(creatorAddress);
+        if (profile) {
+          setDeveloperProfile(profile);
+        }
+      } catch (error) {
+        console.error("Error loading developer profile:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadDeveloperProfile();
+  }, [creatorAddress]);
+
+  // Use data from props or from the fetched profile
+  const displayName = developerProfile?.developer_name || developerName || 'Unknown Developer';
+  const displayBio = developerProfile?.bio || bio || 'No bio available';
+  const displayTwitter = developerProfile?.developer_twitter || developerTwitter;
+  const displayGithub = developerProfile?.developer_github || developerGithub;
+  const displayWebsite = developerProfile?.developer_website || developerWebsite;
+  const displayEmail = developerProfile?.developer_email || developerEmail;
+  const displayProfilePic = developerProfile?.profile_pic || profilePic;
+
+  // Generate initials for avatar fallback
+  const generateInitials = () => {
+    if (displayName && displayName !== 'Unknown Developer') {
+      return displayName.charAt(0).toUpperCase();
     }
-    return `https://${url}`;
+    return creatorAddress ? creatorAddress.substring(2, 4).toUpperCase() : 'UN';
   };
 
   return (
-    <Card className="overflow-hidden">
-      <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 pb-0">
-        <CardTitle className="text-lg">Developer Information</CardTitle>
+    <Card>
+      <CardHeader>
+        <CardTitle>Developer</CardTitle>
+        <CardDescription>About the creator of this ScienceGent</CardDescription>
       </CardHeader>
-      <CardContent className="pt-6">
-        <div className="flex flex-col items-center text-center mb-4">
-          <Avatar className="h-20 w-20 mb-3">
-            <AvatarImage src={scienceGent.profile_pic || ''} alt={developerName} />
-            <AvatarFallback className="bg-blue-100 text-blue-600 text-xl">
-              {getInitials(developerName)}
-            </AvatarFallback>
+      <CardContent>
+        <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
+          <Avatar className="h-16 w-16">
+            {displayProfilePic && <AvatarImage src={displayProfilePic} alt={displayName} />}
+            <AvatarFallback>{generateInitials()}</AvatarFallback>
           </Avatar>
-          <h3 className="font-medium text-lg">{developerName}</h3>
-          {scienceGent.developer_email && (
-            <a href={`mailto:${scienceGent.developer_email}`} className="text-sm text-blue-600 hover:underline">
-              {scienceGent.developer_email}
-            </a>
-          )}
-        </div>
-        
-        {scienceGent.bio && (
-          <div className="mt-4 text-sm text-gray-600">
-            <p>{scienceGent.bio}</p>
+          
+          <div className="space-y-2 flex-1">
+            <h3 className="text-lg font-medium">{displayName}</h3>
+            <p className="text-sm text-muted-foreground line-clamp-3">{displayBio}</p>
+            
+            <div className="flex gap-2 flex-wrap">
+              {displayEmail && (
+                <Button size="sm" variant="outline" asChild>
+                  <a href={`mailto:${displayEmail}`} target="_blank" rel="noopener noreferrer">
+                    <MessageSquare className="h-4 w-4 mr-1" />
+                    <span className="hidden md:inline">Email</span>
+                  </a>
+                </Button>
+              )}
+              
+              {displayTwitter && (
+                <Button size="sm" variant="outline" asChild>
+                  <a href={displayTwitter} target="_blank" rel="noopener noreferrer">
+                    <Twitter className="h-4 w-4 mr-1" />
+                    <span className="hidden md:inline">Twitter</span>
+                  </a>
+                </Button>
+              )}
+              
+              {displayGithub && (
+                <Button size="sm" variant="outline" asChild>
+                  <a href={displayGithub} target="_blank" rel="noopener noreferrer">
+                    <Github className="h-4 w-4 mr-1" />
+                    <span className="hidden md:inline">GitHub</span>
+                  </a>
+                </Button>
+              )}
+              
+              {displayWebsite && (
+                <Button size="sm" variant="outline" asChild>
+                  <a href={displayWebsite} target="_blank" rel="noopener noreferrer">
+                    <Globe className="h-4 w-4 mr-1" />
+                    <span className="hidden md:inline">Website</span>
+                  </a>
+                </Button>
+              )}
+            </div>
           </div>
-        )}
-        
-        <div className="flex justify-center gap-2 mt-4">
-          {scienceGent.developer_twitter && (
-            <Button size="icon" variant="outline" className="rounded-full" asChild>
-              <a href={formatUrl(scienceGent.developer_twitter)} target="_blank" rel="noopener noreferrer" aria-label="Twitter">
-                <Twitter size={16} />
-              </a>
-            </Button>
-          )}
-          
-          {scienceGent.developer_github && (
-            <Button size="icon" variant="outline" className="rounded-full" asChild>
-              <a href={formatUrl(scienceGent.developer_github)} target="_blank" rel="noopener noreferrer" aria-label="GitHub">
-                <Github size={16} />
-              </a>
-            </Button>
-          )}
-          
-          {scienceGent.developer_website && (
-            <Button size="icon" variant="outline" className="rounded-full" asChild>
-              <a href={formatUrl(scienceGent.developer_website)} target="_blank" rel="noopener noreferrer" aria-label="Website">
-                <Globe size={16} />
-              </a>
-            </Button>
-          )}
-          
-          {scienceGent.developer_telegram && (
-            <Button size="icon" variant="outline" className="rounded-full" asChild>
-              <a href={formatUrl(scienceGent.developer_telegram)} target="_blank" rel="noopener noreferrer" aria-label="Telegram">
-                <MessageCircle size={16} />
-              </a>
-            </Button>
-          )}
         </div>
       </CardContent>
     </Card>

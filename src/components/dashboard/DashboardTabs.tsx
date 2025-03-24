@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { User, Settings, Code, UserCircle } from 'lucide-react';
 import MyCreatedScienceGents from './MyCreatedScienceGents';
@@ -7,10 +7,29 @@ import MyCreatedCapabilities from './MyCreatedCapabilities';
 import MyInvestmentsTab from './MyInvestmentsTab';
 import SettingsTab from './SettingsTab';
 import DeveloperProfileTab from './DeveloperProfileTab';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 
 const DashboardTabs: React.FC = () => {
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState<string>('investments');
+
+  // Initialize tab from URL parameter or default to 'investments'
+  useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam && ['investments', 'sciencegents', 'capabilities', 'profile', 'settings'].includes(tabParam)) {
+      setActiveTab(tabParam);
+    }
+  }, [searchParams]);
+
+  // Update URL when tab changes
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    navigate(`/dashboard?tab=${value}`, { replace: true });
+  };
+
   return (
-    <Tabs defaultValue="investments" className="w-full">
+    <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
       <TabsList className="grid grid-cols-5 mb-8">
         <TabsTrigger value="investments" className="flex items-center gap-2">
           <User className="h-4 w-4" />
