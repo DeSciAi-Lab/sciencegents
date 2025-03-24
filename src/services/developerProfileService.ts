@@ -12,6 +12,8 @@ export const fetchDeveloperProfile = async (walletAddress: string): Promise<Deve
   try {
     if (!walletAddress) return null;
     
+    console.log("Fetching profile for wallet:", walletAddress);
+    
     const { data, error } = await supabase
       .from('developer_profiles')
       .select('*')
@@ -27,6 +29,8 @@ export const fetchDeveloperProfile = async (walletAddress: string): Promise<Deve
       console.error("Error fetching developer profile:", error);
       throw error;
     }
+    
+    console.log("Raw data from Supabase:", data);
     
     // Transform Supabase JSON to typed SocialLink array
     const socialLinks: SocialLink[] = Array.isArray(data.additional_social_links) 
@@ -51,6 +55,7 @@ export const fetchDeveloperProfile = async (walletAddress: string): Promise<Deve
       updated_at: data.updated_at
     };
     
+    console.log("Transformed profile:", transformedData);
     return transformedData;
   } catch (error) {
     console.error("Error in fetchDeveloperProfile:", error);
@@ -72,8 +77,7 @@ export const upsertDeveloperProfile = async (profile: DeveloperProfile): Promise
     // Create a deep copy of the profile to avoid modifying the original
     const profileCopy = { ...profile };
     
-    // For TypeScript strict typing, we need to properly cast the additional_social_links
-    // Convert the SocialLink[] to a format Supabase can accept
+    // Convert SocialLink[] to a format Supabase can accept
     const supabaseData = {
       wallet_address: profileCopy.wallet_address,
       developer_name: profileCopy.developer_name || null,
@@ -84,8 +88,7 @@ export const upsertDeveloperProfile = async (profile: DeveloperProfile): Promise
       developer_telegram: profileCopy.developer_telegram || null,
       developer_github: profileCopy.developer_github || null,
       developer_website: profileCopy.developer_website || null,
-      // Cast the SocialLink[] to Json for Supabase
-      additional_social_links: (profileCopy.additional_social_links || []) as unknown as Json
+      additional_social_links: profileCopy.additional_social_links as unknown as Json
     };
     
     // Debug to see what we're sending to Supabase
@@ -104,6 +107,8 @@ export const upsertDeveloperProfile = async (profile: DeveloperProfile): Promise
     if (!data || data.length === 0) {
       throw new Error("No data returned after upsert");
     }
+    
+    console.log("Upsert response from Supabase:", data);
     
     // Transform back to typed DeveloperProfile
     const transformedData = data[0];
@@ -130,7 +135,7 @@ export const upsertDeveloperProfile = async (profile: DeveloperProfile): Promise
     };
   } catch (error) {
     console.error("Error in upsertDeveloperProfile:", error);
-    return null;
+    throw error; // Change to throw the error to better handle it in the hook
   }
 };
 
@@ -144,9 +149,25 @@ export const uploadProfilePicture = async (file: File, walletAddress: string): P
   try {
     if (!file || !walletAddress) return null;
     
+    // Check if sciencegents bucket exists, if not, create it
+    const { data: buckets } = await supabase.storage.listBuckets();
+    const sciencegentsBucketExists = buckets?.some(bucket => bucket.name === 'sciencegents');
+    
+    if (!sciencegentsBucketExists) {
+      console.log("Creating sciencegents bucket");
+      // This will require admin privileges, might fail for regular users
+      const { error: createBucketError } = await supabase.storage.createBucket('sciencegents', { public: true });
+      if (createBucketError) {
+        console.error("Error creating bucket:", createBucketError);
+        // Continue anyway, bucket might exist despite the error
+      }
+    }
+    
     const fileExt = file.name.split('.').pop();
     const fileName = `${walletAddress}_${Date.now()}.${fileExt}`;
     const filePath = `developer_profiles/${fileName}`;
+    
+    console.log(`Uploading file to ${filePath}`);
     
     const { error: uploadError } = await supabase.storage
       .from('sciencegents')
@@ -161,6 +182,7 @@ export const uploadProfilePicture = async (file: File, walletAddress: string): P
       .from('sciencegents')
       .getPublicUrl(filePath);
       
+    console.log("File uploaded, public URL:", urlData.publicUrl);
     return urlData.publicUrl;
   } catch (error) {
     console.error("Error in uploadProfilePicture:", error);

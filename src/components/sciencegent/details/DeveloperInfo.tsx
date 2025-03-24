@@ -66,7 +66,7 @@ const DeveloperInfo: React.FC<DeveloperInfoProps> = ({ scienceGent }) => {
         <div className="flex justify-center gap-2 mt-4">
           {scienceGent.developer_twitter && (
             <Button size="icon" variant="outline" className="rounded-full" asChild>
-              <a href={scienceGent.developer_twitter} target="_blank" rel="noopener noreferrer">
+              <a href={scienceGent.developer_twitter} target="_blank" rel="noopener noreferrer" aria-label="Twitter">
                 <Twitter size={16} />
               </a>
             </Button>
@@ -74,7 +74,7 @@ const DeveloperInfo: React.FC<DeveloperInfoProps> = ({ scienceGent }) => {
           
           {scienceGent.developer_github && (
             <Button size="icon" variant="outline" className="rounded-full" asChild>
-              <a href={scienceGent.developer_github} target="_blank" rel="noopener noreferrer">
+              <a href={scienceGent.developer_github} target="_blank" rel="noopener noreferrer" aria-label="GitHub">
                 <Github size={16} />
               </a>
             </Button>
@@ -82,7 +82,7 @@ const DeveloperInfo: React.FC<DeveloperInfoProps> = ({ scienceGent }) => {
           
           {scienceGent.developer_website && (
             <Button size="icon" variant="outline" className="rounded-full" asChild>
-              <a href={scienceGent.developer_website} target="_blank" rel="noopener noreferrer">
+              <a href={scienceGent.developer_website} target="_blank" rel="noopener noreferrer" aria-label="Website">
                 <Globe size={16} />
               </a>
             </Button>
@@ -90,7 +90,7 @@ const DeveloperInfo: React.FC<DeveloperInfoProps> = ({ scienceGent }) => {
           
           {scienceGent.developer_telegram && (
             <Button size="icon" variant="outline" className="rounded-full" asChild>
-              <a href={scienceGent.developer_telegram} target="_blank" rel="noopener noreferrer">
+              <a href={scienceGent.developer_telegram} target="_blank" rel="noopener noreferrer" aria-label="Telegram">
                 <MessageCircle size={16} />
               </a>
             </Button>

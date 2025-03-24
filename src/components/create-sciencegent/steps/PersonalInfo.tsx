@@ -14,7 +14,7 @@ interface PersonalInfoProps {
 }
 
 const PersonalInfo: React.FC<PersonalInfoProps> = ({ formData, handleInputChange }) => {
-  const { profile, isLoading, updateProfile } = useDeveloperProfile();
+  const { profile, isLoading, isSaving, updateProfile } = useDeveloperProfile();
   const { toast } = useToast();
   const [isAutoSaving, setIsAutoSaving] = useState(false);
   
@@ -28,7 +28,7 @@ const PersonalInfo: React.FC<PersonalInfoProps> = ({ formData, handleInputChange
         target: { name, value }
       } as React.ChangeEvent<HTMLInputElement>);
       
-      // Update all fields from the profile if they are empty
+      // Update all fields from the profile if they are empty or profile has newer data
       if (profile.developer_name && !formData.developerName) {
         handleInputChange(createChangeEvent('developerName', profile.developer_name));
       }
@@ -84,7 +84,7 @@ const PersonalInfo: React.FC<PersonalInfoProps> = ({ formData, handleInputChange
           
           if (hasChanges) {
             console.log("Auto-saving profile changes");
-            await updateProfile({
+            const updateResult = await updateProfile({
               developer_name: formData.developerName,
               developer_email: formData.developerEmail,
               bio: formData.bio,
@@ -94,7 +94,11 @@ const PersonalInfo: React.FC<PersonalInfoProps> = ({ formData, handleInputChange
               developer_website: formData.developerWebsite
             });
             
-            console.log("Auto-saved developer profile");
+            if (updateResult) {
+              console.log("Auto-saved developer profile");
+            } else {
+              console.error("Failed to auto-save profile");
+            }
           } else {
             console.log("No changes to save");
           }
@@ -104,6 +108,7 @@ const PersonalInfo: React.FC<PersonalInfoProps> = ({ formData, handleInputChange
       } catch (error) {
         console.error("Error auto-saving developer profile:", error);
         setIsAutoSaving(false);
+        // Don't show error toast during auto-save to avoid disrupting the user
       }
     }, 1500); // Debounce for 1.5 seconds
     
@@ -179,7 +184,7 @@ const PersonalInfo: React.FC<PersonalInfoProps> = ({ formData, handleInputChange
                 onChange={handleInputChange}
                 required
               />
-              {isAutoSaving && (
+              {(isAutoSaving || isSaving) && (
                 <p className="text-xs text-blue-500">Saving...</p>
               )}
             </div>

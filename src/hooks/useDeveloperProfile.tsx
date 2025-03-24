@@ -13,6 +13,7 @@ export function useDeveloperProfile() {
   const { address } = useAccount();
   const [profile, setProfile] = useState<DeveloperProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
   // Function to fetch the profile
@@ -54,6 +55,7 @@ export function useDeveloperProfile() {
       return null;
     }
 
+    setIsSaving(true);
     try {
       // Ensure that additional_social_links is always an array
       if (updatedProfile.additional_social_links === undefined && profile?.additional_social_links) {
@@ -94,6 +96,8 @@ export function useDeveloperProfile() {
         variant: "destructive"
       });
       return null;
+    } finally {
+      setIsSaving(false);
     }
   }, [address, profile]);
 
@@ -102,5 +106,5 @@ export function useDeveloperProfile() {
     return loadProfile();
   }, [loadProfile]);
 
-  return { profile, isLoading, error, updateProfile, refreshProfile };
+  return { profile, isLoading, isSaving, error, updateProfile, refreshProfile };
 }

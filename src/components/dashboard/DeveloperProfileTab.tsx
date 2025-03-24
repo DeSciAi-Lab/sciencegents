@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -11,10 +12,9 @@ import { DeveloperProfile, SocialLink } from '@/types/profile';
 import { useDeveloperProfile } from '@/hooks/useDeveloperProfile';
 
 const DeveloperProfileTab: React.FC = () => {
-  const { profile, isLoading, updateProfile, refreshProfile } = useDeveloperProfile();
+  const { profile, isLoading, isSaving, updateProfile, refreshProfile } = useDeveloperProfile();
   const { toast } = useToast();
   
-  const [isSaving, setIsSaving] = useState(false);
   const [profileImage, setProfileImage] = useState<File | null>(null);
   const [profileImagePreview, setProfileImagePreview] = useState<string | null>(null);
   const [formData, setFormData] = useState<DeveloperProfile>({
@@ -125,7 +125,6 @@ const DeveloperProfileTab: React.FC = () => {
       return;
     }
     
-    setIsSaving(true);
     try {
       let profilePicUrl = formData.profile_pic;
       
@@ -134,6 +133,8 @@ const DeveloperProfileTab: React.FC = () => {
         const uploadedUrl = await uploadProfilePicture(profileImage, formData.wallet_address);
         if (uploadedUrl) {
           profilePicUrl = uploadedUrl;
+        } else {
+          throw new Error("Failed to upload profile image");
         }
       }
       
@@ -167,8 +168,6 @@ const DeveloperProfileTab: React.FC = () => {
         description: "Failed to save profile. Please try again.",
         variant: "destructive"
       });
-    } finally {
-      setIsSaving(false);
     }
   };
 
