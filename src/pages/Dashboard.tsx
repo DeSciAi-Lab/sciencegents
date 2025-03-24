@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useUserDashboard } from '@/hooks/useUserDashboard';
 import { Button } from "@/components/ui/button";
@@ -42,20 +41,17 @@ const Dashboard = () => {
     profilePicture: null
   });
   
-  // For ScienceGent specific actions
   const [selectedScienceGent, setSelectedScienceGent] = useState(null);
   const [agentFee, setAgentFee] = useState(2);
   const [personaInstructions, setPersonaInstructions] = useState('');
   const [capabilityIdToAdd, setCapabilityIdToAdd] = useState('');
   const [capabilityIdToRemove, setCapabilityIdToRemove] = useState('');
   
-  // For capability specific actions
   const [selectedCapability, setSelectedCapability] = useState(null);
   const [documentation, setDocumentation] = useState(null);
   const [integrationGuide, setIntegrationGuide] = useState(null);
   const [additionalFiles, setAdditionalFiles] = useState([]);
   
-  // Calculate portfolio summary
   const portfolioValue = userInvestments.reduce((sum, investment) => sum + investment.balanceUSD, 0);
   const profitLoss = portfolioValue * 0.07; // Example profit calculation
   
@@ -161,7 +157,6 @@ const Dashboard = () => {
             <TabsTrigger value="profile">Developer Profile</TabsTrigger>
           </TabsList>
           
-          {/* Investments Tab */}
           <TabsContent value="investments">
             <div className="grid gap-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -345,7 +340,6 @@ const Dashboard = () => {
             </div>
           </TabsContent>
           
-          {/* ScienceGents Tab */}
           <TabsContent value="sciencegents">
             {selectedScienceGent ? (
               <div className="space-y-6">
@@ -422,7 +416,7 @@ const Dashboard = () => {
                         <div className="text-center text-lg font-medium">{selectedScienceGent.maturityProgress}%</div>
                         <Progress value={selectedScienceGent.maturityProgress} className="h-2" />
                         <p className="text-sm text-muted-foreground">
-                          Migration condition: trading fee >= 2x virtualETH + capability fees
+                          Migration condition: trading fee {'>='} 2x virtualETH + capability fees
                         </p>
                       </div>
                     </CardContent>
@@ -604,7 +598,6 @@ const Dashboard = () => {
             )}
           </TabsContent>
           
-          {/* Capabilities Tab */}
           <TabsContent value="capabilities">
             {selectedCapability ? (
               <div className="space-y-6">
@@ -844,7 +837,6 @@ const Dashboard = () => {
             )}
           </TabsContent>
           
-          {/* Developer Profile Tab */}
           <TabsContent value="profile">
             <Card>
               <CardHeader>
