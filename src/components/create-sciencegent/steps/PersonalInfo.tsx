@@ -6,6 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Info } from 'lucide-react';
 import { useDeveloperProfile } from '@/hooks/useDeveloperProfile';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useToast } from '@/components/ui/use-toast';
 
 interface PersonalInfoProps {
   formData: ScienceGentFormData;
@@ -13,7 +14,8 @@ interface PersonalInfoProps {
 }
 
 const PersonalInfo: React.FC<PersonalInfoProps> = ({ formData, handleInputChange }) => {
-  const { profile, isLoading } = useDeveloperProfile();
+  const { profile, isLoading, updateProfile } = useDeveloperProfile();
+  const { toast } = useToast();
   
   // Prefill form with developer profile data when available
   useEffect(() => {
@@ -23,36 +25,76 @@ const PersonalInfo: React.FC<PersonalInfoProps> = ({ formData, handleInputChange
         target: { name, value }
       } as React.ChangeEvent<HTMLInputElement>);
       
-      // Only update fields that are empty or not set yet
-      if (!formData.developerName && profile.developer_name) {
+      // Update all fields from the profile
+      if (profile.developer_name) {
         handleInputChange(createChangeEvent('developerName', profile.developer_name));
       }
       
-      if (!formData.developerEmail && profile.developer_email) {
+      if (profile.developer_email) {
         handleInputChange(createChangeEvent('developerEmail', profile.developer_email));
       }
       
-      if (!formData.bio && profile.bio) {
+      if (profile.bio) {
         handleInputChange(createChangeEvent('bio', profile.bio));
       }
       
-      if (!formData.developerTwitter && profile.developer_twitter) {
+      if (profile.developer_twitter) {
         handleInputChange(createChangeEvent('developerTwitter', profile.developer_twitter));
       }
       
-      if (!formData.developerTelegram && profile.developer_telegram) {
+      if (profile.developer_telegram) {
         handleInputChange(createChangeEvent('developerTelegram', profile.developer_telegram));
       }
       
-      if (!formData.developerGithub && profile.developer_github) {
+      if (profile.developer_github) {
         handleInputChange(createChangeEvent('developerGithub', profile.developer_github));
       }
       
-      if (!formData.developerWebsite && profile.developer_website) {
+      if (profile.developer_website) {
         handleInputChange(createChangeEvent('developerWebsite', profile.developer_website));
       }
     }
-  }, [profile, isLoading, formData, handleInputChange]);
+  }, [profile, isLoading, handleInputChange]);
+
+  // When form data changes, update the developer profile
+  useEffect(() => {
+    // Don't update if there's no change or no data
+    if (!formData.developerName && !formData.developerEmail) return;
+    
+    // We'll use this effect to detect user-initiated changes and save them
+    // Create a timeout to avoid too many updates
+    const updateTimeout = setTimeout(async () => {
+      try {
+        // Only update if we have at least a name or email
+        if (formData.developerName || formData.developerEmail) {
+          await updateProfile({
+            developer_name: formData.developerName,
+            developer_email: formData.developerEmail,
+            bio: formData.bio,
+            developer_twitter: formData.developerTwitter,
+            developer_telegram: formData.developerTelegram,
+            developer_github: formData.developerGithub,
+            developer_website: formData.developerWebsite
+          });
+          
+          console.log("Auto-saved developer profile");
+        }
+      } catch (error) {
+        console.error("Error auto-saving developer profile:", error);
+      }
+    }, 1500); // Debounce for 1.5 seconds
+    
+    return () => clearTimeout(updateTimeout);
+  }, [
+    formData.developerName, 
+    formData.developerEmail, 
+    formData.bio, 
+    formData.developerTwitter,
+    formData.developerTelegram,
+    formData.developerGithub,
+    formData.developerWebsite,
+    updateProfile
+  ]);
 
   return (
     <div className="space-y-6 max-w-3xl">

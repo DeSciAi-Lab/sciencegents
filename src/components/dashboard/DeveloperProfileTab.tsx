@@ -30,7 +30,7 @@ const DeveloperProfileTab: React.FC = () => {
     additional_social_links: []
   });
 
-  // Fetch developer profile on mount
+  // Fetch developer profile on mount and when address changes
   useEffect(() => {
     const loadProfile = async () => {
       if (!address) return;
@@ -39,10 +39,17 @@ const DeveloperProfileTab: React.FC = () => {
       try {
         const profile = await fetchDeveloperProfile(address);
         if (profile) {
+          console.log("Loaded profile:", profile);
           setFormData(profile);
           if (profile.profile_pic) {
             setProfileImagePreview(profile.profile_pic);
           }
+        } else {
+          // Create a new empty profile with the wallet address
+          setFormData({
+            wallet_address: address,
+            additional_social_links: []
+          });
         }
       } catch (error) {
         console.error("Error loading profile:", error);
@@ -166,6 +173,7 @@ const DeveloperProfileTab: React.FC = () => {
       });
       
       if (updatedProfile) {
+        console.log("Saved profile:", updatedProfile);
         setFormData(updatedProfile);
         if (profileImage) {
           setProfileImage(null);
@@ -175,6 +183,8 @@ const DeveloperProfileTab: React.FC = () => {
           title: "Success",
           description: "Developer profile updated successfully."
         });
+      } else {
+        throw new Error("Failed to save profile");
       }
     } catch (error) {
       console.error("Error saving profile:", error);

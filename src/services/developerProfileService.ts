@@ -28,13 +28,26 @@ export const fetchDeveloperProfile = async (walletAddress: string): Promise<Deve
     }
     
     // Transform Supabase JSON to typed SocialLink array
-    const transformedData: DeveloperProfile = {
-      ...data,
-      additional_social_links: data.additional_social_links ? 
-        (data.additional_social_links as any[] || []).map((link: any) => ({
+    const socialLinks: SocialLink[] = Array.isArray(data.additional_social_links) 
+      ? data.additional_social_links.map((link: any) => ({
           type: link.type || '',
           url: link.url || ''
-        })) : []
+        }))
+      : [];
+    
+    const transformedData: DeveloperProfile = {
+      wallet_address: data.wallet_address,
+      developer_name: data.developer_name,
+      developer_email: data.developer_email,
+      bio: data.bio,
+      profile_pic: data.profile_pic,
+      developer_twitter: data.developer_twitter,
+      developer_telegram: data.developer_telegram,
+      developer_github: data.developer_github,
+      developer_website: data.developer_website,
+      additional_social_links: socialLinks,
+      created_at: data.created_at,
+      updated_at: data.updated_at
     };
     
     return transformedData;
@@ -55,34 +68,57 @@ export const upsertDeveloperProfile = async (profile: DeveloperProfile): Promise
       throw new Error("Wallet address is required");
     }
     
-    // Transform typed SocialLink array to Supabase JSON
+    // Convert typed SocialLink array to regular JSON for Supabase
     const supabaseData = {
-      ...profile,
+      wallet_address: profile.wallet_address,
+      developer_name: profile.developer_name,
+      developer_email: profile.developer_email,
+      bio: profile.bio,
+      profile_pic: profile.profile_pic,
+      developer_twitter: profile.developer_twitter,
+      developer_telegram: profile.developer_telegram,
+      developer_github: profile.developer_github,
+      developer_website: profile.developer_website,
       additional_social_links: profile.additional_social_links || []
     };
     
     const { data, error } = await supabase
       .from('developer_profiles')
       .upsert(supabaseData)
-      .select()
-      .single();
+      .select();
     
     if (error) {
       console.error("Error upserting developer profile:", error);
       throw error;
     }
     
+    if (!data || data.length === 0) {
+      throw new Error("No data returned after upsert");
+    }
+    
     // Transform back to typed DeveloperProfile
-    const transformedData: DeveloperProfile = {
-      ...data,
-      additional_social_links: data.additional_social_links ? 
-        (data.additional_social_links as any[] || []).map((link: any) => ({
+    const transformedData = data[0];
+    const socialLinks: SocialLink[] = Array.isArray(transformedData.additional_social_links) 
+      ? transformedData.additional_social_links.map((link: any) => ({
           type: link.type || '',
           url: link.url || ''
-        })) : []
-    };
+        }))
+      : [];
     
-    return transformedData;
+    return {
+      wallet_address: transformedData.wallet_address,
+      developer_name: transformedData.developer_name,
+      developer_email: transformedData.developer_email,
+      bio: transformedData.bio,
+      profile_pic: transformedData.profile_pic,
+      developer_twitter: transformedData.developer_twitter,
+      developer_telegram: transformedData.developer_telegram,
+      developer_github: transformedData.developer_github,
+      developer_website: transformedData.developer_website,
+      additional_social_links: socialLinks,
+      created_at: transformedData.created_at,
+      updated_at: transformedData.updated_at
+    };
   } catch (error) {
     console.error("Error in upsertDeveloperProfile:", error);
     return null;

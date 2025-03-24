@@ -44,7 +44,7 @@ const DeveloperInfo: React.FC<DeveloperInfoProps> = ({ scienceGent }) => {
       <CardContent className="pt-6">
         <div className="flex flex-col items-center text-center mb-4">
           <Avatar className="h-20 w-20 mb-3">
-            <AvatarImage src={scienceGent.developer_profile_pic || ''} alt={developerName} />
+            <AvatarImage src={scienceGent.profile_pic || ''} alt={developerName} />
             <AvatarFallback className="bg-blue-100 text-blue-600 text-xl">
               {getInitials(developerName)}
             </AvatarFallback>
