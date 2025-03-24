@@ -416,7 +416,7 @@ const Dashboard = () => {
                         <div className="text-center text-lg font-medium">{selectedScienceGent.maturityProgress}%</div>
                         <Progress value={selectedScienceGent.maturityProgress} className="h-2" />
                         <p className="text-sm text-muted-foreground">
-                          Migration condition: trading fee {'>='} 2x virtualETH + capability fees
+                          Migration condition: trading fee {'>='}  2x virtualETH + capability fees
                         </p>
                       </div>
                     </CardContent>
@@ -451,9 +451,10 @@ const Dashboard = () => {
                         <div className="font-medium">1. Update Agent Fee per interaction (in DSI)</div>
                         <div className="flex gap-2">
                           <Input 
+                            type="number"
                             placeholder="e.g. 3" 
                             value={agentFee}
-                            onChange={(e) => setAgentFee(e.target.value)}
+                            onChange={(e) => setAgentFee(Number(e.target.value))}
                             className="max-w-xs"
                           />
                           <Button>Update</Button>
@@ -825,154 +826,4 @@ const Dashboard = () => {
                     </div>
                     <h3 className="font-medium mb-1">No Capabilities Created</h3>
                     <p className="text-sm text-muted-foreground mb-4">
-                      You haven't created any capabilities yet.
-                    </p>
-                    <Button onClick={() => navigate('/create-capability')} className="mx-auto">
-                      Create Capability
-                      <ChevronRight className="ml-1 h-4 w-4" />
-                    </Button>
-                  </Card>
-                )}
-              </div>
-            )}
-          </TabsContent>
-          
-          <TabsContent value="profile">
-            <Card>
-              <CardHeader>
-                <CardTitle>Developer Profile</CardTitle>
-                <CardDescription>
-                  Manage your public developer profile and contact information
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                  <div className="md:col-span-2 space-y-6">
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Developer Name</label>
-                      <Input 
-                        placeholder="Your name as a developer"
-                        value={developerProfile.name}
-                        onChange={(e) => setDeveloperProfile({...developerProfile, name: e.target.value})}
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Developer email ID</label>
-                      <Input 
-                        placeholder="Contact email (not public)"
-                        value={developerProfile.email}
-                        onChange={(e) => setDeveloperProfile({...developerProfile, email: e.target.value})}
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Bio</label>
-                      <textarea 
-                        className="w-full min-h-[100px] p-2 border rounded-md"
-                        placeholder="(40 words)"
-                        value={developerProfile.bio}
-                        onChange={(e) => setDeveloperProfile({...developerProfile, bio: e.target.value})}
-                      />
-                    </div>
-                    
-                    <div className="space-y-4">
-                      <div className="text-sm font-medium">Socials links of developer (optional)</div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <label className="text-xs text-muted-foreground">Twitter</label>
-                          <Input 
-                            placeholder="https://..."
-                            value={developerProfile.twitter}
-                            onChange={(e) => setDeveloperProfile({...developerProfile, twitter: e.target.value})}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <label className="text-xs text-muted-foreground">Telegram</label>
-                          <Input 
-                            placeholder="https://..."
-                            value={developerProfile.telegram}
-                            onChange={(e) => setDeveloperProfile({...developerProfile, telegram: e.target.value})}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <label className="text-xs text-muted-foreground">Github</label>
-                          <Input 
-                            placeholder="https://..."
-                            value={developerProfile.github}
-                            onChange={(e) => setDeveloperProfile({...developerProfile, github: e.target.value})}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <label className="text-xs text-muted-foreground">Website</label>
-                          <Input 
-                            placeholder="https://..."
-                            value={developerProfile.website}
-                            onChange={(e) => setDeveloperProfile({...developerProfile, website: e.target.value})}
-                          />
-                        </div>
-                      </div>
-                      <Button variant="outline" size="sm" className="flex items-center gap-1">
-                        <Plus className="h-4 w-4" />
-                        Add more
-                      </Button>
-                    </div>
-                    
-                    <Button className="mt-4">
-                      Save Profile
-                    </Button>
-                  </div>
-                  
-                  <div>
-                    <div className="space-y-4">
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium">Profile picture /Avatar</label>
-                        <div 
-                          className="border border-dashed rounded-md p-6 aspect-square flex items-center justify-center cursor-pointer"
-                          onClick={() => document.getElementById('profilePicUpload').click()}
-                        >
-                          <input
-                            id="profilePicUpload"
-                            type="file"
-                            hidden
-                            accept="image/*"
-                            onChange={(e) => handleFileUpload(e, (file) => setDeveloperProfile({...developerProfile, profilePicture: file}))}
-                          />
-                          <div className="flex flex-col items-center">
-                            <Upload className="h-6 w-6 text-muted-foreground mb-2" />
-                            <div className="text-sm text-muted-foreground">
-                              No file choosen (under 1MB)
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <div className="bg-blue-50 rounded-md p-4">
-                        <div className="flex items-start gap-2 text-sm">
-                          <div className="mt-1">
-                            <div className="rounded-full bg-blue-100 p-1 flex items-center justify-center text-blue-700">
-                              <FileText className="h-4 w-4" />
-                            </div>
-                          </div>
-                          <div>
-                            <div className="font-medium text-blue-900 mb-1">Disclaimer</div>
-                            <p className="text-blue-700 text-xs">
-                              This information will be publicly visible and completely optional to provide. 
-                              They help build trust on developer and connect with you, also contact you.
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-      </div>
-    </NavbarLayout>
-  );
-};
-
-export default Dashboard;
+                      You
