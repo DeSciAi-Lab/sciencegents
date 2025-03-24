@@ -7,6 +7,7 @@ import UploadDocuments from './steps/UploadDocuments';
 import PersonalDetails from './steps/PersonalDetails';
 import Review from './steps/Review';
 
+// This component uses the context, so it must be wrapped by the provider
 const WizardStepRenderer: React.FC = () => {
   const { currentStep } = useCapabilityWizard();
 
@@ -32,6 +33,7 @@ const WizardStepRenderer: React.FC = () => {
   );
 };
 
+// The main component that provides the context
 const CapabilityWizard: React.FC = () => {
   return (
     <CapabilityWizardProvider>
