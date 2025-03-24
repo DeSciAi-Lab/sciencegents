@@ -1,6 +1,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import { DeveloperProfile } from "@/types/profile";
+import { DeveloperProfile, SocialLink } from "@/types/profile";
 
 /**
  * Fetches a developer profile by wallet address
@@ -27,7 +27,17 @@ export const fetchDeveloperProfile = async (walletAddress: string): Promise<Deve
       throw error;
     }
     
-    return data as DeveloperProfile;
+    // Transform Supabase JSON to typed SocialLink array
+    const transformedData: DeveloperProfile = {
+      ...data,
+      additional_social_links: data.additional_social_links ? 
+        (data.additional_social_links as any[] || []).map((link: any) => ({
+          type: link.type || '',
+          url: link.url || ''
+        })) : []
+    };
+    
+    return transformedData;
   } catch (error) {
     console.error("Error in fetchDeveloperProfile:", error);
     return null;
@@ -45,9 +55,15 @@ export const upsertDeveloperProfile = async (profile: DeveloperProfile): Promise
       throw new Error("Wallet address is required");
     }
     
+    // Transform typed SocialLink array to Supabase JSON
+    const supabaseData = {
+      ...profile,
+      additional_social_links: profile.additional_social_links || []
+    };
+    
     const { data, error } = await supabase
       .from('developer_profiles')
-      .upsert(profile)
+      .upsert(supabaseData)
       .select()
       .single();
     
@@ -56,7 +72,17 @@ export const upsertDeveloperProfile = async (profile: DeveloperProfile): Promise
       throw error;
     }
     
-    return data as DeveloperProfile;
+    // Transform back to typed DeveloperProfile
+    const transformedData: DeveloperProfile = {
+      ...data,
+      additional_social_links: data.additional_social_links ? 
+        (data.additional_social_links as any[] || []).map((link: any) => ({
+          type: link.type || '',
+          url: link.url || ''
+        })) : []
+    };
+    
+    return transformedData;
   } catch (error) {
     console.error("Error in upsertDeveloperProfile:", error);
     return null;
