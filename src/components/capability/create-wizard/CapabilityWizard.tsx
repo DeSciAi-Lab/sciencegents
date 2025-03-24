@@ -1,7 +1,7 @@
 
 import React from 'react';
-import WizardLayout from './WizardLayout';
 import { CapabilityWizardProvider, useCapabilityWizard, wizardSteps } from './CapabilityWizardContext';
+import WizardLayout from './WizardLayout';
 import BasicInfo from './steps/BasicInfo';
 import UploadDocuments from './steps/UploadDocuments';
 import PersonalDetails from './steps/PersonalDetails';
@@ -33,13 +33,22 @@ const WizardStepRenderer: React.FC = () => {
   );
 };
 
+// Inner component that has access to the context
+const WizardContent: React.FC = () => {
+  const wizardContext = useCapabilityWizard();
+  
+  return (
+    <WizardLayout>
+      <WizardStepRenderer />
+    </WizardLayout>
+  );
+};
+
 // The main component that provides the context
 const CapabilityWizard: React.FC = () => {
   return (
     <CapabilityWizardProvider>
-      <WizardLayout>
-        <WizardStepRenderer />
-      </WizardLayout>
+      <WizardContent />
     </CapabilityWizardProvider>
   );
 };
