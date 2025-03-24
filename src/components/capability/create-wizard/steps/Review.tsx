@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useCapabilityWizard } from '../CapabilityWizardContext';
 import { Loader2, Check, AlertCircle, Twitter, Github, Globe, FileText, MessageCircle } from 'lucide-react';
@@ -17,14 +16,6 @@ const Review: React.FC = () => {
   } = useCapabilityWizard();
   
   const [error, setError] = React.useState<string | null>(null);
-  
-  const handleSubmit = async () => {
-    try {
-      await submitCapability();
-    } catch (err) {
-      setError(err.message || 'Failed to create capability');
-    }
-  };
   
   const hasCapabilitySocialLinks = formData.twitter || formData.github || formData.website || formData.telegram || formData.socialLinks.length > 0;
   const hasDeveloperSocialLinks = formData.developerTwitter || formData.developerGithub || formData.developerWebsite || formData.developerTelegram || formData.developerSocialLinks.length > 0;
@@ -289,28 +280,6 @@ const Review: React.FC = () => {
             </div>
           </div>
         )}
-        
-        <div className="mt-8 flex justify-center">
-          <button
-            onClick={handleSubmit}
-            disabled={isSubmitting}
-            className={`flex items-center gap-2 px-6 py-3 rounded-md text-white font-medium ${
-              isSubmitting ? 'bg-blue-400' : 'bg-blue-600 hover:bg-blue-700'
-            } transition-colors`}
-          >
-            {isSubmitting ? (
-              <>
-                <Loader2 size={20} className="animate-spin" />
-                Creating...
-              </>
-            ) : (
-              <>
-                <Check size={20} />
-                Launch Capability
-              </>
-            )}
-          </button>
-        </div>
       </div>
     </div>
   );
