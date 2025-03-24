@@ -58,6 +58,50 @@ export const fetchCapabilityById = async (id: string): Promise<Capability | null
   }
 };
 
+// Function to upload a file to Supabase storage
+export const uploadFileToStorage = async (
+  file: File,
+  bucket: string = 'sciencegents',
+  folder: string = 'capability_files'
+): Promise<{ path: string; url: string }> => {
+  try {
+    console.log(`Uploading file ${file.name} to ${bucket}/${folder}...`);
+    
+    // Create a unique file name to avoid collisions
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
+    const filePath = `${folder}/${fileName}`;
+    
+    // Upload file to Supabase Storage
+    const { data, error } = await supabase.storage
+      .from(bucket)
+      .upload(filePath, file, {
+        contentType: file.type,
+        cacheControl: '3600'
+      });
+    
+    if (error) {
+      console.error('Error uploading file:', error);
+      throw error;
+    }
+    
+    // Get public URL for the uploaded file
+    const { data: { publicUrl } } = supabase.storage
+      .from(bucket)
+      .getPublicUrl(filePath);
+    
+    console.log(`File uploaded successfully: ${publicUrl}`);
+    
+    return {
+      path: filePath,
+      url: publicUrl
+    };
+  } catch (error) {
+    console.error('Error in uploadFileToStorage:', error);
+    throw error;
+  }
+};
+
 // Function to insert or update a capability in Supabase
 export const upsertCapabilityToSupabase = async (capability: Capability, isAdmin: boolean): Promise<void> => {
   try {
@@ -81,11 +125,11 @@ export const upsertCapabilityToSupabase = async (capability: Capability, isAdmin
       rating: capability.stats.rating,
       revenue: capability.stats.revenue,
       features: capability.features,
-      display_image: capability.display_image, // New field
-      developer_profile_pic: capability.developer_profile_pic, // New field
-      social_links: capability.social_links ? JSON.stringify(capability.social_links) : null, // New field
-      developer_social_links: capability.developer_info?.social_links ? JSON.stringify(capability.developer_info.social_links) : null, // New field
-      additional_files: capability.files?.additionalFiles ? JSON.stringify(capability.files.additionalFiles) : null, // New field
+      display_image: capability.display_image, 
+      developer_profile_pic: capability.developer_profile_pic,
+      social_links: capability.social_links ? JSON.stringify(capability.social_links) : '[]',
+      developer_social_links: capability.developer_info?.social_links ? JSON.stringify(capability.developer_info.social_links) : '[]',
+      additional_files: capability.files?.additionalFiles ? JSON.stringify(capability.files.additionalFiles) : '[]',
       developer_name: capability.developer_info?.name || null,
       developer_email: capability.developer_info?.email || null,
       bio: capability.developer_info?.bio || null,

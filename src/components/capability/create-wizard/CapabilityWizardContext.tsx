@@ -6,7 +6,7 @@ import { checkIfWalletIsConnected } from '@/utils/walletUtils';
 import { ethers } from 'ethers';
 import { contractConfig, factoryABI } from '@/utils/contractConfig';
 import { refreshCapabilities } from '@/data/capabilities';
-import { upsertCapabilityToSupabase } from '@/services/capability';
+import { upsertCapabilityToSupabase, uploadFileToStorage } from '@/services/capability/supabase';
 
 // Initial form data with social links arrays
 const initialFormData = {
@@ -204,6 +204,11 @@ export const CapabilityWizardProvider: React.FC<{children: React.ReactNode}> = (
       
       const walletConnected = await checkIfWalletIsConnected();
       if (!walletConnected) {
+        toast({
+          title: "Wallet not connected",
+          description: "Please connect your wallet to continue.",
+          variant: "destructive"
+        });
         setIsSubmitting(false);
         return;
       }
@@ -224,6 +229,7 @@ export const CapabilityWizardProvider: React.FC<{children: React.ReactNode}> = (
         description: "Please confirm the transaction in MetaMask...",
       });
 
+      // Register capability on the blockchain
       const tx = await factoryContract.registerGlobalCapability(
         formData.id,
         formData.description,
@@ -237,42 +243,95 @@ export const CapabilityWizardProvider: React.FC<{children: React.ReactNode}> = (
       });
       
       await tx.wait();
-
-      // Process uploaded files
-      const fileUploads = [];
-      if (documentation) {
-        fileUploads.push(uploadFileToStorage(documentation, 'documentation', formData.id));
-      }
-      if (integrationGuide) {
-        fileUploads.push(uploadFileToStorage(integrationGuide, 'guide', formData.id));
-      }
-      if (additionalFiles && additionalFiles.length > 0) {
-        additionalFiles.forEach((file, index) => {
-          fileUploads.push(uploadFileToStorage(file, `additional_${index}`, formData.id));
-        });
-      }
-      if (displayImage) {
-        fileUploads.push(uploadFileToStorage(displayImage, 'display_image', formData.id));
-      }
-      if (profileImage) {
-        fileUploads.push(uploadFileToStorage(profileImage, 'profile_image', formData.id));
-      }
-
-      // Wait for all file uploads to complete
-      const uploadResults = await Promise.allSettled(fileUploads);
-      const fileUrls = uploadResults
-        .filter(result => result.status === 'fulfilled')
-        .map(result => (result as PromiseFulfilledResult<{path: string, url: string}>).value);
       
-      // Build storage links object for metadata
-      const storageLinks: Record<string, string> = {};
-      fileUrls.forEach(file => {
-        if (file.path.includes('documentation')) storageLinks.documentation = file.url;
-        if (file.path.includes('guide')) storageLinks.integrationGuide = file.url;
-        if (file.path.includes('additional_')) storageLinks[`additional_${file.path.split('_').pop()}`] = file.url;
-        if (file.path.includes('display_image')) storageLinks.displayImage = file.url;
-        if (file.path.includes('profile_image')) storageLinks.profileImage = file.url;
+      toast({
+        title: "Capability Registered On-Chain",
+        description: "Now uploading files and saving to database...",
       });
+
+      // Process all file uploads
+      const storageUrls: Record<string, string> = {};
+      
+      // Upload display image if exists
+      if (displayImage) {
+        try {
+          const displayImageUpload = await uploadFileToStorage(displayImage, 'sciencegents', 'capability_images');
+          storageUrls.displayImage = displayImageUpload.url;
+        } catch (error) {
+          console.error('Error uploading display image:', error);
+          toast({
+            title: "Display Image Upload Failed",
+            description: "Continuing with registration without display image.",
+            variant: "destructive"
+          });
+        }
+      }
+      
+      // Upload developer profile image if exists
+      if (profileImage) {
+        try {
+          const profileImageUpload = await uploadFileToStorage(profileImage, 'sciencegents', 'developer_images');
+          storageUrls.profileImage = profileImageUpload.url;
+        } catch (error) {
+          console.error('Error uploading profile image:', error);
+          toast({
+            title: "Profile Image Upload Failed",
+            description: "Continuing with registration without profile image.",
+            variant: "destructive"
+          });
+        }
+      }
+      
+      // Upload documentation if exists
+      if (documentation) {
+        try {
+          const docUpload = await uploadFileToStorage(documentation, 'sciencegents', 'documentation');
+          storageUrls.documentation = docUpload.url;
+        } catch (error) {
+          console.error('Error uploading documentation:', error);
+        }
+      }
+      
+      // Upload integration guide if exists
+      if (integrationGuide) {
+        try {
+          const guideUpload = await uploadFileToStorage(integrationGuide, 'sciencegents', 'guides');
+          storageUrls.integrationGuide = guideUpload.url;
+        } catch (error) {
+          console.error('Error uploading integration guide:', error);
+        }
+      }
+      
+      // Upload additional files if exist
+      const additionalFileUrls: string[] = [];
+      if (additionalFiles && additionalFiles.length > 0) {
+        for (const file of additionalFiles) {
+          try {
+            const additionalUpload = await uploadFileToStorage(file, 'sciencegents', 'additional_files');
+            additionalFileUrls.push(additionalUpload.url);
+          } catch (error) {
+            console.error(`Error uploading additional file ${file.name}:`, error);
+          }
+        }
+      }
+      
+      // Create capability social links array
+      const capabilitySocialLinks = [
+        ...(formData.twitter ? [{ type: 'twitter', url: formData.twitter }] : []),
+        ...(formData.telegram ? [{ type: 'telegram', url: formData.telegram }] : []),
+        ...(formData.github ? [{ type: 'github', url: formData.github }] : []),
+        ...(formData.website ? [{ type: 'website', url: formData.website }] : []),
+        ...formData.socialLinks.filter(link => link.type && link.url)
+      ];
+      
+      // Create developer social links array
+      const developerSocialLinks = [
+        ...(formData.developerTwitter ? [{ type: 'twitter', url: formData.developerTwitter }] : []),
+        ...(formData.developerTelegram ? [{ type: 'telegram', url: formData.developerTelegram }] : []),
+        ...(formData.developerGithub ? [{ type: 'github', url: formData.developerGithub }] : []),
+        ...(formData.developerWebsite ? [{ type: 'website', url: formData.developerWebsite }] : []),
+        ...formData.developerSocialLinks.filter(link => link.type && link.url)
+      ];
       
       // Create a capability object to add to Supabase
       const capabilityObj = {
@@ -289,42 +348,33 @@ export const CapabilityWizardProvider: React.FC<{children: React.ReactNode}> = (
           revenue: 0
         },
         features: [],
-        display_image: storageLinks.displayImage,
-        developer_profile_pic: storageLinks.profileImage,
-        social_links: [
-          ...(formData.twitter ? [{ type: 'twitter', url: formData.twitter }] : []),
-          ...(formData.telegram ? [{ type: 'telegram', url: formData.telegram }] : []),
-          ...(formData.github ? [{ type: 'github', url: formData.github }] : []),
-          ...(formData.website ? [{ type: 'website', url: formData.website }] : []),
-          ...formData.socialLinks
-        ],
+        display_image: storageUrls.displayImage,
+        developer_profile_pic: storageUrls.profileImage,
+        social_links: capabilitySocialLinks,
         developer_info: {
           name: formData.developerName,
           email: formData.developerEmail,
           bio: formData.bio,
-          social_links: [
-            ...(formData.developerTwitter ? [{ type: 'twitter', url: formData.developerTwitter }] : []),
-            ...(formData.developerTelegram ? [{ type: 'telegram', url: formData.developerTelegram }] : []),
-            ...(formData.developerGithub ? [{ type: 'github', url: formData.developerGithub }] : []),
-            ...(formData.developerWebsite ? [{ type: 'website', url: formData.developerWebsite }] : []),
-            ...formData.developerSocialLinks
-          ]
+          social_links: developerSocialLinks
         },
         files: {
-          documentation: storageLinks.documentation,
-          integrationGuide: storageLinks.integrationGuide,
-          additionalFiles: Object.entries(storageLinks)
-            .filter(([key]) => key.startsWith('additional_'))
-            .map(([_, url]) => url)
+          documentation: storageUrls.documentation,
+          integrationGuide: storageUrls.integrationGuide,
+          additionalFiles: additionalFileUrls
         }
       };
       
-      // Add to Supabase directly to avoid waiting for sync
+      // Add to Supabase
       try {
         await upsertCapabilityToSupabase(capabilityObj, true);
         console.log("Capability added to Supabase");
       } catch (error) {
         console.error("Error adding capability to Supabase:", error);
+        toast({
+          title: "Database Error",
+          description: "Failed to save capability details to database. Please try again.",
+          variant: "destructive"
+        });
       }
       
       // Refresh capabilities data
@@ -336,6 +386,7 @@ export const CapabilityWizardProvider: React.FC<{children: React.ReactNode}> = (
         variant: "default",
       });
 
+      // Navigate to the capability details page
       navigate(`/capability/${formData.id}`);
     } catch (error) {
       console.error('Error registering capability:', error);
@@ -346,33 +397,6 @@ export const CapabilityWizardProvider: React.FC<{children: React.ReactNode}> = (
       });
     } finally {
       setIsSubmitting(false);
-    }
-  };
-
-  // Helper function to upload files to storage
-  const uploadFileToStorage = async (file: File, fileType: string, capabilityId: string): Promise<{path: string, url: string}> => {
-    try {
-      // Create a unique file name
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${capabilityId}_${fileType}_${Date.now()}.${fileExt}`;
-      const filePath = `capability_files/${fileName}`;
-      
-      // Create form data for upload
-      const formData = new FormData();
-      formData.append('file', file);
-      
-      // Mock upload - in a real app, would upload to storage service
-      console.log(`Uploading file: ${filePath}`);
-      
-      // Return mock URL for now
-      // In a real implementation, this would be the actual URL from your storage service
-      return {
-        path: filePath,
-        url: `https://example.com/storage/${filePath}`
-      };
-    } catch (error) {
-      console.error('Error uploading file:', error);
-      throw error;
     }
   };
 

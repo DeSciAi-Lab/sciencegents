@@ -1,18 +1,22 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { useCapabilityWizard } from '../CapabilityWizardContext';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Info, Plus, X } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { useCapabilityWizard } from '../CapabilityWizardContext';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-
-const socialTypes = [
-  { value: "twitter", label: "Twitter" },
-  { value: "telegram", label: "Telegram" },
-  { value: "github", label: "Github" },
-  { value: "website", label: "Website" }
-];
+import { Label } from '@/components/ui/label';
+import { 
+  Upload, 
+  X, 
+  Plus, 
+  Twitter, 
+  Github, 
+  Globe, 
+  MessageCircle,
+  AlertCircle,
+  Trash2
+} from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const PersonalDetails: React.FC = () => {
   const { 
@@ -24,220 +28,254 @@ const PersonalDetails: React.FC = () => {
     removeSocialLink,
     updateSocialLink
   } = useCapabilityWizard();
-
+  
+  const [profileImagePreview, setProfileImagePreview] = useState<string | null>(null);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  
+  useEffect(() => {
+    if (profileImage) {
+      const url = URL.createObjectURL(profileImage);
+      setProfileImagePreview(url);
+      
+      return () => URL.revokeObjectURL(url);
+    }
+  }, [profileImage]);
+  
   const handleProfileImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      setProfileImage(e.target.files[0]);
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        setErrors(prev => ({ ...prev, profileImage: 'Image size should be less than 5MB' }));
+        return;
+      }
+      
+      if (!file.type.startsWith('image/')) {
+        setErrors(prev => ({ ...prev, profileImage: 'Please upload an image file' }));
+        return;
+      }
+      
+      setProfileImage(file);
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors.profileImage;
+        return newErrors;
+      });
     }
   };
-
-  return (
-    <div className="space-y-6 max-w-4xl">
-      <h3 className="text-lg font-medium mb-2">Information about you or your team that builds trust and helps others connect with you.</h3>
-
-      <div className="bg-blue-50 p-4 rounded-md flex items-start gap-3 mb-6">
-        <Info className="h-5 w-5 text-blue-500 flex-shrink-0 mt-0.5" />
-        <div>
-          <h4 className="text-sm font-medium text-blue-800">Disclaimer</h4>
-          <p className="text-sm text-blue-700">
-            This information will be publicly visible and completely optional to provide. They help build trust on developer and connect with you, also contact you.
-          </p>
+  
+  const removeProfileImage = () => {
+    setProfileImage(null);
+    setProfileImagePreview(null);
+  };
+  
+  const renderSocialInputs = () => {
+    return (
+      <div className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="developerTwitter">Twitter</Label>
+            <div className="flex">
+              <div className="bg-gray-100 flex items-center justify-center px-3 border border-r-0 rounded-l">
+                <Twitter size={16} className="text-gray-500" />
+              </div>
+              <Input
+                id="developerTwitter"
+                name="developerTwitter"
+                placeholder="https://twitter.com/yourusername"
+                value={formData.developerTwitter}
+                onChange={handleInputChange}
+                className="rounded-l-none"
+              />
+            </div>
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="developerGithub">GitHub</Label>
+            <div className="flex">
+              <div className="bg-gray-100 flex items-center justify-center px-3 border border-r-0 rounded-l">
+                <Github size={16} className="text-gray-500" />
+              </div>
+              <Input
+                id="developerGithub"
+                name="developerGithub"
+                placeholder="https://github.com/yourusername"
+                value={formData.developerGithub}
+                onChange={handleInputChange}
+                className="rounded-l-none"
+              />
+            </div>
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="developerWebsite">Website</Label>
+            <div className="flex">
+              <div className="bg-gray-100 flex items-center justify-center px-3 border border-r-0 rounded-l">
+                <Globe size={16} className="text-gray-500" />
+              </div>
+              <Input
+                id="developerWebsite"
+                name="developerWebsite"
+                placeholder="https://yourwebsite.com"
+                value={formData.developerWebsite}
+                onChange={handleInputChange}
+                className="rounded-l-none"
+              />
+            </div>
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="developerTelegram">Telegram</Label>
+            <div className="flex">
+              <div className="bg-gray-100 flex items-center justify-center px-3 border border-r-0 rounded-l">
+                <MessageCircle size={16} className="text-gray-500" />
+              </div>
+              <Input
+                id="developerTelegram"
+                name="developerTelegram"
+                placeholder="https://t.me/yourusername"
+                value={formData.developerTelegram}
+                onChange={handleInputChange}
+                className="rounded-l-none"
+              />
+            </div>
+          </div>
         </div>
+        
+        {/* Additional social links */}
+        {formData.developerSocialLinks.map((link, index) => (
+          <div key={index} className="flex items-end gap-2">
+            <div className="flex-1 space-y-2">
+              <Label>Social Platform</Label>
+              <Input
+                placeholder="Platform name (e.g. Discord, Medium)"
+                value={link.type}
+                onChange={(e) => updateSocialLink('developerSocialLinks', index, 'type', e.target.value)}
+              />
+            </div>
+            <div className="flex-1 space-y-2">
+              <Label>URL</Label>
+              <Input
+                placeholder="https://..."
+                value={link.url}
+                onChange={(e) => updateSocialLink('developerSocialLinks', index, 'url', e.target.value)}
+              />
+            </div>
+            <Button 
+              variant="ghost" 
+              size="icon"
+              onClick={() => removeSocialLink('developerSocialLinks', index)}
+              className="text-red-500 hover:text-red-700 hover:bg-red-50"
+            >
+              <Trash2 size={18} />
+            </Button>
+          </div>
+        ))}
+        
+        <Button 
+          type="button" 
+          variant="outline" 
+          size="sm" 
+          onClick={() => addSocialLink('developerSocialLinks')}
+          className="mt-2"
+        >
+          <Plus size={16} className="mr-2" />
+          Add More
+        </Button>
       </div>
-
-      <div className="space-y-5">
+    );
+  };
+  
+  return (
+    <div className="space-y-6">
+      <div>
+        <h3 className="text-lg font-semibold">Personal Details</h3>
+        <p className="text-sm text-gray-500 mt-1">
+          Add your personal information to build trust with users (optional).
+        </p>
+      </div>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
-          <label htmlFor="developerName" className="block text-sm font-medium">
-            Developer Name
-          </label>
+          <Label htmlFor="developerName">Your Name</Label>
           <Input
             id="developerName"
             name="developerName"
-            placeholder="e.g. Molecule Vision"
+            placeholder="John Doe"
             value={formData.developerName}
             onChange={handleInputChange}
           />
         </div>
-
+        
         <div className="space-y-2">
-          <label htmlFor="profileImage" className="block text-sm font-medium">
-            Your Profile picture /Avatar
-          </label>
-          <div className="border border-dashed border-gray-300 rounded-md p-4 flex flex-col items-center justify-center bg-gray-50">
-            {profileImage ? (
-              <div className="flex items-center justify-between w-full text-sm py-2">
-                <div className="flex items-center">
-                  <img 
-                    src={URL.createObjectURL(profileImage)} 
-                    alt="Profile" 
-                    className="h-8 w-8 rounded-full object-cover mr-2"
-                  />
-                  <span>{profileImage.name}</span>
-                </div>
-                <Button 
-                  type="button" 
-                  variant="ghost" 
-                  size="sm"
-                  onClick={() => setProfileImage(null)}
-                  className="h-auto px-2 py-1"
-                >
-                  Remove
-                </Button>
-              </div>
-            ) : (
-              <div className="text-center py-4">
-                <Plus className="h-5 w-5 text-muted-foreground mb-2 mx-auto" />
-                <p className="text-sm text-muted-foreground mb-2">
-                  No file chosen (under 1MB)
-                </p>
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => document.getElementById("profileImage")?.click()}
-                >
-                  Select File
-                </Button>
-                <input
-                  id="profileImage"
-                  type="file"
-                  accept="image/png,image/jpeg,image/jpg"
-                  className="hidden"
-                  onChange={handleProfileImageChange}
-                />
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="space-y-2">
-          <label htmlFor="developerEmail" className="block text-sm font-medium">
-            Developer email ID
-          </label>
+          <Label htmlFor="developerEmail">Email Address</Label>
           <Input
             id="developerEmail"
             name="developerEmail"
-            placeholder="e.g. developer@example.com"
+            placeholder="you@example.com"
+            type="email"
             value={formData.developerEmail}
             onChange={handleInputChange}
-            type="email"
           />
         </div>
-
-        <div className="space-y-2">
-          <label htmlFor="bio" className="block text-sm font-medium">
-            Bio
-          </label>
+        
+        <div className="md:col-span-2 space-y-2">
+          <Label htmlFor="bio">Bio</Label>
           <Textarea
             id="bio"
             name="bio"
-            placeholder="(40 words)"
+            placeholder="Tell users about yourself and your expertise..."
             value={formData.bio}
             onChange={handleInputChange}
-            rows={3}
+            className="min-h-24"
           />
         </div>
         
-        <div className="space-y-2">
-          <label className="block text-sm font-medium">
-            Socials links of Developer (optional)
-          </label>
-          
-          {formData.developerSocialLinks.length > 0 ? (
-            <div className="space-y-3">
-              {formData.developerSocialLinks.map((social, index) => (
-                <div key={index} className="flex items-center gap-2">
-                  <Select
-                    value={social.type}
-                    onValueChange={(value) => updateSocialLink('developerSocialLinks', index, 'type', value)}
-                  >
-                    <SelectTrigger className="w-1/3">
-                      <SelectValue placeholder="Select type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {socialTypes.map((type) => (
-                        <SelectItem key={type.value} value={type.value}>
-                          {type.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Input
-                    placeholder="https://..."
-                    value={social.url}
-                    onChange={(e) => updateSocialLink('developerSocialLinks', index, 'url', e.target.value)}
-                    className="flex-1"
-                  />
-                  <Button 
-                    variant="ghost" 
-                    size="icon"
-                    onClick={() => removeSocialLink('developerSocialLinks', index)}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <label className="block text-xs text-gray-500">
-                  Twitter
-                </label>
-                <Input 
-                  name="developerTwitter" 
-                  placeholder="https://..." 
-                  onChange={handleInputChange} 
-                  value={formData.developerTwitter || ''} 
+        <div className="md:col-span-2 space-y-2">
+          <Label>Profile Picture</Label>
+          <div className="flex items-start">
+            {profileImagePreview ? (
+              <div className="relative w-32 h-32 border rounded-full overflow-hidden">
+                <img 
+                  src={profileImagePreview} 
+                  alt="Profile preview" 
+                  className="w-full h-full object-cover"
                 />
+                <Button
+                  onClick={removeProfileImage}
+                  variant="destructive"
+                  size="icon"
+                  className="absolute top-1 right-1 w-6 h-6 rounded-full"
+                >
+                  <X size={14} />
+                </Button>
               </div>
-              <div className="space-y-2">
-                <label className="block text-xs text-gray-500">
-                  Telegram
-                </label>
-                <Input 
-                  name="developerTelegram" 
-                  placeholder="https://..." 
-                  onChange={handleInputChange} 
-                  value={formData.developerTelegram || ''} 
-                />
+            ) : (
+              <div className="w-32 h-32 border-2 border-dashed border-gray-200 rounded-full flex flex-col items-center justify-center cursor-pointer hover:border-gray-300 transition-colors"
+                   onClick={() => document.getElementById('profile-image-upload')?.click()}>
+                <Upload size={24} className="text-gray-400 mb-2" />
+                <p className="text-xs text-gray-500">Upload</p>
               </div>
-              <div className="space-y-2">
-                <label className="block text-xs text-gray-500">
-                  Github
-                </label>
-                <Input 
-                  name="developerGithub" 
-                  placeholder="https://..." 
-                  onChange={handleInputChange} 
-                  value={formData.developerGithub || ''} 
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="block text-xs text-gray-500">
-                  Website
-                </label>
-                <Input 
-                  name="developerWebsite" 
-                  placeholder="https://..." 
-                  onChange={handleInputChange} 
-                  value={formData.developerWebsite || ''} 
-                />
-              </div>
-            </div>
+            )}
+            <input 
+              type="file"
+              id="profile-image-upload"
+              className="hidden"
+              accept="image/*"
+              onChange={handleProfileImageChange}
+            />
+          </div>
+          {errors.profileImage && (
+            <Alert variant="destructive" className="mt-2">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{errors.profileImage}</AlertDescription>
+            </Alert>
           )}
+          <p className="text-xs text-gray-500">This image will be displayed as your developer profile picture.</p>
         </div>
         
-        <div className="flex justify-center pt-4">
-          <Button 
-            variant="outline" 
-            size="sm"
-            className="flex items-center"
-            onClick={() => addSocialLink('developerSocialLinks')}
-          >
-            <Plus className="h-4 w-4 mr-1" />
-            Add more
-          </Button>
+        <div className="md:col-span-2 space-y-2">
+          <Label>Social Links</Label>
+          {renderSocialInputs()}
         </div>
       </div>
     </div>

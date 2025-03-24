@@ -11,9 +11,13 @@ export type Database = {
     Tables: {
       capabilities: {
         Row: {
+          additional_files: Json | null
           created_at: string
           creator: string
           description: string
+          developer_profile_pic: string | null
+          developer_social_links: Json | null
+          display_image: string | null
           docs: string | null
           domain: string
           features: string[] | null
@@ -23,12 +27,17 @@ export type Database = {
           price: number
           rating: number | null
           revenue: number | null
+          social_links: Json | null
           usage_count: number | null
         }
         Insert: {
+          additional_files?: Json | null
           created_at?: string
           creator: string
           description: string
+          developer_profile_pic?: string | null
+          developer_social_links?: Json | null
+          display_image?: string | null
           docs?: string | null
           domain: string
           features?: string[] | null
@@ -38,12 +47,17 @@ export type Database = {
           price: number
           rating?: number | null
           revenue?: number | null
+          social_links?: Json | null
           usage_count?: number | null
         }
         Update: {
+          additional_files?: Json | null
           created_at?: string
           creator?: string
           description?: string
+          developer_profile_pic?: string | null
+          developer_social_links?: Json | null
+          display_image?: string | null
           docs?: string | null
           domain?: string
           features?: string[] | null
@@ -53,6 +67,7 @@ export type Database = {
           price?: number
           rating?: number | null
           revenue?: number | null
+          social_links?: Json | null
           usage_count?: number | null
         }
         Relationships: []
