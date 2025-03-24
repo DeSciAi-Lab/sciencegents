@@ -82,6 +82,10 @@ export function useDeveloperProfile() {
       if (updated) {
         console.log("Profile updated successfully:", updated);
         setProfile(updated);
+        toast({
+          title: "Success",
+          description: "Profile updated successfully",
+        });
         return updated;
       }
       

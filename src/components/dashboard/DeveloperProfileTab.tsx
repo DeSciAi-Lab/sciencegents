@@ -1,9 +1,10 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Upload } from "lucide-react";
+import { Upload, Loader2 } from "lucide-react";
 import { useDeveloperProfile } from '@/hooks/useDeveloperProfile';
 import { uploadProfilePicture } from '@/services/developerProfileService';
 import { toast } from '@/components/ui/use-toast';
@@ -26,11 +27,12 @@ const DeveloperProfileTab: React.FC = () => {
   const [profilePicture, setProfilePicture] = useState<File | null>(null);
   const [pictureUrl, setPictureUrl] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
   
   // Load profile data when it's available
   useEffect(() => {
     if (profile) {
-      console.log("Loading profile data:", profile);
+      console.log("Loading profile data into form:", profile);
       setFormData({
         name: profile.developer_name || '',
         email: profile.developer_email || '',
@@ -60,9 +62,6 @@ const DeveloperProfileTab: React.FC = () => {
       // Create a preview URL
       const objectUrl = URL.createObjectURL(file);
       setPictureUrl(objectUrl);
-      
-      // Cleanup the URL when component unmounts
-      return () => URL.revokeObjectURL(objectUrl);
     }
   };
   
@@ -87,14 +86,26 @@ const DeveloperProfileTab: React.FC = () => {
       let picUrl = profile?.profile_pic || null;
       
       if (profilePicture) {
+        setUploadingImage(true);
         console.log("Uploading profile picture...");
-        picUrl = await uploadProfilePicture(profilePicture, address);
-        
-        if (!picUrl) {
-          throw new Error("Failed to upload profile picture");
+        try {
+          picUrl = await uploadProfilePicture(profilePicture, address);
+          
+          if (!picUrl) {
+            throw new Error("Failed to upload profile picture");
+          }
+          
+          console.log("Profile picture uploaded successfully:", picUrl);
+        } catch (uploadError) {
+          console.error("Error uploading image:", uploadError);
+          toast({
+            title: "Error",
+            description: "Failed to upload profile picture. Your profile data will still be saved.",
+            variant: "destructive",
+          });
+        } finally {
+          setUploadingImage(false);
         }
-        
-        console.log("Profile picture uploaded successfully:", picUrl);
       }
       
       // Now update the profile with all data
@@ -123,6 +134,9 @@ const DeveloperProfileTab: React.FC = () => {
           description: "Your developer profile has been updated successfully"
         });
         
+        // Reset profile picture state since it's already uploaded
+        setProfilePicture(null);
+        
         // Refresh profile data to show the latest changes
         await refreshProfile();
       } else {
@@ -147,10 +161,8 @@ const DeveloperProfileTab: React.FC = () => {
           <CardTitle>Developer Profile</CardTitle>
           <CardDescription>Loading your profile...</CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="h-60 flex items-center justify-center">
-            <div className="animate-pulse">Loading...</div>
-          </div>
+        <CardContent className="flex justify-center py-8">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </CardContent>
       </Card>
     );
@@ -206,7 +218,7 @@ const DeveloperProfileTab: React.FC = () => {
                     name="twitter"
                     value={formData.twitter}
                     onChange={handleInputChange}
-                    placeholder="@username"
+                    placeholder="https://twitter.com/username"
                   />
                 </div>
                 
@@ -216,7 +228,7 @@ const DeveloperProfileTab: React.FC = () => {
                     name="telegram"
                     value={formData.telegram}
                     onChange={handleInputChange}
-                    placeholder="@username"
+                    placeholder="https://t.me/username"
                   />
                 </div>
                 
@@ -226,7 +238,7 @@ const DeveloperProfileTab: React.FC = () => {
                     name="github"
                     value={formData.github}
                     onChange={handleInputChange}
-                    placeholder="username"
+                    placeholder="https://github.com/username"
                   />
                 </div>
                 
@@ -258,9 +270,19 @@ const DeveloperProfileTab: React.FC = () => {
                     type="button" 
                     variant="outline" 
                     onClick={() => document.getElementById('profileUpload')?.click()}
+                    disabled={uploadingImage}
                   >
-                    <Upload className="mr-2 h-4 w-4" />
-                    Upload Image
+                    {uploadingImage ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Uploading...
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="mr-2 h-4 w-4" />
+                        Upload Image
+                      </>
+                    )}
                   </Button>
                   <input
                     id="profileUpload"
@@ -268,6 +290,7 @@ const DeveloperProfileTab: React.FC = () => {
                     hidden
                     accept="image/*"
                     onChange={handleFileChange}
+                    disabled={uploadingImage}
                   />
                   {profilePicture && (
                     <p className="text-xs text-muted-foreground">
@@ -280,8 +303,15 @@ const DeveloperProfileTab: React.FC = () => {
           </div>
           
           <div className="flex justify-end">
-            <Button type="submit" disabled={isSaving}>
-              {isSaving ? 'Saving...' : 'Save Profile'}
+            <Button type="submit" disabled={isSaving || uploadingImage}>
+              {isSaving ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                'Save Profile'
+              )}
             </Button>
           </div>
         </form>

@@ -131,6 +131,10 @@ export const useUserDashboard = () => {
 
       try {
         // Connect to provider
+        if (!window.ethereum) {
+          throw new Error("No Ethereum provider detected");
+        }
+        
         const provider = new ethers.providers.Web3Provider(window.ethereum);
         
         // Get user's created ScienceGents
@@ -141,135 +145,91 @@ export const useUserDashboard = () => {
         );
         
         try {
-          // Get tokens created by this user
-          console.log("Fetching tokens for address:", account);
-          console.log("Using factory address:", contractConfig.addresses.ScienceGentsFactory);
-          
-          // Check if the method exists on the contract
-          if (typeof factoryContract.getTokensOfCreator !== 'function') {
-            console.error("getTokensOfCreator method not found on factory contract. Available methods:", 
-              Object.keys(factoryContract.functions));
-            throw new Error("Factory contract method not available");
+          // Get user's created ScienceGents from Supabase instead of blockchain
+          // This avoids the contract method errors
+          const { data: createdScienceGents, error: scienceGentsError } = await supabase
+            .from('sciencegents')
+            .select('*')
+            .eq('creator_address', account);
+            
+          if (scienceGentsError) {
+            console.error("Error fetching ScienceGents from Supabase:", scienceGentsError);
           }
           
-          const createdTokens = await factoryContract.getTokensOfCreator(account);
-          console.log("Created tokens:", createdTokens);
-          
-          if (createdTokens.length > 0) {
-            const tokenDetailsPromises = createdTokens.map(async (tokenAddress: string) => {
-              try {
-                const details = await factoryContract.getTokenDetails(tokenAddress);
-                
-                // Get token data from Supabase for additional info
-                const { data: dbData } = await supabase
-                  .from('sciencegents')
-                  .select('name, symbol, market_cap, maturity_progress, token_price, price_change_24h, description, profile_pic, virtual_eth, collected_fees, domain')
-                  .eq('address', tokenAddress)
-                  .maybeSingle();
-                
-                // Get capabilities for this ScienceGent
-                const { data: capabilityData } = await supabase
-                  .from('sciencegent_capabilities')
-                  .select('capability_id')
-                  .eq('sciencegent_address', tokenAddress);
-                  
-                const capabilities = capabilityData ? capabilityData.map(cap => cap.capability_id) : [];
-                
-                return {
-                  address: tokenAddress,
-                  name: details.name || dbData?.name || 'Unknown Token',
-                  symbol: details.symbol || dbData?.symbol || '???',
-                  marketCap: dbData?.market_cap || 0,
-                  tradingEnabled: details.tradingEnabled,
-                  isMigrated: details.isMigrated,
-                  maturityProgress: dbData?.maturity_progress || 0,
-                  tokenPrice: dbData?.token_price || 0,
-                  priceChange24h: dbData?.price_change_24h || 0,
-                  description: dbData?.description || '',
-                  profilePic: dbData?.profile_pic || '',
-                  virtualETH: dbData?.virtual_eth || 0,
-                  collectedFees: dbData?.collected_fees || 0,
-                  domain: dbData?.domain || 'General',
-                  capabilities
-                };
-              } catch (error) {
-                console.error(`Error fetching details for token ${tokenAddress}:`, error);
-                return null;
-              }
-            });
+          if (createdScienceGents && createdScienceGents.length > 0) {
+            console.log("Fetched ScienceGents from Supabase:", createdScienceGents);
             
-            const tokenDetails = await Promise.all(tokenDetailsPromises);
-            setUserScienceGents(tokenDetails.filter(Boolean) as DashboardScienceGent[]);
+            const formattedScienceGents = createdScienceGents.map(sg => ({
+              address: sg.address,
+              name: sg.name || 'Unknown Token',
+              symbol: sg.symbol || '???',
+              marketCap: sg.market_cap || 0,
+              tradingEnabled: sg.trading_enabled || false,
+              isMigrated: sg.is_migrated || false,
+              maturityProgress: sg.maturity_progress || 0,
+              tokenPrice: sg.token_price || 0,
+              priceChange24h: sg.price_change_24h || 0,
+              description: sg.description || '',
+              profilePic: sg.profile_pic || '',
+              virtualETH: sg.virtual_eth || 0,
+              collectedFees: sg.collected_fees || 0,
+              domain: sg.domain || 'General',
+              capabilities: []
+            }));
+            
+            // Get capabilities for each ScienceGent
+            for (const sg of formattedScienceGents) {
+              const { data: capabilityData } = await supabase
+                .from('sciencegent_capabilities')
+                .select('capability_id')
+                .eq('sciencegent_address', sg.address);
+                
+              if (capabilityData && capabilityData.length > 0) {
+                sg.capabilities = capabilityData.map(cap => cap.capability_id);
+              }
+            }
+            
+            setUserScienceGents(formattedScienceGents);
+          } else {
+            console.log("No ScienceGents found for address:", account);
           }
         } catch (tokenError) {
-          console.error("Error fetching created tokens:", tokenError);
-          // Continue with other data even if token fetching fails
+          console.error("Error fetching created ScienceGents:", tokenError);
         }
         
         try {
-          // Get user's created capabilities
-          if (typeof factoryContract.getCapabilitiesOfCreator !== 'function') {
-            console.error("getCapabilitiesOfCreator method not found on factory contract");
-            throw new Error("Factory contract capability method not available");
+          // Get user's created capabilities from Supabase instead of blockchain
+          // This avoids the contract method errors
+          const { data: createdCapabilities, error: capabilitiesError } = await supabase
+            .from('capabilities')
+            .select('*')
+            .eq('creator', account);
+            
+          if (capabilitiesError) {
+            console.error("Error fetching capabilities from Supabase:", capabilitiesError);
           }
           
-          const createdCapabilities = await factoryContract.getCapabilitiesOfCreator(account);
-          console.log("Created capabilities:", createdCapabilities);
-          
-          if (createdCapabilities.length > 0) {
-            const capabilityDetailsPromises = createdCapabilities.map(async (capabilityId: string) => {
-              try {
-                // Get capability from Supabase
-                const { data } = await supabase
-                  .from('capabilities')
-                  .select('name, domain, revenue, usage_count, price, description, rating, display_image')
-                  .eq('id', capabilityId)
-                  .maybeSingle();
-                
-                if (data) {
-                  return {
-                    id: capabilityId,
-                    name: data.name,
-                    domain: data.domain,
-                    revenue: data.revenue || 0,
-                    usageCount: data.usage_count || 0,
-                    price: data.price || 0,
-                    description: data.description || '',
-                    rating: data.rating || 4.0,
-                    displayImage: data.display_image || null
-                  };
-                }
-                
-                // Fallback to blockchain data if not in Supabase
-                try {
-                  const [description, feeInETH, ] = await factoryContract.getCapabilityDetails(capabilityId);
-                  
-                  return {
-                    id: capabilityId,
-                    name: capabilityId, // Use ID as name if not in Supabase
-                    domain: 'Unknown',
-                    description,
-                    revenue: 0,
-                    usageCount: 0,
-                    price: feeInETH ? parseFloat(ethers.utils.formatEther(feeInETH)) : 0,
-                    rating: 4.0
-                  };
-                } catch (blockchainError) {
-                  console.error(`Error fetching blockchain details for capability ${capabilityId}:`, blockchainError);
-                  return null;
-                }
-              } catch (error) {
-                console.error(`Error fetching details for capability ${capabilityId}:`, error);
-                return null;
-              }
-            });
+          if (createdCapabilities && createdCapabilities.length > 0) {
+            console.log("Fetched capabilities from Supabase:", createdCapabilities);
             
-            const capabilityDetails = await Promise.all(capabilityDetailsPromises);
-            setUserCapabilities(capabilityDetails.filter(Boolean) as UserCapability[]);
+            const formattedCapabilities = createdCapabilities.map(cap => ({
+              id: cap.id,
+              name: cap.name || cap.id,
+              domain: cap.domain || 'Unknown',
+              revenue: cap.revenue || 0,
+              usageCount: cap.usage_count || 0,
+              price: cap.price || 0,
+              description: cap.description || '',
+              rating: cap.rating || 4.0,
+              displayImage: cap.display_image || null
+            }));
+            
+            setUserCapabilities(formattedCapabilities);
+          } else {
+            console.log("No capabilities found for address:", account);
           }
         } catch (capabilityError) {
           console.error("Error fetching created capabilities:", capabilityError);
-          // Continue with other data even if capability fetching fails
         }
         
         try {

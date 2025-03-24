@@ -33,7 +33,9 @@ export const fetchDeveloperProfile = async (walletAddress: string): Promise<Deve
     console.log("Raw data from Supabase:", data);
     
     // Transform Supabase JSON to typed SocialLink array
-    const socialLinks: SocialLink[] = Array.isArray(data.additional_social_links) 
+    const socialLinks: SocialLink[] = data.additional_social_links && 
+      typeof data.additional_social_links === 'object' && 
+      Array.isArray(data.additional_social_links) 
       ? data.additional_social_links.map((link: any) => ({
           type: link.type || '',
           url: link.url || ''
@@ -120,7 +122,9 @@ export const upsertDeveloperProfile = async (profile: DeveloperProfile): Promise
     
     // Transform back to typed DeveloperProfile
     const transformedData = data[0];
-    const socialLinks: SocialLink[] = Array.isArray(transformedData.additional_social_links) 
+    const socialLinks: SocialLink[] = transformedData.additional_social_links && 
+      typeof transformedData.additional_social_links === 'object' && 
+      Array.isArray(transformedData.additional_social_links) 
       ? transformedData.additional_social_links.map((link: any) => ({
           type: link.type || '',
           url: link.url || ''
@@ -162,29 +166,32 @@ export const uploadProfilePicture = async (file: File, walletAddress: string): P
     
     console.log("Starting profile picture upload for wallet:", walletAddress);
     
-    // Check if sciencegents bucket exists
-    const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
-    
-    if (bucketsError) {
-      console.error("Error listing buckets:", bucketsError);
-      throw bucketsError;
-    }
-    
-    const sciencegentsBucketExists = buckets?.some(bucket => bucket.name === 'sciencegents');
-    
-    if (!sciencegentsBucketExists) {
-      console.log("Creating sciencegents bucket");
-      // This will require admin privileges, might fail for regular users
-      const { error: createBucketError } = await supabase.storage.createBucket('sciencegents', { 
-        public: true 
-      });
+    // Check if sciencegents bucket exists and create it if it doesn't
+    try {
+      const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
       
-      if (createBucketError) {
-        console.error("Error creating bucket:", createBucketError);
-        // If bucket creation fails, try upload anyway - bucket might exist despite the error
+      if (bucketsError) {
+        console.error("Error listing buckets:", bucketsError);
       }
+      
+      const sciencegentsBucketExists = buckets?.some(bucket => bucket.name === 'sciencegents');
+      
+      if (!sciencegentsBucketExists) {
+        console.log("Creating sciencegents bucket");
+        const { error: createBucketError } = await supabase.storage.createBucket('sciencegents', { 
+          public: true 
+        });
+        
+        if (createBucketError) {
+          console.error("Error creating bucket:", createBucketError);
+        }
+      }
+    } catch (bucketError) {
+      console.error("Error checking bucket:", bucketError);
+      // Continue anyway - bucket might exist
     }
     
+    // Upload the file
     const fileExt = file.name.split('.').pop();
     const fileName = `${walletAddress}_${Date.now()}.${fileExt}`;
     const filePath = `developer_profiles/${fileName}`;
