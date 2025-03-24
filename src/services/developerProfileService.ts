@@ -69,21 +69,27 @@ export const upsertDeveloperProfile = async (profile: DeveloperProfile): Promise
       throw new Error("Wallet address is required");
     }
     
-    // Convert typed SocialLink array to regular JSON for Supabase
-    // This is the key change - we need to transform the SocialLink[] to a JSON format
-    // that Supabase can accept (Json type from Supabase's types)
+    // Create a deep copy of the profile to avoid modifying the original
+    const profileCopy = { ...profile };
+    
+    // For TypeScript strict typing, we need to properly cast the additional_social_links
+    // Convert the SocialLink[] to a format Supabase can accept
     const supabaseData = {
-      wallet_address: profile.wallet_address,
-      developer_name: profile.developer_name || null,
-      developer_email: profile.developer_email || null,
-      bio: profile.bio || null,
-      profile_pic: profile.profile_pic || null,
-      developer_twitter: profile.developer_twitter || null,
-      developer_telegram: profile.developer_telegram || null,
-      developer_github: profile.developer_github || null,
-      developer_website: profile.developer_website || null,
-      additional_social_links: profile.additional_social_links as unknown as Json
+      wallet_address: profileCopy.wallet_address,
+      developer_name: profileCopy.developer_name || null,
+      developer_email: profileCopy.developer_email || null,
+      bio: profileCopy.bio || null,
+      profile_pic: profileCopy.profile_pic || null,
+      developer_twitter: profileCopy.developer_twitter || null,
+      developer_telegram: profileCopy.developer_telegram || null,
+      developer_github: profileCopy.developer_github || null,
+      developer_website: profileCopy.developer_website || null,
+      // Cast the SocialLink[] to Json for Supabase
+      additional_social_links: (profileCopy.additional_social_links || []) as unknown as Json
     };
+    
+    // Debug to see what we're sending to Supabase
+    console.log("Upserting profile with data:", supabaseData);
     
     const { data, error } = await supabase
       .from('developer_profiles')

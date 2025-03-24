@@ -67,8 +67,11 @@ export function useDeveloperProfile() {
         wallet_address: address
       };
 
+      console.log("Updating profile with:", profileToUpdate);
+      
       const updated = await upsertDeveloperProfile(profileToUpdate);
       if (updated) {
+        console.log("Profile updated successfully:", updated);
         setProfile(updated);
         toast({
           title: "Success",
@@ -76,6 +79,12 @@ export function useDeveloperProfile() {
         });
         return updated;
       }
+      
+      toast({
+        title: "Error",
+        description: "Failed to update profile. No data returned.",
+        variant: "destructive"
+      });
       return null;
     } catch (err) {
       console.error('Error updating developer profile:', err);

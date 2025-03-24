@@ -1,6 +1,4 @@
-
 import React, { useState, useEffect } from 'react';
-import { useAccount } from 'wagmi';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
@@ -8,18 +6,19 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Label } from '@/components/ui/label';
 import { Loader2, Plus, Trash2, Upload, X } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
-import { fetchDeveloperProfile, upsertDeveloperProfile, uploadProfilePicture } from '@/services/developerProfileService';
+import { uploadProfilePicture } from '@/services/developerProfileService';
 import { DeveloperProfile, SocialLink } from '@/types/profile';
+import { useDeveloperProfile } from '@/hooks/useDeveloperProfile';
 
 const DeveloperProfileTab: React.FC = () => {
-  const { address } = useAccount();
+  const { profile, isLoading, updateProfile, refreshProfile } = useDeveloperProfile();
   const { toast } = useToast();
-  const [isLoading, setIsLoading] = useState(true);
+  
   const [isSaving, setIsSaving] = useState(false);
   const [profileImage, setProfileImage] = useState<File | null>(null);
   const [profileImagePreview, setProfileImagePreview] = useState<string | null>(null);
   const [formData, setFormData] = useState<DeveloperProfile>({
-    wallet_address: address || '',
+    wallet_address: '',
     developer_name: '',
     developer_email: '',
     bio: '',
@@ -30,48 +29,20 @@ const DeveloperProfileTab: React.FC = () => {
     additional_social_links: []
   });
 
-  // Fetch developer profile on mount and when address changes
+  // Fetch developer profile on mount and when profile changes
   useEffect(() => {
-    const loadProfile = async () => {
-      if (!address) return;
+    if (profile) {
+      console.log("Setting form data from profile:", profile);
+      setFormData({
+        ...profile,
+        additional_social_links: profile.additional_social_links || []
+      });
       
-      setIsLoading(true);
-      try {
-        const profile = await fetchDeveloperProfile(address);
-        if (profile) {
-          console.log("Loaded profile:", profile);
-          setFormData(profile);
-          if (profile.profile_pic) {
-            setProfileImagePreview(profile.profile_pic);
-          }
-        } else {
-          // Create a new empty profile with the wallet address
-          setFormData({
-            wallet_address: address,
-            additional_social_links: []
-          });
-        }
-      } catch (error) {
-        console.error("Error loading profile:", error);
-        toast({
-          title: "Error",
-          description: "Failed to load profile. Please try again.",
-          variant: "destructive"
-        });
-      } finally {
-        setIsLoading(false);
+      if (profile.profile_pic) {
+        setProfileImagePreview(profile.profile_pic);
       }
-    };
-    
-    loadProfile();
-  }, [address, toast]);
-
-  // Update wallet address when it changes
-  useEffect(() => {
-    if (address) {
-      setFormData(prev => ({ ...prev, wallet_address: address }));
     }
-  }, [address]);
+  }, [profile]);
 
   // Handle input changes
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -145,7 +116,7 @@ const DeveloperProfileTab: React.FC = () => {
 
   // Save profile
   const saveProfile = async () => {
-    if (!address) {
+    if (!formData.wallet_address) {
       toast({
         title: "Error",
         description: "Wallet not connected. Please connect your wallet.",
@@ -160,24 +131,27 @@ const DeveloperProfileTab: React.FC = () => {
       
       // Upload profile image if changed
       if (profileImage) {
-        const uploadedUrl = await uploadProfilePicture(profileImage, address);
+        const uploadedUrl = await uploadProfilePicture(profileImage, formData.wallet_address);
         if (uploadedUrl) {
           profilePicUrl = uploadedUrl;
         }
       }
       
       // Save profile data
-      const updatedProfile = await upsertDeveloperProfile({
+      const updatedProfile = await updateProfile({
         ...formData,
         profile_pic: profilePicUrl
       });
       
       if (updatedProfile) {
         console.log("Saved profile:", updatedProfile);
-        setFormData(updatedProfile);
+        
         if (profileImage) {
           setProfileImage(null);
         }
+        
+        // Refresh profile data
+        refreshProfile();
         
         toast({
           title: "Success",

@@ -15,10 +15,12 @@ import {
   MessageCircle,
   AlertCircle,
   Trash2,
-  Loader2
+  Loader2,
+  Save
 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useDeveloperProfile } from '@/hooks/useDeveloperProfile';
+import { useEffect as useEffectOriginal } from 'react';
 
 const PersonalDetails: React.FC = () => {
   const { 
@@ -32,9 +34,10 @@ const PersonalDetails: React.FC = () => {
     handleSelectChange
   } = useCapabilityWizard();
   
-  const { profile, isLoading: isProfileLoading } = useDeveloperProfile();
+  const { profile, isLoading: isProfileLoading, updateProfile } = useDeveloperProfile();
   const [profileImagePreview, setProfileImagePreview] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isAutoSaving, setIsAutoSaving] = useState(false);
   
   useEffect(() => {
     if (profileImage) {
@@ -48,6 +51,8 @@ const PersonalDetails: React.FC = () => {
   // Prefill form with developer profile data
   useEffect(() => {
     if (profile && !isProfileLoading) {
+      console.log("Prefilling capability form with profile data:", profile);
+      
       // Only update fields that are empty
       if (!formData.developerName && profile.developer_name) {
         handleSelectChange('developerName', profile.developer_name);
@@ -83,6 +88,66 @@ const PersonalDetails: React.FC = () => {
       }
     }
   }, [profile, isProfileLoading, formData, handleSelectChange, profileImage, profileImagePreview]);
+  
+  // Auto-save changes back to the developer profile
+  useEffect(() => {
+    // Don't auto-save if we're still loading the profile
+    if (isProfileLoading) return;
+    
+    // We'll use this effect to detect user-initiated changes and save them
+    // Create a timeout to avoid too many updates
+    const updateTimeout = setTimeout(async () => {
+      try {
+        // Only update if we have at least a name or email
+        if (formData.developerName || formData.developerEmail) {
+          
+          // Check if there are any changes to save
+          const hasChanges = 
+            (profile?.developer_name !== formData.developerName) ||
+            (profile?.developer_email !== formData.developerEmail) ||
+            (profile?.bio !== formData.bio) ||
+            (profile?.developer_twitter !== formData.developerTwitter) ||
+            (profile?.developer_telegram !== formData.developerTelegram) ||
+            (profile?.developer_github !== formData.developerGithub) ||
+            (profile?.developer_website !== formData.developerWebsite);
+          
+          if (hasChanges) {
+            console.log("Auto-saving profile changes from capability form");
+            setIsAutoSaving(true);
+            
+            await updateProfile({
+              developer_name: formData.developerName,
+              developer_email: formData.developerEmail,
+              bio: formData.bio,
+              developer_twitter: formData.developerTwitter,
+              developer_telegram: formData.developerTelegram,
+              developer_github: formData.developerGithub,
+              developer_website: formData.developerWebsite
+            });
+            
+            console.log("Auto-saved developer profile from capability form");
+            setIsAutoSaving(false);
+          }
+        }
+      } catch (error) {
+        console.error("Error auto-saving developer profile:", error);
+        setIsAutoSaving(false);
+      }
+    }, 1500); // Debounce for 1.5 seconds
+    
+    return () => clearTimeout(updateTimeout);
+  }, [
+    formData.developerName, 
+    formData.developerEmail, 
+    formData.bio, 
+    formData.developerTwitter,
+    formData.developerTelegram,
+    formData.developerGithub,
+    formData.developerWebsite,
+    isProfileLoading,
+    profile,
+    updateProfile
+  ]);
   
   const handleProfileImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

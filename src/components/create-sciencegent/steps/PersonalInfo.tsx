@@ -21,12 +21,14 @@ const PersonalInfo: React.FC<PersonalInfoProps> = ({ formData, handleInputChange
   // Prefill form with developer profile data when available
   useEffect(() => {
     if (profile && !isLoading) {
+      console.log("Prefilling form with profile data:", profile);
+      
       // Create a synthetic event for each field we want to update
       const createChangeEvent = (name: string, value: string) => ({
         target: { name, value }
       } as React.ChangeEvent<HTMLInputElement>);
       
-      // Update all fields from the profile
+      // Update all fields from the profile if they are empty
       if (profile.developer_name && !formData.developerName) {
         handleInputChange(createChangeEvent('developerName', profile.developer_name));
       }
@@ -69,17 +71,34 @@ const PersonalInfo: React.FC<PersonalInfoProps> = ({ formData, handleInputChange
         // Only update if we have at least a name or email
         if (formData.developerName || formData.developerEmail) {
           setIsAutoSaving(true);
-          await updateProfile({
-            developer_name: formData.developerName,
-            developer_email: formData.developerEmail,
-            bio: formData.bio,
-            developer_twitter: formData.developerTwitter,
-            developer_telegram: formData.developerTelegram,
-            developer_github: formData.developerGithub,
-            developer_website: formData.developerWebsite
-          });
           
-          console.log("Auto-saved developer profile");
+          // Check if there are any changes to save
+          const hasChanges = 
+            (profile?.developer_name !== formData.developerName) ||
+            (profile?.developer_email !== formData.developerEmail) ||
+            (profile?.bio !== formData.bio) ||
+            (profile?.developer_twitter !== formData.developerTwitter) ||
+            (profile?.developer_telegram !== formData.developerTelegram) ||
+            (profile?.developer_github !== formData.developerGithub) ||
+            (profile?.developer_website !== formData.developerWebsite);
+          
+          if (hasChanges) {
+            console.log("Auto-saving profile changes");
+            await updateProfile({
+              developer_name: formData.developerName,
+              developer_email: formData.developerEmail,
+              bio: formData.bio,
+              developer_twitter: formData.developerTwitter,
+              developer_telegram: formData.developerTelegram,
+              developer_github: formData.developerGithub,
+              developer_website: formData.developerWebsite
+            });
+            
+            console.log("Auto-saved developer profile");
+          } else {
+            console.log("No changes to save");
+          }
+          
           setIsAutoSaving(false);
         }
       } catch (error) {
@@ -97,7 +116,8 @@ const PersonalInfo: React.FC<PersonalInfoProps> = ({ formData, handleInputChange
     formData.developerTelegram,
     formData.developerGithub,
     formData.developerWebsite,
-    updateProfile
+    updateProfile,
+    profile
   ]);
 
   return (
