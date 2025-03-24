@@ -13,6 +13,13 @@ export interface DashboardScienceGent {
   tradingEnabled: boolean;
   isMigrated: boolean;
   maturityProgress: number;
+  description?: string;
+  profilePic?: string;
+  tokenPrice?: number;
+  priceChange24h?: number;
+  virtualETH?: number;
+  collectedFees?: number;
+  capabilities?: string[];
 }
 
 export interface UserCapability {
@@ -21,6 +28,10 @@ export interface UserCapability {
   domain: string;
   revenue: number;
   usageCount: number;
+  price?: number;
+  description?: string;
+  rating?: number;
+  displayImage?: string;
 }
 
 export interface DashboardInvestment {
@@ -29,6 +40,9 @@ export interface DashboardInvestment {
   tokenSymbol: string;
   balance: string;
   balanceUSD: number;
+  tokenPrice?: number;
+  priceChange24h?: number;
+  domain?: string;
 }
 
 export const useUserDashboard = () => {
@@ -137,9 +151,17 @@ export const useUserDashboard = () => {
               // Get token data from Supabase for additional info
               const { data: dbData } = await supabase
                 .from('sciencegents')
-                .select('name, symbol, market_cap, maturity_progress')
+                .select('name, symbol, market_cap, maturity_progress, token_price, price_change_24h, description, profile_pic, virtual_eth, collected_fees, domain')
                 .eq('address', tokenAddress)
                 .single();
+              
+              // Get capabilities for this ScienceGent
+              const { data: capabilityData } = await supabase
+                .from('sciencegent_capabilities')
+                .select('capability_id')
+                .eq('sciencegent_address', tokenAddress);
+                
+              const capabilities = capabilityData ? capabilityData.map(cap => cap.capability_id) : [];
               
               return {
                 address: tokenAddress,
@@ -148,7 +170,15 @@ export const useUserDashboard = () => {
                 marketCap: dbData?.market_cap || 0,
                 tradingEnabled: details.tradingEnabled,
                 isMigrated: details.isMigrated,
-                maturityProgress: dbData?.maturity_progress || 0
+                maturityProgress: dbData?.maturity_progress || 0,
+                tokenPrice: dbData?.token_price || 0,
+                priceChange24h: dbData?.price_change_24h || 0,
+                description: dbData?.description || '',
+                profilePic: dbData?.profile_pic || '',
+                virtualETH: dbData?.virtual_eth || 0,
+                collectedFees: dbData?.collected_fees || 0,
+                domain: dbData?.domain || 'General',
+                capabilities
               };
             } catch (error) {
               console.error(`Error fetching details for token ${tokenAddress}:`, error);
@@ -169,7 +199,7 @@ export const useUserDashboard = () => {
               // Get capability from Supabase
               const { data } = await supabase
                 .from('capabilities')
-                .select('name, domain, revenue, usage_count')
+                .select('name, domain, revenue, usage_count, price, description, rating, display_image')
                 .eq('id', capabilityId)
                 .single();
               
@@ -179,12 +209,16 @@ export const useUserDashboard = () => {
                   name: data.name,
                   domain: data.domain,
                   revenue: data.revenue || 0,
-                  usageCount: data.usage_count || 0
+                  usageCount: data.usage_count || 0,
+                  price: data.price || 0,
+                  description: data.description || '',
+                  rating: data.rating || 4.0,
+                  displayImage: data.display_image || null
                 };
               }
               
               // Fallback to blockchain data if not in Supabase
-              const [description, , ] = await factory.getCapabilityDetails(capabilityId);
+              const [description, feeInETH, ] = await factory.getCapabilityDetails(capabilityId);
               
               return {
                 id: capabilityId,
@@ -192,7 +226,9 @@ export const useUserDashboard = () => {
                 domain: 'Unknown',
                 description,
                 revenue: 0,
-                usageCount: 0
+                usageCount: 0,
+                price: feeInETH ? parseFloat(ethers.utils.formatEther(feeInETH)) : 0,
+                rating: 4.0
               };
             } catch (error) {
               console.error(`Error fetching details for capability ${capabilityId}:`, error);
@@ -204,11 +240,10 @@ export const useUserDashboard = () => {
           setUserCapabilities(capabilityDetails.filter(Boolean) as UserCapability[]);
         }
         
-        // Get user's investments (simplified version - would need a token indexer in production)
-        // For now, we'll get data from Supabase for demo purposes
+        // Get user's investments
         const { data: scienceGents } = await supabase
           .from('sciencegents')
-          .select('address, name, symbol, token_price');
+          .select('address, name, symbol, token_price, price_change_24h, domain');
         
         if (scienceGents?.length) {
           const investmentsPromises = scienceGents.map(async (token) => {
@@ -231,7 +266,10 @@ export const useUserDashboard = () => {
                   tokenName: token.name,
                   tokenSymbol: token.symbol,
                   balance: formattedBalance,
-                  balanceUSD
+                  balanceUSD,
+                  tokenPrice: token.token_price || 0,
+                  priceChange24h: token.price_change_24h || 0,
+                  domain: token.domain || 'General'
                 };
               }
               
