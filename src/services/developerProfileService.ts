@@ -184,6 +184,7 @@ export const uploadProfilePicture = async (file: File, walletAddress: string): P
         
         if (createBucketError) {
           console.error("Error creating bucket:", createBucketError);
+          throw createBucketError;
         }
       }
     } catch (bucketError) {

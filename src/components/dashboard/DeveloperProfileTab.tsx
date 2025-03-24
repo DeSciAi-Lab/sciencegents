@@ -66,7 +66,7 @@ const DeveloperProfileTab: React.FC = () => {
   };
   
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+    e.preventDefault(); // This ensures the form doesn't redirect
     
     if (!address) {
       toast({
