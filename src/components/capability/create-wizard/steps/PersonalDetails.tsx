@@ -2,7 +2,7 @@
 import React from 'react';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Info, Plus, HelpCircle, X } from 'lucide-react';
+import { Info, Plus, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCapabilityWizard } from '../CapabilityWizardContext';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -61,7 +61,7 @@ const PersonalDetails: React.FC = () => {
 
         <div className="space-y-2">
           <label htmlFor="profileImage" className="block text-sm font-medium">
-            Profile picture /Avatar
+            Your Profile picture /Avatar
           </label>
           <div className="border border-dashed border-gray-300 rounded-md p-4 flex flex-col items-center justify-center bg-gray-50">
             {profileImage ? (
@@ -179,30 +179,50 @@ const PersonalDetails: React.FC = () => {
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 opacity-50">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <label className="block text-xs text-gray-500">
                   Twitter
                 </label>
-                <Input placeholder="https://..." disabled />
+                <Input 
+                  name="developerTwitter" 
+                  placeholder="https://..." 
+                  onChange={handleInputChange} 
+                  value={formData.developerTwitter || ''} 
+                />
               </div>
               <div className="space-y-2">
                 <label className="block text-xs text-gray-500">
                   Telegram
                 </label>
-                <Input placeholder="https://..." disabled />
+                <Input 
+                  name="developerTelegram" 
+                  placeholder="https://..." 
+                  onChange={handleInputChange} 
+                  value={formData.developerTelegram || ''} 
+                />
               </div>
               <div className="space-y-2">
                 <label className="block text-xs text-gray-500">
                   Github
                 </label>
-                <Input placeholder="https://..." disabled />
+                <Input 
+                  name="developerGithub" 
+                  placeholder="https://..." 
+                  onChange={handleInputChange} 
+                  value={formData.developerGithub || ''} 
+                />
               </div>
               <div className="space-y-2">
                 <label className="block text-xs text-gray-500">
                   Website
                 </label>
-                <Input placeholder="https://..." disabled />
+                <Input 
+                  name="developerWebsite" 
+                  placeholder="https://..." 
+                  onChange={handleInputChange} 
+                  value={formData.developerWebsite || ''} 
+                />
               </div>
             </div>
           )}
@@ -216,7 +236,7 @@ const PersonalDetails: React.FC = () => {
             onClick={() => addSocialLink('developerSocialLinks')}
           >
             <Plus className="h-4 w-4 mr-1" />
-            Add social link
+            Add more
           </Button>
         </div>
       </div>

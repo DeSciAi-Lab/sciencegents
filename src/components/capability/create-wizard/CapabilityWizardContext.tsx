@@ -2,7 +2,6 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/components/ui/use-toast';
-import { CapabilityFormValues } from '@/utils/formSchemas';
 import { checkIfWalletIsConnected } from '@/utils/walletUtils';
 import { ethers } from 'ethers';
 import { contractConfig, factoryABI } from '@/utils/contractConfig';
@@ -17,10 +16,18 @@ const initialFormData = {
   description: '',
   fee: '',
   creatorAddress: '',
+  twitter: '',
+  telegram: '',
+  github: '',
+  website: '',
   socialLinks: [] as {type: string, url: string}[],
   developerName: '',
   developerEmail: '',
   bio: '',
+  developerTwitter: '',
+  developerTelegram: '',
+  developerGithub: '',
+  developerWebsite: '',
   developerSocialLinks: [] as {type: string, url: string}[]
 };
 
@@ -37,6 +44,7 @@ interface CapabilityWizardContextType {
   documentation: File | null;
   integrationGuide: File | null;
   additionalFiles: File[] | null;
+  displayImage: File | null;
   profileImage: File | null;
   isSubmitting: boolean;
   handleInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
@@ -44,6 +52,7 @@ interface CapabilityWizardContextType {
   setDocumentation: React.Dispatch<React.SetStateAction<File | null>>;
   setIntegrationGuide: React.Dispatch<React.SetStateAction<File | null>>;
   setAdditionalFiles: React.Dispatch<React.SetStateAction<File[] | null>>;
+  setDisplayImage: React.Dispatch<React.SetStateAction<File | null>>;
   setProfileImage: React.Dispatch<React.SetStateAction<File | null>>;
   nextStep: () => void;
   prevStep: () => void;
@@ -66,6 +75,7 @@ export const CapabilityWizardProvider: React.FC<{children: React.ReactNode}> = (
   const [documentation, setDocumentation] = useState<File | null>(null);
   const [integrationGuide, setIntegrationGuide] = useState<File | null>(null);
   const [additionalFiles, setAdditionalFiles] = useState<File[] | null>(null);
+  const [displayImage, setDisplayImage] = useState<File | null>(null);
   const [profileImage, setProfileImage] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -227,6 +237,42 @@ export const CapabilityWizardProvider: React.FC<{children: React.ReactNode}> = (
       });
       
       await tx.wait();
+
+      // Process uploaded files
+      const fileUploads = [];
+      if (documentation) {
+        fileUploads.push(uploadFileToStorage(documentation, 'documentation', formData.id));
+      }
+      if (integrationGuide) {
+        fileUploads.push(uploadFileToStorage(integrationGuide, 'guide', formData.id));
+      }
+      if (additionalFiles && additionalFiles.length > 0) {
+        additionalFiles.forEach((file, index) => {
+          fileUploads.push(uploadFileToStorage(file, `additional_${index}`, formData.id));
+        });
+      }
+      if (displayImage) {
+        fileUploads.push(uploadFileToStorage(displayImage, 'display_image', formData.id));
+      }
+      if (profileImage) {
+        fileUploads.push(uploadFileToStorage(profileImage, 'profile_image', formData.id));
+      }
+
+      // Wait for all file uploads to complete
+      const uploadResults = await Promise.allSettled(fileUploads);
+      const fileUrls = uploadResults
+        .filter(result => result.status === 'fulfilled')
+        .map(result => (result as PromiseFulfilledResult<{path: string, url: string}>).value);
+      
+      // Build storage links object for metadata
+      const storageLinks: Record<string, string> = {};
+      fileUrls.forEach(file => {
+        if (file.path.includes('documentation')) storageLinks.documentation = file.url;
+        if (file.path.includes('guide')) storageLinks.integrationGuide = file.url;
+        if (file.path.includes('additional_')) storageLinks[`additional_${file.path.split('_').pop()}`] = file.url;
+        if (file.path.includes('display_image')) storageLinks.displayImage = file.url;
+        if (file.path.includes('profile_image')) storageLinks.profileImage = file.url;
+      });
       
       // Create a capability object to add to Supabase
       const capabilityObj = {
@@ -243,12 +289,33 @@ export const CapabilityWizardProvider: React.FC<{children: React.ReactNode}> = (
           revenue: 0
         },
         features: [],
-        socialLinks: formData.socialLinks,
-        developerInfo: {
+        display_image: storageLinks.displayImage,
+        developer_profile_pic: storageLinks.profileImage,
+        social_links: [
+          ...(formData.twitter ? [{ type: 'twitter', url: formData.twitter }] : []),
+          ...(formData.telegram ? [{ type: 'telegram', url: formData.telegram }] : []),
+          ...(formData.github ? [{ type: 'github', url: formData.github }] : []),
+          ...(formData.website ? [{ type: 'website', url: formData.website }] : []),
+          ...formData.socialLinks
+        ],
+        developer_info: {
           name: formData.developerName,
           email: formData.developerEmail,
           bio: formData.bio,
-          socialLinks: formData.developerSocialLinks
+          social_links: [
+            ...(formData.developerTwitter ? [{ type: 'twitter', url: formData.developerTwitter }] : []),
+            ...(formData.developerTelegram ? [{ type: 'telegram', url: formData.developerTelegram }] : []),
+            ...(formData.developerGithub ? [{ type: 'github', url: formData.developerGithub }] : []),
+            ...(formData.developerWebsite ? [{ type: 'website', url: formData.developerWebsite }] : []),
+            ...formData.developerSocialLinks
+          ]
+        },
+        files: {
+          documentation: storageLinks.documentation,
+          integrationGuide: storageLinks.integrationGuide,
+          additionalFiles: Object.entries(storageLinks)
+            .filter(([key]) => key.startsWith('additional_'))
+            .map(([_, url]) => url)
         }
       };
       
@@ -282,6 +349,33 @@ export const CapabilityWizardProvider: React.FC<{children: React.ReactNode}> = (
     }
   };
 
+  // Helper function to upload files to storage
+  const uploadFileToStorage = async (file: File, fileType: string, capabilityId: string): Promise<{path: string, url: string}> => {
+    try {
+      // Create a unique file name
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${capabilityId}_${fileType}_${Date.now()}.${fileExt}`;
+      const filePath = `capability_files/${fileName}`;
+      
+      // Create form data for upload
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      // Mock upload - in a real app, would upload to storage service
+      console.log(`Uploading file: ${filePath}`);
+      
+      // Return mock URL for now
+      // In a real implementation, this would be the actual URL from your storage service
+      return {
+        path: filePath,
+        url: `https://example.com/storage/${filePath}`
+      };
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      throw error;
+    }
+  };
+
   return (
     <CapabilityWizardContext.Provider value={{
       currentStep,
@@ -289,6 +383,7 @@ export const CapabilityWizardProvider: React.FC<{children: React.ReactNode}> = (
       documentation,
       integrationGuide,
       additionalFiles,
+      displayImage,
       profileImage,
       isSubmitting,
       handleInputChange,
@@ -296,6 +391,7 @@ export const CapabilityWizardProvider: React.FC<{children: React.ReactNode}> = (
       setDocumentation,
       setIntegrationGuide,
       setAdditionalFiles,
+      setDisplayImage,
       setProfileImage,
       nextStep,
       prevStep,

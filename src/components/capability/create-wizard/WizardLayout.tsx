@@ -15,33 +15,19 @@ const WizardLayout: React.FC<WizardLayoutProps> = ({ children }) => {
     prevStep, 
     nextStep,
     canProceed,
-    submitCapability,
-    isSubmitting
+    isSubmitting,
+    submitCapability
   } = useCapabilityWizard();
   
   const isLastStep = currentStep === wizardSteps.length;
   const isFirstStep = currentStep === 1;
   
-  const renderNextButton = () => {
+  const handleNext = () => {
     if (isLastStep) {
-      return (
-        <Button 
-          onClick={submitCapability} 
-          disabled={isSubmitting}
-          className="min-w-[120px]"
-        >
-          {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          Launch
-        </Button>
-      );
+      submitCapability();
+    } else {
+      nextStep();
     }
-    
-    return (
-      <Button onClick={nextStep} disabled={!canProceed} className="min-w-[120px]">
-        Continue
-        <ChevronRight className="ml-2 h-4 w-4" />
-      </Button>
-    );
   };
   
   return (
@@ -52,7 +38,7 @@ const WizardLayout: React.FC<WizardLayoutProps> = ({ children }) => {
         </div>
         
         <div className="flex">
-          <div className="w-56 p-6 border-r bg-gray-50">
+          <div className="w-72 p-6 border-r bg-gray-50">
             <WizardProgress 
               steps={wizardSteps} 
               currentStep={currentStep} 
@@ -75,7 +61,15 @@ const WizardLayout: React.FC<WizardLayoutProps> = ({ children }) => {
           </div>
           
           <div>
-            {renderNextButton()}
+            <Button 
+              onClick={handleNext} 
+              disabled={!canProceed || isSubmitting}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {isLastStep ? "Launch" : "Continue"}
+              {!isLastStep && <ChevronRight className="ml-2 h-4 w-4" />}
+            </Button>
           </div>
         </div>
       </div>

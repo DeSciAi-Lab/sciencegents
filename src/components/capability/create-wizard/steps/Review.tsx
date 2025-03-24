@@ -10,6 +10,7 @@ const Review: React.FC = () => {
     documentation, 
     integrationGuide, 
     additionalFiles,
+    displayImage,
     profileImage 
   } = useCapabilityWizard();
 
@@ -45,25 +46,24 @@ const Review: React.FC = () => {
 
   return (
     <div className="space-y-8">
-      {profileImage && (
-        <div className="flex justify-end">
-          <Avatar className="h-16 w-16 rounded-full">
-            <AvatarImage src={URL.createObjectURL(profileImage)} alt={formData.name} />
-            <AvatarFallback className="bg-indigo-500 text-white text-lg">
-              {formData.name ? getInitials(formData.name) : 'CA'}
-            </AvatarFallback>
-          </Avatar>
-        </div>
-      )}
-
+      {/* Basic Information Section */}
       <div className="bg-blue-50 border-blue-100 p-6 rounded-md">
-        <h3 className="font-medium mb-4">Basic Information</h3>
+        <div className="flex justify-between items-start">
+          <h3 className="font-medium mb-4">Basic Information</h3>
+          {displayImage && (
+            <Avatar className="h-16 w-16 rounded-full">
+              <AvatarImage src={URL.createObjectURL(displayImage)} alt={formData.name} />
+              <AvatarFallback className="bg-indigo-500 text-white text-lg">
+                {formData.name ? getInitials(formData.name) : 'CA'}
+              </AvatarFallback>
+            </Avatar>
+          )}
+        </div>
+
         <div className="grid grid-cols-1 gap-2 text-sm">
-          <div className="flex flex-wrap">
-            {formData.name && <span>Capability Name - {formData.name}</span>}
-            {formData.id && <span className="ml-2">{formData.name ? ',' : ''} ID - {formData.id}</span>}
-            {formData.domain && <span className="ml-2">{(formData.name || formData.id) ? ',' : ''} Domain - {formData.domain}</span>}
-          </div>
+          {formData.name && <div><span>Capability Name - {formData.name}</span></div>}
+          {formData.id && <div><span>ID - {formData.id}</span></div>}
+          {formData.domain && <div><span>Domain - {formData.domain}</span></div>}
           
           {formData.description && (
             <div>
@@ -71,15 +71,25 @@ const Review: React.FC = () => {
             </div>
           )}
           
-          <div className="flex flex-wrap">
-            {formData.fee && <span>Capability Fee - {formData.fee} ETH</span>}
-            {formData.creatorAddress && (
-              <span className="ml-2">
-                {formData.fee ? ',' : ''} Fee receiving address - {formData.creatorAddress}
-              </span>
-            )}
-          </div>
+          {formData.fee && (
+            <div>
+              <span>Capability Fee - {formData.fee} ETH</span>
+            </div>
+          )}
+
+          {formData.creatorAddress && (
+            <div>
+              <span>Fee receiving address - {formData.creatorAddress}</span>
+            </div>
+          )}
           
+          {/* Show specific social fields if filled in */}
+          {formData.twitter && <div><span>Twitter - {formData.twitter}</span></div>}
+          {formData.telegram && <div><span>Telegram - {formData.telegram}</span></div>}
+          {formData.github && <div><span>Github - {formData.github}</span></div>}
+          {formData.website && <div><span>Website - {formData.website}</span></div>}
+          
+          {/* Show additional social links if added */}
           {formData.socialLinks.length > 0 && (
             <div className="flex flex-wrap">
               {renderSocialLinks(formData.socialLinks)}
@@ -88,6 +98,7 @@ const Review: React.FC = () => {
         </div>
       </div>
 
+      {/* Documents Section - only show if files were uploaded */}
       {totalFiles > 0 && (
         <div className="bg-orange-50 border-orange-100 p-6 rounded-md">
           <h3 className="font-medium mb-4">Documents Uploaded</h3>
@@ -122,48 +133,57 @@ const Review: React.FC = () => {
         </div>
       )}
 
-      {(formData.developerName || formData.developerEmail || formData.bio || formData.developerSocialLinks.length > 0) && (
-        <>
-          {profileImage && (
-            <div className="flex justify-end">
+      {/* Developer Information Section - only show if any developer info was provided */}
+      {(formData.developerName || formData.developerEmail || formData.bio || 
+        formData.developerTwitter || formData.developerTelegram || 
+        formData.developerGithub || formData.developerWebsite || 
+        formData.developerSocialLinks.length > 0) && (
+        <div className="bg-blue-50 border-blue-100 p-6 rounded-md">
+          <div className="flex justify-between items-start">
+            <h3 className="font-medium mb-4">Developer Information</h3>
+            {profileImage && (
               <Avatar className="h-16 w-16 rounded-full">
                 <AvatarImage src={URL.createObjectURL(profileImage)} alt={formData.developerName} />
                 <AvatarFallback className="bg-indigo-500 text-white text-lg">
                   {formData.developerName ? getInitials(formData.developerName) : 'DV'}
                 </AvatarFallback>
               </Avatar>
-            </div>
-          )}
-
-          <div className="bg-blue-50 border-blue-100 p-6 rounded-md">
-            <h3 className="font-medium mb-4">Developer Information</h3>
-            <div className="grid grid-cols-1 gap-2 text-sm">
-              {formData.developerName && (
-                <div className="flex flex-wrap">
-                  <span>Developer Name - {formData.developerName}</span>
-                </div>
-              )}
-              
-              {formData.developerEmail && (
-                <div className="flex flex-wrap">
-                  <span>Email - {formData.developerEmail}</span>
-                </div>
-              )}
-              
-              {formData.bio && (
-                <div>
-                  <span>Bio - {formData.bio}</span>
-                </div>
-              )}
-              
-              {formData.developerSocialLinks.length > 0 && (
-                <div className="flex flex-wrap">
-                  {renderSocialLinks(formData.developerSocialLinks)}
-                </div>
-              )}
-            </div>
+            )}
           </div>
-        </>
+
+          <div className="grid grid-cols-1 gap-2 text-sm">
+            {formData.developerName && (
+              <div>
+                <span>Developer Name - {formData.developerName}</span>
+              </div>
+            )}
+            
+            {formData.developerEmail && (
+              <div>
+                <span>Email - {formData.developerEmail}</span>
+              </div>
+            )}
+            
+            {formData.bio && (
+              <div>
+                <span>Bio - {formData.bio}</span>
+              </div>
+            )}
+            
+            {/* Show developer social links if filled in */}
+            {formData.developerTwitter && <div><span>Twitter - {formData.developerTwitter}</span></div>}
+            {formData.developerTelegram && <div><span>Telegram - {formData.developerTelegram}</span></div>}
+            {formData.developerGithub && <div><span>Github - {formData.developerGithub}</span></div>}
+            {formData.developerWebsite && <div><span>Website - {formData.developerWebsite}</span></div>}
+            
+            {/* Show additional social links if added */}
+            {formData.developerSocialLinks.length > 0 && (
+              <div className="flex flex-wrap">
+                {renderSocialLinks(formData.developerSocialLinks)}
+              </div>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );

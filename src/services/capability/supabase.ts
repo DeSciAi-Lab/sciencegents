@@ -81,6 +81,14 @@ export const upsertCapabilityToSupabase = async (capability: Capability, isAdmin
       rating: capability.stats.rating,
       revenue: capability.stats.revenue,
       features: capability.features,
+      display_image: capability.display_image, // New field
+      developer_profile_pic: capability.developer_profile_pic, // New field
+      social_links: capability.social_links ? JSON.stringify(capability.social_links) : null, // New field
+      developer_social_links: capability.developer_info?.social_links ? JSON.stringify(capability.developer_info.social_links) : null, // New field
+      additional_files: capability.files?.additionalFiles ? JSON.stringify(capability.files.additionalFiles) : null, // New field
+      developer_name: capability.developer_info?.name || null,
+      developer_email: capability.developer_info?.email || null,
+      bio: capability.developer_info?.bio || null,
       last_synced_at: new Date().toISOString()
     };
 
