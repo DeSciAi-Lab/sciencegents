@@ -37,7 +37,7 @@ const WizardLayout: React.FC<WizardLayoutProps> = ({ children }) => {
     }
     
     return (
-      <Button onClick={nextStep} disabled={!canProceed}>
+      <Button onClick={nextStep} disabled={!canProceed} className="min-w-[120px]">
         Continue
         <ChevronRight className="ml-2 h-4 w-4" />
       </Button>
@@ -52,7 +52,7 @@ const WizardLayout: React.FC<WizardLayoutProps> = ({ children }) => {
         </div>
         
         <div className="flex">
-          <div className="w-64 p-6 border-r bg-gray-50">
+          <div className="w-56 p-6 border-r bg-gray-50">
             <WizardProgress 
               steps={wizardSteps} 
               currentStep={currentStep} 

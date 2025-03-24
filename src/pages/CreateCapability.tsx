@@ -9,7 +9,7 @@ const CreateCapability = () => {
     <div className="min-h-screen flex flex-col bg-gray-50">
       <Navbar />
       
-      <main className="flex-grow pt-24 pb-16">
+      <main className="flex-grow pt-10 pb-16">
         <div className="container mx-auto px-4 sm:px-6">
           <CapabilityWizard />
         </div>

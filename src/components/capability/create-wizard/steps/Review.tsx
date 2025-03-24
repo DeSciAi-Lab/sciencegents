@@ -1,15 +1,14 @@
 
 import React from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Card, CardContent } from '@/components/ui/card';
 import { useCapabilityWizard } from '../CapabilityWizardContext';
-import { ethers } from 'ethers';
 
 const Review: React.FC = () => {
   const { 
     formData, 
     documentation, 
     integrationGuide, 
+    additionalFiles,
     profileImage 
   } = useCapabilityWizard();
 
@@ -24,129 +23,88 @@ const Review: React.FC = () => {
 
   return (
     <div className="space-y-8">
-      <div className="flex items-center gap-4 mb-6">
+      <div className="flex justify-end">
         <Avatar className="h-16 w-16 rounded-full">
           {profileImage ? (
             <AvatarImage src={URL.createObjectURL(profileImage)} alt={formData.name} />
           ) : (
-            <AvatarFallback className="bg-primary text-white text-lg">
-              {formData.name ? getInitials(formData.name) : 'CP'}
+            <AvatarFallback className="bg-indigo-500 text-white text-lg">
+              {formData.name ? getInitials(formData.name) : 'LO'}
             </AvatarFallback>
           )}
         </Avatar>
       </div>
 
-      <Card className="bg-blue-50 border-blue-100">
-        <CardContent className="p-6">
-          <h3 className="font-semibold mb-4">Basic Information</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-sm">
-            <div>
-              <span className="text-gray-500 mr-2">Capability Name:</span>
-              <span className="font-medium">{formData.name || 'XXXXXXXXXX'}</span>
-            </div>
-            <div>
-              <span className="text-gray-500 mr-2">ID:</span>
-              <span className="font-medium">{formData.id || 'XXXXXXXXXX'}</span>
-            </div>
-            <div>
-              <span className="text-gray-500 mr-2">Domain:</span>
-              <span className="font-medium">{formData.domain || 'XXXXXXXXXX'}</span>
-            </div>
-            <div>
-              <span className="text-gray-500 mr-2">Description:</span>
-              <span className="font-medium line-clamp-1">{formData.description || 'XXXXXXXXXX'}</span>
-            </div>
-            <div>
-              <span className="text-gray-500 mr-2">Twitter:</span>
-              <span className="font-medium">{formData.twitter || 'XXXXXXXXXX'}</span>
-            </div>
-            <div>
-              <span className="text-gray-500 mr-2">Telegram:</span>
-              <span className="font-medium">{formData.telegram || 'XXXXXXXXXX'}</span>
-            </div>
-            <div>
-              <span className="text-gray-500 mr-2">Github:</span>
-              <span className="font-medium">{formData.github || 'XXXXXXXXXX'}</span>
-            </div>
-            <div>
-              <span className="text-gray-500 mr-2">Website:</span>
-              <span className="font-medium">{formData.website || 'XXXXXXXXXX'}</span>
-            </div>
+      <div className="bg-blue-50 border-blue-100 p-6 rounded-md">
+        <h3 className="font-medium mb-4">Basic Information</h3>
+        <div className="grid grid-cols-1 gap-2 text-sm">
+          <div className="flex flex-wrap">
+            <span>Capability Name - {formData.name || 'XXXXXXXXXXX'},</span>
+            <span className="ml-2">ID - {formData.id || 'XXXXXXXXXXX'},</span>
+            <span className="ml-2">Domain - {formData.domain || 'XXXXXXXXXXX'}</span>
           </div>
-        </CardContent>
-      </Card>
+          <div>
+            <span>Description - {formData.description || 'XXXXXXXXXXX'}</span>
+          </div>
+          <div className="flex flex-wrap">
+            <span>capability Fee - {formData.fee || 'XXXXXXXX'},</span>
+            <span className="ml-2">capability receiving address - {formData.creatorAddress || 'XXXXXXX'}</span>
+          </div>
+          <div className="flex flex-wrap">
+            <span>Twitter- {formData.twitter || 'XXXXXXXX'},</span>
+            <span className="ml-2">Telegram - {formData.telegram || 'XXXXXXX'},</span>
+            <span className="ml-2">Github - {formData.github || 'XXXXXXX'},</span>
+            <span className="ml-2">Website - {formData.website || 'XXXXXXXXXX'}</span>
+          </div>
+        </div>
+      </div>
 
-      <Card className="bg-orange-50 border-orange-100">
-        <CardContent className="p-6">
-          <h3 className="font-semibold mb-4">Documents Uploaded</h3>
-          <div className="space-y-2 text-sm">
-            {documentation || integrationGuide ? (
-              <>
-                {documentation && (
-                  <div className="flex items-center gap-2">
-                    <span>• Documentation:</span>
-                    <span className="font-medium">{documentation.name}</span>
-                  </div>
-                )}
-                {integrationGuide && (
-                  <div className="flex items-center gap-2">
-                    <span>• Integration Guide:</span>
-                    <span className="font-medium">{integrationGuide.name}</span>
-                  </div>
-                )}
-              </>
-            ) : (
-              <div className="text-gray-500">No documents uploaded</div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+      <div className="bg-orange-50 border-orange-100 p-6 rounded-md">
+        <h3 className="font-medium mb-4">Documents Uploaded</h3>
+        <div className="text-sm">
+          {documentation || integrationGuide || additionalFiles ? (
+            <div>
+              {documentation?.name || 'XXXXXXXXXX.pdf'}, {integrationGuide?.name || 'xxxxxxxx.jpeg'}, {additionalFiles?.name || 'xxxxxxx.pdf'}, xxxxxxx.txt, xxxxxxxx.md
+            </div>
+          ) : (
+            <div>No documents uploaded</div>
+          )}
+        </div>
+      </div>
 
-      <Card className="bg-blue-50 border-blue-100">
-        <CardContent className="p-6">
-          <h3 className="font-semibold mb-4">Developer Information</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-sm">
-            <div>
-              <span className="text-gray-500 mr-2">Developer Name:</span>
-              <span className="font-medium">{formData.developerName || 'XXXXXXXXXX'}</span>
-            </div>
-            <div>
-              <span className="text-gray-500 mr-2">Email:</span>
-              <span className="font-medium">{formData.developerEmail || 'XXXXXXXXXX'}</span>
-            </div>
-            <div className="sm:col-span-2">
-              <span className="text-gray-500 mr-2">Bio:</span>
-              <span className="font-medium">{formData.bio || '-'}</span>
-            </div>
-            <div>
-              <span className="text-gray-500 mr-2">Twitter:</span>
-              <span className="font-medium">{formData.developerTwitter || 'XXXXXXXXXX'}</span>
-            </div>
-            <div>
-              <span className="text-gray-500 mr-2">Telegram:</span>
-              <span className="font-medium">{formData.developerTelegram || 'XXXXXXXXXX'}</span>
-            </div>
-            <div>
-              <span className="text-gray-500 mr-2">Github:</span>
-              <span className="font-medium">{formData.developerGithub || 'XXXXXXXXXX'}</span>
-            </div>
-            <div>
-              <span className="text-gray-500 mr-2">Website:</span>
-              <span className="font-medium">{formData.developerWebsite || 'XXXXXXXXXX'}</span>
-            </div>
-            <div className="sm:col-span-2">
-              <span className="text-gray-500 mr-2">Fee:</span>
-              <span className="font-semibold text-primary">
-                {formData.fee ? `${formData.fee} ETH` : '0 ETH'}
-              </span>
-            </div>
-            <div className="sm:col-span-2">
-              <span className="text-gray-500 mr-2">Creator Address:</span>
-              <span className="font-medium font-mono text-xs">{formData.creatorAddress || '0x0000...0000'}</span>
-            </div>
+      <div className="flex justify-end">
+        <Avatar className="h-16 w-16 rounded-full">
+          {profileImage ? (
+            <AvatarImage src={URL.createObjectURL(profileImage)} alt={formData.name} />
+          ) : (
+            <AvatarFallback className="bg-indigo-500 text-white text-lg">
+              {formData.name ? getInitials(formData.name) : 'LO'}
+            </AvatarFallback>
+          )}
+        </Avatar>
+      </div>
+
+      <div className="bg-blue-50 border-blue-100 p-6 rounded-md">
+        <h3 className="font-medium mb-4">Developer Information</h3>
+        <div className="grid grid-cols-1 gap-2 text-sm">
+          <div className="flex flex-wrap">
+            <span>Developer Name - {formData.developerName || 'XXXXXXXXXXX'},</span>
           </div>
-        </CardContent>
-      </Card>
+          <div className="flex flex-wrap">
+            <span>email - {formData.developerEmail || 'XXXXXXXXXXX'},</span>
+            <span className="ml-2">Ethereum Address - {formData.creatorAddress || 'XXXXXXXXXXX'},</span>
+          </div>
+          <div>
+            <span>bio - {formData.bio || 'XXXXXXXXXXX'}</span>
+          </div>
+          <div className="flex flex-wrap">
+            <span>Twitter- {formData.developerTwitter || 'XXXXXXXX'},</span>
+            <span className="ml-2">Telegram - {formData.developerTelegram || 'XXXXXXX'},</span>
+            <span className="ml-2">Github - {formData.developerGithub || 'XXXXXXX'},</span>
+            <span className="ml-2">Website - {formData.developerWebsite || 'XXXXXXXXXX'}</span>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

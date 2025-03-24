@@ -17,10 +17,10 @@ const initialFormData = {
   description: '',
   fee: '',
   creatorAddress: '',
-  twitter: '',         // Added missing property
-  telegram: '',        // Added missing property
-  github: '',          // Added missing property
-  website: '',         // Added missing property
+  twitter: '',
+  telegram: '',
+  github: '',
+  website: '',
   developerName: '',
   developerEmail: '',
   bio: '',
@@ -42,12 +42,14 @@ interface CapabilityWizardContextType {
   formData: typeof initialFormData;
   documentation: File | null;
   integrationGuide: File | null;
+  additionalFiles: File | null;
   profileImage: File | null;
   isSubmitting: boolean;
   handleInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
   handleSelectChange: (name: string, value: string) => void;
   setDocumentation: React.Dispatch<React.SetStateAction<File | null>>;
   setIntegrationGuide: React.Dispatch<React.SetStateAction<File | null>>;
+  setAdditionalFiles: React.Dispatch<React.SetStateAction<File | null>>;
   setProfileImage: React.Dispatch<React.SetStateAction<File | null>>;
   nextStep: () => void;
   prevStep: () => void;
@@ -64,6 +66,7 @@ export const CapabilityWizardProvider: React.FC<{children: React.ReactNode}> = (
   const [formData, setFormData] = useState<typeof initialFormData>(initialFormData);
   const [documentation, setDocumentation] = useState<File | null>(null);
   const [integrationGuide, setIntegrationGuide] = useState<File | null>(null);
+  const [additionalFiles, setAdditionalFiles] = useState<File | null>(null);
   const [profileImage, setProfileImage] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -230,12 +233,14 @@ export const CapabilityWizardProvider: React.FC<{children: React.ReactNode}> = (
       formData,
       documentation,
       integrationGuide,
+      additionalFiles,
       profileImage,
       isSubmitting,
       handleInputChange,
       handleSelectChange,
       setDocumentation,
       setIntegrationGuide,
+      setAdditionalFiles,
       setProfileImage,
       nextStep,
       prevStep,
