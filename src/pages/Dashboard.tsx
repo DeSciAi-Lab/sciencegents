@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useUserDashboard } from '@/hooks/useUserDashboard';
 import { Button } from "@/components/ui/button";
@@ -579,21 +580,19 @@ const Dashboard = () => {
                     )
                   )
                 ) : (
-                  <>
-                    <Card className="col-span-full text-center py-8">
-                      <div className="bg-muted rounded-full p-3 mb-4 inline-block mx-auto">
-                        <Sparkles className="h-6 w-6 text-muted-foreground" />
-                      </div>
-                      <h3 className="font-medium mb-1">No ScienceGents Created</h3>
-                      <p className="text-sm text-muted-foreground mb-4">
-                        You haven't created any ScienceGent tokens yet.
-                      </p>
-                      <Button onClick={() => navigate('/create-sciencegent')} className="mx-auto">
-                        Create ScienceGent
-                        <ChevronRight className="ml-1 h-4 w-4" />
-                      </Button>
-                    </Card>
-                  </>
+                  <Card className="col-span-full text-center py-8">
+                    <div className="bg-muted rounded-full p-3 mb-4 inline-block mx-auto">
+                      <Sparkles className="h-6 w-6 text-muted-foreground" />
+                    </div>
+                    <h3 className="font-medium mb-1">No ScienceGents Created</h3>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      You haven&apos;t created any ScienceGent tokens yet.
+                    </p>
+                    <Button onClick={() => navigate('/create-sciencegent')} className="mx-auto">
+                      Create ScienceGent
+                      <ChevronRight className="ml-1 h-4 w-4" />
+                    </Button>
+                  </Card>
                 )}
               </div>
             )}
@@ -826,4 +825,132 @@ const Dashboard = () => {
                     </div>
                     <h3 className="font-medium mb-1">No Capabilities Created</h3>
                     <p className="text-sm text-muted-foreground mb-4">
-                      You
+                      You haven&apos;t created any capabilities yet.
+                    </p>
+                    <Button onClick={() => navigate('/create-capability')} className="mx-auto">
+                      Create Capability
+                      <ChevronRight className="ml-1 h-4 w-4" />
+                    </Button>
+                  </Card>
+                )}
+              </div>
+            )}
+          </TabsContent>
+          
+          <TabsContent value="profile">
+            <Card>
+              <CardHeader>
+                <CardTitle>Developer Profile</CardTitle>
+                <CardDescription>
+                  Your public profile information that will be displayed on capabilities and ScienceGents you create.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form className="space-y-6">
+                  <div className="flex flex-col md:flex-row gap-6">
+                    <div className="flex-1 space-y-6">
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Display Name</label>
+                        <Input 
+                          value={developerProfile.name}
+                          onChange={(e) => setDeveloperProfile({...developerProfile, name: e.target.value})}
+                          placeholder="Your name or pseudonym"
+                        />
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Email (not publicly visible)</label>
+                        <Input 
+                          type="email"
+                          value={developerProfile.email}
+                          onChange={(e) => setDeveloperProfile({...developerProfile, email: e.target.value})}
+                          placeholder="your@email.com"
+                        />
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Bio</label>
+                        <Input 
+                          value={developerProfile.bio}
+                          onChange={(e) => setDeveloperProfile({...developerProfile, bio: e.target.value})}
+                          placeholder="Brief description about yourself as a developer"
+                        />
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">Twitter</label>
+                          <Input 
+                            value={developerProfile.twitter}
+                            onChange={(e) => setDeveloperProfile({...developerProfile, twitter: e.target.value})}
+                            placeholder="@username"
+                          />
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">Telegram</label>
+                          <Input 
+                            value={developerProfile.telegram}
+                            onChange={(e) => setDeveloperProfile({...developerProfile, telegram: e.target.value})}
+                            placeholder="@username"
+                          />
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">GitHub</label>
+                          <Input 
+                            value={developerProfile.github}
+                            onChange={(e) => setDeveloperProfile({...developerProfile, github: e.target.value})}
+                            placeholder="username"
+                          />
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">Website</label>
+                          <Input 
+                            value={developerProfile.website}
+                            onChange={(e) => setDeveloperProfile({...developerProfile, website: e.target.value})}
+                            placeholder="https://yourdomain.com"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Profile Picture</label>
+                        <div className="flex flex-col items-center gap-4">
+                          <Avatar className="h-32 w-32">
+                            <AvatarFallback className="text-2xl">
+                              {developerProfile.name ? developerProfile.name[0].toUpperCase() : account?.substring(2, 4).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <Button variant="outline" onClick={() => document.getElementById('profileUpload')?.click()}>
+                            <Upload className="mr-2 h-4 w-4" />
+                            Upload Image
+                          </Button>
+                          <input
+                            id="profileUpload"
+                            type="file"
+                            hidden
+                            onChange={(e) => handleFileUpload(e, (file) => setDeveloperProfile({...developerProfile, profilePicture: file}))}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex justify-end">
+                    <Button type="submit">Save Profile</Button>
+                  </div>
+                </form>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </div>
+    </NavbarLayout>
+  );
+};
+
+export default Dashboard;
