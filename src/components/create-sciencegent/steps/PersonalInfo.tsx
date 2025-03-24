@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { ScienceGentFormData } from '@/types/sciencegent';
 import { Input } from '@/components/ui/input';

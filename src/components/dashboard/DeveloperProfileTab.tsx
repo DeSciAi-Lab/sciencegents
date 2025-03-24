@@ -10,6 +10,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { uploadProfilePicture } from '@/services/developerProfileService';
 import { DeveloperProfile, SocialLink } from '@/types/profile';
 import { useDeveloperProfile } from '@/hooks/useDeveloperProfile';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 const DeveloperProfileTab: React.FC = () => {
   const { profile, isLoading, isSaving, updateProfile, refreshProfile } = useDeveloperProfile();
@@ -17,15 +18,9 @@ const DeveloperProfileTab: React.FC = () => {
   
   const [profileImage, setProfileImage] = useState<File | null>(null);
   const [profileImagePreview, setProfileImagePreview] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
   const [formData, setFormData] = useState<DeveloperProfile>({
     wallet_address: '',
-    developer_name: '',
-    developer_email: '',
-    bio: '',
-    developer_twitter: '',
-    developer_telegram: '',
-    developer_github: '',
-    developer_website: '',
     additional_social_links: []
   });
 
@@ -130,11 +125,16 @@ const DeveloperProfileTab: React.FC = () => {
       
       // Upload profile image if changed
       if (profileImage) {
-        const uploadedUrl = await uploadProfilePicture(profileImage, formData.wallet_address);
-        if (uploadedUrl) {
-          profilePicUrl = uploadedUrl;
-        } else {
-          throw new Error("Failed to upload profile image");
+        setIsUploading(true);
+        try {
+          const uploadedUrl = await uploadProfilePicture(profileImage, formData.wallet_address);
+          if (uploadedUrl) {
+            profilePicUrl = uploadedUrl;
+          } else {
+            throw new Error("Failed to upload profile image");
+          }
+        } finally {
+          setIsUploading(false);
         }
       }
       
@@ -152,7 +152,7 @@ const DeveloperProfileTab: React.FC = () => {
         }
         
         // Refresh profile data
-        refreshProfile();
+        await refreshProfile();
         
         toast({
           title: "Success",
@@ -366,13 +366,13 @@ const DeveloperProfileTab: React.FC = () => {
       <CardFooter>
         <Button 
           onClick={saveProfile} 
-          disabled={isSaving}
+          disabled={isSaving || isUploading}
           className="ml-auto"
         >
-          {isSaving ? (
+          {isSaving || isUploading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Saving...
+              {isUploading ? 'Uploading...' : 'Saving...'}
             </>
           ) : 'Save Profile'}
         </Button>

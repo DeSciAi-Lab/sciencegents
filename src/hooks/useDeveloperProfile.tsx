@@ -41,8 +41,13 @@ export function useDeveloperProfile() {
 
   // Load profile on mount and when address changes
   useEffect(() => {
-    loadProfile();
-  }, [loadProfile]);
+    if (address) {
+      loadProfile();
+    } else {
+      setProfile(null);
+      setIsLoading(false);
+    }
+  }, [address, loadProfile]);
 
   // Function to update the profile
   const updateProfile = useCallback(async (updatedProfile: Partial<DeveloperProfile>) => {
@@ -57,14 +62,16 @@ export function useDeveloperProfile() {
 
     setIsSaving(true);
     try {
-      // Ensure that additional_social_links is always an array
-      if (updatedProfile.additional_social_links === undefined && profile?.additional_social_links) {
-        updatedProfile.additional_social_links = [...profile.additional_social_links];
-      }
-
-      // Merge current profile with updates
+      // Create a new object with defaults to avoid undefined values
+      const defaultProfile: DeveloperProfile = {
+        wallet_address: address,
+        additional_social_links: []
+      };
+      
+      // Merge the existing profile (if any) with the defaults and the updates
       const profileToUpdate: DeveloperProfile = {
-        ...(profile || { additional_social_links: [] }),
+        ...defaultProfile,
+        ...(profile || {}),
         ...updatedProfile,
         wallet_address: address
       };
@@ -72,6 +79,7 @@ export function useDeveloperProfile() {
       console.log("Updating profile with:", profileToUpdate);
       
       const updated = await upsertDeveloperProfile(profileToUpdate);
+      
       if (updated) {
         console.log("Profile updated successfully:", updated);
         setProfile(updated);

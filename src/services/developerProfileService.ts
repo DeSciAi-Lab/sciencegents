@@ -59,6 +59,7 @@ export const fetchDeveloperProfile = async (walletAddress: string): Promise<Deve
     return transformedData;
   } catch (error) {
     console.error("Error in fetchDeveloperProfile:", error);
+    // Don't throw the error, just return null to prevent app crashes
     return null;
   }
 };
@@ -74,21 +75,26 @@ export const upsertDeveloperProfile = async (profile: DeveloperProfile): Promise
       throw new Error("Wallet address is required");
     }
     
-    // Create a deep copy of the profile to avoid modifying the original
-    const profileCopy = { ...profile };
+    // Prepare the social links for Supabase
+    const socialLinksForSupabase = profile.additional_social_links 
+      ? profile.additional_social_links.map(link => ({
+          type: link.type || '',
+          url: link.url || ''
+        }))
+      : [];
     
-    // Convert SocialLink[] to a format Supabase can accept
+    // Create a Supabase-compatible object
     const supabaseData = {
-      wallet_address: profileCopy.wallet_address,
-      developer_name: profileCopy.developer_name || null,
-      developer_email: profileCopy.developer_email || null,
-      bio: profileCopy.bio || null,
-      profile_pic: profileCopy.profile_pic || null,
-      developer_twitter: profileCopy.developer_twitter || null,
-      developer_telegram: profileCopy.developer_telegram || null,
-      developer_github: profileCopy.developer_github || null,
-      developer_website: profileCopy.developer_website || null,
-      additional_social_links: profileCopy.additional_social_links as unknown as Json
+      wallet_address: profile.wallet_address,
+      developer_name: profile.developer_name || null,
+      developer_email: profile.developer_email || null,
+      bio: profile.bio || null,
+      profile_pic: profile.profile_pic || null,
+      developer_twitter: profile.developer_twitter || null,
+      developer_telegram: profile.developer_telegram || null,
+      developer_github: profile.developer_github || null,
+      developer_website: profile.developer_website || null,
+      additional_social_links: socialLinksForSupabase as unknown as Json
     };
     
     // Debug to see what we're sending to Supabase
@@ -135,7 +141,7 @@ export const upsertDeveloperProfile = async (profile: DeveloperProfile): Promise
     };
   } catch (error) {
     console.error("Error in upsertDeveloperProfile:", error);
-    throw error; // Change to throw the error to better handle it in the hook
+    throw error; 
   }
 };
 
