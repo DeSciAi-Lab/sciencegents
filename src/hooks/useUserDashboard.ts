@@ -134,154 +134,190 @@ export const useUserDashboard = () => {
         const provider = new ethers.providers.Web3Provider(window.ethereum);
         
         // Get user's created ScienceGents
-        const factory = new ethers.Contract(
+        const factoryContract = new ethers.Contract(
           contractConfig.addresses.ScienceGentsFactory,
           factoryABI,
           provider
         );
         
-        // Get tokens created by this user
-        const createdTokens = await factory.getTokensOfCreator(account);
-        
-        if (createdTokens.length > 0) {
-          const tokenDetailsPromises = createdTokens.map(async (tokenAddress: string) => {
-            try {
-              const details = await factory.getTokenDetails(tokenAddress);
-              
-              // Get token data from Supabase for additional info
-              const { data: dbData } = await supabase
-                .from('sciencegents')
-                .select('name, symbol, market_cap, maturity_progress, token_price, price_change_24h, description, profile_pic, virtual_eth, collected_fees, domain')
-                .eq('address', tokenAddress)
-                .single();
-              
-              // Get capabilities for this ScienceGent
-              const { data: capabilityData } = await supabase
-                .from('sciencegent_capabilities')
-                .select('capability_id')
-                .eq('sciencegent_address', tokenAddress);
+        try {
+          // Get tokens created by this user
+          console.log("Fetching tokens for address:", account);
+          console.log("Using factory address:", contractConfig.addresses.ScienceGentsFactory);
+          
+          // Check if the method exists on the contract
+          if (typeof factoryContract.getTokensOfCreator !== 'function') {
+            console.error("getTokensOfCreator method not found on factory contract. Available methods:", 
+              Object.keys(factoryContract.functions));
+            throw new Error("Factory contract method not available");
+          }
+          
+          const createdTokens = await factoryContract.getTokensOfCreator(account);
+          console.log("Created tokens:", createdTokens);
+          
+          if (createdTokens.length > 0) {
+            const tokenDetailsPromises = createdTokens.map(async (tokenAddress: string) => {
+              try {
+                const details = await factoryContract.getTokenDetails(tokenAddress);
                 
-              const capabilities = capabilityData ? capabilityData.map(cap => cap.capability_id) : [];
-              
-              return {
-                address: tokenAddress,
-                name: details.name || dbData?.name || 'Unknown Token',
-                symbol: details.symbol || dbData?.symbol || '???',
-                marketCap: dbData?.market_cap || 0,
-                tradingEnabled: details.tradingEnabled,
-                isMigrated: details.isMigrated,
-                maturityProgress: dbData?.maturity_progress || 0,
-                tokenPrice: dbData?.token_price || 0,
-                priceChange24h: dbData?.price_change_24h || 0,
-                description: dbData?.description || '',
-                profilePic: dbData?.profile_pic || '',
-                virtualETH: dbData?.virtual_eth || 0,
-                collectedFees: dbData?.collected_fees || 0,
-                domain: dbData?.domain || 'General',
-                capabilities
-              };
-            } catch (error) {
-              console.error(`Error fetching details for token ${tokenAddress}:`, error);
-              return null;
-            }
-          });
-          
-          const tokenDetails = await Promise.all(tokenDetailsPromises);
-          setUserScienceGents(tokenDetails.filter(Boolean) as DashboardScienceGent[]);
-        }
-        
-        // Get user's created capabilities
-        const createdCapabilities = await factory.getCapabilitiesOfCreator(account);
-        
-        if (createdCapabilities.length > 0) {
-          const capabilityDetailsPromises = createdCapabilities.map(async (capabilityId: string) => {
-            try {
-              // Get capability from Supabase
-              const { data } = await supabase
-                .from('capabilities')
-                .select('name, domain, revenue, usage_count, price, description, rating, display_image')
-                .eq('id', capabilityId)
-                .single();
-              
-              if (data) {
-                return {
-                  id: capabilityId,
-                  name: data.name,
-                  domain: data.domain,
-                  revenue: data.revenue || 0,
-                  usageCount: data.usage_count || 0,
-                  price: data.price || 0,
-                  description: data.description || '',
-                  rating: data.rating || 4.0,
-                  displayImage: data.display_image || null
-                };
-              }
-              
-              // Fallback to blockchain data if not in Supabase
-              const [description, feeInETH, ] = await factory.getCapabilityDetails(capabilityId);
-              
-              return {
-                id: capabilityId,
-                name: capabilityId, // Use ID as name if not in Supabase
-                domain: 'Unknown',
-                description,
-                revenue: 0,
-                usageCount: 0,
-                price: feeInETH ? parseFloat(ethers.utils.formatEther(feeInETH)) : 0,
-                rating: 4.0
-              };
-            } catch (error) {
-              console.error(`Error fetching details for capability ${capabilityId}:`, error);
-              return null;
-            }
-          });
-          
-          const capabilityDetails = await Promise.all(capabilityDetailsPromises);
-          setUserCapabilities(capabilityDetails.filter(Boolean) as UserCapability[]);
-        }
-        
-        // Get user's investments
-        const { data: scienceGents } = await supabase
-          .from('sciencegents')
-          .select('address, name, symbol, token_price, price_change_24h, domain');
-        
-        if (scienceGents?.length) {
-          const investmentsPromises = scienceGents.map(async (token) => {
-            try {
-              // Check if user has balance of this token
-              const tokenContract = new ethers.Contract(
-                token.address,
-                ["function balanceOf(address) view returns (uint256)"],
-                provider
-              );
-              
-              const balance = await tokenContract.balanceOf(account);
-              
-              if (balance.gt(0)) {
-                const formattedBalance = ethers.utils.formatUnits(balance, 18);
-                const balanceUSD = parseFloat(formattedBalance) * (token.token_price || 0) * 1500; // Rough ETH to USD conversion
+                // Get token data from Supabase for additional info
+                const { data: dbData } = await supabase
+                  .from('sciencegents')
+                  .select('name, symbol, market_cap, maturity_progress, token_price, price_change_24h, description, profile_pic, virtual_eth, collected_fees, domain')
+                  .eq('address', tokenAddress)
+                  .maybeSingle();
+                
+                // Get capabilities for this ScienceGent
+                const { data: capabilityData } = await supabase
+                  .from('sciencegent_capabilities')
+                  .select('capability_id')
+                  .eq('sciencegent_address', tokenAddress);
+                  
+                const capabilities = capabilityData ? capabilityData.map(cap => cap.capability_id) : [];
                 
                 return {
-                  tokenAddress: token.address,
-                  tokenName: token.name,
-                  tokenSymbol: token.symbol,
-                  balance: formattedBalance,
-                  balanceUSD,
-                  tokenPrice: token.token_price || 0,
-                  priceChange24h: token.price_change_24h || 0,
-                  domain: token.domain || 'General'
+                  address: tokenAddress,
+                  name: details.name || dbData?.name || 'Unknown Token',
+                  symbol: details.symbol || dbData?.symbol || '???',
+                  marketCap: dbData?.market_cap || 0,
+                  tradingEnabled: details.tradingEnabled,
+                  isMigrated: details.isMigrated,
+                  maturityProgress: dbData?.maturity_progress || 0,
+                  tokenPrice: dbData?.token_price || 0,
+                  priceChange24h: dbData?.price_change_24h || 0,
+                  description: dbData?.description || '',
+                  profilePic: dbData?.profile_pic || '',
+                  virtualETH: dbData?.virtual_eth || 0,
+                  collectedFees: dbData?.collected_fees || 0,
+                  domain: dbData?.domain || 'General',
+                  capabilities
                 };
+              } catch (error) {
+                console.error(`Error fetching details for token ${tokenAddress}:`, error);
+                return null;
               }
-              
-              return null;
-            } catch (error) {
-              console.error(`Error checking balance for token ${token.address}:`, error);
-              return null;
-            }
-          });
+            });
+            
+            const tokenDetails = await Promise.all(tokenDetailsPromises);
+            setUserScienceGents(tokenDetails.filter(Boolean) as DashboardScienceGent[]);
+          }
+        } catch (tokenError) {
+          console.error("Error fetching created tokens:", tokenError);
+          // Continue with other data even if token fetching fails
+        }
+        
+        try {
+          // Get user's created capabilities
+          if (typeof factoryContract.getCapabilitiesOfCreator !== 'function') {
+            console.error("getCapabilitiesOfCreator method not found on factory contract");
+            throw new Error("Factory contract capability method not available");
+          }
           
-          const investments = await Promise.all(investmentsPromises);
-          setUserInvestments(investments.filter(Boolean) as DashboardInvestment[]);
+          const createdCapabilities = await factoryContract.getCapabilitiesOfCreator(account);
+          console.log("Created capabilities:", createdCapabilities);
+          
+          if (createdCapabilities.length > 0) {
+            const capabilityDetailsPromises = createdCapabilities.map(async (capabilityId: string) => {
+              try {
+                // Get capability from Supabase
+                const { data } = await supabase
+                  .from('capabilities')
+                  .select('name, domain, revenue, usage_count, price, description, rating, display_image')
+                  .eq('id', capabilityId)
+                  .maybeSingle();
+                
+                if (data) {
+                  return {
+                    id: capabilityId,
+                    name: data.name,
+                    domain: data.domain,
+                    revenue: data.revenue || 0,
+                    usageCount: data.usage_count || 0,
+                    price: data.price || 0,
+                    description: data.description || '',
+                    rating: data.rating || 4.0,
+                    displayImage: data.display_image || null
+                  };
+                }
+                
+                // Fallback to blockchain data if not in Supabase
+                try {
+                  const [description, feeInETH, ] = await factoryContract.getCapabilityDetails(capabilityId);
+                  
+                  return {
+                    id: capabilityId,
+                    name: capabilityId, // Use ID as name if not in Supabase
+                    domain: 'Unknown',
+                    description,
+                    revenue: 0,
+                    usageCount: 0,
+                    price: feeInETH ? parseFloat(ethers.utils.formatEther(feeInETH)) : 0,
+                    rating: 4.0
+                  };
+                } catch (blockchainError) {
+                  console.error(`Error fetching blockchain details for capability ${capabilityId}:`, blockchainError);
+                  return null;
+                }
+              } catch (error) {
+                console.error(`Error fetching details for capability ${capabilityId}:`, error);
+                return null;
+              }
+            });
+            
+            const capabilityDetails = await Promise.all(capabilityDetailsPromises);
+            setUserCapabilities(capabilityDetails.filter(Boolean) as UserCapability[]);
+          }
+        } catch (capabilityError) {
+          console.error("Error fetching created capabilities:", capabilityError);
+          // Continue with other data even if capability fetching fails
+        }
+        
+        try {
+          // Get user's investments
+          const { data: scienceGents } = await supabase
+            .from('sciencegents')
+            .select('address, name, symbol, token_price, price_change_24h, domain');
+          
+          if (scienceGents?.length) {
+            const investmentsPromises = scienceGents.map(async (token) => {
+              try {
+                // Check if user has balance of this token
+                const tokenContract = new ethers.Contract(
+                  token.address,
+                  ["function balanceOf(address) view returns (uint256)"],
+                  provider
+                );
+                
+                const balance = await tokenContract.balanceOf(account);
+                
+                if (balance.gt(0)) {
+                  const formattedBalance = ethers.utils.formatUnits(balance, 18);
+                  const balanceUSD = parseFloat(formattedBalance) * (token.token_price || 0) * 1500; // Rough ETH to USD conversion
+                  
+                  return {
+                    tokenAddress: token.address,
+                    tokenName: token.name,
+                    tokenSymbol: token.symbol,
+                    balance: formattedBalance,
+                    balanceUSD,
+                    tokenPrice: token.token_price || 0,
+                    priceChange24h: token.price_change_24h || 0,
+                    domain: token.domain || 'General'
+                  };
+                }
+                
+                return null;
+              } catch (error) {
+                console.error(`Error checking balance for token ${token.address}:`, error);
+                return null;
+              }
+            });
+            
+            const investments = await Promise.all(investmentsPromises);
+            setUserInvestments(investments.filter(Boolean) as DashboardInvestment[]);
+          }
+        } catch (investmentError) {
+          console.error("Error fetching investments:", investmentError);
         }
       } catch (error) {
         console.error("Error loading user dashboard data:", error);
@@ -323,22 +359,23 @@ export const useUserDashboard = () => {
     
     checkConnection();
     
+    const handleAccountsChanged = (accounts: string[]) => {
+      if (accounts.length > 0) {
+        setAccount(accounts[0]);
+        setIsConnected(true);
+      } else {
+        setAccount(null);
+        setIsConnected(false);
+      }
+    };
+    
     if (window.ethereum) {
-      window.ethereum.on('accountsChanged', (accounts: string[]) => {
-        if (accounts.length > 0) {
-          setAccount(accounts[0]);
-          setIsConnected(true);
-        } else {
-          setAccount(null);
-          setIsConnected(false);
-        }
-      });
+      window.ethereum.on('accountsChanged', handleAccountsChanged);
     }
     
     return () => {
       if (window.ethereum) {
-        // Fix: Use removeListener instead of removeAllListeners
-        window.ethereum.removeListener('accountsChanged', () => {});
+        window.ethereum.removeListener('accountsChanged', handleAccountsChanged);
       }
     };
   }, []);

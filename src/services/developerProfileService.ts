@@ -18,16 +18,16 @@ export const fetchDeveloperProfile = async (walletAddress: string): Promise<Deve
       .from('developer_profiles')
       .select('*')
       .eq('wallet_address', walletAddress)
-      .single();
+      .maybeSingle();
     
     if (error) {
-      if (error.code === 'PGRST116') {
-        // No profile found
-        console.log(`No developer profile found for wallet ${walletAddress}`);
-        return null;
-      }
       console.error("Error fetching developer profile:", error);
       throw error;
+    }
+    
+    if (!data) {
+      console.log(`No developer profile found for wallet ${walletAddress}`);
+      return null;
     }
     
     console.log("Raw data from Supabase:", data);
@@ -59,8 +59,7 @@ export const fetchDeveloperProfile = async (walletAddress: string): Promise<Deve
     return transformedData;
   } catch (error) {
     console.error("Error in fetchDeveloperProfile:", error);
-    // Don't throw the error, just return null to prevent app crashes
-    return null;
+    throw error;
   }
 };
 
@@ -74,6 +73,8 @@ export const upsertDeveloperProfile = async (profile: DeveloperProfile): Promise
     if (!profile.wallet_address) {
       throw new Error("Wallet address is required");
     }
+    
+    console.log("Starting profile upsert operation");
     
     // Prepare the social links for Supabase
     const socialLinksForSupabase = profile.additional_social_links 
@@ -111,6 +112,7 @@ export const upsertDeveloperProfile = async (profile: DeveloperProfile): Promise
     }
     
     if (!data || data.length === 0) {
+      console.error("No data returned after upsert");
       throw new Error("No data returned after upsert");
     }
     
@@ -153,19 +155,33 @@ export const upsertDeveloperProfile = async (profile: DeveloperProfile): Promise
  */
 export const uploadProfilePicture = async (file: File, walletAddress: string): Promise<string | null> => {
   try {
-    if (!file || !walletAddress) return null;
+    if (!file || !walletAddress) {
+      console.error("Missing file or wallet address for upload");
+      return null;
+    }
     
-    // Check if sciencegents bucket exists, if not, create it
-    const { data: buckets } = await supabase.storage.listBuckets();
+    console.log("Starting profile picture upload for wallet:", walletAddress);
+    
+    // Check if sciencegents bucket exists
+    const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
+    
+    if (bucketsError) {
+      console.error("Error listing buckets:", bucketsError);
+      throw bucketsError;
+    }
+    
     const sciencegentsBucketExists = buckets?.some(bucket => bucket.name === 'sciencegents');
     
     if (!sciencegentsBucketExists) {
       console.log("Creating sciencegents bucket");
       // This will require admin privileges, might fail for regular users
-      const { error: createBucketError } = await supabase.storage.createBucket('sciencegents', { public: true });
+      const { error: createBucketError } = await supabase.storage.createBucket('sciencegents', { 
+        public: true 
+      });
+      
       if (createBucketError) {
         console.error("Error creating bucket:", createBucketError);
-        // Continue anyway, bucket might exist despite the error
+        // If bucket creation fails, try upload anyway - bucket might exist despite the error
       }
     }
     
@@ -177,7 +193,10 @@ export const uploadProfilePicture = async (file: File, walletAddress: string): P
     
     const { error: uploadError } = await supabase.storage
       .from('sciencegents')
-      .upload(filePath, file);
+      .upload(filePath, file, {
+        contentType: file.type,
+        cacheControl: '3600'
+      });
       
     if (uploadError) {
       console.error("Error uploading profile picture:", uploadError);

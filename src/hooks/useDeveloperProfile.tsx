@@ -28,11 +28,13 @@ export function useDeveloperProfile() {
     setError(null);
     
     try {
+      console.log("Fetching developer profile for address:", address);
       const data = await fetchDeveloperProfile(address);
       console.log("Fetched profile data:", data);
       setProfile(data);
     } catch (err) {
-      setError(err instanceof Error ? err : new Error('Failed to load profile'));
+      const error = err instanceof Error ? err : new Error('Failed to load profile');
+      setError(error);
       console.error('Error loading developer profile:', err);
     } finally {
       setIsLoading(false);
@@ -41,12 +43,7 @@ export function useDeveloperProfile() {
 
   // Load profile on mount and when address changes
   useEffect(() => {
-    if (address) {
-      loadProfile();
-    } else {
-      setProfile(null);
-      setIsLoading(false);
-    }
+    loadProfile();
   }, [address, loadProfile]);
 
   // Function to update the profile
@@ -62,6 +59,8 @@ export function useDeveloperProfile() {
 
     setIsSaving(true);
     try {
+      console.log("Starting profile update with data:", updatedProfile);
+      
       // Create a new object with defaults to avoid undefined values
       const defaultProfile: DeveloperProfile = {
         wallet_address: address,
@@ -76,20 +75,17 @@ export function useDeveloperProfile() {
         wallet_address: address
       };
 
-      console.log("Updating profile with:", profileToUpdate);
+      console.log("Sending final profile data to service:", profileToUpdate);
       
       const updated = await upsertDeveloperProfile(profileToUpdate);
       
       if (updated) {
         console.log("Profile updated successfully:", updated);
         setProfile(updated);
-        toast({
-          title: "Success",
-          description: "Developer profile updated successfully."
-        });
         return updated;
       }
       
+      console.error("No data returned from upsertDeveloperProfile");
       toast({
         title: "Error",
         description: "Failed to update profile. No data returned.",
@@ -100,7 +96,7 @@ export function useDeveloperProfile() {
       console.error('Error updating developer profile:', err);
       toast({
         title: "Error",
-        description: "Failed to update profile. Please try again.",
+        description: err instanceof Error ? err.message : "Failed to update profile. Please try again.",
         variant: "destructive"
       });
       return null;

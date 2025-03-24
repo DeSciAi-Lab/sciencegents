@@ -1,382 +1,291 @@
-
 import React, { useState, useEffect } from 'react';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
-import { Loader2, Plus, Trash2, Upload, X } from 'lucide-react';
-import { useToast } from '@/components/ui/use-toast';
-import { uploadProfilePicture } from '@/services/developerProfileService';
-import { DeveloperProfile, SocialLink } from '@/types/profile';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Upload } from "lucide-react";
 import { useDeveloperProfile } from '@/hooks/useDeveloperProfile';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { uploadProfilePicture } from '@/services/developerProfileService';
+import { toast } from '@/components/ui/use-toast';
+import { useAccount } from 'wagmi';
 
 const DeveloperProfileTab: React.FC = () => {
-  const { profile, isLoading, isSaving, updateProfile, refreshProfile } = useDeveloperProfile();
-  const { toast } = useToast();
+  const { address } = useAccount();
+  const { profile, isLoading, updateProfile, refreshProfile } = useDeveloperProfile();
   
-  const [profileImage, setProfileImage] = useState<File | null>(null);
-  const [profileImagePreview, setProfileImagePreview] = useState<string | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
-  const [formData, setFormData] = useState<DeveloperProfile>({
-    wallet_address: '',
-    additional_social_links: []
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    bio: '',
+    twitter: '',
+    telegram: '',
+    github: '',
+    website: '',
   });
-
-  // Fetch developer profile on mount and when profile changes
+  
+  const [profilePicture, setProfilePicture] = useState<File | null>(null);
+  const [pictureUrl, setPictureUrl] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  
+  // Load profile data when it's available
   useEffect(() => {
     if (profile) {
-      console.log("Setting form data from profile:", profile);
+      console.log("Loading profile data:", profile);
       setFormData({
-        ...profile,
-        additional_social_links: profile.additional_social_links || []
+        name: profile.developer_name || '',
+        email: profile.developer_email || '',
+        bio: profile.bio || '',
+        twitter: profile.developer_twitter || '',
+        telegram: profile.developer_telegram || '',
+        github: profile.developer_github || '',
+        website: profile.developer_website || '',
       });
       
       if (profile.profile_pic) {
-        setProfileImagePreview(profile.profile_pic);
+        setPictureUrl(profile.profile_pic);
       }
     }
   }, [profile]);
-
-  // Handle input changes
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
-
-  // Handle profile image change
-  const handleProfileImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        toast({
-          title: "Error",
-          description: "Image size should be less than 5MB",
-          variant: "destructive"
-        });
-        return;
-      }
+  
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setProfilePicture(file);
       
-      if (!file.type.startsWith('image/')) {
-        toast({
-          title: "Error",
-          description: "Please upload an image file",
-          variant: "destructive"
-        });
-        return;
-      }
+      // Create a preview URL
+      const objectUrl = URL.createObjectURL(file);
+      setPictureUrl(objectUrl);
       
-      setProfileImage(file);
-      const url = URL.createObjectURL(file);
-      setProfileImagePreview(url);
+      // Cleanup the URL when component unmounts
+      return () => URL.revokeObjectURL(objectUrl);
     }
   };
-
-  // Remove profile image
-  const removeProfileImage = () => {
-    setProfileImage(null);
-    if (!formData.profile_pic) {
-      setProfileImagePreview(null);
-    } else {
-      setProfileImagePreview(formData.profile_pic);
-    }
-  };
-
-  // Add social link
-  const addSocialLink = () => {
-    setFormData(prev => ({
-      ...prev,
-      additional_social_links: [...(prev.additional_social_links || []), { type: '', url: '' }]
-    }));
-  };
-
-  // Remove social link
-  const removeSocialLink = (index: number) => {
-    setFormData(prev => {
-      const newLinks = [...(prev.additional_social_links || [])];
-      newLinks.splice(index, 1);
-      return { ...prev, additional_social_links: newLinks };
-    });
-  };
-
-  // Update social link
-  const updateSocialLink = (index: number, field: keyof SocialLink, value: string) => {
-    setFormData(prev => {
-      const newLinks = [...(prev.additional_social_links || [])];
-      newLinks[index] = { ...newLinks[index], [field]: value };
-      return { ...prev, additional_social_links: newLinks };
-    });
-  };
-
-  // Save profile
-  const saveProfile = async () => {
-    if (!formData.wallet_address) {
+  
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!address) {
       toast({
         title: "Error",
-        description: "Wallet not connected. Please connect your wallet.",
-        variant: "destructive"
+        description: "Please connect your wallet first",
+        variant: "destructive",
       });
       return;
     }
     
+    setIsSaving(true);
+    
     try {
-      let profilePicUrl = formData.profile_pic;
+      console.log("Preparing to save profile data:", formData);
       
-      // Upload profile image if changed
-      if (profileImage) {
-        setIsUploading(true);
-        try {
-          const uploadedUrl = await uploadProfilePicture(profileImage, formData.wallet_address);
-          if (uploadedUrl) {
-            profilePicUrl = uploadedUrl;
-          } else {
-            throw new Error("Failed to upload profile image");
-          }
-        } finally {
-          setIsUploading(false);
+      // First upload profile picture if changed
+      let picUrl = profile?.profile_pic || null;
+      
+      if (profilePicture) {
+        console.log("Uploading profile picture...");
+        picUrl = await uploadProfilePicture(profilePicture, address);
+        
+        if (!picUrl) {
+          throw new Error("Failed to upload profile picture");
         }
+        
+        console.log("Profile picture uploaded successfully:", picUrl);
       }
       
-      // Save profile data
-      const updatedProfile = await updateProfile({
-        ...formData,
-        profile_pic: profilePicUrl
-      });
+      // Now update the profile with all data
+      const updateData = {
+        wallet_address: address,
+        developer_name: formData.name,
+        developer_email: formData.email,
+        bio: formData.bio,
+        developer_twitter: formData.twitter,
+        developer_telegram: formData.telegram,
+        developer_github: formData.github,
+        developer_website: formData.website,
+        profile_pic: picUrl,
+        // Keep any existing social links
+        additional_social_links: profile?.additional_social_links || []
+      };
       
-      if (updatedProfile) {
-        console.log("Saved profile:", updatedProfile);
-        
-        if (profileImage) {
-          setProfileImage(null);
-        }
-        
-        // Refresh profile data
-        await refreshProfile();
-        
+      console.log("Updating profile with data:", updateData);
+      
+      const updated = await updateProfile(updateData);
+      
+      if (updated) {
+        console.log("Profile updated successfully:", updated);
         toast({
           title: "Success",
-          description: "Developer profile updated successfully."
+          description: "Your developer profile has been updated successfully"
         });
+        
+        // Refresh profile data to show the latest changes
+        await refreshProfile();
       } else {
-        throw new Error("Failed to save profile");
+        throw new Error("Failed to update profile");
       }
     } catch (error) {
       console.error("Error saving profile:", error);
       toast({
         title: "Error",
-        description: "Failed to save profile. Please try again.",
-        variant: "destructive"
+        description: error instanceof Error ? error.message : "Failed to save profile",
+        variant: "destructive",
       });
+    } finally {
+      setIsSaving(false);
     }
   };
-
+  
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Developer Profile</CardTitle>
+          <CardDescription>Loading your profile...</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="h-60 flex items-center justify-center">
+            <div className="animate-pulse">Loading...</div>
+          </div>
+        </CardContent>
+      </Card>
     );
   }
-
+  
   return (
-    <Card className="w-full bg-white shadow-sm border-0">
+    <Card>
       <CardHeader>
         <CardTitle>Developer Profile</CardTitle>
         <CardDescription>
-          Manage your developer information that will be shown on ScienceGents and Capabilities you create
+          Your public profile information that will be displayed on capabilities and ScienceGents you create.
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-6">
-        {/* Profile Picture */}
-        <div className="space-y-2">
-          <Label htmlFor="profile-picture">Profile Picture</Label>
-          <div className="flex items-start">
-            {profileImagePreview ? (
-              <div className="relative w-32 h-32 border rounded-full overflow-hidden">
-                <img 
-                  src={profileImagePreview} 
-                  alt="Profile preview" 
-                  className="w-full h-full object-cover"
+      <CardContent>
+        <form className="space-y-6" onSubmit={handleSubmit}>
+          <div className="flex flex-col md:flex-row gap-6">
+            <div className="flex-1 space-y-6">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Display Name</label>
+                <Input 
+                  name="name"
+                  value={formData.name}
+                  onChange={handleInputChange}
+                  placeholder="Your name or pseudonym"
                 />
-                <Button
-                  onClick={removeProfileImage}
-                  variant="destructive"
-                  size="icon"
-                  className="absolute top-1 right-1 w-6 h-6 rounded-full"
-                >
-                  <X size={14} />
-                </Button>
               </div>
-            ) : (
-              <div className="w-32 h-32 border-2 border-dashed border-gray-200 rounded-full flex flex-col items-center justify-center cursor-pointer hover:border-gray-300 transition-colors"
-                   onClick={() => document.getElementById('profile-image-upload')?.click()}>
-                <Upload size={24} className="text-gray-400 mb-2" />
-                <p className="text-xs text-gray-500">Upload</p>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Email (not publicly visible)</label>
+                <Input 
+                  name="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  placeholder="your@email.com"
+                />
               </div>
-            )}
-            <input 
-              type="file"
-              id="profile-image-upload"
-              className="hidden"
-              accept="image/*"
-              onChange={handleProfileImageChange}
-            />
-          </div>
-          <p className="text-xs text-gray-500">This image will be shown on ScienceGents and Capabilities you create.</p>
-        </div>
-
-        {/* Basic Information */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="developer_name">Name</Label>
-            <Input
-              id="developer_name"
-              name="developer_name"
-              value={formData.developer_name || ''}
-              onChange={handleInputChange}
-              placeholder="Your name or team name"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="developer_email">Email</Label>
-            <Input
-              id="developer_email"
-              name="developer_email"
-              type="email"
-              value={formData.developer_email || ''}
-              onChange={handleInputChange}
-              placeholder="Your contact email"
-            />
-          </div>
-        </div>
-
-        {/* Bio */}
-        <div className="space-y-2">
-          <Label htmlFor="bio">Bio</Label>
-          <Textarea
-            id="bio"
-            name="bio"
-            value={formData.bio || ''}
-            onChange={handleInputChange}
-            placeholder="Tell users about your background, expertise, and experience"
-            rows={4}
-          />
-        </div>
-
-        {/* Social Links */}
-        <div className="space-y-3">
-          <Label>Social Links</Label>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="developer_twitter">Twitter</Label>
-              <Input
-                id="developer_twitter"
-                name="developer_twitter"
-                value={formData.developer_twitter || ''}
-                onChange={handleInputChange}
-                placeholder="https://twitter.com/yourusername"
-              />
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Bio</label>
+                <Input 
+                  name="bio"
+                  value={formData.bio}
+                  onChange={handleInputChange}
+                  placeholder="Brief description about yourself as a developer"
+                />
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Twitter</label>
+                  <Input 
+                    name="twitter"
+                    value={formData.twitter}
+                    onChange={handleInputChange}
+                    placeholder="@username"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Telegram</label>
+                  <Input 
+                    name="telegram"
+                    value={formData.telegram}
+                    onChange={handleInputChange}
+                    placeholder="@username"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">GitHub</label>
+                  <Input 
+                    name="github"
+                    value={formData.github}
+                    onChange={handleInputChange}
+                    placeholder="username"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Website</label>
+                  <Input 
+                    name="website"
+                    value={formData.website}
+                    onChange={handleInputChange}
+                    placeholder="https://yourdomain.com"
+                  />
+                </div>
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="developer_github">GitHub</Label>
-              <Input
-                id="developer_github"
-                name="developer_github"
-                value={formData.developer_github || ''}
-                onChange={handleInputChange}
-                placeholder="https://github.com/yourusername"
-              />
+            
+            <div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Profile Picture</label>
+                <div className="flex flex-col items-center gap-4">
+                  <Avatar className="h-32 w-32">
+                    {pictureUrl ? (
+                      <AvatarImage src={pictureUrl} alt="Profile" />
+                    ) : null}
+                    <AvatarFallback className="text-2xl">
+                      {formData.name ? formData.name[0]?.toUpperCase() : address?.substring(2, 4).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={() => document.getElementById('profileUpload')?.click()}
+                  >
+                    <Upload className="mr-2 h-4 w-4" />
+                    Upload Image
+                  </Button>
+                  <input
+                    id="profileUpload"
+                    type="file"
+                    hidden
+                    accept="image/*"
+                    onChange={handleFileChange}
+                  />
+                  {profilePicture && (
+                    <p className="text-xs text-muted-foreground">
+                      Selected: {profilePicture.name}
+                    </p>
+                  )}
+                </div>
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="developer_telegram">Telegram</Label>
-              <Input
-                id="developer_telegram"
-                name="developer_telegram"
-                value={formData.developer_telegram || ''}
-                onChange={handleInputChange}
-                placeholder="https://t.me/yourusername"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="developer_website">Website</Label>
-              <Input
-                id="developer_website"
-                name="developer_website"
-                value={formData.developer_website || ''}
-                onChange={handleInputChange}
-                placeholder="https://yourwebsite.com"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Additional Social Links */}
-        <div className="space-y-3">
-          <div className="flex justify-between items-center">
-            <Label>Additional Social Links</Label>
-            <Button 
-              type="button" 
-              variant="outline" 
-              size="sm" 
-              onClick={addSocialLink}
-              className="text-xs"
-            >
-              <Plus size={16} className="mr-1" />
-              Add Link
-            </Button>
           </div>
           
-          {formData.additional_social_links && formData.additional_social_links.length > 0 ? (
-            <div className="space-y-3">
-              {formData.additional_social_links.map((link, index) => (
-                <div key={index} className="flex items-end gap-2">
-                  <div className="flex-1 space-y-2">
-                    <Label>Platform</Label>
-                    <Input
-                      placeholder="Platform name (e.g. Discord, Medium)"
-                      value={link.type}
-                      onChange={(e) => updateSocialLink(index, 'type', e.target.value)}
-                    />
-                  </div>
-                  <div className="flex-1 space-y-2">
-                    <Label>URL</Label>
-                    <Input
-                      placeholder="https://..."
-                      value={link.url}
-                      onChange={(e) => updateSocialLink(index, 'url', e.target.value)}
-                    />
-                  </div>
-                  <Button 
-                    variant="ghost" 
-                    size="icon"
-                    onClick={() => removeSocialLink(index)}
-                    className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                  >
-                    <Trash2 size={18} />
-                  </Button>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm text-gray-500">No additional social links added.</p>
-          )}
-        </div>
+          <div className="flex justify-end">
+            <Button type="submit" disabled={isSaving}>
+              {isSaving ? 'Saving...' : 'Save Profile'}
+            </Button>
+          </div>
+        </form>
       </CardContent>
-      <CardFooter>
-        <Button 
-          onClick={saveProfile} 
-          disabled={isSaving || isUploading}
-          className="ml-auto"
-        >
-          {isSaving || isUploading ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              {isUploading ? 'Uploading...' : 'Saving...'}
-            </>
-          ) : 'Save Profile'}
-        </Button>
-      </CardFooter>
     </Card>
   );
 };
