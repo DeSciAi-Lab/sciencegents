@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
 import { supabase } from '@/integrations/supabase/client';
@@ -137,13 +136,6 @@ export const useUserDashboard = () => {
         
         const provider = new ethers.providers.Web3Provider(window.ethereum);
         
-        // Get user's created ScienceGents
-        const factoryContract = new ethers.Contract(
-          contractConfig.addresses.ScienceGentsFactory,
-          factoryABI,
-          provider
-        );
-        
         try {
           // Get user's created ScienceGents from Supabase instead of blockchain
           // This avoids the contract method errors
@@ -164,7 +156,7 @@ export const useUserDashboard = () => {
               name: sg.name || 'Unknown Token',
               symbol: sg.symbol || '???',
               marketCap: sg.market_cap || 0,
-              tradingEnabled: sg.trading_enabled || false,
+              tradingEnabled: sg.is_migrated || false,
               isMigrated: sg.is_migrated || false,
               maturityProgress: sg.maturity_progress || 0,
               tokenPrice: sg.token_price || 0,
