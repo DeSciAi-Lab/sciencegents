@@ -269,7 +269,7 @@ const Dashboard = () => {
                       </div>
                       <h3 className="font-medium mb-1">No Investments Found</h3>
                       <p className="text-sm text-muted-foreground mb-4">
-                        You don't own any ScienceGent tokens yet.
+                        You don&apos;t own any ScienceGent tokens yet.
                       </p>
                       <Button onClick={() => navigate('/sciencegents')}>
                         Explore ScienceGents
