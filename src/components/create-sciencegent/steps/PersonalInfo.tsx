@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ScienceGentFormData } from '@/types/sciencegent';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -16,6 +16,7 @@ interface PersonalInfoProps {
 const PersonalInfo: React.FC<PersonalInfoProps> = ({ formData, handleInputChange }) => {
   const { profile, isLoading, updateProfile } = useDeveloperProfile();
   const { toast } = useToast();
+  const [isAutoSaving, setIsAutoSaving] = useState(false);
   
   // Prefill form with developer profile data when available
   useEffect(() => {
@@ -26,35 +27,35 @@ const PersonalInfo: React.FC<PersonalInfoProps> = ({ formData, handleInputChange
       } as React.ChangeEvent<HTMLInputElement>);
       
       // Update all fields from the profile
-      if (profile.developer_name) {
+      if (profile.developer_name && !formData.developerName) {
         handleInputChange(createChangeEvent('developerName', profile.developer_name));
       }
       
-      if (profile.developer_email) {
+      if (profile.developer_email && !formData.developerEmail) {
         handleInputChange(createChangeEvent('developerEmail', profile.developer_email));
       }
       
-      if (profile.bio) {
+      if (profile.bio && !formData.bio) {
         handleInputChange(createChangeEvent('bio', profile.bio));
       }
       
-      if (profile.developer_twitter) {
+      if (profile.developer_twitter && !formData.developerTwitter) {
         handleInputChange(createChangeEvent('developerTwitter', profile.developer_twitter));
       }
       
-      if (profile.developer_telegram) {
+      if (profile.developer_telegram && !formData.developerTelegram) {
         handleInputChange(createChangeEvent('developerTelegram', profile.developer_telegram));
       }
       
-      if (profile.developer_github) {
+      if (profile.developer_github && !formData.developerGithub) {
         handleInputChange(createChangeEvent('developerGithub', profile.developer_github));
       }
       
-      if (profile.developer_website) {
+      if (profile.developer_website && !formData.developerWebsite) {
         handleInputChange(createChangeEvent('developerWebsite', profile.developer_website));
       }
     }
-  }, [profile, isLoading, handleInputChange]);
+  }, [profile, isLoading, handleInputChange, formData]);
 
   // When form data changes, update the developer profile
   useEffect(() => {
@@ -67,6 +68,7 @@ const PersonalInfo: React.FC<PersonalInfoProps> = ({ formData, handleInputChange
       try {
         // Only update if we have at least a name or email
         if (formData.developerName || formData.developerEmail) {
+          setIsAutoSaving(true);
           await updateProfile({
             developer_name: formData.developerName,
             developer_email: formData.developerEmail,
@@ -78,9 +80,11 @@ const PersonalInfo: React.FC<PersonalInfoProps> = ({ formData, handleInputChange
           });
           
           console.log("Auto-saved developer profile");
+          setIsAutoSaving(false);
         }
       } catch (error) {
         console.error("Error auto-saving developer profile:", error);
+        setIsAutoSaving(false);
       }
     }, 1500); // Debounce for 1.5 seconds
     
@@ -155,6 +159,9 @@ const PersonalInfo: React.FC<PersonalInfoProps> = ({ formData, handleInputChange
                 onChange={handleInputChange}
                 required
               />
+              {isAutoSaving && (
+                <p className="text-xs text-blue-500">Saving...</p>
+              )}
             </div>
             <div className="space-y-2">
               <label htmlFor="developerEmail" className="block text-sm font-medium">

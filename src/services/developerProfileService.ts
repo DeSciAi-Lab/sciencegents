@@ -69,16 +69,17 @@ export const upsertDeveloperProfile = async (profile: DeveloperProfile): Promise
     }
     
     // Convert typed SocialLink array to regular JSON for Supabase
+    // This is the key change - we need to make sure additional_social_links is properly converted to JSON
     const supabaseData = {
       wallet_address: profile.wallet_address,
-      developer_name: profile.developer_name,
-      developer_email: profile.developer_email,
-      bio: profile.bio,
-      profile_pic: profile.profile_pic,
-      developer_twitter: profile.developer_twitter,
-      developer_telegram: profile.developer_telegram,
-      developer_github: profile.developer_github,
-      developer_website: profile.developer_website,
+      developer_name: profile.developer_name || null,
+      developer_email: profile.developer_email || null,
+      bio: profile.bio || null,
+      profile_pic: profile.profile_pic || null,
+      developer_twitter: profile.developer_twitter || null,
+      developer_telegram: profile.developer_telegram || null,
+      developer_github: profile.developer_github || null,
+      developer_website: profile.developer_website || null,
       additional_social_links: profile.additional_social_links || []
     };
     

@@ -81,7 +81,7 @@ export function useDeveloperProfile() {
       });
       return null;
     }
-  }, [address, profile, toast]);
+  }, [address, profile]);
 
   // Force refresh the profile
   const refreshProfile = useCallback(() => {
