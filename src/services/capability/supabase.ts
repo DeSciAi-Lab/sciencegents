@@ -112,29 +112,56 @@ export const upsertCapabilityToSupabase = async (capability: Capability, isAdmin
     }
     
     // Convert Capability to Supabase format
-    const supabaseRecord = {
+    const supabaseRecord: any = {
       id: capability.id,
       name: capability.name,
       domain: capability.domain,
       description: capability.description,
       price: capability.price,
       creator: capability.creator,
-      created_at: capability.createdAt,
-      docs: capability.docs,
-      usage_count: capability.stats.usageCount,
-      rating: capability.stats.rating,
-      revenue: capability.stats.revenue,
-      features: capability.features,
-      display_image: capability.display_image, 
-      developer_profile_pic: capability.developer_profile_pic,
-      social_links: capability.social_links ? JSON.stringify(capability.social_links) : '[]',
-      developer_social_links: capability.developer_info?.social_links ? JSON.stringify(capability.developer_info.social_links) : '[]',
-      additional_files: capability.files?.additionalFiles ? JSON.stringify(capability.files.additionalFiles) : '[]',
-      developer_name: capability.developer_info?.name || null,
-      developer_email: capability.developer_info?.email || null,
-      bio: capability.developer_info?.bio || null,
+      created_at: capability.createdAt || new Date().toISOString(),
+      usage_count: capability.stats?.usageCount || 0,
+      rating: capability.stats?.rating || 4.5,
+      revenue: capability.stats?.revenue || 0,
+      features: capability.features || [],
       last_synced_at: new Date().toISOString()
     };
+    
+    // Handle image fields
+    if (capability.display_image) {
+      supabaseRecord.display_image = capability.display_image;
+    }
+    
+    if (capability.developer_profile_pic) {
+      supabaseRecord.developer_profile_pic = capability.developer_profile_pic;
+    }
+    
+    // Handle documentation URL if present
+    if (capability.files?.documentation) {
+      supabaseRecord.docs = capability.files.documentation;
+    }
+    
+    // Handle social links as JSON
+    if (capability.social_links) {
+      supabaseRecord.social_links = JSON.stringify(capability.social_links);
+    }
+    
+    // Handle developer social links as JSON
+    if (capability.developer_info?.social_links) {
+      supabaseRecord.developer_social_links = JSON.stringify(capability.developer_info.social_links);
+    }
+    
+    // Handle additional files as JSON
+    if (capability.files?.additionalFiles) {
+      supabaseRecord.additional_files = JSON.stringify(capability.files.additionalFiles);
+    }
+    
+    // Add developer info if available
+    if (capability.developer_info) {
+      supabaseRecord.developer_name = capability.developer_info.name;
+      supabaseRecord.developer_email = capability.developer_info.email;
+      supabaseRecord.bio = capability.developer_info.bio;
+    }
 
     console.log("Upserting capability with data:", supabaseRecord);
     

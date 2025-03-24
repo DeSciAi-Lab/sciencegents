@@ -303,12 +303,15 @@ export const CapabilityWizardProvider: React.FC<{children: React.ReactNode}> = (
       }
       
       // Upload additional files if exist
-      const additionalFileUrls: string[] = [];
+      const additionalFileUrls: Array<{name: string, url: string}> = [];
       if (additionalFiles && additionalFiles.length > 0) {
         for (const file of additionalFiles) {
           try {
             const additionalUpload = await uploadFileToStorage(file, 'sciencegents', 'additional_files');
-            additionalFileUrls.push(additionalUpload.url);
+            additionalFileUrls.push({
+              name: file.name,
+              url: additionalUpload.url
+            });
           } catch (error) {
             console.error(`Error uploading additional file ${file.name}:`, error);
           }
@@ -375,6 +378,8 @@ export const CapabilityWizardProvider: React.FC<{children: React.ReactNode}> = (
           description: "Failed to save capability details to database. Please try again.",
           variant: "destructive"
         });
+        setIsSubmitting(false);
+        return;
       }
       
       // Refresh capabilities data

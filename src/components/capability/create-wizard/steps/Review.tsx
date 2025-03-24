@@ -1,8 +1,8 @@
 
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { useCapabilityWizard } from '../CapabilityWizardContext';
-import { formatFileSize } from '../utils';
-import { FileText } from 'lucide-react';
+import { Loader2, Check, AlertCircle, Twitter, Github, Globe, FileText, MessageCircle } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const Review: React.FC = () => {
   const { 
@@ -11,241 +11,306 @@ const Review: React.FC = () => {
     integrationGuide, 
     additionalFiles,
     displayImage,
-    profileImage
+    profileImage,
+    isSubmitting,
+    submitCapability
   } = useCapabilityWizard();
   
-  const [displayImagePreview, setDisplayImagePreview] = useState<string | null>(null);
-  const [profileImagePreview, setProfileImagePreview] = useState<string | null>(null);
+  const [error, setError] = React.useState<string | null>(null);
   
-  useEffect(() => {
-    if (displayImage) {
-      const url = URL.createObjectURL(displayImage);
-      setDisplayImagePreview(url);
-      
-      return () => URL.revokeObjectURL(url);
+  const handleSubmit = async () => {
+    try {
+      await submitCapability();
+    } catch (err) {
+      setError(err.message || 'Failed to create capability');
     }
-  }, [displayImage]);
+  };
   
-  useEffect(() => {
-    if (profileImage) {
-      const url = URL.createObjectURL(profileImage);
-      setProfileImagePreview(url);
-      
-      return () => URL.revokeObjectURL(url);
-    }
-  }, [profileImage]);
+  const hasCapabilitySocialLinks = formData.twitter || formData.github || formData.website || formData.telegram || formData.socialLinks.length > 0;
+  const hasDeveloperSocialLinks = formData.developerTwitter || formData.developerGithub || formData.developerWebsite || formData.developerTelegram || formData.developerSocialLinks.length > 0;
   
-  const hasDeveloperInfo = formData.developerName || 
-    formData.developerEmail || 
-    formData.bio || 
-    profileImage || 
-    formData.developerTwitter || 
-    formData.developerGithub || 
-    formData.developerTelegram || 
-    formData.developerWebsite ||
-    formData.developerSocialLinks.length > 0;
+  const renderCapabilitySocialLinks = () => {
+    return (
+      <div className="space-y-2">
+        {formData.twitter && (
+          <div className="flex items-center gap-2">
+            <Twitter size={16} className="text-blue-500" />
+            <span className="text-sm">{formData.twitter}</span>
+          </div>
+        )}
+        {formData.github && (
+          <div className="flex items-center gap-2">
+            <Github size={16} className="text-gray-800" />
+            <span className="text-sm">{formData.github}</span>
+          </div>
+        )}
+        {formData.website && (
+          <div className="flex items-center gap-2">
+            <Globe size={16} className="text-green-600" />
+            <span className="text-sm">{formData.website}</span>
+          </div>
+        )}
+        {formData.telegram && (
+          <div className="flex items-center gap-2">
+            <MessageCircle size={16} className="text-blue-500" />
+            <span className="text-sm">{formData.telegram}</span>
+          </div>
+        )}
+        {formData.socialLinks.map((link, index) => (
+          link.type && link.url ? (
+            <div key={index} className="flex items-center gap-2">
+              <Globe size={16} className="text-purple-500" />
+              <span className="text-sm">{link.type}: {link.url}</span>
+            </div>
+          ) : null
+        ))}
+      </div>
+    );
+  };
   
-  const hasCapabilitySocialLinks = formData.twitter || 
-    formData.github || 
-    formData.telegram || 
-    formData.website ||
-    formData.socialLinks.length > 0;
-  
-  const hasDocuments = documentation || integrationGuide || (additionalFiles && additionalFiles.length > 0);
-  
+  const renderDeveloperSocialLinks = () => {
+    return (
+      <div className="space-y-2">
+        {formData.developerTwitter && (
+          <div className="flex items-center gap-2">
+            <Twitter size={16} className="text-blue-500" />
+            <span className="text-sm">{formData.developerTwitter}</span>
+          </div>
+        )}
+        {formData.developerGithub && (
+          <div className="flex items-center gap-2">
+            <Github size={16} className="text-gray-800" />
+            <span className="text-sm">{formData.developerGithub}</span>
+          </div>
+        )}
+        {formData.developerWebsite && (
+          <div className="flex items-center gap-2">
+            <Globe size={16} className="text-green-600" />
+            <span className="text-sm">{formData.developerWebsite}</span>
+          </div>
+        )}
+        {formData.developerTelegram && (
+          <div className="flex items-center gap-2">
+            <MessageCircle size={16} className="text-blue-500" />
+            <span className="text-sm">{formData.developerTelegram}</span>
+          </div>
+        )}
+        {formData.developerSocialLinks.map((link, index) => (
+          link.type && link.url ? (
+            <div key={index} className="flex items-center gap-2">
+              <Globe size={16} className="text-purple-500" />
+              <span className="text-sm">{link.type}: {link.url}</span>
+            </div>
+          ) : null
+        ))}
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-semibold mb-4">Review & Launch</h3>
-        <p className="text-sm text-gray-500 mb-6">
-          Review all the details of your capability before launching. Once launched, some properties cannot be changed.
+        <p className="text-sm text-gray-500 mb-4">
+          Review your capability details before launching. Once launched, some properties cannot be changed.
         </p>
       </div>
       
-      <div className="bg-blue-50 rounded-md p-6 space-y-6">
-        <div className="flex justify-center">
-          {displayImagePreview ? (
-            <div className="w-32 h-32 rounded-md overflow-hidden mb-4 border border-gray-200">
-              <img src={displayImagePreview} alt="Capability" className="w-full h-full object-cover" />
+      {error && (
+        <Alert variant="destructive" className="mb-4">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+      
+      <div className="space-y-6 bg-blue-50 p-6 rounded-lg">
+        {/* Basic Information */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold">Basic Information</h3>
+          
+          <div className="flex flex-col md:flex-row gap-4">
+            {displayImage && (
+              <div className="md:w-1/3 mb-4 md:mb-0">
+                <div className="border rounded-md overflow-hidden bg-white h-40 w-full">
+                  <img 
+                    src={URL.createObjectURL(displayImage)} 
+                    alt="Capability Display" 
+                    className="w-full h-full object-contain"
+                  />
+                </div>
+              </div>
+            )}
+            
+            <div className={`${displayImage ? 'md:w-2/3' : 'w-full'} space-y-4`}>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-gray-500">Name</p>
+                  <p className="font-medium">{formData.name}</p>
+                </div>
+                
+                <div>
+                  <p className="text-sm text-gray-500">ID</p>
+                  <p className="font-medium">{formData.id}</p>
+                </div>
+                
+                <div>
+                  <p className="text-sm text-gray-500">Domain</p>
+                  <p className="font-medium">{formData.domain}</p>
+                </div>
+                
+                <div>
+                  <p className="text-sm text-gray-500">Fee</p>
+                  <p className="font-medium">{formData.fee} ETH</p>
+                </div>
+                
+                <div>
+                  <p className="text-sm text-gray-500">Creator Address</p>
+                  <p className="font-medium truncate">{formData.creatorAddress}</p>
+                </div>
+              </div>
+              
+              <div>
+                <p className="text-sm text-gray-500">Description</p>
+                <p className="text-sm">{formData.description}</p>
+              </div>
+              
+              {hasCapabilitySocialLinks && (
+                <div>
+                  <p className="text-sm text-gray-500 mb-2">Social Links</p>
+                  {renderCapabilitySocialLinks()}
+                </div>
+              )}
             </div>
-          ) : (
-            <div className="w-32 h-32 bg-blue-100 rounded-md flex items-center justify-center text-2xl text-blue-600 font-bold mb-4">
-              {formData.name.charAt(0) || "C"}
+          </div>
+        </div>
+        
+        {/* Documentation */}
+        <div className="mt-6 space-y-4">
+          <h3 className="text-lg font-semibold">Documentation</h3>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <p className="text-sm text-gray-500 mb-2">Documentation</p>
+              {documentation ? (
+                <div className="p-3 border rounded-md bg-white flex items-center gap-3">
+                  <FileText size={20} className="text-blue-500" />
+                  <div>
+                    <p className="font-medium truncate max-w-[200px]">{documentation.name}</p>
+                    <p className="text-xs text-gray-500">{(documentation.size / 1024).toFixed(2)} KB</p>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-sm italic text-gray-500">No documentation uploaded</p>
+              )}
+            </div>
+            
+            <div>
+              <p className="text-sm text-gray-500 mb-2">Integration Guide</p>
+              {integrationGuide ? (
+                <div className="p-3 border rounded-md bg-white flex items-center gap-3">
+                  <FileText size={20} className="text-green-500" />
+                  <div>
+                    <p className="font-medium truncate max-w-[200px]">{integrationGuide.name}</p>
+                    <p className="text-xs text-gray-500">{(integrationGuide.size / 1024).toFixed(2)} KB</p>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-sm italic text-gray-500">No integration guide uploaded</p>
+              )}
+            </div>
+          </div>
+          
+          {additionalFiles && additionalFiles.length > 0 && (
+            <div>
+              <p className="text-sm text-gray-500 mb-2">Additional Files ({additionalFiles.length})</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {additionalFiles.map((file, index) => (
+                  <div key={index} className="p-3 border rounded-md bg-white flex items-center gap-3">
+                    <FileText size={20} className="text-purple-500" />
+                    <div>
+                      <p className="font-medium truncate max-w-[200px]">{file.name}</p>
+                      <p className="text-xs text-gray-500">{(file.size / 1024).toFixed(2)} KB</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </div>
         
-        <div className="bg-white rounded-md p-4 border border-gray-200">
-          <h3 className="font-medium text-gray-700 mb-2">Basic Information</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-            <div>
-              <p className="text-gray-500">Name</p>
-              <p className="font-medium">{formData.name}</p>
-            </div>
-            <div>
-              <p className="text-gray-500">ID</p>
-              <p className="font-medium">{formData.id}</p>
-            </div>
-            <div>
-              <p className="text-gray-500">Domain</p>
-              <p className="font-medium">{formData.domain}</p>
-            </div>
-            <div>
-              <p className="text-gray-500">Fee</p>
-              <p className="font-medium">{formData.fee} ETH</p>
-            </div>
-            <div>
-              <p className="text-gray-500">Creator Address</p>
-              <p className="font-medium truncate">{formData.creatorAddress}</p>
-            </div>
-          </div>
-        </div>
-        
-        <div className="bg-white rounded-md p-4 border border-gray-200">
-          <h3 className="font-medium text-gray-700 mb-2">Description</h3>
-          <p className="text-sm">{formData.description}</p>
-        </div>
-        
-        {hasCapabilitySocialLinks && (
-          <div className="bg-white rounded-md p-4 border border-gray-200">
-            <h3 className="font-medium text-gray-700 mb-2">Social Links</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-              {formData.twitter && (
-                <div>
-                  <p className="text-gray-500">Twitter</p>
-                  <p className="font-medium truncate">{formData.twitter}</p>
-                </div>
-              )}
-              {formData.github && (
-                <div>
-                  <p className="text-gray-500">GitHub</p>
-                  <p className="font-medium truncate">{formData.github}</p>
-                </div>
-              )}
-              {formData.website && (
-                <div>
-                  <p className="text-gray-500">Website</p>
-                  <p className="font-medium truncate">{formData.website}</p>
-                </div>
-              )}
-              {formData.telegram && (
-                <div>
-                  <p className="text-gray-500">Telegram</p>
-                  <p className="font-medium truncate">{formData.telegram}</p>
-                </div>
-              )}
-              {formData.socialLinks.filter(link => link.type && link.url).map((link, index) => (
-                <div key={index}>
-                  <p className="text-gray-500">{link.type}</p>
-                  <p className="font-medium truncate">{link.url}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-        
-        {hasDocuments && (
-          <div className="bg-white rounded-md p-4 border border-gray-200">
-            <h3 className="font-medium text-gray-700 mb-2">Documentation</h3>
-            <div className="space-y-2">
-              {documentation && (
-                <div className="flex items-center p-2 border rounded bg-gray-50">
-                  <FileText size={16} className="text-blue-500 mr-2" />
-                  <div>
-                    <p className="text-sm font-medium">Documentation</p>
-                    <p className="text-xs text-gray-500">{documentation.name} ({formatFileSize(documentation.size)})</p>
-                  </div>
-                </div>
-              )}
-              
-              {integrationGuide && (
-                <div className="flex items-center p-2 border rounded bg-gray-50">
-                  <FileText size={16} className="text-blue-500 mr-2" />
-                  <div>
-                    <p className="text-sm font-medium">Integration Guide</p>
-                    <p className="text-xs text-gray-500">{integrationGuide.name} ({formatFileSize(integrationGuide.size)})</p>
-                  </div>
-                </div>
-              )}
-              
-              {additionalFiles && additionalFiles.length > 0 && (
-                <div>
-                  <p className="text-sm font-medium mb-1">Additional Files ({additionalFiles.length})</p>
-                  <div className="space-y-1">
-                    {additionalFiles.map((file, index) => (
-                      <div key={index} className="flex items-center p-2 border rounded bg-gray-50">
-                        <FileText size={16} className="text-blue-500 mr-2" />
-                        <p className="text-xs">{file.name} ({formatFileSize(file.size)})</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-        
-        {hasDeveloperInfo && (
-          <div className="bg-white rounded-md p-4 border border-gray-200">
-            <h3 className="font-medium text-gray-700 mb-2">Developer Information</h3>
-            <div className="flex items-start mb-4">
-              {profileImagePreview && (
-                <div className="w-16 h-16 rounded-full overflow-hidden border border-gray-200 mr-4">
-                  <img src={profileImagePreview} alt="Developer" className="w-full h-full object-cover" />
-                </div>
-              )}
-              <div className="flex-1">
-                {formData.developerName && (
-                  <p className="font-medium">{formData.developerName}</p>
-                )}
-                {formData.developerEmail && (
-                  <p className="text-sm text-gray-600">{formData.developerEmail}</p>
-                )}
-                {formData.bio && (
-                  <p className="text-sm mt-2">{formData.bio}</p>
-                )}
-              </div>
-            </div>
+        {/* Developer Information */}
+        {(formData.developerName || formData.developerEmail || formData.bio || hasDeveloperSocialLinks || profileImage) && (
+          <div className="mt-6 space-y-4">
+            <h3 className="text-lg font-semibold">Developer Information</h3>
             
-            {(formData.developerTwitter || formData.developerGithub || formData.developerWebsite || formData.developerTelegram || formData.developerSocialLinks.length > 0) && (
-              <div>
-                <p className="text-sm font-medium mb-2">Developer Social Links</p>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
-                  {formData.developerTwitter && (
-                    <div>
-                      <p className="text-gray-500">Twitter</p>
-                      <p className="font-medium truncate">{formData.developerTwitter}</p>
-                    </div>
-                  )}
-                  {formData.developerGithub && (
-                    <div>
-                      <p className="text-gray-500">GitHub</p>
-                      <p className="font-medium truncate">{formData.developerGithub}</p>
-                    </div>
-                  )}
-                  {formData.developerWebsite && (
-                    <div>
-                      <p className="text-gray-500">Website</p>
-                      <p className="font-medium truncate">{formData.developerWebsite}</p>
-                    </div>
-                  )}
-                  {formData.developerTelegram && (
-                    <div>
-                      <p className="text-gray-500">Telegram</p>
-                      <p className="font-medium truncate">{formData.developerTelegram}</p>
-                    </div>
-                  )}
-                  {formData.developerSocialLinks.filter(link => link.type && link.url).map((link, index) => (
-                    <div key={index}>
-                      <p className="text-gray-500">{link.type}</p>
-                      <p className="font-medium truncate">{link.url}</p>
-                    </div>
-                  ))}
+            <div className="flex flex-col md:flex-row gap-4">
+              {profileImage && (
+                <div className="md:w-1/4 mb-4 md:mb-0">
+                  <div className="border rounded-md overflow-hidden bg-white h-40 w-40">
+                    <img 
+                      src={URL.createObjectURL(profileImage)} 
+                      alt="Developer Profile" 
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
                 </div>
+              )}
+              
+              <div className={`${profileImage ? 'md:w-3/4' : 'w-full'} space-y-4`}>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {formData.developerName && (
+                    <div>
+                      <p className="text-sm text-gray-500">Name</p>
+                      <p className="font-medium">{formData.developerName}</p>
+                    </div>
+                  )}
+                  
+                  {formData.developerEmail && (
+                    <div>
+                      <p className="text-sm text-gray-500">Email</p>
+                      <p className="font-medium">{formData.developerEmail}</p>
+                    </div>
+                  )}
+                </div>
+                
+                {formData.bio && (
+                  <div>
+                    <p className="text-sm text-gray-500">Bio</p>
+                    <p className="text-sm">{formData.bio}</p>
+                  </div>
+                )}
+                
+                {hasDeveloperSocialLinks && (
+                  <div>
+                    <p className="text-sm text-gray-500 mb-2">Social Links</p>
+                    {renderDeveloperSocialLinks()}
+                  </div>
+                )}
               </div>
-            )}
+            </div>
           </div>
         )}
+        
+        <div className="mt-8 flex justify-center">
+          <button
+            onClick={handleSubmit}
+            disabled={isSubmitting}
+            className={`flex items-center gap-2 px-6 py-3 rounded-md text-white font-medium ${
+              isSubmitting ? 'bg-blue-400' : 'bg-blue-600 hover:bg-blue-700'
+            } transition-colors`}
+          >
+            {isSubmitting ? (
+              <>
+                <Loader2 size={20} className="animate-spin" />
+                Creating...
+              </>
+            ) : (
+              <>
+                <Check size={20} />
+                Launch Capability
+              </>
+            )}
+          </button>
+        </div>
       </div>
     </div>
   );

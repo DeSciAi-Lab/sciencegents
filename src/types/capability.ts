@@ -1,118 +1,117 @@
 
-// Capability types for the application
+export interface CapabilityStats {
+  usageCount: number;
+  rating: number;
+  revenue: number;
+}
 
-/**
- * Core capability interface used throughout the application
- */
+export interface CapabilitySocialLink {
+  type: string;
+  url: string;
+}
+
+export interface CapabilityDeveloperInfo {
+  name?: string;
+  email?: string;
+  bio?: string;
+  social_links?: CapabilitySocialLink[];
+}
+
+export interface CapabilityFiles {
+  documentation?: string;
+  integrationGuide?: string;
+  additionalFiles?: Array<{name: string, url: string}> | string[];
+}
+
 export interface Capability {
   id: string;
   name: string;
-  description: string;
   domain: string;
-  creator: string;
+  description: string;
   price: number;
-  createdAt: string;
-  stats: {
-    usageCount: number;
-    rating: number;
-    revenue: number;
-  };
-  docs?: string;
+  creator: string;
+  createdAt?: string;
+  stats: CapabilityStats;
   features: string[];
-  // New fields
   display_image?: string;
   developer_profile_pic?: string;
-  social_links?: {type: string, url: string}[];
-  developer_info?: {
-    name?: string;
-    email?: string;
-    bio?: string;
-    social_links?: {type: string, url: string}[];
-  };
-  files?: {
-    documentation?: string;
-    integrationGuide?: string;
-    additionalFiles?: string[];
-  };
+  social_links?: CapabilitySocialLink[];
+  developer_info?: CapabilityDeveloperInfo;
+  files?: CapabilityFiles;
+  docs?: string; // For backward compatibility
 }
 
-/**
- * Interface for capability data stored in Supabase
- */
+export interface CapabilityDetail extends Capability {
+  feeInETH?: any; // ethers.BigNumber from blockchain
+}
+
 export interface SupabaseCapability {
   id: string;
   name: string;
-  description: string;
   domain: string;
-  creator: string;
+  description: string;
   price: number;
-  created_at: string;
+  creator: string;
+  created_at?: string;
   usage_count: number;
   rating: number;
   revenue: number;
-  docs?: string;
   features: string[];
-  last_synced_at: string;
-  // New fields
   display_image?: string;
   developer_profile_pic?: string;
-  social_links?: string; // Stored as JSON string
-  developer_social_links?: string; // Stored as JSON string
-  additional_files?: string; // Stored as JSON string
+  social_links?: string;
+  developer_social_links?: string;
+  additional_files?: string;
+  docs?: string;
   developer_name?: string;
   developer_email?: string;
   bio?: string;
+  last_synced_at?: string;
 }
 
-/**
- * Maps Supabase capability data to application capability format
- */
+// Helper function to map Supabase record to Capability type
 export const mapSupabaseToCapability = (record: SupabaseCapability): Capability => {
-  // Parse JSON strings to objects or default to empty arrays
-  let socialLinks: {type: string, url: string}[] = [];
-  let developerSocialLinks: {type: string, url: string}[] = [];
-  let additionalFiles: string[] = [];
-
+  let socialLinks: CapabilitySocialLink[] = [];
   try {
     if (record.social_links) {
       socialLinks = JSON.parse(record.social_links);
     }
-  } catch (e) {
-    console.error('Error parsing social links:', e);
+  } catch (error) {
+    console.error('Error parsing social links:', error);
   }
-
+  
+  let developerSocialLinks: CapabilitySocialLink[] = [];
   try {
     if (record.developer_social_links) {
       developerSocialLinks = JSON.parse(record.developer_social_links);
     }
-  } catch (e) {
-    console.error('Error parsing developer social links:', e);
+  } catch (error) {
+    console.error('Error parsing developer social links:', error);
   }
-
+  
+  let additionalFiles: Array<{name: string, url: string}> | string[] = [];
   try {
     if (record.additional_files) {
       additionalFiles = JSON.parse(record.additional_files);
     }
-  } catch (e) {
-    console.error('Error parsing additional files:', e);
+  } catch (error) {
+    console.error('Error parsing additional files:', error);
   }
-
+  
   return {
     id: record.id,
     name: record.name,
-    description: record.description,
     domain: record.domain,
-    creator: record.creator,
+    description: record.description,
     price: record.price,
+    creator: record.creator,
     createdAt: record.created_at,
     stats: {
       usageCount: record.usage_count || 0,
       rating: record.rating || 4.5,
       revenue: record.revenue || 0
     },
-    docs: record.docs,
     features: record.features || [],
-    // New fields
     display_image: record.display_image,
     developer_profile_pic: record.developer_profile_pic,
     social_links: socialLinks,
@@ -123,7 +122,9 @@ export const mapSupabaseToCapability = (record: SupabaseCapability): Capability 
       social_links: developerSocialLinks
     },
     files: {
+      documentation: record.docs,
       additionalFiles: additionalFiles
-    }
+    },
+    docs: record.docs // For backward compatibility
   };
 };
