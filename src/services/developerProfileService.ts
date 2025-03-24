@@ -1,6 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { DeveloperProfile, SocialLink } from "@/types/profile";
+import { Json } from "@/integrations/supabase/types";
 
 /**
  * Fetches a developer profile by wallet address
@@ -69,7 +70,8 @@ export const upsertDeveloperProfile = async (profile: DeveloperProfile): Promise
     }
     
     // Convert typed SocialLink array to regular JSON for Supabase
-    // This is the key change - we need to make sure additional_social_links is properly converted to JSON
+    // This is the key change - we need to transform the SocialLink[] to a JSON format
+    // that Supabase can accept (Json type from Supabase's types)
     const supabaseData = {
       wallet_address: profile.wallet_address,
       developer_name: profile.developer_name || null,
@@ -80,7 +82,7 @@ export const upsertDeveloperProfile = async (profile: DeveloperProfile): Promise
       developer_telegram: profile.developer_telegram || null,
       developer_github: profile.developer_github || null,
       developer_website: profile.developer_website || null,
-      additional_social_links: profile.additional_social_links || []
+      additional_social_links: profile.additional_social_links as unknown as Json
     };
     
     const { data, error } = await supabase

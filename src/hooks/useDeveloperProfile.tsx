@@ -55,6 +55,11 @@ export function useDeveloperProfile() {
     }
 
     try {
+      // Ensure that additional_social_links is always an array
+      if (updatedProfile.additional_social_links === undefined && profile?.additional_social_links) {
+        updatedProfile.additional_social_links = [...profile.additional_social_links];
+      }
+
       // Merge current profile with updates
       const profileToUpdate: DeveloperProfile = {
         ...(profile || { additional_social_links: [] }),
