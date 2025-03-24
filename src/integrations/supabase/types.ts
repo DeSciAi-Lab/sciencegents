@@ -72,6 +72,51 @@ export type Database = {
         }
         Relationships: []
       }
+      developer_profiles: {
+        Row: {
+          additional_social_links: Json | null
+          bio: string | null
+          created_at: string | null
+          developer_email: string | null
+          developer_github: string | null
+          developer_name: string | null
+          developer_telegram: string | null
+          developer_twitter: string | null
+          developer_website: string | null
+          profile_pic: string | null
+          updated_at: string | null
+          wallet_address: string
+        }
+        Insert: {
+          additional_social_links?: Json | null
+          bio?: string | null
+          created_at?: string | null
+          developer_email?: string | null
+          developer_github?: string | null
+          developer_name?: string | null
+          developer_telegram?: string | null
+          developer_twitter?: string | null
+          developer_website?: string | null
+          profile_pic?: string | null
+          updated_at?: string | null
+          wallet_address: string
+        }
+        Update: {
+          additional_social_links?: Json | null
+          bio?: string | null
+          created_at?: string | null
+          developer_email?: string | null
+          developer_github?: string | null
+          developer_name?: string | null
+          developer_telegram?: string | null
+          developer_twitter?: string | null
+          developer_website?: string | null
+          profile_pic?: string | null
+          updated_at?: string | null
+          wallet_address?: string
+        }
+        Relationships: []
+      }
       sciencegent_assistants: {
         Row: {
           assistant_id: string

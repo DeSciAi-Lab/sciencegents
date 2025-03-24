@@ -1,3 +1,4 @@
+
 import { ethers } from "ethers";
 import { contractConfig, factoryABI } from "@/utils/contractConfig";
 import { ScienceGentFormData } from "@/types/sciencegent";
@@ -10,6 +11,7 @@ import {
   clearPendingTransactions 
 } from './transaction';
 import { extractTokenAddressFromReceipt } from './blockchain';
+import { upsertDeveloperProfile } from '@/services/developerProfileService';
 
 /**
  * Creates a new ScienceGent token on the blockchain and saves it to Supabase
@@ -148,6 +150,25 @@ export const createScienceGent = async (formData: ScienceGentFormData & { transa
         } else {
           console.log("ScienceGent saved to Supabase successfully:", tokenAddress);
           
+          // Save developer profile if developer info is provided
+          if (formData.developerName || formData.developerEmail) {
+            try {
+              await upsertDeveloperProfile({
+                wallet_address: signerAddress,
+                developer_name: formData.developerName,
+                developer_email: formData.developerEmail,
+                bio: formData.bio,
+                developer_twitter: formData.developerTwitter,
+                developer_telegram: formData.developerTelegram,
+                developer_github: formData.developerGithub,
+                developer_website: formData.developerWebsite
+              });
+              console.log("Developer profile saved/updated");
+            } catch (profileError) {
+              console.error("Error saving developer profile:", profileError);
+            }
+          }
+          
           // Also create initial stats
           await supabase
             .from('sciencegent_stats')
@@ -196,6 +217,14 @@ export const createScienceGent = async (formData: ScienceGentFormData & { transa
                     .from('sciencegents')
                     .update({ profile_pic: publicUrlData.publicUrl })
                     .eq('address', tokenAddress);
+                    
+                  // Also update developer profile with same image
+                  if (formData.developerName || formData.developerEmail) {
+                    await supabase
+                      .from('developer_profiles')
+                      .update({ profile_pic: publicUrlData.publicUrl })
+                      .eq('wallet_address', signerAddress);
+                  }
                 }
               } else {
                 console.error("Error uploading profile image:", uploadError);

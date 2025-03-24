@@ -14,9 +14,11 @@ import {
   Globe, 
   MessageCircle,
   AlertCircle,
-  Trash2
+  Trash2,
+  Loader2
 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useDeveloperProfile } from '@/hooks/useDeveloperProfile';
 
 const PersonalDetails: React.FC = () => {
   const { 
@@ -26,9 +28,11 @@ const PersonalDetails: React.FC = () => {
     setProfileImage,
     addSocialLink,
     removeSocialLink,
-    updateSocialLink
+    updateSocialLink,
+    handleSelectChange
   } = useCapabilityWizard();
   
+  const { profile, isLoading: isProfileLoading } = useDeveloperProfile();
   const [profileImagePreview, setProfileImagePreview] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   
@@ -40,6 +44,45 @@ const PersonalDetails: React.FC = () => {
       return () => URL.revokeObjectURL(url);
     }
   }, [profileImage]);
+  
+  // Prefill form with developer profile data
+  useEffect(() => {
+    if (profile && !isProfileLoading) {
+      // Only update fields that are empty
+      if (!formData.developerName && profile.developer_name) {
+        handleSelectChange('developerName', profile.developer_name);
+      }
+      
+      if (!formData.developerEmail && profile.developer_email) {
+        handleSelectChange('developerEmail', profile.developer_email);
+      }
+      
+      if (!formData.bio && profile.bio) {
+        handleSelectChange('bio', profile.bio);
+      }
+      
+      if (!formData.developerTwitter && profile.developer_twitter) {
+        handleSelectChange('developerTwitter', profile.developer_twitter);
+      }
+      
+      if (!formData.developerTelegram && profile.developer_telegram) {
+        handleSelectChange('developerTelegram', profile.developer_telegram);
+      }
+      
+      if (!formData.developerGithub && profile.developer_github) {
+        handleSelectChange('developerGithub', profile.developer_github);
+      }
+      
+      if (!formData.developerWebsite && profile.developer_website) {
+        handleSelectChange('developerWebsite', profile.developer_website);
+      }
+      
+      // Set profile image if available from profile
+      if (profile.profile_pic && !profileImage && !profileImagePreview) {
+        setProfileImagePreview(profile.profile_pic);
+      }
+    }
+  }, [profile, isProfileLoading, formData, handleSelectChange, profileImage, profileImagePreview]);
   
   const handleProfileImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -184,6 +227,24 @@ const PersonalDetails: React.FC = () => {
       </div>
     );
   };
+  
+  if (isProfileLoading) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h3 className="text-lg font-semibold">Personal Details</h3>
+          <p className="text-sm text-gray-500 mt-1">
+            Add your personal information to build trust with users (optional).
+          </p>
+        </div>
+        
+        <div className="flex justify-center items-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <span className="ml-2 text-sm text-gray-500">Loading your developer profile...</span>
+        </div>
+      </div>
+    );
+  }
   
   return (
     <div className="space-y-6">

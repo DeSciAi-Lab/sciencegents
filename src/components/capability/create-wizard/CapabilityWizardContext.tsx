@@ -215,6 +215,7 @@ export const CapabilityWizardProvider: React.FC<{children: React.ReactNode}> = (
 
       const provider = new ethers.providers.Web3Provider(window.ethereum);
       const signer = provider.getSigner();
+      const signerAddress = await signer.getAddress();
       
       const factoryContract = new ethers.Contract(
         contractConfig.addresses.ScienceGentsFactory,
@@ -371,6 +372,27 @@ export const CapabilityWizardProvider: React.FC<{children: React.ReactNode}> = (
       try {
         await upsertCapabilityToSupabase(capabilityObj, true);
         console.log("Capability added to Supabase");
+        
+        // Save developer profile if provided
+        if (formData.developerName || formData.developerEmail) {
+          try {
+            const { upsertDeveloperProfile } = await import('@/services/developerProfileService');
+            await upsertDeveloperProfile({
+              wallet_address: signerAddress,
+              developer_name: formData.developerName,
+              developer_email: formData.developerEmail,
+              bio: formData.bio,
+              profile_pic: storageUrls.profileImage,
+              developer_twitter: formData.developerTwitter,
+              developer_telegram: formData.developerTelegram,
+              developer_github: formData.developerGithub,
+              developer_website: formData.developerWebsite
+            });
+            console.log("Developer profile saved/updated for capability creator");
+          } catch (profileError) {
+            console.error("Error saving developer profile:", profileError);
+          }
+        }
       } catch (error) {
         console.error("Error adding capability to Supabase:", error);
         toast({
