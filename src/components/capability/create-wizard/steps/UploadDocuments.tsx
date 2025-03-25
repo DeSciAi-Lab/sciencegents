@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { useCapabilityWizard } from '../CapabilityWizardContext';
-import { FileUpload, Info, Plus, Trash, ExternalLink } from 'lucide-react';
+import { Info, Plus, Trash, ExternalLink, File, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import FileUploadField from '@/components/capability/FileUploadField';
 
@@ -46,7 +46,7 @@ const UploadDocuments: React.FC = () => {
             {documentation ? (
               <div className="flex items-center justify-between w-full">
                 <div className="flex items-center">
-                  <FileUpload className="h-5 w-5 text-blue-500 mr-2" />
+                  <File className="h-5 w-5 text-blue-500 mr-2" />
                   <span className="text-sm font-medium">{documentation.name}</span>
                 </div>
                 <Button
@@ -88,7 +88,7 @@ const UploadDocuments: React.FC = () => {
             {integrationGuide ? (
               <div className="flex items-center justify-between w-full">
                 <div className="flex items-center">
-                  <FileUpload className="h-5 w-5 text-blue-500 mr-2" />
+                  <File className="h-5 w-5 text-blue-500 mr-2" />
                   <span className="text-sm font-medium">{integrationGuide.name}</span>
                 </div>
                 <Button
@@ -137,7 +137,7 @@ const UploadDocuments: React.FC = () => {
               {additionalFiles.map((file, index) => (
                 <div key={index} className="flex items-center justify-between bg-gray-50 p-3 rounded">
                   <div className="flex items-center">
-                    <FileUpload className="h-4 w-4 text-blue-500 mr-2" />
+                    <File className="h-4 w-4 text-blue-500 mr-2" />
                     <span className="text-sm">{file.name}</span>
                   </div>
                   <Button
@@ -159,7 +159,7 @@ const UploadDocuments: React.FC = () => {
               {tempFile ? (
                 <div className="flex flex-col items-center w-full">
                   <div className="flex items-center mb-2">
-                    <FileUpload className="h-5 w-5 text-blue-500 mr-2" />
+                    <File className="h-5 w-5 text-blue-500 mr-2" />
                     <span className="text-sm font-medium">{tempFile.name}</span>
                   </div>
                   <div className="flex space-x-2">
