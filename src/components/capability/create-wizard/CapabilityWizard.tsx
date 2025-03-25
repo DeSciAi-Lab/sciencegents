@@ -38,8 +38,6 @@ const WizardStepRenderer: React.FC = () => {
 
 // Inner component that has access to the context
 const WizardContent: React.FC = () => {
-  const wizardContext = useCapabilityWizard();
-  
   return (
     <WizardLayout>
       <WizardStepRenderer />

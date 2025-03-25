@@ -2,7 +2,18 @@
 import React, { createContext, useContext, useState } from 'react';
 import { uploadFileToStorage } from '@/services/capability/supabase';
 
+// Define the wizard steps
+export const wizardSteps = [
+  { id: 1, name: "Basic Information", description: "Enter basic details about your capability" },
+  { id: 2, name: "Detailed Description", description: "Provide comprehensive description and features" },
+  { id: 3, name: "Upload Documents", description: "Upload documentation and resources" },
+  { id: 4, name: "Personal Details", description: "Add your developer information" },
+  { id: 5, name: "Review", description: "Review and submit your capability" }
+];
+
+// Define the extended context props interface with all required properties
 interface CapabilityWizardContextProps {
+  // Basic information
   name: string;
   setName: React.Dispatch<React.SetStateAction<string>>;
   id: string;
@@ -21,6 +32,8 @@ interface CapabilityWizardContextProps {
   removeFeature: (index: number) => void;
   creatorAddress: string;
   setCreatorAddress: React.Dispatch<React.SetStateAction<string>>;
+  
+  // Developer information
   developerName: string;
   setDeveloperName: React.Dispatch<React.SetStateAction<string>>;
   developerEmail: string;
@@ -31,6 +44,8 @@ interface CapabilityWizardContextProps {
   setSocialLinks: React.Dispatch<React.SetStateAction<Array<{ type: string; url: string }>>>;
   addSocialLink: (type: string, url: string) => void;
   removeSocialLink: (index: number) => void;
+  
+  // Files
   documentation: File | null;
   setDocumentation: React.Dispatch<React.SetStateAction<File | null>>;
   integrationGuide: File | null;
@@ -39,6 +54,8 @@ interface CapabilityWizardContextProps {
   setAdditionalFiles: React.Dispatch<React.SetStateAction<File[]>>;
   addFile: (file: File) => void;
   removeFile: (index: number) => void;
+  
+  // Wizard state
   currentStep: number;
   setCurrentStep: React.Dispatch<React.SetStateAction<number>>;
   goToNextStep: () => void;
@@ -51,6 +68,47 @@ interface CapabilityWizardContextProps {
     integrationGuideUrl?: string;
     additionalFilesUrls: Array<{ name: string; url: string }>;
   }>;
+  
+  // Form compatibility props (to fix the component errors)
+  formData: {
+    name: string;
+    id: string;
+    domain: string;
+    description: string;
+    detailedDescription: string;
+    fee: string;
+    creatorAddress: string;
+    displayImage?: File | null;
+    features: string[];
+    developerName: string;
+    developerEmail: string;
+    bio: string;
+    developerTwitter: string;
+    developerGithub: string;
+    developerWebsite: string;
+    developerTelegram: string;
+    socialLinks: Array<{ type: string; url: string }>;
+    developerSocialLinks: Array<{ type: string; url: string }>;
+    twitter: string;
+    github: string;
+    website: string;
+    telegram: string;
+  };
+  handleInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
+  handleSelectChange: (field: string, value: string) => void;
+  displayImage: File | null;
+  setDisplayImage: React.Dispatch<React.SetStateAction<File | null>>;
+  profileImage: File | null;
+  setProfileImage: React.Dispatch<React.SetStateAction<File | null>>;
+  updateSocialLink: (field: string, index: number, key: string, value: string) => void;
+  addSocialLink: (field: string) => void;
+  removeSocialLink: (field: string, index: number) => void;
+  
+  // Navigation and form submission
+  nextStep: () => void;
+  prevStep: () => void; 
+  canProceed: boolean;
+  submitCapability: () => void;
 }
 
 const CapabilityWizardContext = createContext<CapabilityWizardContextProps | undefined>(undefined);
@@ -72,14 +130,112 @@ export const CapabilityWizardProvider: React.FC<{ children: React.ReactNode }> =
   const [developerBio, setDeveloperBio] = useState('');
   const [socialLinks, setSocialLinks] = useState<Array<{ type: string; url: string }>>([]);
   
+  // UI Form compatibility
+  const [displayImage, setDisplayImage] = useState<File | null>(null);
+  const [profileImage, setProfileImage] = useState<File | null>(null);
+  
   // Files
   const [documentation, setDocumentation] = useState<File | null>(null);
   const [integrationGuide, setIntegrationGuide] = useState<File | null>(null);
   const [additionalFiles, setAdditionalFiles] = useState<File[]>([]);
   
   // Wizard state
-  const [currentStep, setCurrentStep] = useState(0);
+  const [currentStep, setCurrentStep] = useState(1); // Start at step 1 instead of 0
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Form data object (to fix component errors)
+  const formData = {
+    name,
+    id,
+    domain,
+    description,
+    detailedDescription,
+    fee: price,
+    creatorAddress,
+    displayImage,
+    features,
+    developerName,
+    developerEmail,
+    bio: developerBio,
+    developerTwitter: '',
+    developerGithub: '',
+    developerWebsite: '',
+    developerTelegram: '',
+    socialLinks,
+    developerSocialLinks: [],
+    twitter: '',
+    github: '',
+    website: '',
+    telegram: ''
+  };
+  
+  // Form handlers
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    
+    // Update the appropriate state based on the input name
+    switch (name) {
+      case 'name':
+        setName(value);
+        break;
+      case 'id':
+        setId(value);
+        break;
+      case 'domain':
+        setDomain(value);
+        break;
+      case 'description':
+        setDescription(value);
+        break;
+      case 'detailedDescription':
+        setDetailedDescription(value);
+        break;
+      case 'fee':
+        setPrice(value);
+        break;
+      case 'creatorAddress':
+        setCreatorAddress(value);
+        break;
+      case 'developerName':
+        setDeveloperName(value);
+        break;
+      case 'developerEmail':
+        setDeveloperEmail(value);
+        break;
+      case 'bio':
+        setDeveloperBio(value);
+        break;
+      // Add more cases as needed
+    }
+  };
+  
+  const handleSelectChange = (field: string, value: string) => {
+    // Update the appropriate state based on the field name
+    switch (field) {
+      case 'domain':
+        setDomain(value);
+        break;
+      case 'developerName':
+        setDeveloperName(value);
+        break;
+      case 'bio':
+        setDeveloperBio(value);
+        break;
+      // Add more cases as needed
+    }
+  };
+  
+  // Helper for updating social link objects
+  const updateSocialLink = (field: string, index: number, key: string, value: string) => {
+    if (field === 'socialLinks') {
+      setSocialLinks(prev => {
+        const newLinks = [...prev];
+        newLinks[index] = { ...newLinks[index], [key]: value };
+        return newLinks;
+      });
+    }
+    // Add other fields as needed
+  };
   
   const addFeature = (feature: string) => {
     setFeatures([...features, feature]);
@@ -89,12 +245,18 @@ export const CapabilityWizardProvider: React.FC<{ children: React.ReactNode }> =
     setFeatures(features.filter((_, i) => i !== index));
   };
   
-  const addSocialLink = (type: string, url: string) => {
-    setSocialLinks([...socialLinks, { type, url }]);
+  const addSocialLink = (field: string) => {
+    if (field === 'socialLinks') {
+      setSocialLinks([...socialLinks, { type: '', url: '' }]);
+    }
+    // Add other fields as needed
   };
   
-  const removeSocialLink = (index: number) => {
-    setSocialLinks(socialLinks.filter((_, i) => i !== index));
+  const removeSocialLink = (field: string, index: number) => {
+    if (field === 'socialLinks') {
+      setSocialLinks(socialLinks.filter((_, i) => i !== index));
+    }
+    // Add other fields as needed
   };
   
   const addFile = (file: File) => {
@@ -113,6 +275,19 @@ export const CapabilityWizardProvider: React.FC<{ children: React.ReactNode }> =
     setCurrentStep(prevStep => prevStep - 1);
   };
   
+  // Alias functions for component compatibility
+  const nextStep = goToNextStep;
+  const prevStep = goToPreviousStep;
+  
+  // Check if current step is valid to proceed
+  const canProceed = true; // This would be implemented with validation logic
+  
+  // Form submission
+  const submitCapability = () => {
+    console.log('Submitting capability...');
+    // Implement submission logic
+  };
+  
   const resetForm = () => {
     setName('');
     setId('');
@@ -129,8 +304,10 @@ export const CapabilityWizardProvider: React.FC<{ children: React.ReactNode }> =
     setDocumentation(null);
     setIntegrationGuide(null);
     setAdditionalFiles([]);
-    setCurrentStep(0);
+    setCurrentStep(1);
     setIsSubmitting(false);
+    setDisplayImage(null);
+    setProfileImage(null);
   };
   
   const handleFileUploads = async () => {
@@ -222,7 +399,20 @@ export const CapabilityWizardProvider: React.FC<{ children: React.ReactNode }> =
         resetForm,
         isSubmitting,
         setIsSubmitting,
-        handleFileUploads
+        handleFileUploads,
+        // Additional properties for component compatibility
+        formData,
+        handleInputChange,
+        handleSelectChange,
+        displayImage,
+        setDisplayImage,
+        profileImage,
+        setProfileImage,
+        updateSocialLink,
+        nextStep,
+        prevStep,
+        canProceed,
+        submitCapability
       }}
     >
       {children}
