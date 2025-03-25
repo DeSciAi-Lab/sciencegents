@@ -1,11 +1,10 @@
 
-import { getSupabaseClient } from '@/integrations/supabase/client';
 import { v4 as uuidv4 } from 'uuid';
+import { supabase } from '@/integrations/supabase/client'; // Updated import
 
 // Add the missing export functions for fetchCapabilitiesFromSupabase and fetchCapabilityById
 export const fetchCapabilitiesFromSupabase = async () => {
   try {
-    const supabase = getSupabaseClient();
     const { data, error } = await supabase
       .from('capabilities')
       .select('*');
@@ -20,7 +19,6 @@ export const fetchCapabilitiesFromSupabase = async () => {
 
 export const fetchCapabilityById = async (id: string) => {
   try {
-    const supabase = getSupabaseClient();
     const { data, error } = await supabase
       .from('capabilities')
       .select('*')
@@ -44,7 +42,6 @@ export const fetchCapabilityById = async (id: string) => {
 
 export const uploadFileToStorage = async (file: File, bucketName: string, folderName: string) => {
   try {
-    const supabase = getSupabaseClient();
     const fileExt = file.name.split('.').pop();
     const filePath = `${folderName}/${uuidv4()}.${fileExt}`;
 
@@ -71,8 +68,6 @@ export const uploadFileToStorage = async (file: File, bucketName: string, folder
 // Update the upsertCapabilityToSupabase function to include detailed_description field
 export const upsertCapabilityToSupabase = async (capability: any, isNew = false) => {
   try {
-    const supabase = getSupabaseClient();
-    
     const { data, error } = await supabase
       .from('capabilities')
       .upsert({

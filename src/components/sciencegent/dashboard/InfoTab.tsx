@@ -1,9 +1,9 @@
 import React from 'react';
-import { ScienceGent } from '@/services/scienceGentExploreService';
+import { ScienceGent } from '@/types/sciencegent';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { Link } from 'react-router-dom';
-import { Github, Twitter, Telegram, ExternalLink } from 'lucide-react';
+import { Github, Twitter, ExternalLink } from 'lucide-react';
 
 interface DeveloperInfoProps {
   creatorAddress: string;
@@ -123,11 +123,6 @@ const InfoTab: React.FC<InfoTabProps> = ({ scienceGent }) => {
                 {socials.twitter && (
                   <Link to={socials.twitter} target="_blank" rel="noopener noreferrer">
                     <Twitter className="h-5 w-5" />
-                  </Link>
-                )}
-                {socials.telegram && (
-                  <Link to={socials.telegram} target="_blank" rel="noopener noreferrer">
-                    <Telegram className="h-5 w-5" />
                   </Link>
                 )}
                 {socials.github && (
