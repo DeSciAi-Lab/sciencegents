@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils';
 
 interface WizardProgressProps {
   currentStep: number;
-  steps: Array<{ id: number; title: string }>;
+  steps: Array<{ id: number; title: string; description?: string }>;
 }
 
 const WizardProgress: React.FC<WizardProgressProps> = ({ currentStep, steps }) => {

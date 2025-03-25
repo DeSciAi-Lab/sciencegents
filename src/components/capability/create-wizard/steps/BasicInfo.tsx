@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useCapabilityWizard } from '../CapabilityWizardContext';
 import { domains } from '../utils';
@@ -8,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Label } from '@/components/ui/label';
 import { Upload, AlertCircle, X, Plus, Twitter, Github, Globe, MessageCircle, Trash2 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+
 const BasicInfo: React.FC = () => {
   const {
     formData,
@@ -19,8 +21,10 @@ const BasicInfo: React.FC = () => {
     removeSocialLink,
     updateSocialLink
   } = useCapabilityWizard();
+  
   const [displayImagePreview, setDisplayImagePreview] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  
   useEffect(() => {
     if (displayImage) {
       const url = URL.createObjectURL(displayImage);
@@ -28,6 +32,7 @@ const BasicInfo: React.FC = () => {
       return () => URL.revokeObjectURL(url);
     }
   }, [displayImage]);
+  
   const handleDisplayImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -55,10 +60,12 @@ const BasicInfo: React.FC = () => {
       });
     }
   };
+  
   const removeDisplayImage = () => {
     setDisplayImage(null);
     setDisplayImagePreview(null);
   };
+  
   const renderSocialInputs = () => {
     return <div className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -124,6 +131,7 @@ const BasicInfo: React.FC = () => {
         </Button>
       </div>;
   };
+  
   return <div className="space-y-6">
       <div>
         
@@ -204,4 +212,5 @@ const BasicInfo: React.FC = () => {
       </div>
     </div>;
 };
+
 export default BasicInfo;

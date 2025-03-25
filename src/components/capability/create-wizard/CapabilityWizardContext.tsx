@@ -4,11 +4,11 @@ import { uploadFileToStorage } from '@/services/capability/supabase';
 
 // Define the wizard steps
 export const wizardSteps = [
-  { id: 1, name: "Basic Information", description: "Enter basic details about your capability" },
-  { id: 2, name: "Detailed Description", description: "Provide comprehensive description and features" },
-  { id: 3, name: "Upload Documents", description: "Upload documentation and resources" },
-  { id: 4, name: "Personal Details", description: "Add your developer information" },
-  { id: 5, name: "Review", description: "Review and submit your capability" }
+  { id: 1, title: "Basic Information", description: "Enter basic details about your capability" },
+  { id: 2, title: "Detailed Description", description: "Provide comprehensive description and features" },
+  { id: 3, title: "Upload Documents", description: "Upload documentation and resources" },
+  { id: 4, title: "Personal Details", description: "Add your developer information" },
+  { id: 5, title: "Review", description: "Review and submit your capability" }
 ];
 
 // Define the extended context props interface with all required properties
@@ -42,8 +42,6 @@ interface CapabilityWizardContextProps {
   setDeveloperBio: React.Dispatch<React.SetStateAction<string>>;
   socialLinks: Array<{ type: string; url: string }>;
   setSocialLinks: React.Dispatch<React.SetStateAction<Array<{ type: string; url: string }>>>;
-  addSocialLink: (type: string, url: string) => void;
-  removeSocialLink: (index: number) => void;
   
   // Files
   documentation: File | null;
@@ -105,8 +103,8 @@ interface CapabilityWizardContextProps {
   removeSocialLink: (field: string, index: number) => void;
   
   // Navigation and form submission
-  nextStep: () => void;
-  prevStep: () => void; 
+  prevStep: () => void;
+  nextStep: () => void; 
   canProceed: boolean;
   submitCapability: () => void;
 }
@@ -382,8 +380,6 @@ export const CapabilityWizardProvider: React.FC<{ children: React.ReactNode }> =
         setDeveloperBio,
         socialLinks,
         setSocialLinks,
-        addSocialLink,
-        removeSocialLink,
         documentation,
         setDocumentation,
         integrationGuide,
@@ -409,6 +405,8 @@ export const CapabilityWizardProvider: React.FC<{ children: React.ReactNode }> =
         profileImage,
         setProfileImage,
         updateSocialLink,
+        addSocialLink,
+        removeSocialLink,
         nextStep,
         prevStep,
         canProceed,

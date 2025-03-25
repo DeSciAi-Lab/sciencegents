@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { CapabilityWizardProvider, useCapabilityWizard, wizardSteps } from './CapabilityWizardContext';
+import { CapabilityWizardProvider, useCapabilityWizard } from './CapabilityWizardContext';
 import WizardLayout from './WizardLayout';
 import BasicInfo from './steps/BasicInfo';
 import DetailedDescription from './steps/DetailedDescription';

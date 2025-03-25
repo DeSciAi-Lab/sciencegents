@@ -1,371 +1,300 @@
 
 import React from 'react';
-import { Star, ArrowLeft, Download, FileText } from 'lucide-react';
-import { Link } from 'react-router-dom';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { useParams } from 'react-router-dom';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import Navbar from '@/components/layout/Navbar';
-import Footer from '@/components/layout/Footer';
-import { Capability } from '@/types/capability';
+import { 
+  Download, 
+  FileText,
+  FileCode, 
+  Code2, 
+  User,
+  Check, 
+  AlertCircle,
+  Loader2,
+  MessageSquare,
+  GraduationCap
+} from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import rehypeRaw from 'rehype-raw';
 import rehypeSanitize from 'rehype-sanitize';
 import remarkGfm from 'remark-gfm';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Skeleton } from '@/components/ui/skeleton';
 
-interface CapabilityDetailPageProps {
-  capability: Capability;
-}
+// Import the capability details component
+import { useQuery } from '@tanstack/react-query';
+import { Capability } from '@/types/capability';
+import { fetchCapabilityById } from '@/services/capability/supabase';
+import CapabilityInfoSidebar from './CapabilityInfoSidebar';
+import CapabilityDetails from './CapabilityDetails';
 
-const CapabilityDetailPage: React.FC<CapabilityDetailPageProps> = ({ capability }) => {
-  // Get the first two letters for the avatar
-  const getInitials = (name: string) => {
-    return name.substring(0, 2).toUpperCase();
-  };
-
-  // Render stars for rating
-  const renderRating = (rating: number) => {
-    const stars = [];
-    const fullStars = Math.floor(rating);
+const CapabilityDetailPage: React.FC = () => {
+  const { id } = useParams<{ id: string }>();
+  
+  const { data: capability, isLoading, error } = useQuery({
+    queryKey: ['capability', id],
+    queryFn: () => fetchCapabilityById(id || ''),
+    enabled: !!id
+  });
+  
+  if (isLoading) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex flex-col md:flex-row gap-8">
+          <div className="w-full md:w-3/4">
+            <Skeleton className="h-12 w-3/4 mb-6" />
+            <Skeleton className="h-6 w-1/2 mb-3" />
+            <Skeleton className="h-4 w-full mb-2" />
+            <Skeleton className="h-4 w-5/6 mb-2" />
+            <Skeleton className="h-4 w-4/6 mb-6" />
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              <Skeleton className="h-24 rounded-md" />
+              <Skeleton className="h-24 rounded-md" />
+              <Skeleton className="h-24 rounded-md" />
+            </div>
+            
+            <Skeleton className="h-96 rounded-md" />
+          </div>
+          
+          <div className="w-full md:w-1/4">
+            <Skeleton className="h-64 rounded-md mb-4" />
+            <Skeleton className="h-32 rounded-md" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+  
+  if (error || !capability) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <Alert variant="destructive" className="mb-6">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Error loading capability</AlertTitle>
+          <AlertDescription>
+            {(error as Error)?.message || "The requested capability could not be found."}
+          </AlertDescription>
+        </Alert>
+        
+        <Button variant="default" onClick={() => window.history.back()}>
+          Go Back
+        </Button>
+      </div>
+    );
+  }
+  
+  const renderSDKTab = () => {
+    const docsAvailable = capability.files?.documentation || capability.docs;
+    const guideAvailable = capability.files?.integrationGuide;
+    const additionalFiles = Array.isArray(capability.files?.additionalFiles) 
+      ? capability.files?.additionalFiles.length > 0 
+      : false;
     
-    for (let i = 0; i < 5; i++) {
-      if (i < fullStars) {
-        stars.push(<Star key={i} className="h-4 w-4 fill-yellow-400 text-yellow-400" />);
-      } else {
-        stars.push(<Star key={i} className="h-4 w-4 text-gray-300" />);
-      }
+    if (!docsAvailable && !guideAvailable && !additionalFiles) {
+      return (
+        <Alert className="my-6">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>No SDK Documentation Available</AlertTitle>
+          <AlertDescription>
+            The developer hasn't uploaded any documentation for this capability yet.
+          </AlertDescription>
+        </Alert>
+      );
     }
     
     return (
-      <div className="flex items-center">
-        <div className="flex">{stars}</div>
-        <span className="ml-1 text-sm">{rating}</span>
+      <div className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {capability.files?.documentation && (
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg flex items-center">
+                  <FileText className="h-5 w-5 mr-2 text-blue-500" />
+                  Documentation
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-gray-600 mb-4">
+                  Complete documentation for using this capability in your ScienceGent
+                </p>
+                <Button variant="outline" size="sm" className="w-full">
+                  <Download className="h-4 w-4 mr-2" />
+                  Download Documentation
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+          
+          {capability.files?.integrationGuide && (
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg flex items-center">
+                  <FileText className="h-5 w-5 mr-2 text-blue-500" />
+                  Integration Guide
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-gray-600 mb-4">
+                  Step-by-step guide for integrating this capability
+                </p>
+                <Button variant="outline" size="sm" className="w-full">
+                  <Download className="h-4 w-4 mr-2" />
+                  Download Guide
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+        
+        {Array.isArray(capability.files?.additionalFiles) && capability.files?.additionalFiles.length > 0 && (
+          <div>
+            <h3 className="text-lg font-medium mb-4">Additional Resources</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {capability.files?.additionalFiles.map((file: any, index: number) => (
+                <Card key={index}>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-lg flex items-center">
+                      <FileText className="h-5 w-5 mr-2 text-blue-500" />
+                      {file.name || `Resource ${index + 1}`}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <Button variant="outline" size="sm" className="w-full" 
+                      onClick={() => window.open(file.url, '_blank')}>
+                      <Download className="h-4 w-4 mr-2" />
+                      Download File
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     );
   };
-
-  // Developer info helpers
-  const developerName = capability.developer_info?.name || 'Unknown Developer';
-  const developerEmail = capability.developer_info?.email;
-  const developerBio = capability.developer_info?.bio;
-  const socialLinks = capability.developer_info?.social_links || [];
-  const hasDeveloperInfo = developerName !== 'Unknown Developer' || developerEmail || developerBio || socialLinks.length > 0;
-
-  // Helper to get the correct file icon
-  const getFileIcon = (fileName: string) => {
-    if (!fileName) return null;
+  
+  const renderDeveloperTab = () => {
+    const developerInfo = capability.developer_info;
     
-    const extension = fileName.split('.').pop()?.toLowerCase();
-    
-    switch (extension) {
-      case 'pdf':
-        return <div className="bg-red-100 p-1 rounded text-red-600 mr-2"><FileText size={16} /></div>;
-      case 'md':
-        return <div className="bg-blue-100 p-1 rounded text-blue-600 mr-2"><FileText size={16} /></div>;
-      case 'txt':
-        return <div className="bg-gray-100 p-1 rounded text-gray-600 mr-2"><FileText size={16} /></div>;
-      default:
-        return <div className="bg-purple-100 p-1 rounded text-purple-600 mr-2"><FileText size={16} /></div>;
+    if (!developerInfo || (!developerInfo.name && !developerInfo.bio)) {
+      return (
+        <Alert className="my-6">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Developer Information Not Available</AlertTitle>
+          <AlertDescription>
+            The developer hasn't provided additional information.
+          </AlertDescription>
+        </Alert>
+      );
     }
-  };
-
-  // Helper to get file name from URL
-  const getFileNameFromUrl = (url: string) => {
-    if (!url) return 'File';
     
-    // Try to extract file name from URL
-    const parts = url.split('/');
-    const lastPart = parts[parts.length - 1];
-    
-    // If there's a query string, remove it
-    const fileNameWithoutQuery = lastPart.split('?')[0];
-    
-    // If the file name has a UUID prefix, try to remove it
-    const cleanedName = fileNameWithoutQuery.replace(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}-/, '');
-    
-    // Decode URI components
-    try {
-      return decodeURIComponent(cleanedName);
-    } catch (e) {
-      return cleanedName;
-    }
-  };
-
-  return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
-      <Navbar />
-      
-      <main className="flex-grow py-6">
-        <div className="container mx-auto px-6">
-          <div className="mb-6">
-            <Link to="/capabilities" className="text-gray-500 hover:text-gray-700 flex items-center text-sm">
-              <ArrowLeft className="h-4 w-4 mr-1" />
-              Back to Capabilities
-            </Link>
-          </div>
-          
-          <div className="bg-white rounded-lg border shadow-sm">
-            <div className="p-6">
-              <div className="flex items-start gap-6">
-                {/* Avatar/Logo */}
-                <div className="w-24 h-24 bg-science-500 rounded-full flex items-center justify-center text-white text-xl font-medium">
-                  {getInitials(capability.name)}
-                </div>
-                
-                {/* Header information */}
-                <div className="flex-1">
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                    <div>
-                      <h1 className="text-2xl font-bold">{capability.name}</h1>
-                      <div className="text-sm text-gray-500 mt-1">Capability ID: {capability.id}</div>
-                    </div>
-                    
-                    <Button className="bg-science-600 hover:bg-science-700">
-                      Include in your ScienceGent
-                    </Button>
-                  </div>
-                  
-                  <div className="mt-4 flex flex-wrap gap-3">
-                    <div className="text-sm">
-                      <span className="font-medium">Fee</span>{' '}
-                      <span className="text-gray-700">{capability.price} ETH</span>
-                    </div>
-                    
-                    <Badge variant="secondary" className="bg-purple-100 text-purple-700 hover:bg-purple-200">
-                      {capability.domain}
-                    </Badge>
-                    
-                    <Badge variant="secondary" className="bg-green-100 text-green-700 hover:bg-green-200">
-                      usage {capability.stats.usageCount}
-                    </Badge>
-                    
-                    <Badge variant="secondary" className="bg-yellow-100 text-yellow-700 hover:bg-yellow-200">
-                      revenue {capability.stats.revenue}DSI
-                    </Badge>
-                    
-                    <div className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded-full flex items-center">
-                      rating {renderRating(capability.stats.rating)}
-                    </div>
-                  </div>
-                </div>
-              </div>
-              
-              {/* Tabs section */}
-              <div className="mt-6">
-                <Tabs defaultValue="detailed_description">
-                  <TabsList className="border-b w-full justify-start rounded-none bg-transparent p-0 h-auto">
-                    <TabsTrigger 
-                      value="detailed_description" 
-                      className="rounded-none border-b-2 border-transparent px-4 py-2 data-[state=active]:border-science-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none"
-                    >
-                      Detailed Description
-                    </TabsTrigger>
-                    <TabsTrigger 
-                      value="sdk" 
-                      className="rounded-none border-b-2 border-transparent px-4 py-2 data-[state=active]:border-science-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none"
-                    >
-                      SDK
-                    </TabsTrigger>
-                    <TabsTrigger 
-                      value="developer" 
-                      className="rounded-none border-b-2 border-transparent px-4 py-2 data-[state=active]:border-science-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none"
-                    >
-                      Developer
-                    </TabsTrigger>
-                  </TabsList>
-                  
-                  <TabsContent value="detailed_description" className="pt-6">
-                    <div className="prose max-w-none">
-                      {capability.detailed_description || capability.description ? (
-                        <ReactMarkdown
-                          rehypePlugins={[rehypeRaw, rehypeSanitize]}
-                          remarkPlugins={[remarkGfm]}
-                        >
-                          {capability.detailed_description || capability.description}
-                        </ReactMarkdown>
-                      ) : (
-                        <p>No detailed description available.</p>
-                      )}
-                      
-                      {capability.features && capability.features.length > 0 && (
-                        <div className="mt-4">
-                          <h3 className="text-lg font-medium mb-2">Features</h3>
-                          <ul className="list-disc pl-5 space-y-1">
-                            {capability.features.map((feature, index) => (
-                              <li key={index} className="text-gray-700">{feature}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-                    </div>
-                  </TabsContent>
-                  
-                  <TabsContent value="sdk" className="pt-6">
-                    <div className="bg-gray-50 p-8 rounded-md">
-                      <h3 className="text-xl font-semibold mb-4 text-center">SDK Documentation</h3>
-                      
-                      {/* Main Documentation */}
-                      {capability.files?.documentation || capability.docs ? (
-                        <div className="mb-8">
-                          <p className="text-center mb-6">You can view or download the SDK documentation below:</p>
-                          <div className="flex justify-center">
-                            <div className="space-y-4 max-w-md w-full">
-                              <Button 
-                                variant="outline" 
-                                className="w-full" 
-                                asChild
-                              >
-                                <a href={capability.files?.documentation || capability.docs} target="_blank" rel="noopener noreferrer">
-                                  <Download className="mr-2 h-4 w-4" /> View Documentation
-                                </a>
-                              </Button>
-                              
-                              <Button 
-                                variant="default" 
-                                className="w-full bg-science-600 hover:bg-science-700" 
-                                asChild
-                              >
-                                <a 
-                                  href={capability.files?.documentation || capability.docs} 
-                                  download={getFileNameFromUrl(capability.files?.documentation || capability.docs || '')}
-                                  target="_blank" 
-                                  rel="noopener noreferrer"
-                                >
-                                  <Download className="mr-2 h-4 w-4" /> Download Documentation
-                                </a>
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="text-center text-gray-500 mb-8">
-                          <p>No SDK documentation available for this capability.</p>
-                        </div>
-                      )}
-                      
-                      {/* Additional Files */}
-                      {capability.files?.additionalFiles && 
-                       Array.isArray(capability.files.additionalFiles) && 
-                       capability.files.additionalFiles.length > 0 ? (
-                        <div className="mt-8">
-                          <h4 className="text-lg font-medium mb-3 text-center">Additional Resources</h4>
-                          <div className="space-y-2 max-w-md mx-auto">
-                            {capability.files.additionalFiles.map((file, index) => {
-                              // Handle both string array and object array formats
-                              const fileUrl = typeof file === 'string' ? file : file.url;
-                              const fileName = typeof file === 'string' 
-                                ? getFileNameFromUrl(fileUrl)
-                                : file.name || getFileNameFromUrl(fileUrl);
-                              
-                              return (
-                                <Button 
-                                  key={index} 
-                                  variant="outline" 
-                                  size="sm" 
-                                  className="w-full justify-start" 
-                                  asChild
-                                >
-                                  <a 
-                                    href={fileUrl} 
-                                    download={fileName}
-                                    target="_blank" 
-                                    rel="noopener noreferrer"
-                                  >
-                                    <div className="flex items-center">
-                                      {getFileIcon(fileName)}
-                                      <span className="truncate max-w-[85%]">{fileName}</span>
-                                    </div>
-                                  </a>
-                                </Button>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="text-center text-gray-500">
-                          <p>No additional resources available for this capability.</p>
-                        </div>
-                      )}
-                    </div>
-                  </TabsContent>
-                  
-                  <TabsContent value="developer" className="pt-6">
-                    <div className="bg-gray-50 p-8 rounded-md">
-                      <h3 className="text-xl font-semibold mb-6 text-center">Developer Information</h3>
-                      
-                      {hasDeveloperInfo ? (
-                        <div className="flex flex-col items-center">
-                          <Avatar className="h-20 w-20 mb-4">
-                            <AvatarImage 
-                              src={capability.developer_profile_pic} 
-                              alt={developerName} 
-                            />
-                            <AvatarFallback className="bg-science-100 text-science-600 text-xl">
-                              {getInitials(developerName)}
-                            </AvatarFallback>
-                          </Avatar>
-                          
-                          <h4 className="text-lg font-medium">{developerName}</h4>
-                          
-                          {developerEmail && (
-                            <a href={`mailto:${developerEmail}`} className="text-science-600 hover:underline mt-1 mb-4">
-                              {developerEmail}
-                            </a>
-                          )}
-                          
-                          {developerBio && (
-                            <div className="mt-4 mb-6 max-w-xl text-center">
-                              <p className="text-gray-600">{developerBio}</p>
-                            </div>
-                          )}
-                          
-                          {socialLinks.length > 0 && (
-                            <div className="flex gap-2 mt-4">
-                              {socialLinks.map((link, index) => {
-                                let icon = null;
-                                
-                                if (link.type === 'twitter') {
-                                  icon = <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4"><path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"></path></svg>;
-                                } else if (link.type === 'github') {
-                                  icon = <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"></path><path d="M9 18c-4.51 2-5-2-7-2"></path></svg>;
-                                } else if (link.type === 'website') {
-                                  icon = <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4"><circle cx="12" cy="12" r="10"></circle><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path><path d="M2 12h20"></path></svg>;
-                                } else if (link.type === 'telegram') {
-                                  icon = <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4"><path d="m22 2-7 20-4-9-9-4Z"></path><path d="M22 2 11 13"></path></svg>;
-                                }
-                                
-                                return (
-                                  <Button 
-                                    key={index} 
-                                    size="icon" 
-                                    variant="outline" 
-                                    className="rounded-full h-8 w-8" 
-                                    asChild
-                                  >
-                                    <a href={link.url} target="_blank" rel="noopener noreferrer">
-                                      {icon}
-                                    </a>
-                                  </Button>
-                                );
-                              })}
-                            </div>
-                          )}
-                        </div>
-                      ) : (
-                        <div className="text-center text-gray-500 py-8">
-                          <p>No developer information available for this capability.</p>
-                        </div>
-                      )}
-                    </div>
-                  </TabsContent>
-                </Tabs>
-              </div>
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center gap-4">
+          {capability.developer_profile_pic ? (
+            <img 
+              src={capability.developer_profile_pic} 
+              alt={developerInfo.name || "Developer"} 
+              className="w-20 h-20 rounded-full object-cover"
+            />
+          ) : (
+            <div className="w-20 h-20 rounded-full bg-gray-200 flex items-center justify-center">
+              <User className="h-8 w-8 text-gray-400" />
             </div>
+          )}
+          
+          <div>
+            <h3 className="text-xl font-bold">
+              {developerInfo.name || "Anonymous Developer"}
+            </h3>
+            <p className="text-gray-600">
+              {developerInfo.email || ""}
+            </p>
           </div>
         </div>
-      </main>
-      <Footer />
+        
+        {developerInfo.bio && (
+          <div>
+            <h4 className="text-lg font-medium mb-2">About the Developer</h4>
+            <p className="text-gray-700 whitespace-pre-line">
+              {developerInfo.bio}
+            </p>
+          </div>
+        )}
+        
+        {developerInfo.social_links && developerInfo.social_links.length > 0 && (
+          <div>
+            <h4 className="text-lg font-medium mb-2">Connect</h4>
+            <div className="flex flex-wrap gap-2">
+              {developerInfo.social_links.map((link, index) => (
+                <Button key={index} variant="outline" size="sm" asChild>
+                  <a href={link.url} target="_blank" rel="noopener noreferrer">
+                    {link.type}
+                  </a>
+                </Button>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+  
+  return (
+    <div className="container mx-auto px-4 py-8">
+      <div className="flex flex-col md:flex-row gap-8">
+        <div className="w-full md:w-3/4">
+          <CapabilityDetails capability={capability} />
+          
+          <Tabs defaultValue="overview" className="mt-8">
+            <TabsList className="mb-4">
+              <TabsTrigger value="overview" className="flex items-center">
+                <GraduationCap className="w-4 h-4 mr-2" />
+                Overview
+              </TabsTrigger>
+              <TabsTrigger value="sdk" className="flex items-center">
+                <Code2 className="w-4 h-4 mr-2" />
+                SDK & Integration
+              </TabsTrigger>
+              <TabsTrigger value="developer" className="flex items-center">
+                <User className="w-4 h-4 mr-2" />
+                Developer
+              </TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="overview" className="mt-0">
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="prose max-w-none">
+                    <ReactMarkdown 
+                      rehypePlugins={[rehypeRaw, rehypeSanitize]} 
+                      remarkPlugins={[remarkGfm]}
+                    >
+                      {capability.detailed_description || capability.description}
+                    </ReactMarkdown>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+            
+            <TabsContent value="sdk" className="mt-0">
+              {renderSDKTab()}
+            </TabsContent>
+            
+            <TabsContent value="developer" className="mt-0">
+              {renderDeveloperTab()}
+            </TabsContent>
+          </Tabs>
+        </div>
+        
+        <div className="w-full md:w-1/4">
+          <CapabilityInfoSidebar capability={capability} />
+        </div>
+      </div>
     </div>
   );
 };
