@@ -6,6 +6,7 @@ import { Wallet, Loader2 } from "lucide-react";
 import { NavbarLayout } from '@/components/layout/NavbarLayout';
 import DashboardTabs from '@/components/dashboard/DashboardTabs';
 import { useWallet } from '@/hooks/useWallet';
+import DashboardHeader from '@/components/dashboard/DashboardHeader';
 
 const Dashboard = () => {
   const { tab } = useParams();
@@ -70,8 +71,10 @@ const Dashboard = () => {
   return (
     <NavbarLayout>
       <div className="container mx-auto px-4 py-6">
-        <h1 className="text-2xl font-bold mb-6">Dashboard</h1>
-        <DashboardTabs initialTab={initialTab} />
+        <DashboardHeader userName="User Name" />
+        <div className="bg-white rounded-lg border overflow-hidden">
+          <DashboardTabs initialTab={initialTab} />
+        </div>
       </div>
     </NavbarLayout>
   );

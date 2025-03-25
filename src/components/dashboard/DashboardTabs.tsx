@@ -32,51 +32,50 @@ const DashboardTabs: React.FC<DashboardTabsProps> = ({ initialTab = 'investments
 
   return (
     <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-      <TabsList className="grid grid-cols-5 mb-8">
-        <TabsTrigger value="investments" className="flex items-center gap-2">
-          <User className="h-4 w-4" />
-          <span className="hidden sm:inline">My Investments</span>
-          <span className="sm:hidden">Investments</span>
+      <TabsList className="border-b w-full justify-start rounded-none p-0 h-auto">
+        <TabsTrigger 
+          value="investments" 
+          className="rounded-none px-6 py-3 text-gray-700 data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:bg-white"
+        >
+          My Investment
         </TabsTrigger>
-        <TabsTrigger value="sciencegents" className="flex items-center gap-2">
-          <Code className="h-4 w-4" />
-          <span className="hidden sm:inline">My ScienceGents</span>
-          <span className="sm:hidden">ScienceGents</span>
+        <TabsTrigger 
+          value="sciencegents" 
+          className="rounded-none px-6 py-3 text-gray-700 data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:bg-white"
+        >
+          My Sciencegents
         </TabsTrigger>
-        <TabsTrigger value="capabilities" className="flex items-center gap-2">
-          <Code className="h-4 w-4" />
-          <span className="hidden sm:inline">My Capabilities</span>
-          <span className="sm:hidden">Capabilities</span>
+        <TabsTrigger 
+          value="capabilities" 
+          className="rounded-none px-6 py-3 text-gray-700 data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:bg-white"
+        >
+          My Capabilities
         </TabsTrigger>
-        <TabsTrigger value="profile" className="flex items-center gap-2">
-          <UserCircle className="h-4 w-4" />
-          <span className="hidden sm:inline">Developer Profile</span>
-          <span className="sm:hidden">Profile</span>
-        </TabsTrigger>
-        <TabsTrigger value="settings" className="flex items-center gap-2">
-          <Settings className="h-4 w-4" />
-          <span className="hidden sm:inline">Settings</span>
-          <span className="sm:hidden">Settings</span>
+        <TabsTrigger 
+          value="profile" 
+          className="rounded-none px-6 py-3 text-gray-700 data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:bg-white"
+        >
+          Developer profile
         </TabsTrigger>
       </TabsList>
       
-      <TabsContent value="investments">
+      <TabsContent value="investments" className="mt-0 pt-4 px-4 pb-4">
         <MyInvestmentsTab />
       </TabsContent>
       
-      <TabsContent value="sciencegents">
+      <TabsContent value="sciencegents" className="mt-0 pt-4 px-4 pb-4">
         <MyCreatedScienceGents />
       </TabsContent>
       
-      <TabsContent value="capabilities">
+      <TabsContent value="capabilities" className="mt-0 pt-4 px-4 pb-4">
         <MyCreatedCapabilities />
       </TabsContent>
       
-      <TabsContent value="profile">
+      <TabsContent value="profile" className="mt-0 pt-4 px-4 pb-4">
         <DeveloperProfileTab />
       </TabsContent>
       
-      <TabsContent value="settings">
+      <TabsContent value="settings" className="mt-0 pt-4 px-4 pb-4">
         <SettingsTab />
       </TabsContent>
     </Tabs>
