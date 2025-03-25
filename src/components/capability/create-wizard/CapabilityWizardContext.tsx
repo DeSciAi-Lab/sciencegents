@@ -49,8 +49,8 @@ export interface CapabilityWizardContextProps {
   removeSocialLink: (index: number) => void;
   setDocumentation: (file: File | null) => void;
   setIntegrationGuide: (file: File | null) => void;
-  addAdditionalFile: (file: File) => void;
-  removeAdditionalFile: (index: number) => void;
+  addFile: (file: File) => void; // Fixed method name
+  removeFile: (index: number) => void; // Fixed method name
   addFeature: (feature: string) => void;
   removeFeature: (index: number) => void;
   setIsSubmitting: (isSubmitting: boolean) => void;
@@ -151,12 +151,12 @@ export const CapabilityWizardProvider: React.FC<{children: React.ReactNode}> = (
     setSocialLinks(prev => prev.filter((_, i) => i !== index));
   };
   
-  // Additional files methods
-  const addAdditionalFile = (file: File) => {
+  // Additional files methods - renamed for consistency
+  const addFile = (file: File) => {
     setAdditionalFiles(prev => [...prev, file]);
   };
   
-  const removeAdditionalFile = (index: number) => {
+  const removeFile = (index: number) => {
     setAdditionalFiles(prev => prev.filter((_, i) => i !== index));
   };
   
@@ -306,8 +306,8 @@ export const CapabilityWizardProvider: React.FC<{children: React.ReactNode}> = (
     removeSocialLink,
     setDocumentation,
     setIntegrationGuide,
-    addAdditionalFile,
-    removeAdditionalFile,
+    addFile, // Updated method name
+    removeFile, // Updated method name
     addFeature,
     removeFeature,
     setIsSubmitting,
