@@ -5,6 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Beaker, Twitter, Github, Globe, MessageCircle } from 'lucide-react';
 import { Capability } from '@/types/capability';
+import ReactMarkdown from 'react-markdown';
 
 interface CapabilityDetailsProps {
   capability: Capability;
@@ -40,7 +41,13 @@ const CapabilityDetails: React.FC<CapabilityDetailsProps> = ({ capability }) => 
               <CardTitle>Description</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-gray-700">{capability.description}</p>
+              {capability.description ? (
+                <div className="prose max-w-none">
+                  <ReactMarkdown>{capability.description}</ReactMarkdown>
+                </div>
+              ) : (
+                <p className="text-gray-700">No description available.</p>
+              )}
               
               {capability.features && capability.features.length > 0 && (
                 <div className="mt-6">
