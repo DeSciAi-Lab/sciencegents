@@ -19,7 +19,7 @@ const Dashboard = () => {
     // If the wallet appears to be connected but Wagmi provider might not be initialized
     // This handles cases where a user navigates directly to a dashboard tab
     // that requires the Wagmi provider, like the profile tab
-    if (isConnected && window.ethereum?.selectedAddress && 
+    if (isConnected && window.ethereum && 
         window.location.pathname.includes('/dashboard/profile') && 
         !window.location.search.includes('refreshed')) {
       

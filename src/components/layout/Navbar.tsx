@@ -1,10 +1,11 @@
 
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, ChevronDown } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useIsMobile } from '@/hooks/use-mobile';
 import WalletConnect from '@/components/WalletConnect';
+import { isAdminWallet } from '@/services/walletService';
 
 interface NavLink {
   href: string;
@@ -16,7 +17,7 @@ const Navbar = () => {
   const location = useLocation();
   const isMobile = useIsMobile();
   const [isScrolled, setIsScrolled] = useState(false);
-  const [connectedWallet, setConnectedWallet] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -32,32 +33,22 @@ const Navbar = () => {
     setIsOpen(false);
   }, [location]);
 
-  // Check for connected wallet
+  // Check if current wallet is admin
   useEffect(() => {
-    const checkWallet = async () => {
-      if (typeof window.ethereum !== 'undefined') {
-        try {
-          const accounts = await window.ethereum.request({ method: 'eth_accounts' });
-          setConnectedWallet(accounts[0] || null);
-
-          // Listen for account changes
-          window.ethereum.on('accountsChanged', (accounts: string[]) => {
-            setConnectedWallet(accounts[0] || null);
-          });
-        } catch (error) {
-          console.error('Error checking wallet:', error);
-        }
-      }
+    const checkAdmin = async () => {
+      const admin = await isAdminWallet();
+      setIsAdmin(admin);
     };
 
-    checkWallet();
-
-    return () => {
-      // Clean up listener
-      if (window.ethereum) {
-        window.ethereum.removeListener('accountsChanged', () => {});
-      }
-    };
+    checkAdmin();
+    
+    // Listen for account changes to update admin status
+    if (window.ethereum) {
+      window.ethereum.on('accountsChanged', checkAdmin);
+      return () => {
+        window.ethereum.removeListener('accountsChanged', checkAdmin);
+      };
+    }
   }, []);
 
   const navLinks = [
@@ -66,12 +57,6 @@ const Navbar = () => {
     { href: '/capabilities', label: 'Capabilities' },
     { href: '/dashboard', label: 'Dashboard' },
   ];
-
-  // Admin wallet address from config
-  const ADMIN_WALLET_ADDRESS = '0x86A683C6B0e8d7A962B7A040Ed0e6d993F1d9F83'.toLowerCase();
-  
-  // Check if current wallet is admin
-  const isAdmin = connectedWallet && connectedWallet.toLowerCase() === ADMIN_WALLET_ADDRESS;
 
   return (
     <header className={`fixed top-0 left-0 right-0 z-40 transition-all duration-300 ${isScrolled ? 'bg-white/80 backdrop-blur-md shadow-sm' : 'bg-transparent'}`}>

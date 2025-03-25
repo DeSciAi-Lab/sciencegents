@@ -1,6 +1,6 @@
 
-import React, { useState } from 'react';
-import { Wallet, AlertCircle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Wallet, LogOut, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -10,6 +10,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { connectWallet, disconnectWallet, formatAddress } from '@/services/walletService';
 
 interface WalletConnectProps {
   variant?: 'default' | 'outline' | 'ghost';
@@ -22,61 +29,53 @@ const WalletConnect: React.FC<WalletConnectProps> = ({ variant = 'default', clas
   const [error, setError] = useState<string | null>(null);
   const [connectedAccount, setConnectedAccount] = useState<string | null>(null);
 
-  const connectWallet = async () => {
+  // Check for wallet on mount and setup listeners
+  useEffect(() => {
+    const checkWallet = async () => {
+      if (typeof window.ethereum !== 'undefined') {
+        try {
+          const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+          setConnectedAccount(accounts[0] || null);
+
+          // Set up listener for account changes
+          const handleAccountsChanged = (accounts: string[]) => {
+            setConnectedAccount(accounts[0] || null);
+            if (accounts.length === 0) {
+              // User disconnected their wallet
+              setIsOpen(false);
+            }
+          };
+
+          window.ethereum.on('accountsChanged', handleAccountsChanged);
+          
+          // Handle chain changes
+          window.ethereum.on('chainChanged', () => {
+            window.location.reload();
+          });
+
+          return () => {
+            window.ethereum.removeListener('accountsChanged', handleAccountsChanged);
+            window.ethereum.removeListener('chainChanged', () => {});
+          };
+        } catch (error) {
+          console.error('Error checking wallet:', error);
+        }
+      }
+    };
+
+    checkWallet();
+  }, []);
+
+  const handleConnect = async () => {
     setIsConnecting(true);
     setError(null);
 
     try {
-      // Check if MetaMask is installed
-      if (typeof window.ethereum === 'undefined') {
-        throw new Error('MetaMask is not installed');
+      const account = await connectWallet();
+      if (account) {
+        setConnectedAccount(account);
+        setIsOpen(false);
       }
-
-      // Request account access
-      const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-      
-      if (accounts.length === 0) {
-        throw new Error('No accounts found');
-      }
-
-      // Check if on Sepolia testnet
-      const chainId = await window.ethereum.request({ method: 'eth_chainId' });
-      
-      // Sepolia chainId is 0xaa36a7 (in hex) or 11155111 (in decimal)
-      if (chainId !== '0xaa36a7') {
-        try {
-          // Try to switch to Sepolia
-          await window.ethereum.request({
-            method: 'wallet_switchEthereumChain',
-            params: [{ chainId: '0xaa36a7' }],
-          });
-        } catch (switchError: any) {
-          // This error code means the chain has not been added to MetaMask
-          if (switchError.code === 4902) {
-            await window.ethereum.request({
-              method: 'wallet_addEthereumChain',
-              params: [
-                {
-                  chainId: '0xaa36a7',
-                  chainName: 'Sepolia Testnet',
-                  nativeCurrency: {
-                    name: 'Sepolia ETH',
-                    symbol: 'SEP',
-                    decimals: 18,
-                  },
-                  rpcUrls: ['https://sepolia.infura.io/v3/'],
-                  blockExplorerUrls: ['https://sepolia.etherscan.io'],
-                },
-              ],
-            });
-          } else {
-            throw switchError;
-          }
-        }
-      }
-
-      setConnectedAccount(accounts[0]);
-      setIsOpen(false);
     } catch (err: any) {
       console.error('Error connecting wallet:', err);
       setError(err.message || 'Failed to connect wallet');
@@ -85,29 +84,33 @@ const WalletConnect: React.FC<WalletConnectProps> = ({ variant = 'default', clas
     }
   };
 
-  const disconnectWallet = () => {
+  const handleDisconnect = () => {
+    disconnectWallet();
     setConnectedAccount(null);
-  };
-
-  // Format address for display
-  const formatAddress = (address: string) => {
-    return `${address.substring(0, 6)}...${address.slice(-4)}`;
   };
 
   return (
     <>
       {connectedAccount ? (
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            className="border-science-200 text-sm"
-            onClick={() => setIsOpen(true)}
-          >
-            <div className="w-2 h-2 bg-green-500 rounded-full mr-2" />
-            {formatAddress(connectedAccount)}
-          </Button>
-        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-science-200 text-sm"
+            >
+              <div className="w-2 h-2 bg-green-500 rounded-full mr-2" />
+              {formatAddress(connectedAccount)}
+              <ChevronDown className="ml-2 h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={handleDisconnect} className="cursor-pointer">
+              <LogOut className="mr-2 h-4 w-4" />
+              <span>Disconnect</span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       ) : (
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
           <DialogTrigger asChild>
@@ -130,7 +133,7 @@ const WalletConnect: React.FC<WalletConnectProps> = ({ variant = 'default', clas
             <div className="py-6">
               {error && (
                 <div className="flex items-center gap-2 p-3 mb-4 rounded-md bg-destructive/10 text-destructive text-sm">
-                  <AlertCircle size={16} />
+                  <div className="h-4 w-4 text-destructive shrink-0">!</div>
                   <span>{error}</span>
                 </div>
               )}
@@ -138,7 +141,7 @@ const WalletConnect: React.FC<WalletConnectProps> = ({ variant = 'default', clas
               <div className="grid gap-4">
                 <Button
                   className="flex justify-between items-center w-full px-4 py-6"
-                  onClick={connectWallet}
+                  onClick={handleConnect}
                   disabled={isConnecting}
                 >
                   <div className="flex items-center gap-3">

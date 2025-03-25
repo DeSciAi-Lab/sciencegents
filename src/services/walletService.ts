@@ -162,3 +162,38 @@ export const connectWallet = async (): Promise<string | null> => {
     return null;
   }
 };
+
+// Function to disconnect wallet
+export const disconnectWallet = (): void => {
+  // For MetaMask, there's no direct way to disconnect via the provider
+  // We'll just notify the user that they need to disconnect via MetaMask
+  toast({
+    title: "Wallet Disconnected",
+    description: "Your wallet has been disconnected from the application.",
+    variant: "default"
+  });
+  
+  // Refresh the page to clear any cached wallet state
+  window.location.reload();
+};
+
+// Function to get the current connected account
+export const getCurrentAccount = async (): Promise<string | null> => {
+  if (!window.ethereum) {
+    return null;
+  }
+  
+  try {
+    const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+    return accounts.length > 0 ? accounts[0] : null;
+  } catch (error) {
+    console.error('Error getting current account:', error);
+    return null;
+  }
+};
+
+// Format an address for display
+export const formatAddress = (address: string): string => {
+  if (!address) return '';
+  return `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
+};
