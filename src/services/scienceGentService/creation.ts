@@ -137,7 +137,6 @@ export const createScienceGent = async (formData: ScienceGentFormData & { transa
             last_synced_at: new Date().toISOString(),
             persona: formData.persona || "",
             developer_name: formData.developerName || "",
-            developer_email: formData.developerEmail || "",
             bio: formData.bio || "",
             developer_twitter: formData.developerTwitter || "",
             developer_telegram: formData.developerTelegram || "",
@@ -151,12 +150,11 @@ export const createScienceGent = async (formData: ScienceGentFormData & { transa
           console.log("ScienceGent saved to Supabase successfully:", tokenAddress);
           
           // Save developer profile if developer info is provided
-          if (formData.developerName || formData.developerEmail) {
+          if (formData.developerName) {
             try {
               await upsertDeveloperProfile({
                 wallet_address: signerAddress,
                 developer_name: formData.developerName,
-                developer_email: formData.developerEmail,
                 bio: formData.bio,
                 developer_twitter: formData.developerTwitter,
                 developer_telegram: formData.developerTelegram,
@@ -219,7 +217,7 @@ export const createScienceGent = async (formData: ScienceGentFormData & { transa
                     .eq('address', tokenAddress);
                     
                   // Also update developer profile with same image
-                  if (formData.developerName || formData.developerEmail) {
+                  if (formData.developerName) {
                     await supabase
                       .from('developer_profiles')
                       .update({ profile_pic: publicUrlData.publicUrl })

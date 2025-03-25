@@ -5,7 +5,6 @@
 export interface DeveloperProfile {
   wallet_address: string;
   developer_name?: string;
-  developer_email?: string;
   bio?: string;
   profile_pic?: string;
   developer_twitter?: string;

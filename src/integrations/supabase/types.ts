@@ -77,7 +77,6 @@ export type Database = {
           additional_social_links: Json | null
           bio: string | null
           created_at: string | null
-          developer_email: string | null
           developer_github: string | null
           developer_name: string | null
           developer_telegram: string | null
@@ -91,7 +90,6 @@ export type Database = {
           additional_social_links?: Json | null
           bio?: string | null
           created_at?: string | null
-          developer_email?: string | null
           developer_github?: string | null
           developer_name?: string | null
           developer_telegram?: string | null
@@ -105,7 +103,6 @@ export type Database = {
           additional_social_links?: Json | null
           bio?: string | null
           created_at?: string | null
-          developer_email?: string | null
           developer_github?: string | null
           developer_name?: string | null
           developer_telegram?: string | null

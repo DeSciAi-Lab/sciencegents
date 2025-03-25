@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { ScienceGentFormData } from '@/types/sciencegent';
 import { Input } from '@/components/ui/input';
@@ -32,10 +33,6 @@ const PersonalInfo: React.FC<PersonalInfoProps> = ({ formData, handleInputChange
         handleInputChange(createChangeEvent('developerName', profile.developer_name));
       }
       
-      if (profile.developer_email && !formData.developerEmail) {
-        handleInputChange(createChangeEvent('developerEmail', profile.developer_email));
-      }
-      
       if (profile.bio && !formData.bio) {
         handleInputChange(createChangeEvent('bio', profile.bio));
       }
@@ -61,20 +58,19 @@ const PersonalInfo: React.FC<PersonalInfoProps> = ({ formData, handleInputChange
   // When form data changes, update the developer profile
   useEffect(() => {
     // Don't update if there's no change or no data
-    if (!formData.developerName && !formData.developerEmail) return;
+    if (!formData.developerName) return;
     
     // We'll use this effect to detect user-initiated changes and save them
     // Create a timeout to avoid too many updates
     const updateTimeout = setTimeout(async () => {
       try {
-        // Only update if we have at least a name or email
-        if (formData.developerName || formData.developerEmail) {
+        // Only update if we have at least a name
+        if (formData.developerName) {
           setIsAutoSaving(true);
           
           // Check if there are any changes to save
           const hasChanges = 
             (profile?.developer_name !== formData.developerName) ||
-            (profile?.developer_email !== formData.developerEmail) ||
             (profile?.bio !== formData.bio) ||
             (profile?.developer_twitter !== formData.developerTwitter) ||
             (profile?.developer_telegram !== formData.developerTelegram) ||
@@ -85,7 +81,6 @@ const PersonalInfo: React.FC<PersonalInfoProps> = ({ formData, handleInputChange
             console.log("Auto-saving profile changes");
             const updateResult = await updateProfile({
               developer_name: formData.developerName,
-              developer_email: formData.developerEmail,
               bio: formData.bio,
               developer_twitter: formData.developerTwitter,
               developer_telegram: formData.developerTelegram,
@@ -114,7 +109,6 @@ const PersonalInfo: React.FC<PersonalInfoProps> = ({ formData, handleInputChange
     return () => clearTimeout(updateTimeout);
   }, [
     formData.developerName, 
-    formData.developerEmail, 
     formData.bio, 
     formData.developerTwitter,
     formData.developerTelegram,
@@ -139,7 +133,7 @@ const PersonalInfo: React.FC<PersonalInfoProps> = ({ formData, handleInputChange
           <h4 className="text-sm font-medium text-blue-800">Disclaimer</h4>
           <p className="text-sm text-blue-700">
             This information will be publicly visible and completely optional to provide. 
-            They help build trust on developer and connect with you, also contact you.
+            They help build trust on developer and connect with you.
           </p>
         </div>
       </div>
@@ -147,10 +141,6 @@ const PersonalInfo: React.FC<PersonalInfoProps> = ({ formData, handleInputChange
       {isLoading ? (
         <div className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Skeleton className="h-4 w-24" />
-              <Skeleton className="h-10 w-full" />
-            </div>
             <div className="space-y-2">
               <Skeleton className="h-4 w-24" />
               <Skeleton className="h-10 w-full" />
@@ -170,37 +160,21 @@ const PersonalInfo: React.FC<PersonalInfoProps> = ({ formData, handleInputChange
         </div>
       ) : (
         <div className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label htmlFor="developerName" className="block text-sm font-medium">
-                Developer Name <span className="text-red-500">*</span>
-              </label>
-              <Input
-                id="developerName"
-                name="developerName"
-                placeholder="Your name or team name"
-                value={formData.developerName || ''}
-                onChange={handleInputChange}
-                required
-              />
-              {(isAutoSaving || isSaving) && (
-                <p className="text-xs text-blue-500">Saving...</p>
-              )}
-            </div>
-            <div className="space-y-2">
-              <label htmlFor="developerEmail" className="block text-sm font-medium">
-                Email <span className="text-red-500">*</span>
-              </label>
-              <Input
-                id="developerEmail"
-                name="developerEmail"
-                placeholder="Contact email for inquiries"
-                value={formData.developerEmail || ''}
-                onChange={handleInputChange}
-                type="email"
-                required
-              />
-            </div>
+          <div className="space-y-2">
+            <label htmlFor="developerName" className="block text-sm font-medium">
+              Developer Name <span className="text-red-500">*</span>
+            </label>
+            <Input
+              id="developerName"
+              name="developerName"
+              placeholder="Your name or team name"
+              value={formData.developerName || ''}
+              onChange={handleInputChange}
+              required
+            />
+            {(isAutoSaving || isSaving) && (
+              <p className="text-xs text-blue-500">Saving...</p>
+            )}
           </div>
 
           <div className="space-y-2">

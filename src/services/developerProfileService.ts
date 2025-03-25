@@ -48,7 +48,6 @@ export const fetchDeveloperProfile = async (walletAddress: string): Promise<Deve
     const transformedData: DeveloperProfile = {
       wallet_address: data.wallet_address,
       developer_name: data.developer_name,
-      developer_email: data.developer_email,
       bio: data.bio,
       profile_pic: data.profile_pic,
       developer_twitter: data.developer_twitter,
@@ -97,7 +96,6 @@ export const upsertDeveloperProfile = async (profile: DeveloperProfile): Promise
     const supabaseData = {
       wallet_address: normalizedWalletAddress,
       developer_name: profile.developer_name || null,
-      developer_email: profile.developer_email || null,
       bio: profile.bio || null,
       profile_pic: profile.profile_pic || null,
       developer_twitter: profile.developer_twitter || null,
@@ -168,7 +166,6 @@ export const upsertDeveloperProfile = async (profile: DeveloperProfile): Promise
     return {
       wallet_address: transformedData.wallet_address,
       developer_name: transformedData.developer_name,
-      developer_email: transformedData.developer_email,
       bio: transformedData.bio,
       profile_pic: transformedData.profile_pic,
       developer_twitter: transformedData.developer_twitter,

@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Twitter, Github, Globe, MessageSquare } from "lucide-react";
+import { Twitter, Github, Globe, MessageCircle } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { fetchDeveloperProfile } from '@/services/developerProfileService';
@@ -11,7 +11,6 @@ import { formatAddress } from '@/utils/walletUtils';
 interface DeveloperInfoProps {
   creatorAddress?: string;
   developerName?: string;
-  developerEmail?: string;
   bio?: string;
   developerTwitter?: string;
   developerGithub?: string;
@@ -22,7 +21,6 @@ interface DeveloperInfoProps {
 const DeveloperInfo: React.FC<DeveloperInfoProps> = ({
   creatorAddress,
   developerName,
-  developerEmail,
   bio,
   developerTwitter,
   developerGithub,
@@ -58,7 +56,6 @@ const DeveloperInfo: React.FC<DeveloperInfoProps> = ({
   const displayTwitter = developerProfile?.developer_twitter || developerTwitter;
   const displayGithub = developerProfile?.developer_github || developerGithub;
   const displayWebsite = developerProfile?.developer_website || developerWebsite;
-  const displayEmail = developerProfile?.developer_email || developerEmail;
   const displayProfilePic = developerProfile?.profile_pic || profilePic;
 
   // Generate initials for avatar fallback
@@ -87,15 +84,6 @@ const DeveloperInfo: React.FC<DeveloperInfoProps> = ({
             <p className="text-sm text-muted-foreground line-clamp-3">{displayBio}</p>
             
             <div className="flex gap-2 flex-wrap">
-              {displayEmail && (
-                <Button size="sm" variant="outline" asChild>
-                  <a href={`mailto:${displayEmail}`} target="_blank" rel="noopener noreferrer">
-                    <MessageSquare className="h-4 w-4 mr-1" />
-                    <span className="hidden md:inline">Email</span>
-                  </a>
-                </Button>
-              )}
-              
               {displayTwitter && (
                 <Button size="sm" variant="outline" asChild>
                   <a href={displayTwitter} target="_blank" rel="noopener noreferrer">

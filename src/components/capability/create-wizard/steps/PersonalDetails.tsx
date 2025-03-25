@@ -20,7 +20,6 @@ import {
 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useDeveloperProfile } from '@/hooks/useDeveloperProfile';
-import { useEffect as useEffectOriginal } from 'react';
 
 const PersonalDetails: React.FC = () => {
   const { 
@@ -56,10 +55,6 @@ const PersonalDetails: React.FC = () => {
       // Only update fields that are empty
       if (!formData.developerName && profile.developer_name) {
         handleSelectChange('developerName', profile.developer_name);
-      }
-      
-      if (!formData.developerEmail && profile.developer_email) {
-        handleSelectChange('developerEmail', profile.developer_email);
       }
       
       if (!formData.bio && profile.bio) {
@@ -98,13 +93,12 @@ const PersonalDetails: React.FC = () => {
     // Create a timeout to avoid too many updates
     const updateTimeout = setTimeout(async () => {
       try {
-        // Only update if we have at least a name or email
-        if (formData.developerName || formData.developerEmail) {
+        // Only update if we have at least a name
+        if (formData.developerName) {
           
           // Check if there are any changes to save
           const hasChanges = 
             (profile?.developer_name !== formData.developerName) ||
-            (profile?.developer_email !== formData.developerEmail) ||
             (profile?.bio !== formData.bio) ||
             (profile?.developer_twitter !== formData.developerTwitter) ||
             (profile?.developer_telegram !== formData.developerTelegram) ||
@@ -117,7 +111,6 @@ const PersonalDetails: React.FC = () => {
             
             await updateProfile({
               developer_name: formData.developerName,
-              developer_email: formData.developerEmail,
               bio: formData.bio,
               developer_twitter: formData.developerTwitter,
               developer_telegram: formData.developerTelegram,
@@ -138,7 +131,6 @@ const PersonalDetails: React.FC = () => {
     return () => clearTimeout(updateTimeout);
   }, [
     formData.developerName, 
-    formData.developerEmail, 
     formData.bio, 
     formData.developerTwitter,
     formData.developerTelegram,
@@ -328,18 +320,6 @@ const PersonalDetails: React.FC = () => {
             name="developerName"
             placeholder="John Doe"
             value={formData.developerName}
-            onChange={handleInputChange}
-          />
-        </div>
-        
-        <div className="space-y-2">
-          <Label htmlFor="developerEmail">Email Address</Label>
-          <Input
-            id="developerEmail"
-            name="developerEmail"
-            placeholder="you@example.com"
-            type="email"
-            value={formData.developerEmail}
             onChange={handleInputChange}
           />
         </div>
