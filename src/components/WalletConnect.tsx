@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Wallet, LogOut, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -16,7 +16,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { connectWallet, disconnectWallet, formatAddress } from '@/services/walletService';
+import { useWallet } from '@/hooks/useWallet';
 
 interface WalletConnectProps {
   variant?: 'default' | 'outline' | 'ghost';
@@ -24,74 +24,23 @@ interface WalletConnectProps {
 }
 
 const WalletConnect: React.FC<WalletConnectProps> = ({ variant = 'default', className = '' }) => {
+  const { address, isConnected, connect, disconnect, formatAddress } = useWallet();
   const [isOpen, setIsOpen] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [connectedAccount, setConnectedAccount] = useState<string | null>(null);
-
-  // Check for wallet on mount and setup listeners
-  useEffect(() => {
-    const checkWallet = async () => {
-      if (typeof window.ethereum !== 'undefined') {
-        try {
-          const accounts = await window.ethereum.request({ method: 'eth_accounts' });
-          setConnectedAccount(accounts[0] || null);
-
-          // Set up listener for account changes
-          const handleAccountsChanged = (accounts: string[]) => {
-            setConnectedAccount(accounts[0] || null);
-            if (accounts.length === 0) {
-              // User disconnected their wallet
-              setIsOpen(false);
-            }
-          };
-
-          window.ethereum.on('accountsChanged', handleAccountsChanged);
-          
-          // Handle chain changes
-          window.ethereum.on('chainChanged', () => {
-            window.location.reload();
-          });
-
-          return () => {
-            window.ethereum.removeListener('accountsChanged', handleAccountsChanged);
-            window.ethereum.removeListener('chainChanged', () => {});
-          };
-        } catch (error) {
-          console.error('Error checking wallet:', error);
-        }
-      }
-    };
-
-    checkWallet();
-  }, []);
 
   const handleConnect = async () => {
     setIsConnecting(true);
-    setError(null);
-
     try {
-      const account = await connectWallet();
-      if (account) {
-        setConnectedAccount(account);
-        setIsOpen(false);
-      }
-    } catch (err: any) {
-      console.error('Error connecting wallet:', err);
-      setError(err.message || 'Failed to connect wallet');
+      await connect();
+      setIsOpen(false);
     } finally {
       setIsConnecting(false);
     }
   };
 
-  const handleDisconnect = () => {
-    disconnectWallet();
-    setConnectedAccount(null);
-  };
-
   return (
     <>
-      {connectedAccount ? (
+      {isConnected && address ? (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
@@ -100,12 +49,12 @@ const WalletConnect: React.FC<WalletConnectProps> = ({ variant = 'default', clas
               className="border-science-200 text-sm"
             >
               <div className="w-2 h-2 bg-green-500 rounded-full mr-2" />
-              {formatAddress(connectedAccount)}
+              {formatAddress(address)}
               <ChevronDown className="ml-2 h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={handleDisconnect} className="cursor-pointer">
+            <DropdownMenuItem onClick={disconnect} className="cursor-pointer">
               <LogOut className="mr-2 h-4 w-4" />
               <span>Disconnect</span>
             </DropdownMenuItem>
@@ -131,13 +80,6 @@ const WalletConnect: React.FC<WalletConnectProps> = ({ variant = 'default', clas
             </DialogHeader>
             
             <div className="py-6">
-              {error && (
-                <div className="flex items-center gap-2 p-3 mb-4 rounded-md bg-destructive/10 text-destructive text-sm">
-                  <div className="h-4 w-4 text-destructive shrink-0">!</div>
-                  <span>{error}</span>
-                </div>
-              )}
-              
               <div className="grid gap-4">
                 <Button
                   className="flex justify-between items-center w-full px-4 py-6"

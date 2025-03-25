@@ -6,6 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { fetchDeveloperProfile } from '@/services/developerProfileService';
 import { DeveloperProfile } from '@/types/profile';
+import { formatAddress } from '@/utils/walletUtils';
 
 interface DeveloperInfoProps {
   creatorAddress?: string;

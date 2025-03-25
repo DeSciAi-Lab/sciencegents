@@ -10,10 +10,11 @@ import { toast } from '@/components/ui/use-toast';
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { connectWallet } from '@/services/walletService';
+import { useWallet } from '@/hooks/useWallet';
 
 const DeveloperProfileTab: React.FC = () => {
   const { profile, isLoading, updateProfile, refreshProfile, error, isWalletConnected } = useDeveloperProfile();
+  const { connect, address } = useWallet();
   
   // Setup form with react-hook-form
   const form = useForm({
@@ -66,11 +67,13 @@ const DeveloperProfileTab: React.FC = () => {
 
   const handleConnectWallet = async () => {
     try {
-      await connectWallet();
-      // Wait a moment for the connection to establish
-      setTimeout(() => {
-        window.location.reload();
-      }, 1000);
+      await connect();
+      // After connection, refresh the profile if possible
+      if (address) {
+        setTimeout(() => {
+          refreshProfile();
+        }, 500);
+      }
     } catch (error) {
       console.error("Error connecting wallet:", error);
     }
@@ -98,13 +101,15 @@ const DeveloperProfileTab: React.FC = () => {
         setUploadingImage(true);
         console.log("Uploading profile picture...");
         try {
-          picUrl = await uploadProfilePicture(profilePicture, isWalletConnected.toString());
-          
-          if (!picUrl) {
-            throw new Error("Failed to upload profile picture");
+          if (address) {
+            picUrl = await uploadProfilePicture(profilePicture, address);
+            
+            if (!picUrl) {
+              throw new Error("Failed to upload profile picture");
+            }
+            
+            console.log("Profile picture uploaded successfully:", picUrl);
           }
-          
-          console.log("Profile picture uploaded successfully:", picUrl);
         } catch (uploadError) {
           console.error("Error uploading image:", uploadError);
           toast({

@@ -1,48 +1,16 @@
 
 import { useState, useEffect, useCallback } from 'react';
-import { useAccount } from 'wagmi';
 import { fetchDeveloperProfile, upsertDeveloperProfile } from '@/services/developerProfileService';
 import { DeveloperProfile } from '@/types/profile';
 import { toast } from '@/components/ui/use-toast';
-import { getCurrentAccount } from '@/services/walletService';
+import { useWallet } from '@/hooks/useWallet';
 
 /**
  * Hook to fetch and manage developer profile
  * @returns Developer profile data, loading state, and update function
  */
 export function useDeveloperProfile() {
-  const [address, setAddress] = useState<string | undefined>(undefined);
-  const [wagmiError, setWagmiError] = useState<Error | null>(null);
-  
-  // Try to get address from Wagmi first
-  useEffect(() => {
-    const getAddressFromWallet = async () => {
-      try {
-        // First try Wagmi
-        const accountResult = useAccount();
-        if (accountResult.address) {
-          setAddress(accountResult.address);
-          return;
-        }
-      } catch (error) {
-        console.log("Wagmi provider not available, falling back to wallet service");
-        setWagmiError(new Error("Wagmi provider not available"));
-      }
-      
-      // Fallback to our wallet service
-      try {
-        const currentAccount = await getCurrentAccount();
-        if (currentAccount) {
-          setAddress(currentAccount);
-        }
-      } catch (walletError) {
-        console.error("Error getting address from wallet service:", walletError);
-      }
-    };
-    
-    getAddressFromWallet();
-  }, []);
-
+  const { address, isConnected } = useWallet();
   const [profile, setProfile] = useState<DeveloperProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -132,16 +100,13 @@ export function useDeveloperProfile() {
     return loadProfile();
   }, [loadProfile]);
 
-  // If we have a wagmi error, it means we need to use wagmi but it's not available
-  const finalError = error || wagmiError;
-
   return { 
     profile, 
     isLoading, 
     isSaving, 
-    error: finalError, 
+    error, 
     updateProfile, 
     refreshProfile, 
-    isWalletConnected: !!address 
+    isWalletConnected: isConnected && !!address 
   };
 }
