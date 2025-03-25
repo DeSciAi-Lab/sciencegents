@@ -203,30 +203,16 @@ export const uploadProfilePicture = async (file: File, walletAddress: string): P
     
     console.log("Starting profile picture upload for wallet:", normalizedWalletAddress);
     
-    // Check if sciencegents bucket exists and create it if it doesn't
-    try {
-      const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
-      
-      if (bucketsError) {
-        console.error("Error listing buckets:", bucketsError);
-      }
-      
-      const sciencegentsBucketExists = buckets?.some(bucket => bucket.name === 'sciencegents');
-      
-      if (!sciencegentsBucketExists) {
-        console.log("Creating sciencegents bucket");
-        const { error: createBucketError } = await supabase.storage.createBucket('sciencegents', { 
-          public: true 
-        });
-        
-        if (createBucketError) {
-          console.error("Error creating bucket:", createBucketError);
-          throw createBucketError;
-        }
-      }
-    } catch (bucketError) {
-      console.error("Error checking bucket:", bucketError);
-      // Continue anyway - bucket might exist
+    // Check if the file is an image
+    if (!file.type.startsWith('image/')) {
+      console.error("File is not an image:", file.type);
+      throw new Error("Only image files are allowed");
+    }
+    
+    // Check file size (5MB max)
+    if (file.size > 5 * 1024 * 1024) {
+      console.error("File is too large:", file.size);
+      throw new Error("File size must be less than 5MB");
     }
     
     // Upload the file
@@ -256,6 +242,6 @@ export const uploadProfilePicture = async (file: File, walletAddress: string): P
     return urlData.publicUrl;
   } catch (error) {
     console.error("Error in uploadProfilePicture:", error);
-    return null;
+    throw error; // Re-throw the error to be handled by the caller
   }
 };

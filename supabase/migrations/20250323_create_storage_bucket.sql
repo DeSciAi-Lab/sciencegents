@@ -17,3 +17,8 @@ CREATE POLICY "User can upload their files"
 CREATE POLICY "User can update their files"
     ON storage.objects FOR UPDATE
     USING (bucket_id = 'sciencegents');
+
+-- RLS for deleting files
+CREATE POLICY "User can delete their files"
+    ON storage.objects FOR DELETE
+    USING (bucket_id = 'sciencegents');

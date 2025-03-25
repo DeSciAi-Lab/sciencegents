@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -33,6 +34,7 @@ const DeveloperProfileTab: React.FC = () => {
   const [pictureUrl, setPictureUrl] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   
   // Load profile data when it's available
   useEffect(() => {
@@ -55,8 +57,23 @@ const DeveloperProfileTab: React.FC = () => {
   }, [profile, form]);
   
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setUploadError(null);
+    
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
+      
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        setUploadError("Please select an image file (JPG, PNG, etc.)");
+        return;
+      }
+      
+      // Validate file size (5MB max)
+      if (file.size > 5 * 1024 * 1024) {
+        setUploadError("Image size should be less than 5MB");
+        return;
+      }
+      
       setProfilePicture(file);
       
       // Create a preview URL
@@ -76,6 +93,11 @@ const DeveloperProfileTab: React.FC = () => {
       }
     } catch (error) {
       console.error("Error connecting wallet:", error);
+      toast({
+        title: "Connection Failed",
+        description: "Could not connect to your wallet. Please try again.",
+        variant: "destructive"
+      });
     }
   };
   
@@ -90,6 +112,7 @@ const DeveloperProfileTab: React.FC = () => {
     }
     
     setIsSaving(true);
+    setUploadError(null);
     
     try {
       console.log("Preparing to save profile data:", formData);
@@ -110,11 +133,12 @@ const DeveloperProfileTab: React.FC = () => {
             
             console.log("Profile picture uploaded successfully:", picUrl);
           }
-        } catch (uploadError) {
+        } catch (uploadError: any) {
           console.error("Error uploading image:", uploadError);
+          setUploadError(uploadError.message || "Failed to upload profile picture");
           toast({
-            title: "Error",
-            description: "Failed to upload profile picture. Your profile data will still be saved.",
+            title: "Image Upload Error",
+            description: uploadError.message || "Failed to upload profile picture. Your profile data will still be saved.",
             variant: "destructive",
           });
         } finally {
@@ -155,11 +179,11 @@ const DeveloperProfileTab: React.FC = () => {
       } else {
         throw new Error("Failed to update profile");
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error saving profile:", error);
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "Failed to save profile",
+        description: error.message || "Failed to save profile",
         variant: "destructive",
       });
     } finally {
@@ -330,9 +354,17 @@ const DeveloperProfileTab: React.FC = () => {
                         <AvatarImage src={pictureUrl} alt="Profile" />
                       ) : null}
                       <AvatarFallback className="text-2xl">
-                        {form.getValues("name") ? form.getValues("name")[0]?.toUpperCase() : isWalletConnected.toString().substring(2, 4).toUpperCase()}
+                        {form.getValues("name") ? form.getValues("name")[0]?.toUpperCase() : address?.substring(2, 4).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
+                    
+                    {uploadError && (
+                      <Alert variant="destructive" className="mt-2 p-2 text-sm">
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertDescription>{uploadError}</AlertDescription>
+                      </Alert>
+                    )}
+                    
                     <Button 
                       type="button" 
                       variant="outline" 
