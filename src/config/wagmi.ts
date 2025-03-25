@@ -17,6 +17,9 @@ export const config = createConfig({
     injected(),
   ],
   transports: {
-    [targetChain.id]: http(),
+    // Explicitly define transports for each possible chain ID
+    // This ensures the Record<1 | 11155111, Transport> type is satisfied
+    [mainnet.id]: http(),
+    [sepolia.id]: http(),
   },
 });
