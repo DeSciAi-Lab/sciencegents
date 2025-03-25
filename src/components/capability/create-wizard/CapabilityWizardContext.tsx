@@ -7,6 +7,7 @@ import { ethers } from 'ethers';
 import { contractConfig, factoryABI } from '@/utils/contractConfig';
 import { refreshCapabilities } from '@/data/capabilities';
 import { upsertCapabilityToSupabase, uploadFileToStorage } from '@/services/capability/supabase';
+import { useWallet } from '@/hooks/useWallet';
 
 // Initial form data with social links arrays
 const initialFormData = {
@@ -70,6 +71,7 @@ const CapabilityWizardContext = createContext<CapabilityWizardContextType | unde
 export const CapabilityWizardProvider: React.FC<{children: React.ReactNode}> = ({ children }) => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { address, connect, isConnected } = useWallet();
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<typeof initialFormData>(initialFormData);
   const [documentation, setDocumentation] = useState<File | null>(null);
@@ -81,21 +83,10 @@ export const CapabilityWizardProvider: React.FC<{children: React.ReactNode}> = (
 
   // Fill in creator address when wallet connects
   useEffect(() => {
-    const setWalletAddress = async () => {
-      if (window.ethereum) {
-        try {
-          const accounts = await window.ethereum.request({ method: 'eth_accounts' });
-          if (accounts.length > 0) {
-            setFormData(prev => ({ ...prev, creatorAddress: accounts[0] }));
-          }
-        } catch (error) {
-          console.error('Error getting wallet address:', error);
-        }
-      }
-    };
-
-    setWalletAddress();
-  }, []);
+    if (address) {
+      setFormData(prev => ({ ...prev, creatorAddress: address }));
+    }
+  }, [address]);
 
   // Calculate if user can proceed to next step
   const validateStep = (step: number): boolean => {
@@ -202,15 +193,17 @@ export const CapabilityWizardProvider: React.FC<{children: React.ReactNode}> = (
     try {
       setIsSubmitting(true);
       
-      const walletConnected = await checkIfWalletIsConnected();
-      if (!walletConnected) {
-        toast({
-          title: "Wallet not connected",
-          description: "Please connect your wallet to continue.",
-          variant: "destructive"
-        });
-        setIsSubmitting(false);
-        return;
+      if (!isConnected) {
+        await connect();
+        if (!isConnected) {
+          toast({
+            title: "Wallet not connected",
+            description: "Please connect your wallet to continue.",
+            variant: "destructive"
+          });
+          setIsSubmitting(false);
+          return;
+        }
       }
 
       const provider = new ethers.providers.Web3Provider(window.ethereum);

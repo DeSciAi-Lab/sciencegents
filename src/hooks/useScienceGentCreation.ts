@@ -11,6 +11,7 @@ import {
 import { checkIfWalletIsConnected, connectWallet } from "@/utils/walletUtils";
 import { toast } from "@/components/ui/use-toast";
 import { syncSingleScienceGent } from "@/services/scienceGentDataService";
+import { useWallet } from "@/hooks/useWallet";
 
 export enum CreationStatus {
   Idle = "idle",
@@ -24,6 +25,7 @@ export enum CreationStatus {
 }
 
 export const useScienceGentCreation = () => {
+  const { connect, isConnected } = useWallet();
   const [status, setStatus] = useState<CreationStatus>(CreationStatus.Idle);
   const [transactionHash, setTransactionHash] = useState<string | null>(null);
   const [tokenAddress, setTokenAddress] = useState<string | null>(null);
@@ -125,8 +127,8 @@ export const useScienceGentCreation = () => {
       // Check if wallet is connected
       const isWalletConnected = await checkIfWalletIsConnected();
       if (!isWalletConnected) {
-        const account = await connectWallet();
-        if (!account) {
+        await connect();
+        if (!isConnected) {
           throw new Error("Failed to connect wallet");
         }
       }
@@ -172,8 +174,8 @@ export const useScienceGentCreation = () => {
       // Check if wallet is connected
       const isWalletConnected = await checkIfWalletIsConnected();
       if (!isWalletConnected) {
-        const account = await connectWallet();
-        if (!account) {
+        await connect();
+        if (!isConnected) {
           throw new Error("Failed to connect wallet");
         }
       }

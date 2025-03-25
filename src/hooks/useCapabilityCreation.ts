@@ -8,10 +8,12 @@ import { refreshCapabilities } from '@/data/capabilities';
 import { checkIfWalletIsConnected } from '@/utils/walletUtils';
 import { CapabilityFormValues } from '@/utils/formSchemas';
 import { upsertCapabilityToSupabase } from '@/services/capability';
+import { useWallet } from '@/hooks/useWallet';
 
 export const useCapabilityCreation = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { connect, isConnected } = useWallet();
   const [documentation, setDocumentation] = useState<File | null>(null);
   const [integrationGuide, setIntegrationGuide] = useState<File | null>(null);
   const [preview, setPreview] = useState(false);
@@ -31,8 +33,11 @@ export const useCapabilityCreation = () => {
       
       const walletConnected = await checkIfWalletIsConnected();
       if (!walletConnected) {
-        setIsSubmitting(false);
-        return;
+        await connect();
+        if (!isConnected) {
+          setIsSubmitting(false);
+          return;
+        }
       }
 
       const provider = new ethers.providers.Web3Provider(window.ethereum);

@@ -1,7 +1,6 @@
 
 import { useEffect, useState } from 'react';
 import { useAccount, useConnect, useDisconnect } from 'wagmi';
-import { InjectedConnector } from 'wagmi/connectors/injected';
 import { contractConfig } from '@/utils/contractConfig';
 import { toast } from '@/components/ui/use-toast';
 
@@ -10,9 +9,7 @@ const ADMIN_WALLET_ADDRESS = '0x86A683C6B0e8d7A962B7A040Ed0e6d993F1d9F83'.toLowe
 
 export function useWallet() {
   const { address, isConnected, chainId } = useAccount();
-  const { connect } = useConnect({
-    connector: new InjectedConnector(),
-  });
+  const { connect } = useConnect();
   const { disconnect } = useDisconnect();
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
 
