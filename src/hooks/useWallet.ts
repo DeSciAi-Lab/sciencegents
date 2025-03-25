@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { useAccount, useConnect, useDisconnect } from 'wagmi';
 import { contractConfig } from '@/utils/contractConfig';
 import { toast } from '@/components/ui/use-toast';
+import { injected } from 'wagmi/connectors';
 
 // Admin wallet address 
 const ADMIN_WALLET_ADDRESS = '0x86A683C6B0e8d7A962B7A040Ed0e6d993F1d9F83'.toLowerCase();
@@ -27,7 +28,8 @@ export function useWallet() {
 
   const handleConnect = async () => {
     try {
-      await connect();
+      // Fixed: Pass connector parameter to connect function
+      await connect({ connector: injected() });
       
       if (!isCorrectNetwork) {
         toast({
