@@ -3,6 +3,7 @@ import React from 'react';
 import { CapabilityWizardProvider, useCapabilityWizard, wizardSteps } from './CapabilityWizardContext';
 import WizardLayout from './WizardLayout';
 import BasicInfo from './steps/BasicInfo';
+import DetailedDescription from './steps/DetailedDescription';
 import UploadDocuments from './steps/UploadDocuments';
 import PersonalDetails from './steps/PersonalDetails';
 import Review from './steps/Review';
@@ -16,10 +17,12 @@ const WizardStepRenderer: React.FC = () => {
       case 1:
         return <BasicInfo />;
       case 2:
-        return <UploadDocuments />;
+        return <DetailedDescription />;
       case 3:
-        return <PersonalDetails />;
+        return <UploadDocuments />;
       case 4:
+        return <PersonalDetails />;
+      case 5:
         return <Review />;
       default:
         return null;

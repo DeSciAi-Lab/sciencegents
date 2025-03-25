@@ -1,3 +1,4 @@
+
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/components/ui/use-toast';
@@ -14,6 +15,7 @@ const initialFormData = {
   id: '',
   domain: 'Chemistry',
   description: '',
+  detailedDescription: '',
   fee: '',
   creatorAddress: '',
   twitter: '',
@@ -22,7 +24,6 @@ const initialFormData = {
   website: '',
   socialLinks: [] as {type: string, url: string}[],
   developerName: '',
-  developerEmail: '',
   bio: '',
   developerTwitter: '',
   developerTelegram: '',
@@ -33,9 +34,10 @@ const initialFormData = {
 
 export const wizardSteps = [
   { id: 1, title: 'Basic Info' },
-  { id: 2, title: 'Upload Documents' },
-  { id: 3, title: 'Personal Details (optional)' },
-  { id: 4, title: 'Review' }
+  { id: 2, title: 'Detailed Description' },
+  { id: 3, title: 'Upload Documents' },
+  { id: 4, title: 'Personal Details (optional)' },
+  { id: 5, title: 'Review' }
 ];
 
 interface CapabilityWizardContextType {
@@ -101,11 +103,13 @@ export const CapabilityWizardProvider: React.FC<{children: React.ReactNode}> = (
           parseFloat(formData.fee) > 0 &&
           formData.creatorAddress
         );
-      case 2: // Upload Documents
+      case 2: // Detailed Description
+        return Boolean(formData.detailedDescription); // Require detailed description
+      case 3: // Upload Documents
         return true; // Documents are optional
-      case 3: // Personal Details
+      case 4: // Personal Details
         return true; // Personal details are optional
-      case 4: // Review 
+      case 5: // Review 
         return true;
       default:
         return false;
@@ -335,6 +339,7 @@ export const CapabilityWizardProvider: React.FC<{children: React.ReactNode}> = (
         name: formData.name,
         domain: formData.domain,
         description: formData.description,
+        detailed_description: formData.detailedDescription, // Add detailed description
         price: parseFloat(formData.fee),
         creator: formData.creatorAddress,
         createdAt: new Date().toISOString(),
@@ -349,7 +354,6 @@ export const CapabilityWizardProvider: React.FC<{children: React.ReactNode}> = (
         social_links: capabilitySocialLinks,
         developer_info: {
           name: formData.developerName,
-          email: formData.developerEmail,
           bio: formData.bio,
           social_links: developerSocialLinks
         },
