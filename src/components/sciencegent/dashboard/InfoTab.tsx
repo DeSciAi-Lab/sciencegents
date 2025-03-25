@@ -46,7 +46,6 @@ const InfoTab: React.FC<InfoTabProps> = ({ scienceGent, address }) => {
               <DeveloperInfo 
                 creatorAddress={scienceGent.creator_address || scienceGent.creator}
                 developerName={scienceGent.developer_name}
-                developerEmail={scienceGent.developer_email}
                 bio={scienceGent.bio}
                 developerTwitter={scienceGent.developer_twitter}
                 developerGithub={scienceGent.developer_github}

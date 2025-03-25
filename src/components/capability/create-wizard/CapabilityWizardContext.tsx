@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/components/ui/use-toast';
@@ -367,13 +366,12 @@ export const CapabilityWizardProvider: React.FC<{children: React.ReactNode}> = (
         console.log("Capability added to Supabase");
         
         // Save developer profile if provided
-        if (formData.developerName || formData.developerEmail) {
+        if (formData.developerName || formData.bio) {
           try {
             const { upsertDeveloperProfile } = await import('@/services/developerProfileService');
             await upsertDeveloperProfile({
               wallet_address: signerAddress,
               developer_name: formData.developerName,
-              developer_email: formData.developerEmail,
               bio: formData.bio,
               profile_pic: storageUrls.profileImage,
               developer_twitter: formData.developerTwitter,
