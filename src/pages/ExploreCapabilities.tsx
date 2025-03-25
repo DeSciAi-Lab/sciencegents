@@ -1,7 +1,6 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Star, Search, Plus, ChevronDown, Filter, X, Beaker, Activity, Flask, Database } from 'lucide-react';
+import { Star, Search, Plus, ChevronDown, Filter, X, Beaker, Activity, Database } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import Navbar from '@/components/layout/Navbar';
@@ -23,7 +22,6 @@ const ExploreCapabilities = () => {
   const [sortBy, setSortBy] = useState<'created' | 'revenue' | 'usage'>('created');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   
-  // Fetch capabilities on mount
   useEffect(() => {
     const fetchCapabilities = async () => {
       try {
@@ -39,10 +37,8 @@ const ExploreCapabilities = () => {
     fetchCapabilities();
   }, []);
   
-  // Extract unique domains
   const domains = Array.from(new Set(capabilities.map(cap => cap.domain)));
   
-  // Filter capabilities based on search query and selected domain
   const filteredCapabilities = capabilities.filter(capability => {
     const matchesSearch = 
       searchQuery === '' || 
@@ -54,10 +50,8 @@ const ExploreCapabilities = () => {
     return matchesSearch && matchesDomain;
   });
 
-  // Sort capabilities
   const sortedCapabilities = [...filteredCapabilities].sort((a, b) => {
     if (sortBy === 'created') {
-      // Assuming newer capabilities have more recent createdAt dates
       const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
       const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
       return sortDirection === 'asc' ? dateA - dateB : dateB - dateA;
@@ -73,12 +67,10 @@ const ExploreCapabilities = () => {
     return 0;
   });
 
-  // Calculate total statistics
   const totalCapabilities = capabilities.length;
   const totalTransactions = capabilities.reduce((sum, cap) => sum + (cap.stats.usageCount || 0) * 5, 0);
   const totalRevenue = capabilities.reduce((sum, cap) => sum + (cap.stats.revenue || 0), 0);
 
-  // Format numbers for display
   const formatNumber = (num: number) => {
     if (num >= 1000000) {
       return `${(num / 1000000).toFixed(1)}M`;
@@ -88,7 +80,6 @@ const ExploreCapabilities = () => {
     return num.toString();
   };
 
-  // Toggle dropdowns
   const toggleDomainDropdown = () => {
     setShowDomainDropdown(!showDomainDropdown);
     if (showRatingDropdown) setShowRatingDropdown(false);
@@ -99,7 +90,6 @@ const ExploreCapabilities = () => {
     if (showDomainDropdown) setShowDomainDropdown(false);
   };
 
-  // Handle sort change
   const handleSortChange = (sortType: 'created' | 'revenue' | 'usage') => {
     if (sortBy === sortType) {
       setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
@@ -109,7 +99,6 @@ const ExploreCapabilities = () => {
     }
   };
 
-  // Clear all filters
   const clearFilters = () => {
     setSearchQuery('');
     setSelectedDomain(null);
@@ -117,7 +106,6 @@ const ExploreCapabilities = () => {
     setSortDirection('desc');
   };
 
-  // Render star rating
   const renderRating = (rating: number) => {
     return (
       <div className="flex items-center">
@@ -133,11 +121,10 @@ const ExploreCapabilities = () => {
     );
   };
 
-  // Get icon for domain
   const getDomainIcon = (domain: string) => {
     switch (domain.toLowerCase()) {
       case 'chemistry':
-        return <Flask size={16} />;
+        return <Beaker size={16} />;
       case 'protein analysis':
         return <Activity size={16} />;
       case 'material science':
@@ -149,7 +136,6 @@ const ExploreCapabilities = () => {
     }
   };
 
-  // Domain filter buttons
   const domainButtons = [
     { name: 'Chemistry', color: 'bg-emerald-500 hover:bg-emerald-600' },
     { name: 'Protein Analysis', color: 'bg-blue-500 hover:bg-blue-600' },
@@ -185,7 +171,6 @@ const ExploreCapabilities = () => {
             </div>
           </Reveal>
           
-          {/* Stats section */}
           <Reveal delay={50}>
             <div className="grid grid-cols-3 gap-4 mb-6">
               <div className="bg-rose-50 p-4 rounded-md text-center">
@@ -205,7 +190,6 @@ const ExploreCapabilities = () => {
             </div>
           </Reveal>
           
-          {/* Search and filters */}
           <Reveal delay={100}>
             <div className="mb-6 flex flex-col md:flex-row gap-4">
               <div className="relative flex-grow">
@@ -337,7 +321,6 @@ const ExploreCapabilities = () => {
             </div>
           </Reveal>
           
-          {/* Domain filter buttons */}
           <Reveal delay={150}>
             <div className="flex flex-wrap gap-2 mb-6">
               {domainButtons.map((domain, index) => (
@@ -353,11 +336,9 @@ const ExploreCapabilities = () => {
             </div>
           </Reveal>
           
-          {/* Capabilities grid */}
           <Reveal delay={200}>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {loading ? (
-                // Loading skeletons
                 Array.from({ length: 8 }).map((_, index) => (
                   <div key={index} className="bg-white p-4 rounded-md border">
                     <div className="flex justify-between mb-2">
