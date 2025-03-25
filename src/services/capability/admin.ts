@@ -114,7 +114,13 @@ export const upsertCapability = async (capability: Capability, onChain = false):
     
     // If onChain is true, also register on blockchain
     if (onChain) {
-      await registerCapabilityOnBlockchain(capability);
+      // Fix: Pass all required parameters to registerCapabilityOnBlockchain
+      await registerCapabilityOnBlockchain(
+        capability.id,
+        capability.description,
+        capability.price.toString(), // Convert price to string for ETH value
+        capability.creator
+      );
     }
     
     return { success: true };
