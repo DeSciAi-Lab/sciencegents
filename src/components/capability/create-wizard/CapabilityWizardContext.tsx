@@ -111,8 +111,8 @@ export const CapabilityWizardProvider: React.FC<{children: React.ReactNode}> = (
   const { address } = useWallet();
   const [creatorAddress, setCreatorAddress] = useState('');
 
-  // Fetch developer profile
-  const { profile: developerProfile, isLoading: isLoadingProfile } = useDeveloperProfile(address || '');
+  // Fetch developer profile - fixing the error by removing the parameter
+  const { profile: developerProfile, isLoading: isLoadingProfile } = useDeveloperProfile();
   
   // Set creator address when wallet connected
   useEffect(() => {
