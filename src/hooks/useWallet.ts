@@ -28,7 +28,7 @@ export function useWallet() {
 
   const handleConnect = async () => {
     try {
-      // Fixed: Pass connector parameter to connect function
+      // Pass connector parameter to connect function
       await connect({ connector: injected() });
       
       if (!isCorrectNetwork) {
