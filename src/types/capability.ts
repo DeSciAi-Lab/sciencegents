@@ -28,7 +28,7 @@ export interface Capability {
   name: string;
   domain: string;
   description: string;
-  detailed_description?: string;  // Add this field
+  detailed_description?: string;
   price: number;
   creator: string;
   createdAt?: string;
@@ -51,7 +51,7 @@ export interface SupabaseCapability {
   name: string;
   domain: string;
   description: string;
-  detailed_description?: string;  // Add this field
+  detailed_description?: string;
   price: number;
   creator: string;
   created_at?: string;
