@@ -1,14 +1,16 @@
 
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import { uploadFileToStorage } from '@/services/capability/supabase';
+import { fetchDeveloperProfile } from '@/services/developerProfileService';
+import { useWallet } from '@/hooks/useWallet';
+import { DeveloperProfile } from '@/types/profile';
 
-// Define the wizard steps
+// Define the wizard steps (removed Personal Details step)
 export const wizardSteps = [
   { id: 1, title: "Basic Information", description: "Enter basic details about your capability" },
   { id: 2, title: "Detailed Description", description: "Provide comprehensive description and features" },
   { id: 3, title: "Upload Documents", description: "Upload documentation and resources" },
-  { id: 4, title: "Personal Details", description: "Add your developer information" },
-  { id: 5, title: "Review", description: "Review and submit your capability" }
+  { id: 4, title: "Review", description: "Review and submit your capability" }
 ];
 
 // Define the extended context props interface with all required properties
@@ -33,13 +35,7 @@ interface CapabilityWizardContextProps {
   creatorAddress: string;
   setCreatorAddress: React.Dispatch<React.SetStateAction<string>>;
   
-  // Developer information
-  developerName: string;
-  setDeveloperName: React.Dispatch<React.SetStateAction<string>>;
-  developerEmail: string;
-  setDeveloperEmail: React.Dispatch<React.SetStateAction<string>>;
-  developerBio: string;
-  setDeveloperBio: React.Dispatch<React.SetStateAction<string>>;
+  // Social links
   socialLinks: Array<{ type: string; url: string }>;
   setSocialLinks: React.Dispatch<React.SetStateAction<Array<{ type: string; url: string }>>>;
   
@@ -67,6 +63,10 @@ interface CapabilityWizardContextProps {
     additionalFilesUrls: Array<{ name: string; url: string }>;
   }>;
   
+  // Developer profile from Supabase
+  developerProfile: DeveloperProfile | null;
+  isLoadingProfile: boolean;
+  
   // Form compatibility props (to fix the component errors)
   formData: {
     name: string;
@@ -78,15 +78,6 @@ interface CapabilityWizardContextProps {
     creatorAddress: string;
     displayImage?: File | null;
     features: string[];
-    developerName: string;
-    developerEmail: string;
-    bio: string;
-    developerTwitter: string;
-    developerGithub: string;
-    developerWebsite: string;
-    developerTelegram: string;
-    socialLinks: Array<{ type: string; url: string }>;
-    developerSocialLinks: Array<{ type: string; url: string }>;
     twitter: string;
     github: string;
     website: string;
@@ -96,15 +87,15 @@ interface CapabilityWizardContextProps {
   handleSelectChange: (field: string, value: string) => void;
   displayImage: File | null;
   setDisplayImage: React.Dispatch<React.SetStateAction<File | null>>;
-  profileImage: File | null;
-  setProfileImage: React.Dispatch<React.SetStateAction<File | null>>;
-  updateSocialLink: (field: string, index: number, key: string, value: string) => void;
-  addSocialLink: (field: string) => void;
-  removeSocialLink: (field: string, index: number) => void;
+  
+  // Social link handlers
+  updateSocialLink: (index: number, key: string, value: string) => void;
+  addSocialLink: () => void;
+  removeSocialLink: (index: number) => void;
   
   // Navigation and form submission
+  nextStep: () => void;
   prevStep: () => void;
-  nextStep: () => void; 
   canProceed: boolean;
   submitCapability: () => void;
 }
@@ -112,6 +103,8 @@ interface CapabilityWizardContextProps {
 const CapabilityWizardContext = createContext<CapabilityWizardContextProps | undefined>(undefined);
 
 export const CapabilityWizardProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { address } = useWallet();
+  
   // Basic Information
   const [name, setName] = useState('');
   const [id, setId] = useState('');
@@ -122,15 +115,11 @@ export const CapabilityWizardProvider: React.FC<{ children: React.ReactNode }> =
   const [features, setFeatures] = useState<string[]>([]);
   const [creatorAddress, setCreatorAddress] = useState('');
   
-  // Developer Information
-  const [developerName, setDeveloperName] = useState('');
-  const [developerEmail, setDeveloperEmail] = useState('');
-  const [developerBio, setDeveloperBio] = useState('');
+  // Social Links (for capability)
   const [socialLinks, setSocialLinks] = useState<Array<{ type: string; url: string }>>([]);
   
   // UI Form compatibility
   const [displayImage, setDisplayImage] = useState<File | null>(null);
-  const [profileImage, setProfileImage] = useState<File | null>(null);
   
   // Files
   const [documentation, setDocumentation] = useState<File | null>(null);
@@ -138,8 +127,34 @@ export const CapabilityWizardProvider: React.FC<{ children: React.ReactNode }> =
   const [additionalFiles, setAdditionalFiles] = useState<File[]>([]);
   
   // Wizard state
-  const [currentStep, setCurrentStep] = useState(1); // Start at step 1 instead of 0
+  const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Developer profile from Supabase
+  const [developerProfile, setDeveloperProfile] = useState<DeveloperProfile | null>(null);
+  const [isLoadingProfile, setIsLoadingProfile] = useState(false);
+  
+  // Fetch developer profile when wallet address changes
+  useEffect(() => {
+    const loadDeveloperProfile = async () => {
+      if (!address) return;
+      
+      setIsLoadingProfile(true);
+      try {
+        // Set creator address to connected wallet by default
+        setCreatorAddress(address);
+        
+        const profile = await fetchDeveloperProfile(address);
+        setDeveloperProfile(profile);
+      } catch (error) {
+        console.error("Error loading developer profile:", error);
+      } finally {
+        setIsLoadingProfile(false);
+      }
+    };
+    
+    loadDeveloperProfile();
+  }, [address]);
   
   // Form data object (to fix component errors)
   const formData = {
@@ -152,15 +167,6 @@ export const CapabilityWizardProvider: React.FC<{ children: React.ReactNode }> =
     creatorAddress,
     displayImage,
     features,
-    developerName,
-    developerEmail,
-    bio: developerBio,
-    developerTwitter: '',
-    developerGithub: '',
-    developerWebsite: '',
-    developerTelegram: '',
-    socialLinks,
-    developerSocialLinks: [],
     twitter: '',
     github: '',
     website: '',
@@ -194,15 +200,6 @@ export const CapabilityWizardProvider: React.FC<{ children: React.ReactNode }> =
       case 'creatorAddress':
         setCreatorAddress(value);
         break;
-      case 'developerName':
-        setDeveloperName(value);
-        break;
-      case 'developerEmail':
-        setDeveloperEmail(value);
-        break;
-      case 'bio':
-        setDeveloperBio(value);
-        break;
       // Add more cases as needed
     }
   };
@@ -213,26 +210,17 @@ export const CapabilityWizardProvider: React.FC<{ children: React.ReactNode }> =
       case 'domain':
         setDomain(value);
         break;
-      case 'developerName':
-        setDeveloperName(value);
-        break;
-      case 'bio':
-        setDeveloperBio(value);
-        break;
       // Add more cases as needed
     }
   };
   
   // Helper for updating social link objects
-  const updateSocialLink = (field: string, index: number, key: string, value: string) => {
-    if (field === 'socialLinks') {
-      setSocialLinks(prev => {
-        const newLinks = [...prev];
-        newLinks[index] = { ...newLinks[index], [key]: value };
-        return newLinks;
-      });
-    }
-    // Add other fields as needed
+  const updateSocialLink = (index: number, key: string, value: string) => {
+    setSocialLinks(prev => {
+      const newLinks = [...prev];
+      newLinks[index] = { ...newLinks[index], [key]: value };
+      return newLinks;
+    });
   };
   
   const addFeature = (feature: string) => {
@@ -243,18 +231,12 @@ export const CapabilityWizardProvider: React.FC<{ children: React.ReactNode }> =
     setFeatures(features.filter((_, i) => i !== index));
   };
   
-  const addSocialLink = (field: string) => {
-    if (field === 'socialLinks') {
-      setSocialLinks([...socialLinks, { type: '', url: '' }]);
-    }
-    // Add other fields as needed
+  const addSocialLink = () => {
+    setSocialLinks([...socialLinks, { type: '', url: '' }]);
   };
   
-  const removeSocialLink = (field: string, index: number) => {
-    if (field === 'socialLinks') {
-      setSocialLinks(socialLinks.filter((_, i) => i !== index));
-    }
-    // Add other fields as needed
+  const removeSocialLink = (index: number) => {
+    setSocialLinks(socialLinks.filter((_, i) => i !== index));
   };
   
   const addFile = (file: File) => {
@@ -295,9 +277,6 @@ export const CapabilityWizardProvider: React.FC<{ children: React.ReactNode }> =
     setPrice('0.1');
     setFeatures([]);
     setCreatorAddress('');
-    setDeveloperName('');
-    setDeveloperEmail('');
-    setDeveloperBio('');
     setSocialLinks([]);
     setDocumentation(null);
     setIntegrationGuide(null);
@@ -305,7 +284,6 @@ export const CapabilityWizardProvider: React.FC<{ children: React.ReactNode }> =
     setCurrentStep(1);
     setIsSubmitting(false);
     setDisplayImage(null);
-    setProfileImage(null);
   };
   
   const handleFileUploads = async () => {
@@ -372,12 +350,6 @@ export const CapabilityWizardProvider: React.FC<{ children: React.ReactNode }> =
         removeFeature,
         creatorAddress,
         setCreatorAddress,
-        developerName,
-        setDeveloperName,
-        developerEmail,
-        setDeveloperEmail,
-        developerBio,
-        setDeveloperBio,
         socialLinks,
         setSocialLinks,
         documentation,
@@ -396,14 +368,15 @@ export const CapabilityWizardProvider: React.FC<{ children: React.ReactNode }> =
         isSubmitting,
         setIsSubmitting,
         handleFileUploads,
+        // Developer profile from Supabase
+        developerProfile,
+        isLoadingProfile,
         // Additional properties for component compatibility
         formData,
         handleInputChange,
         handleSelectChange,
         displayImage,
         setDisplayImage,
-        profileImage,
-        setProfileImage,
         updateSocialLink,
         addSocialLink,
         removeSocialLink,

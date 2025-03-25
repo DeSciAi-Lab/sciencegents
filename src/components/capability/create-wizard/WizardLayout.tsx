@@ -1,9 +1,9 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
-import WizardProgress from './WizardProgress';
 import { useCapabilityWizard, wizardSteps } from './CapabilityWizardContext';
+import WizardProgress from './WizardProgress';
+import { Info } from 'lucide-react';
 
 interface WizardLayoutProps {
   children: React.ReactNode;
@@ -12,64 +12,72 @@ interface WizardLayoutProps {
 const WizardLayout: React.FC<WizardLayoutProps> = ({ children }) => {
   const { 
     currentStep, 
-    prevStep, 
-    nextStep,
+    goToNextStep, 
+    goToPreviousStep, 
     canProceed,
-    isSubmitting,
-    submitCapability
+    isSubmitting
   } = useCapabilityWizard();
-  
-  const isLastStep = currentStep === wizardSteps.length;
+
+  const totalSteps = wizardSteps.length;
   const isFirstStep = currentStep === 1;
+  const isLastStep = currentStep === totalSteps;
   
-  const handleNext = () => {
-    if (isLastStep) {
-      submitCapability();
-    } else {
-      nextStep();
-    }
+  const handleBack = () => {
+    goToPreviousStep();
   };
   
+  const handleContinue = () => {
+    if (isLastStep) {
+      // Submit form logic would be in the Review component
+      return;
+    }
+    goToNextStep();
+  };
+
   return (
     <div className="max-w-6xl mx-auto">
-      <div className="bg-white rounded-lg shadow-sm border">
-        <div className="p-6 border-b">
-          <h2 className="text-2xl font-bold text-gray-800">Create Capability</h2>
-        </div>
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold mb-6">Create Capability</h1>
         
-        <div className="flex">
-          <div className="w-72 p-6 border-r bg-gray-50">
+        <div className="flex flex-col md:flex-row gap-8">
+          {/* Left sidebar with steps */}
+          <div className="w-full md:w-1/4">
             <WizardProgress 
-              steps={wizardSteps} 
+              steps={wizardSteps.map(step => ({
+                id: step.id,
+                title: step.title
+              }))} 
               currentStep={currentStep} 
             />
           </div>
           
-          <div className="flex-1 p-6">
+          {/* Main content area */}
+          <div className="w-full md:w-3/4 bg-white rounded-lg p-6">
             {children}
-          </div>
-        </div>
-        
-        <div className="px-6 py-4 bg-gray-50 border-t rounded-b-lg flex justify-between">
-          <div>
-            {!isFirstStep && (
-              <Button variant="outline" onClick={prevStep}>
-                <ChevronLeft className="mr-2 h-4 w-4" />
+            
+            {/* Navigation buttons */}
+            <div className="flex justify-between mt-8">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleBack}
+                disabled={isFirstStep || isSubmitting}
+                className="px-6"
+              >
                 Back
               </Button>
-            )}
-          </div>
-          
-          <div>
-            <Button 
-              onClick={handleNext} 
-              disabled={!canProceed || isSubmitting}
-              className="bg-blue-600 hover:bg-blue-700"
-            >
-              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {isLastStep ? "Launch" : "Continue"}
-              {!isLastStep && <ChevronRight className="ml-2 h-4 w-4" />}
-            </Button>
+              
+              {!isLastStep && (
+                <Button
+                  type="button"
+                  onClick={handleContinue}
+                  disabled={!canProceed || isSubmitting}
+                  className="px-6"
+                >
+                  Continue
+                </Button>
+              )}
+            </div>
           </div>
         </div>
       </div>

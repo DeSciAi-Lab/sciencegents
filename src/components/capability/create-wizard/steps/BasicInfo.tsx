@@ -1,216 +1,278 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useCapabilityWizard } from '../CapabilityWizardContext';
-import { domains } from '../utils';
-import { Button } from '@/components/ui/button';
+import { Info, Plus, Trash2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Upload, AlertCircle, X, Plus, Twitter, Github, Globe, MessageCircle, Trash2 } from 'lucide-react';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Textarea } from '@/components/ui/textarea';
+import { useWallet } from '@/hooks/useWallet';
 
 const BasicInfo: React.FC = () => {
   const {
-    formData,
-    handleInputChange,
-    handleSelectChange,
-    displayImage,
-    setDisplayImage,
-    addSocialLink,
-    removeSocialLink,
-    updateSocialLink
+    name,
+    setName,
+    id,
+    setId,
+    domain,
+    setDomain,
+    description,
+    setDescription,
+    price,
+    setPrice,
+    creatorAddress,
+    setCreatorAddress,
+    socialLinks,
+    setSocialLinks
   } = useCapabilityWizard();
   
-  const [displayImagePreview, setDisplayImagePreview] = useState<string | null>(null);
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  const { address } = useWallet();
+  const [newSocialLink, setNewSocialLink] = useState({ type: '', url: '' });
   
-  useEffect(() => {
-    if (displayImage) {
-      const url = URL.createObjectURL(displayImage);
-      setDisplayImagePreview(url);
-      return () => URL.revokeObjectURL(url);
-    }
-  }, [displayImage]);
+  const updateSocialLink = (index: number, field: string, value: string) => {
+    const updatedLinks = [...socialLinks];
+    updatedLinks[index] = { ...updatedLinks[index], [field]: value };
+    setSocialLinks(updatedLinks);
+  };
   
-  const handleDisplayImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        setErrors(prev => ({
-          ...prev,
-          displayImage: 'Image size should be less than 5MB'
-        }));
-        return;
-      }
-      if (!file.type.startsWith('image/')) {
-        setErrors(prev => ({
-          ...prev,
-          displayImage: 'Please upload an image file'
-        }));
-        return;
-      }
-      setDisplayImage(file);
-      setErrors(prev => {
-        const newErrors = {
-          ...prev
-        };
-        delete newErrors.displayImage;
-        return newErrors;
-      });
+  const addSocialLink = () => {
+    if (newSocialLink.type && newSocialLink.url) {
+      setSocialLinks([...socialLinks, { ...newSocialLink }]);
+      setNewSocialLink({ type: '', url: '' });
     }
   };
   
-  const removeDisplayImage = () => {
-    setDisplayImage(null);
-    setDisplayImagePreview(null);
+  const removeSocialLink = (index: number) => {
+    setSocialLinks(socialLinks.filter((_, i) => i !== index));
   };
   
-  const renderSocialInputs = () => {
-    return <div className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="twitter">Twitter</Label>
-            <div className="flex">
-              <div className="bg-gray-100 flex items-center justify-center px-3 border border-r-0 rounded-l">
-                <Twitter size={16} className="text-gray-500" />
-              </div>
-              <Input id="twitter" name="twitter" placeholder="https://twitter.com/yourusername" value={formData.twitter} onChange={handleInputChange} className="rounded-l-none" />
-            </div>
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="github">GitHub</Label>
-            <div className="flex">
-              <div className="bg-gray-100 flex items-center justify-center px-3 border border-r-0 rounded-l">
-                <Github size={16} className="text-gray-500" />
-              </div>
-              <Input id="github" name="github" placeholder="https://github.com/yourusername" value={formData.github} onChange={handleInputChange} className="rounded-l-none" />
-            </div>
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="website">Website</Label>
-            <div className="flex">
-              <div className="bg-gray-100 flex items-center justify-center px-3 border border-r-0 rounded-l">
-                <Globe size={16} className="text-gray-500" />
-              </div>
-              <Input id="website" name="website" placeholder="https://yourwebsite.com" value={formData.website} onChange={handleInputChange} className="rounded-l-none" />
-            </div>
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="telegram">Telegram</Label>
-            <div className="flex">
-              <div className="bg-gray-100 flex items-center justify-center px-3 border border-r-0 rounded-l">
-                <MessageCircle size={16} className="text-gray-500" />
-              </div>
-              <Input id="telegram" name="telegram" placeholder="https://t.me/yourusername" value={formData.telegram} onChange={handleInputChange} className="rounded-l-none" />
-            </div>
-          </div>
-        </div>
-        
-        {/* Additional social links */}
-        {formData.socialLinks.map((link, index) => <div key={index} className="flex items-end gap-2">
-            <div className="flex-1 space-y-2">
-              <Label>Social Platform</Label>
-              <Input placeholder="Platform name (e.g. Discord, Medium)" value={link.type} onChange={e => updateSocialLink('socialLinks', index, 'type', e.target.value)} />
-            </div>
-            <div className="flex-1 space-y-2">
-              <Label>URL</Label>
-              <Input placeholder="https://..." value={link.url} onChange={e => updateSocialLink('socialLinks', index, 'url', e.target.value)} />
-            </div>
-            <Button variant="ghost" size="icon" onClick={() => removeSocialLink('socialLinks', index)} className="text-red-500 hover:text-red-700 hover:bg-red-50">
-              <Trash2 size={18} />
-            </Button>
-          </div>)}
-        
-        <Button type="button" variant="outline" size="sm" onClick={() => addSocialLink('socialLinks')} className="mt-2">
-          <Plus size={16} className="mr-2" />
-          Add More
-        </Button>
-      </div>;
-  };
+  // Use connected wallet address if available
+  React.useEffect(() => {
+    if (address && !creatorAddress) {
+      setCreatorAddress(address);
+    }
+  }, [address, creatorAddress, setCreatorAddress]);
   
-  return <div className="space-y-6">
-      <div>
-        
-        <p className="text-sm text-gray-500 mt-1">
-          Enter the basic details about your capability.
-        </p>
-      </div>
+  const domains = [
+    { value: '', label: 'Select a domain' },
+    { value: 'Chemistry', label: 'Chemistry' },
+    { value: 'Physics', label: 'Physics' },
+    { value: 'Biochemistry', label: 'Biochemistry' },
+    { value: 'Materials Science', label: 'Materials Science' },
+    { value: 'Protein Analysis', label: 'Protein Analysis' },
+    { value: 'Drug Discovery', label: 'Drug Discovery' },
+    { value: 'Genomics', label: 'Genomics' },
+  ];
+
+  return (
+    <div>
+      <h2 className="text-xl font-semibold mb-6">Basic Information</h2>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="md:col-span-2 space-y-2">
-          <Label htmlFor="name">Capability Name</Label>
-          <Input id="name" name="name" placeholder="Enter capability name" value={formData.name} onChange={handleInputChange} required />
-        </div>
-        
-        <div className="space-y-2">
-          <Label htmlFor="id">Capability ID</Label>
-          <Input id="id" name="id" placeholder="unique-id-with-hyphens" value={formData.id} onChange={handleInputChange} required />
-          <p className="text-xs text-gray-500">Unique identifier, use lowercase with hyphens.</p>
-        </div>
-        
-        <div className="space-y-2">
-          <Label htmlFor="domain">Domain</Label>
-          <Select defaultValue={formData.domain} onValueChange={value => handleSelectChange('domain', value)}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select domain" />
-            </SelectTrigger>
-            <SelectContent>
-              {domains.map(domain => <SelectItem key={domain} value={domain}>
-                  {domain}
-                </SelectItem>)}
-            </SelectContent>
-          </Select>
-        </div>
-        
-        <div className="space-y-2">
-          <Label htmlFor="fee">Fee (in ETH)</Label>
-          <Input id="fee" name="fee" type="number" step="0.001" min="0" placeholder="0.05" value={formData.fee} onChange={handleInputChange} required />
-          <p className="text-xs text-gray-500">Fee per use in ETH.</p>
-        </div>
-        
-        <div className="space-y-2">
-          <Label htmlFor="creatorAddress">Creator Address</Label>
-          <Input id="creatorAddress" name="creatorAddress" placeholder="0x..." value={formData.creatorAddress} onChange={handleInputChange} required />
-          <p className="text-xs text-gray-500">Ethereum address that will receive capability fees.</p>
-        </div>
-        
-        <div className="md:col-span-2 space-y-2">
-          <Label htmlFor="description">Description</Label>
-          <Textarea id="description" name="description" placeholder="Describe what your capability does and how it works..." value={formData.description} onChange={handleInputChange} required className="min-h-32" />
-        </div>
-        
-        <div className="md:col-span-2 space-y-2">
-          <Label>Capability Display Image</Label>
-          <div className="flex items-start">
-            {displayImagePreview ? <div className="relative w-40 h-40 border rounded overflow-hidden">
-                <img src={displayImagePreview} alt="Capability preview" className="w-full h-full object-cover" />
-                <Button onClick={removeDisplayImage} variant="destructive" size="icon" className="absolute top-1 right-1 w-6 h-6 rounded-full">
-                  <X size={14} />
-                </Button>
-              </div> : <div className="w-40 h-40 border-2 border-dashed border-gray-200 rounded flex flex-col items-center justify-center cursor-pointer hover:border-gray-300 transition-colors" onClick={() => document.getElementById('display-image-upload')?.click()}>
-                <Upload size={24} className="text-gray-400 mb-2" />
-                <p className="text-sm text-gray-500">Upload image</p>
-                <p className="text-xs text-gray-400 mt-1">Max 5MB</p>
-              </div>}
-            <input type="file" id="display-image-upload" className="hidden" accept="image/*" onChange={handleDisplayImageChange} />
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="col-span-2 space-y-6">
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="name">Capability Name</Label>
+              <Input
+                id="name"
+                placeholder="e.g. Molecule Vision"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="id">Capability ID</Label>
+              <Input
+                id="id"
+                placeholder="e.g. molecular_vision_44"
+                value={id}
+                onChange={(e) => setId(e.target.value)}
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                <Info className="w-3 h-3 inline mr-1" />
+                Unique identifier. Use letters, numbers and underscores only.
+              </p>
+            </div>
+            
+            <div>
+              <Label htmlFor="domain">Domain</Label>
+              <select
+                id="domain"
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                value={domain}
+                onChange={(e) => setDomain(e.target.value)}
+              >
+                {domains.map((option) => (
+                  <option key={option.value} value={option.value} disabled={option.value === ''}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            
+            <div>
+              <Label htmlFor="description">Description</Label>
+              <Textarea
+                id="description"
+                placeholder="Short Description of your ScienceGents (40 words)"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                className="min-h-24"
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="display-picture">Display Picture for capability (optional)</Label>
+              <div className="border-2 border-dashed border-gray-300 rounded-md p-6 mt-1 text-center">
+                <div className="flex flex-col items-center">
+                  <Plus className="h-8 w-8 text-gray-400" />
+                  <span className="mt-2 text-sm text-gray-500">No file chosen (under 1MB)</span>
+                </div>
+              </div>
+            </div>
+            
+            <div>
+              <Label htmlFor="fee">Fee (ETH)</Label>
+              <Input
+                id="fee"
+                type="text"
+                placeholder="e.g. 0.5"
+                value={price}
+                onChange={(e) => setPrice(e.target.value)}
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                <Info className="w-3 h-3 inline mr-1" />
+                Fee that ScienceGent creators will pay to use this capability.
+              </p>
+            </div>
+            
+            <div>
+              <Label htmlFor="creator-address">Fee receiving address</Label>
+              <Input
+                id="creator-address"
+                placeholder="0x..."
+                value={creatorAddress}
+                onChange={(e) => setCreatorAddress(e.target.value)}
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                <Info className="w-3 h-3 inline mr-1" />
+                Ethereum address that will receive capability fees.
+              </p>
+            </div>
+            
+            <div className="space-y-3">
+              <Label>Socials links for capability (optional)</Label>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="social-type" className="text-xs">Social Type</Label>
+                  <Input
+                    id="social-type"
+                    placeholder="e.g. Twitter"
+                    value={newSocialLink.type}
+                    onChange={(e) => setNewSocialLink({...newSocialLink, type: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="social-url" className="text-xs">URL</Label>
+                  <div className="flex space-x-2">
+                    <Input
+                      id="social-url"
+                      placeholder="https://..."
+                      value={newSocialLink.url}
+                      onChange={(e) => setNewSocialLink({...newSocialLink, url: e.target.value})}
+                    />
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      size="icon"
+                      onClick={addSocialLink}
+                      disabled={!newSocialLink.type || !newSocialLink.url}
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+              
+              {socialLinks.length > 0 && (
+                <div className="space-y-2 mt-2">
+                  {socialLinks.map((link, index) => (
+                    <div key={index} className="flex items-center justify-between bg-gray-50 p-2 rounded">
+                      <div>
+                        <span className="font-medium">{link.type}: </span>
+                        <span className="text-sm">{link.url}</span>
+                      </div>
+                      <Button 
+                        type="button" 
+                        variant="ghost" 
+                        size="icon"
+                        onClick={() => removeSocialLink(index)}
+                      >
+                        <Trash2 className="h-4 w-4 text-red-500" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
-          {errors.displayImage && <Alert variant="destructive" className="mt-2">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>{errors.displayImage}</AlertDescription>
-            </Alert>}
-          <p className="text-xs text-gray-500">This image will be displayed as the main image for your capability.</p>
         </div>
         
-        <div className="md:col-span-2 space-y-2">
-          <Label>Social Links</Label>
-          {renderSocialInputs()}
+        <div className="col-span-1">
+          <div className="bg-blue-50 p-4 rounded-md">
+            <div className="flex items-center gap-2 mb-2">
+              <Info className="h-5 w-5 text-blue-600" />
+              <h3 className="font-medium">About Capabilities</h3>
+            </div>
+            <p className="text-sm mb-3">
+              Capabilities are specialized functions that enhance ScienceGents with domain-specific features. As a capability creator, you define what your capability does and set a fee.
+            </p>
+            <ul className="space-y-2 text-sm">
+              <li className="flex items-start">
+                <span className="bg-blue-200 rounded-full h-1.5 w-1.5 mt-1.5 mr-2"></span>
+                Capability fees are paid when a ScienceGent migrates to an external DEX.
+              </li>
+              <li className="flex items-start">
+                <span className="bg-blue-200 rounded-full h-1.5 w-1.5 mt-1.5 mr-2"></span>
+                Well-documented capabilities with clear integration guides attract more users.
+              </li>
+              <li className="flex items-start">
+                <span className="bg-blue-200 rounded-full h-1.5 w-1.5 mt-1.5 mr-2"></span>
+                All capability data is stored on-chain for transparency and security.
+              </li>
+            </ul>
+          </div>
+          
+          <div className="bg-blue-50 p-4 rounded-md mt-4">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-blue-600">✨</span>
+              <h3 className="font-medium">Creating Great Capabilities</h3>
+            </div>
+            <ul className="space-y-2 text-sm">
+              <li className="flex flex-col">
+                <span className="font-medium">Be Specific</span>
+                <span className="text-xs text-gray-600">Focus on a single, well-defined scientific function.</span>
+              </li>
+              <li className="flex flex-col">
+                <span className="font-medium">Explain Clearly</span>
+                <span className="text-xs text-gray-600">Describe exactly what your capability does and its limitations.</span>
+              </li>
+              <li className="flex flex-col">
+                <span className="font-medium">Price Appropriately</span>
+                <span className="text-xs text-gray-600">Set fees based on the value and complexity of your capability.</span>
+              </li>
+              <li className="flex flex-col">
+                <span className="font-medium">Document Well</span>
+                <span className="text-xs text-gray-600">Provide comprehensive documentation and integration guides.</span>
+              </li>
+            </ul>
+          </div>
         </div>
       </div>
-    </div>;
+    </div>
+  );
 };
 
 export default BasicInfo;

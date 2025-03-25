@@ -5,7 +5,6 @@ import WizardLayout from './WizardLayout';
 import BasicInfo from './steps/BasicInfo';
 import DetailedDescription from './steps/DetailedDescription';
 import UploadDocuments from './steps/UploadDocuments';
-import PersonalDetails from './steps/PersonalDetails';
 import Review from './steps/Review';
 
 // This component uses the context, so it must be wrapped by the provider
@@ -21,8 +20,6 @@ const WizardStepRenderer: React.FC = () => {
       case 3:
         return <UploadDocuments />;
       case 4:
-        return <PersonalDetails />;
-      case 5:
         return <Review />;
       default:
         return null;

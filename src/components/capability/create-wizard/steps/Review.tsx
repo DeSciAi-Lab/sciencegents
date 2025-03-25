@@ -5,10 +5,12 @@ import { Button } from '@/components/ui/button';
 import { 
   Check, 
   AlertTriangle,
-  CheckCircle2 
+  CheckCircle2,
+  Info
 } from 'lucide-react';
 import { upsertCapabilityToSupabase } from '@/services/capability/supabase';
 import { toast } from '@/components/ui/use-toast';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 const Review: React.FC = () => {
   const {
@@ -20,9 +22,6 @@ const Review: React.FC = () => {
     price,
     features,
     creatorAddress,
-    developerName,
-    developerEmail,
-    developerBio,
     socialLinks,
     documentation,
     integrationGuide,
@@ -30,7 +29,9 @@ const Review: React.FC = () => {
     isSubmitting,
     setIsSubmitting,
     handleFileUploads,
-    resetForm
+    resetForm,
+    developerProfile,
+    isLoadingProfile
   } = useCapabilityWizard();
   
   const [isSuccess, setIsSuccess] = useState(false);
@@ -53,18 +54,13 @@ const Review: React.FC = () => {
         detailed_description: detailedDescription,
         price: parseFloat(price),
         creator: creatorAddress,
-        developer_info: {
-          name: developerName,
-          email: developerEmail,
-          bio: developerBio,
-          social_links: socialLinks
-        },
         stats: {
           usageCount: 0,
           rating: 4.5,
           revenue: 0
         },
         features,
+        social_links: socialLinks,
         files: {
           documentation: fileUploadResults.documentationUrl,
           integrationGuide: fileUploadResults.integrationGuideUrl,
@@ -132,6 +128,14 @@ const Review: React.FC = () => {
     );
   }
   
+  // Generate developer initials for the avatar
+  const generateInitials = () => {
+    if (developerProfile?.developer_name) {
+      return developerProfile.developer_name.charAt(0).toUpperCase();
+    }
+    return creatorAddress ? creatorAddress.substring(2, 4).toUpperCase() : 'LO';
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -141,125 +145,218 @@ const Review: React.FC = () => {
         </p>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="space-y-4 bg-gray-50 p-4 rounded-md">
-          <h4 className="font-medium">Basic Information</h4>
-          
-          <div className="space-y-2">
-            <div className="flex justify-between">
-              <span className="text-gray-500">Name:</span>
-              <span className="font-medium">{name}</span>
+      {/* Basic Information Section */}
+      <div className="bg-blue-50 rounded-md p-6">
+        <h4 className="font-medium text-center mb-4">Basic Information</h4>
+        <div className="space-y-2">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <span className="text-gray-500">Capability Name:</span>
+              <span className="font-medium ml-2">{name}</span>
             </div>
             
-            <div className="flex justify-between">
+            <div>
               <span className="text-gray-500">ID:</span>
-              <span className="font-medium">{id}</span>
+              <span className="font-medium ml-2">{id}</span>
             </div>
             
-            <div className="flex justify-between">
+            <div>
               <span className="text-gray-500">Domain:</span>
-              <span className="font-medium">{domain}</span>
+              <span className="font-medium ml-2">{domain}</span>
             </div>
             
-            <div className="flex justify-between">
-              <span className="text-gray-500">Price:</span>
-              <span className="font-medium">{price} ETH</span>
+            <div>
+              <span className="text-gray-500">Description:</span>
+              <span className="font-medium ml-2">{description}</span>
             </div>
             
-            <div className="flex justify-between">
-              <span className="text-gray-500">Features:</span>
-              <span className="font-medium">{features.length} features</span>
+            <div>
+              <span className="text-gray-500">Capability Fee:</span>
+              <span className="font-medium ml-2">{price} ETH</span>
+            </div>
+            
+            <div>
+              <span className="text-gray-500">Fee Receiving Address:</span>
+              <span className="font-medium ml-2 truncate">{creatorAddress}</span>
             </div>
           </div>
-        </div>
-        
-        <div className="space-y-4 bg-gray-50 p-4 rounded-md">
-          <h4 className="font-medium">Developer Information</h4>
           
-          <div className="space-y-2">
-            <div className="flex justify-between">
-              <span className="text-gray-500">Name:</span>
-              <span className="font-medium">{developerName || 'Not provided'}</span>
-            </div>
-            
-            <div className="flex justify-between">
-              <span className="text-gray-500">Email:</span>
-              <span className="font-medium">{developerEmail || 'Not provided'}</span>
-            </div>
-            
-            <div className="flex justify-between">
-              <span className="text-gray-500">Bio:</span>
-              <span className="font-medium">{developerBio ? 'Provided' : 'Not provided'}</span>
-            </div>
-            
-            <div className="flex justify-between">
-              <span className="text-gray-500">Social Links:</span>
-              <span className="font-medium">{socialLinks.length} links</span>
-            </div>
-            
-            <div className="flex justify-between">
-              <span className="text-gray-500">Creator Address:</span>
-              <span className="font-medium truncate max-w-[180px]">{creatorAddress || 'Not provided'}</span>
+          {/* Social Links */}
+          <div className="mt-4">
+            <span className="text-gray-500">Social Links:</span>
+            <div className="flex flex-wrap gap-2 mt-1">
+              {socialLinks.map((link, idx) => (
+                <div key={idx} className="flex items-center">
+                  <span className="font-medium">{link.type}:</span>
+                  <span className="text-sm truncate ml-1">{link.url}</span>
+                </div>
+              ))}
+              {socialLinks.length === 0 && (
+                <span className="text-sm text-gray-400">No social links provided</span>
+              )}
             </div>
           </div>
         </div>
       </div>
       
-      <div className="space-y-4 bg-gray-50 p-4 rounded-md">
-        <h4 className="font-medium">Uploaded Files</h4>
-        
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="space-y-2">
-            <div className="font-medium">Documentation</div>
-            <div className="flex items-center">
+      {/* Documents Section */}
+      <div className="bg-orange-50 rounded-md p-6">
+        <h4 className="font-medium text-center mb-4">Documents Uploaded</h4>
+        <div className="space-y-2">
+          <div className="grid grid-cols-3 gap-2">
+            <div>
+              <span className="text-gray-500">Documentation:</span>
               {documentation ? (
-                <>
-                  <Check className="text-green-600 h-4 w-4 mr-2" />
-                  <span className="text-sm truncate max-w-[180px]">{documentation.name}</span>
-                </>
+                <div className="flex items-center">
+                  <Check className="text-green-600 h-4 w-4 mr-1" />
+                  <span className="text-sm truncate">{documentation.name}</span>
+                </div>
               ) : (
-                <>
-                  <AlertTriangle className="text-amber-500 h-4 w-4 mr-2" />
-                  <span className="text-sm text-gray-500">Not uploaded</span>
-                </>
+                <div className="flex items-center">
+                  <AlertTriangle className="text-amber-500 h-4 w-4 mr-1" />
+                  <span className="text-sm text-gray-400">Not uploaded</span>
+                </div>
               )}
             </div>
-          </div>
-          
-          <div className="space-y-2">
-            <div className="font-medium">Integration Guide</div>
-            <div className="flex items-center">
+            
+            <div>
+              <span className="text-gray-500">Integration Guide:</span>
               {integrationGuide ? (
-                <>
-                  <Check className="text-green-600 h-4 w-4 mr-2" />
-                  <span className="text-sm truncate max-w-[180px]">{integrationGuide.name}</span>
-                </>
+                <div className="flex items-center">
+                  <Check className="text-green-600 h-4 w-4 mr-1" />
+                  <span className="text-sm truncate">{integrationGuide.name}</span>
+                </div>
               ) : (
-                <>
-                  <AlertTriangle className="text-amber-500 h-4 w-4 mr-2" />
-                  <span className="text-sm text-gray-500">Not uploaded</span>
-                </>
+                <div className="flex items-center">
+                  <AlertTriangle className="text-amber-500 h-4 w-4 mr-1" />
+                  <span className="text-sm text-gray-400">Not uploaded</span>
+                </div>
+              )}
+            </div>
+            
+            <div>
+              <span className="text-gray-500">Additional Files:</span>
+              {additionalFiles.length > 0 ? (
+                <div className="flex items-center">
+                  <Check className="text-green-600 h-4 w-4 mr-1" />
+                  <span className="text-sm">{additionalFiles.length} files</span>
+                </div>
+              ) : (
+                <div className="flex items-center">
+                  <AlertTriangle className="text-amber-500 h-4 w-4 mr-1" />
+                  <span className="text-sm text-gray-400">None uploaded</span>
+                </div>
               )}
             </div>
           </div>
           
-          <div className="space-y-2">
-            <div className="font-medium">Additional Files</div>
-            <div className="flex items-center">
-              {additionalFiles.length > 0 ? (
-                <>
-                  <Check className="text-green-600 h-4 w-4 mr-2" />
-                  <span className="text-sm">{additionalFiles.length} files</span>
-                </>
-              ) : (
-                <>
-                  <AlertTriangle className="text-amber-500 h-4 w-4 mr-2" />
-                  <span className="text-sm text-gray-500">None uploaded</span>
-                </>
+          {additionalFiles.length > 0 && (
+            <div className="mt-2">
+              <span className="text-gray-500">Additional File List:</span>
+              <div className="flex flex-wrap gap-2 mt-1">
+                {additionalFiles.map((file, idx) => (
+                  <span key={idx} className="text-sm bg-white px-2 py-1 rounded border border-gray-200">
+                    {file.name}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+      
+      {/* Developer Information */}
+      <div className="bg-blue-50 rounded-md p-6">
+        <h4 className="font-medium text-center mb-4">Developer Information</h4>
+        
+        {isLoadingProfile ? (
+          <div className="text-center py-4">
+            <div className="animate-spin h-6 w-6 border-2 border-blue-500 border-t-transparent rounded-full mx-auto mb-2"></div>
+            <p className="text-sm text-gray-500">Loading developer profile...</p>
+          </div>
+        ) : developerProfile ? (
+          <div className="space-y-4">
+            <div className="flex justify-center mb-4">
+              <Avatar className="h-20 w-20">
+                <AvatarImage src={developerProfile.profile_pic || ''} alt="Developer" />
+                <AvatarFallback>{generateInitials()}</AvatarFallback>
+              </Avatar>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <span className="text-gray-500">Developer Name:</span>
+                <span className="font-medium ml-2">{developerProfile.developer_name || 'Not provided'}</span>
+              </div>
+              
+              <div>
+                <span className="text-gray-500">Ethereum Address:</span>
+                <span className="font-medium ml-2 truncate">{creatorAddress}</span>
+              </div>
+              
+              {developerProfile.bio && (
+                <div className="col-span-2">
+                  <span className="text-gray-500">Bio:</span>
+                  <p className="text-sm mt-1">{developerProfile.bio}</p>
+                </div>
               )}
             </div>
+            
+            {/* Developer Social Links */}
+            <div>
+              <span className="text-gray-500">Developer Social Links:</span>
+              <div className="grid grid-cols-2 gap-2 mt-1">
+                {developerProfile.developer_website && (
+                  <div>
+                    <span className="text-gray-500">Website:</span>
+                    <span className="text-sm ml-2 truncate">{developerProfile.developer_website}</span>
+                  </div>
+                )}
+                
+                {developerProfile.developer_twitter && (
+                  <div>
+                    <span className="text-gray-500">Twitter:</span>
+                    <span className="text-sm ml-2 truncate">{developerProfile.developer_twitter}</span>
+                  </div>
+                )}
+                
+                {developerProfile.developer_github && (
+                  <div>
+                    <span className="text-gray-500">GitHub:</span>
+                    <span className="text-sm ml-2 truncate">{developerProfile.developer_github}</span>
+                  </div>
+                )}
+                
+                {developerProfile.developer_telegram && (
+                  <div>
+                    <span className="text-gray-500">Telegram:</span>
+                    <span className="text-sm ml-2 truncate">{developerProfile.developer_telegram}</span>
+                  </div>
+                )}
+                
+                {(!developerProfile.developer_website && 
+                  !developerProfile.developer_twitter && 
+                  !developerProfile.developer_github && 
+                  !developerProfile.developer_telegram) && (
+                  <div className="col-span-2 text-sm text-gray-400">
+                    No social links provided
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4 flex items-start">
+            <Info className="h-5 w-5 text-yellow-500 mr-2 mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="text-sm font-medium text-yellow-700">No developer profile found</p>
+              <p className="text-sm text-yellow-600 mt-1">
+                Please consider completing your developer profile after capability creation.
+                This will help users better understand who created this capability.
+              </p>
+            </div>
+          </div>
+        )}
       </div>
       
       <div className="pt-4">
@@ -268,7 +365,7 @@ const Review: React.FC = () => {
           onClick={handleSubmit}
           disabled={isSubmitting}
         >
-          {isSubmitting ? 'Creating Capability...' : 'Create Capability'}
+          {isSubmitting ? 'Creating Capability...' : 'Launch'}
         </Button>
       </div>
     </div>

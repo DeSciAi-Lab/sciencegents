@@ -1,285 +1,238 @@
 
-import React, { useRef, useState } from 'react';
+import React, { useState } from 'react';
 import { useCapabilityWizard } from '../CapabilityWizardContext';
+import { FileUpload, Info, Plus, Trash, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Upload, Trash2, Plus, AlertCircle, FileText } from 'lucide-react';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import FileUploadField from '@/components/capability/FileUploadField';
 
 const UploadDocuments: React.FC = () => {
-  const { 
-    documentation, 
+  const {
+    documentation,
     setDocumentation,
-    integrationGuide, 
+    integrationGuide,
     setIntegrationGuide,
     additionalFiles,
     addFile,
     removeFile
   } = useCapabilityWizard();
   
-  const docInputRef = useRef<HTMLInputElement>(null);
-  const guideInputRef = useRef<HTMLInputElement>(null);
-  const additionalFileInputRef = useRef<HTMLInputElement>(null);
+  const [tempFile, setTempFile] = useState<File | null>(null);
   
-  const [error, setError] = useState<string | null>(null);
-
-  const handleDocumentationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      // Validate file size (1MB max)
-      if (file.size > 1 * 1024 * 1024) {
-        setError("Documentation file size should be less than 1MB");
-        return;
-      }
-      
-      // Validate file type
-      const fileExt = file.name.split('.').pop()?.toLowerCase();
-      const allowedTypes = ['pdf', 'txt', 'md'];
-      
-      if (!fileExt || !allowedTypes.includes(fileExt)) {
-        setError("File type not allowed. Only PDF, TXT, and MD files are permitted.");
-        return;
-      }
-      
-      setDocumentation(file);
-      setError(null);
+  const handleAddFile = () => {
+    if (tempFile) {
+      addFile(tempFile);
+      setTempFile(null);
     }
   };
-
-  const handleIntegrationGuideChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      // Validate file size (1MB max)
-      if (file.size > 1 * 1024 * 1024) {
-        setError("Integration guide file size should be less than 1MB");
-        return;
-      }
-      
-      // Validate file type
-      const fileExt = file.name.split('.').pop()?.toLowerCase();
-      const allowedTypes = ['pdf', 'txt', 'md'];
-      
-      if (!fileExt || !allowedTypes.includes(fileExt)) {
-        setError("File type not allowed. Only PDF, TXT, and MD files are permitted.");
-        return;
-      }
-      
-      setIntegrationGuide(file);
-      setError(null);
-    }
-  };
-
-  const handleAdditionalFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (additionalFiles && additionalFiles.length >= 5) {
-        setError("You can only upload up to 5 additional files");
-        return;
-      }
-      
-      // Validate file size (1MB max)
-      if (file.size > 1 * 1024 * 1024) {
-        setError("Additional file size should be less than 1MB");
-        return;
-      }
-      
-      // Validate file type
-      const fileExt = file.name.split('.').pop()?.toLowerCase();
-      const allowedTypes = ['pdf', 'txt', 'md'];
-      
-      if (!fileExt || !allowedTypes.includes(fileExt)) {
-        setError("File type not allowed. Only PDF, TXT, and MD files are permitted.");
-        return;
-      }
-      
-      addFile(file);
-      setError(null);
-      
-      // Clear the input so the same file can be selected again
-      if (additionalFileInputRef.current) {
-        additionalFileInputRef.current.value = '';
-      }
-    }
-  };
-
-  const removeDocumentation = () => {
-    setDocumentation(null);
-    if (docInputRef.current) {
-      docInputRef.current.value = '';
-    }
-  };
-
-  const removeIntegrationGuide = () => {
-    setIntegrationGuide(null);
-    if (guideInputRef.current) {
-      guideInputRef.current.value = '';
-    }
-  };
-
-  const getFileIcon = (fileName: string) => {
-    const extension = fileName.split('.').pop()?.toLowerCase();
-    switch (extension) {
-      case 'pdf':
-        return <div className="bg-red-100 p-2 rounded text-red-600"><FileText size={24} /></div>;
-      case 'md':
-        return <div className="bg-blue-100 p-2 rounded text-blue-600"><FileText size={24} /></div>;
-      case 'txt':
-        return <div className="bg-gray-100 p-2 rounded text-gray-600"><FileText size={24} /></div>;
-      default:
-        return <div className="bg-purple-100 p-2 rounded text-purple-600"><FileText size={24} /></div>;
-    }
-  };
+  
+  const maxFiles = 5;
+  const canAddMoreFiles = additionalFiles.length < maxFiles;
 
   return (
-    <div className="space-y-6">
-      <div>
-        <p className="text-sm text-gray-500 mt-1">
-          Upload documentation and integration guides for your capability. These will help others understand how to use and integrate your capability.
-        </p>
-      </div>
+    <div>
+      <h2 className="text-xl font-semibold mb-6">Upload Documents</h2>
       
-      {error && (
-        <Alert variant="destructive" className="mb-4">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <div className="space-y-4">
-          <h3 className="text-lg font-medium">Documentation</h3>
-          <p className="text-sm text-gray-500">
-            Upload a PDF, TXT, or MD file that explains how your capability works in detail.
-          </p>
+      <div className="space-y-8">
+        <div>
+          <div className="flex justify-between items-center mb-2">
+            <h3 className="font-medium">Documentation (optional)</h3>
+            <div className="bg-blue-50 text-xs text-blue-700 px-3 py-1 rounded-full flex items-center">
+              <Info className="w-3 h-3 mr-1" />
+              only upto 5 files can be added. supported file formats, pdf, txt and .md
+            </div>
+          </div>
           
-          {documentation ? (
-            <div className="p-4 border rounded-md bg-white flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                {getFileIcon(documentation.name)}
-                <div>
-                  <p className="font-medium truncate max-w-[200px]">{documentation.name}</p>
-                  <p className="text-xs text-gray-500">{(documentation.size / 1024).toFixed(2)} KB</p>
+          <div className="border-2 border-dashed border-gray-300 rounded-md p-6 flex flex-col items-center justify-center">
+            {documentation ? (
+              <div className="flex items-center justify-between w-full">
+                <div className="flex items-center">
+                  <FileUpload className="h-5 w-5 text-blue-500 mr-2" />
+                  <span className="text-sm font-medium">{documentation.name}</span>
                 </div>
-              </div>
-              <Button variant="ghost" size="sm" onClick={removeDocumentation} className="text-red-500 hover:bg-red-50 hover:text-red-600">
-                <Trash2 size={16} />
-              </Button>
-            </div>
-          ) : (
-            <div 
-              className="border-2 border-dashed border-gray-200 rounded-md p-6 flex flex-col items-center justify-center cursor-pointer hover:border-gray-300 transition-colors"
-              onClick={() => docInputRef.current?.click()}
-            >
-              <Upload className="h-10 w-10 text-gray-400 mb-2" />
-              <p className="text-sm text-gray-600 font-medium">Click to upload documentation</p>
-              <p className="text-xs text-gray-500 mt-1">PDF, TXT, or MD (1MB max)</p>
-              <input 
-                type="file" 
-                ref={docInputRef} 
-                className="hidden" 
-                accept=".pdf,.md,.txt" 
-                onChange={handleDocumentationChange} 
-              />
-            </div>
-          )}
-        </div>
-        
-        <div className="space-y-4">
-          <h3 className="text-lg font-medium">Integration Guide</h3>
-          <p className="text-sm text-gray-500">
-            Upload a guide that helps developers integrate your capability into their ScienceGents.
-          </p>
-          
-          {integrationGuide ? (
-            <div className="p-4 border rounded-md bg-white flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                {getFileIcon(integrationGuide.name)}
-                <div>
-                  <p className="font-medium truncate max-w-[200px]">{integrationGuide.name}</p>
-                  <p className="text-xs text-gray-500">{(integrationGuide.size / 1024).toFixed(2)} KB</p>
-                </div>
-              </div>
-              <Button variant="ghost" size="sm" onClick={removeIntegrationGuide} className="text-red-500 hover:bg-red-50 hover:text-red-600">
-                <Trash2 size={16} />
-              </Button>
-            </div>
-          ) : (
-            <div 
-              className="border-2 border-dashed border-gray-200 rounded-md p-6 flex flex-col items-center justify-center cursor-pointer hover:border-gray-300 transition-colors"
-              onClick={() => guideInputRef.current?.click()}
-            >
-              <Upload className="h-10 w-10 text-gray-400 mb-2" />
-              <p className="text-sm text-gray-600 font-medium">Click to upload integration guide</p>
-              <p className="text-xs text-gray-500 mt-1">PDF, TXT, or MD (1MB max)</p>
-              <input 
-                type="file" 
-                ref={guideInputRef} 
-                className="hidden" 
-                accept=".pdf,.md,.txt" 
-                onChange={handleIntegrationGuideChange} 
-              />
-            </div>
-          )}
-        </div>
-      </div>
-      
-      <div className="mt-8 space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-lg font-medium">Additional Files</h3>
-          <Button 
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => additionalFileInputRef.current?.click()}
-            disabled={additionalFiles && additionalFiles.length >= 5}
-            className="flex items-center gap-1"
-          >
-            <Plus size={16} />
-            Add File
-          </Button>
-          <input 
-            type="file" 
-            ref={additionalFileInputRef} 
-            className="hidden" 
-            accept=".pdf,.md,.txt" 
-            onChange={handleAdditionalFileChange} 
-          />
-        </div>
-        
-        <p className="text-sm text-gray-500">
-          Upload any additional files that may help users understand your capability.
-        </p>
-        
-        <div className="space-y-3">
-          {additionalFiles && additionalFiles.length > 0 ? (
-            additionalFiles.map((file, index) => (
-              <div key={index} className="p-3 border rounded-md bg-white flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  {getFileIcon(file.name)}
-                  <div>
-                    <p className="font-medium truncate max-w-[200px]">{file.name}</p>
-                    <p className="text-xs text-gray-500">{(file.size / 1024).toFixed(2)} KB</p>
-                  </div>
-                </div>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={() => removeFile(index)} 
-                  className="text-red-500 hover:bg-red-50 hover:text-red-600"
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setDocumentation(null)}
+                  className="text-red-500"
                 >
-                  <Trash2 size={16} />
+                  <Trash className="h-4 w-4" />
                 </Button>
               </div>
-            ))
-          ) : (
-            <div className="p-4 border border-dashed rounded-md bg-gray-50 text-center">
-              <p className="text-sm text-gray-500">No additional files uploaded yet</p>
-            </div>
-          )}
+            ) : (
+              <label className="flex flex-col items-center cursor-pointer">
+                <Plus className="h-8 w-8 text-gray-400" />
+                <span className="mt-2 text-sm text-gray-500">No file chosen (under 2MB)</span>
+                <input
+                  type="file"
+                  className="hidden"
+                  accept=".pdf,.txt,.md"
+                  onChange={(e) => {
+                    if (e.target.files && e.target.files[0]) {
+                      setDocumentation(e.target.files[0]);
+                    }
+                  }}
+                />
+              </label>
+            )}
+          </div>
+          <p className="text-xs text-gray-500 mt-1">
+            <Info className="w-3 h-3 inline mr-1" />
+            Detailed documentation about your capability's functionality, limitations, and use cases.
+          </p>
         </div>
         
-        <div className="mt-6 p-4 bg-blue-50 border border-blue-100 rounded-md">
-          <p className="text-sm text-blue-800">
-            <strong>Note:</strong> Only up to 5 additional files can be added. Supported file formats: PDF, TXT, and MD. Maximum file size: 1MB.
+        <div>
+          <h3 className="font-medium mb-2">Integration Guide (optional)</h3>
+          <div className="border-2 border-dashed border-gray-300 rounded-md p-6 flex flex-col items-center justify-center">
+            {integrationGuide ? (
+              <div className="flex items-center justify-between w-full">
+                <div className="flex items-center">
+                  <FileUpload className="h-5 w-5 text-blue-500 mr-2" />
+                  <span className="text-sm font-medium">{integrationGuide.name}</span>
+                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIntegrationGuide(null)}
+                  className="text-red-500"
+                >
+                  <Trash className="h-4 w-4" />
+                </Button>
+              </div>
+            ) : (
+              <label className="flex flex-col items-center cursor-pointer">
+                <Plus className="h-8 w-8 text-gray-400" />
+                <span className="mt-2 text-sm text-gray-500">No file chosen (under 2MB)</span>
+                <input
+                  type="file"
+                  className="hidden"
+                  accept=".pdf,.txt,.md"
+                  onChange={(e) => {
+                    if (e.target.files && e.target.files[0]) {
+                      setIntegrationGuide(e.target.files[0]);
+                    }
+                  }}
+                />
+              </label>
+            )}
+          </div>
+          <p className="text-xs text-gray-500 mt-1">
+            <Info className="w-3 h-3 inline mr-1" />
+            Provide step-by-step instructions for integrating your capability.
+          </p>
+        </div>
+        
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="font-medium">Others (optional)</h3>
+            <div className="text-blue-600">
+              <ExternalLink className="h-4 w-4" />
+            </div>
+          </div>
+          
+          {additionalFiles.length > 0 && (
+            <div className="mb-4 space-y-2">
+              {additionalFiles.map((file, index) => (
+                <div key={index} className="flex items-center justify-between bg-gray-50 p-3 rounded">
+                  <div className="flex items-center">
+                    <FileUpload className="h-4 w-4 text-blue-500 mr-2" />
+                    <span className="text-sm">{file.name}</span>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => removeFile(index)}
+                    className="text-red-500"
+                  >
+                    <Trash className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+          
+          {canAddMoreFiles && (
+            <div className="border-2 border-dashed border-gray-300 rounded-md p-6 flex flex-col items-center justify-center">
+              {tempFile ? (
+                <div className="flex flex-col items-center w-full">
+                  <div className="flex items-center mb-2">
+                    <FileUpload className="h-5 w-5 text-blue-500 mr-2" />
+                    <span className="text-sm font-medium">{tempFile.name}</span>
+                  </div>
+                  <div className="flex space-x-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={handleAddFile}
+                    >
+                      Add File
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setTempFile(null)}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <label className="flex flex-col items-center cursor-pointer">
+                  <Plus className="h-8 w-8 text-gray-400" />
+                  <span className="mt-2 text-sm text-gray-500">No file chosen (under 2MB)</span>
+                  <input
+                    type="file"
+                    className="hidden"
+                    accept=".pdf,.txt,.md,.jpg,.jpeg,.png"
+                    onChange={(e) => {
+                      if (e.target.files && e.target.files[0]) {
+                        setTempFile(e.target.files[0]);
+                      }
+                    }}
+                  />
+                </label>
+              )}
+            </div>
+          )}
+          
+          <p className="text-xs text-gray-500 mt-1">
+            <Info className="w-3 h-3 inline mr-1" />
+            Any additional files that might help users understand or implement your capability.
+          </p>
+        </div>
+        
+        {additionalFiles.length > 0 && canAddMoreFiles && (
+          <div className="text-center">
+            <Button 
+              type="button" 
+              variant="outline"
+              onClick={() => document.getElementById('add-more-btn')?.click()}
+              className="flex items-center"
+            >
+              <Plus className="h-4 w-4 mr-1" /> Add more
+              <input
+                id="add-more-btn"
+                type="file"
+                className="hidden"
+                accept=".pdf,.txt,.md,.jpg,.jpeg,.png"
+                onChange={(e) => {
+                  if (e.target.files && e.target.files[0]) {
+                    setTempFile(e.target.files[0]);
+                  }
+                }}
+              />
+            </Button>
+          </div>
+        )}
+        
+        <div className="bg-blue-50 rounded-md p-4 mt-4 flex items-start">
+          <Info className="h-5 w-5 text-blue-500 mr-2 mt-0.5" />
+          <p className="text-sm text-blue-700">
+            These informations can be added and updated later also from user dashboard
           </p>
         </div>
       </div>
