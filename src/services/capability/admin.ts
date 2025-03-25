@@ -106,8 +106,8 @@ export const upsertCapability = async (capability: Capability, onChain = false):
       }
     };
     
-    // Save to Supabase
-    await upsertCapabilityToSupabase(capabilityWithStats);
+    // Save to Supabase - Fix: Pass isNew parameter to upsertCapabilityToSupabase
+    await upsertCapabilityToSupabase(capabilityWithStats, !capability.createdAt);
     
     // If onChain is true, also register on blockchain
     if (onChain) {
