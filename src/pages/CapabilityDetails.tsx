@@ -41,16 +41,40 @@ const CapabilityDetails = () => {
     queryKey: ['capability', id],
     queryFn: () => fetchCapabilityById(id || ''),
     enabled: !!id,
-    // Fallback to the static data if the API call fails
-    onError: async () => {
-      try {
-        const staticData = await getCapabilityById(id || '');
-        return staticData;
-      } catch {
-        return null;
+    retry: 1,
+    // Handle errors properly by using the meta object for custom error handling
+    meta: {
+      errorHandler: async () => {
+        try {
+          // Fallback to the static data if the API call fails
+          const staticData = await getCapabilityById(id || '');
+          return staticData;
+        } catch {
+          return null;
+        }
       }
     }
   });
+  
+  // If API call fails, try to use static data as fallback
+  useEffect(() => {
+    if (error) {
+      const fetchStaticData = async () => {
+        try {
+          const staticData = await getCapabilityById(id || '');
+          if (staticData) {
+            // Use static data if API fails
+            console.log('Using static data as fallback');
+            return staticData;
+          }
+        } catch (e) {
+          console.error('Both API and static data failed:', e);
+        }
+      };
+      
+      fetchStaticData();
+    }
+  }, [error, id]);
   
   // Scroll to top on component mount
   useEffect(() => {
