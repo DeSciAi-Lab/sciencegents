@@ -1,5 +1,46 @@
-import { getSupabaseClient } from '../supabase';
+
+import { getSupabaseClient } from '@/integrations/supabase/client';
 import { v4 as uuidv4 } from 'uuid';
+
+// Add the missing export functions for fetchCapabilitiesFromSupabase and fetchCapabilityById
+export const fetchCapabilitiesFromSupabase = async () => {
+  try {
+    const supabase = getSupabaseClient();
+    const { data, error } = await supabase
+      .from('capabilities')
+      .select('*');
+    
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('Error fetching capabilities from Supabase:', error);
+    throw error;
+  }
+};
+
+export const fetchCapabilityById = async (id: string) => {
+  try {
+    const supabase = getSupabaseClient();
+    const { data, error } = await supabase
+      .from('capabilities')
+      .select('*')
+      .eq('id', id)
+      .single();
+    
+    if (error) {
+      if (error.code === 'PGRST116') {
+        // No rows returned, not an error for our purposes
+        return null;
+      }
+      throw error;
+    }
+    
+    return data;
+  } catch (error) {
+    console.error(`Error fetching capability ${id} from Supabase:`, error);
+    throw error;
+  }
+};
 
 export const uploadFileToStorage = async (file: File, bucketName: string, folderName: string) => {
   try {

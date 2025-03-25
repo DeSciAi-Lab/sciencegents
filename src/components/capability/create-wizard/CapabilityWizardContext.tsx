@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/components/ui/use-toast';
@@ -9,7 +8,6 @@ import { refreshCapabilities } from '@/data/capabilities';
 import { upsertCapabilityToSupabase, uploadFileToStorage } from '@/services/capability/supabase';
 import { useWallet } from '@/hooks/useWallet';
 
-// Initial form data with social links arrays
 const initialFormData = {
   name: '',
   id: '',
@@ -82,14 +80,12 @@ export const CapabilityWizardProvider: React.FC<{children: React.ReactNode}> = (
   const [profileImage, setProfileImage] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Fill in creator address when wallet connects
   useEffect(() => {
     if (address) {
       setFormData(prev => ({ ...prev, creatorAddress: address }));
     }
   }, [address]);
 
-  // Calculate if user can proceed to next step
   const validateStep = (step: number): boolean => {
     switch (step) {
       case 1: // Basic Information
@@ -226,7 +222,6 @@ export const CapabilityWizardProvider: React.FC<{children: React.ReactNode}> = (
         description: "Please confirm the transaction in MetaMask...",
       });
 
-      // Register capability on the blockchain
       const tx = await factoryContract.registerGlobalCapability(
         formData.id,
         formData.description,
@@ -246,10 +241,8 @@ export const CapabilityWizardProvider: React.FC<{children: React.ReactNode}> = (
         description: "Now uploading files and saving to database...",
       });
 
-      // Process all file uploads
       const storageUrls: Record<string, string> = {};
       
-      // Upload display image if exists
       if (displayImage) {
         try {
           const displayImageUpload = await uploadFileToStorage(displayImage, 'sciencegents', 'capability_images');
@@ -264,7 +257,6 @@ export const CapabilityWizardProvider: React.FC<{children: React.ReactNode}> = (
         }
       }
       
-      // Upload developer profile image if exists
       if (profileImage) {
         try {
           const profileImageUpload = await uploadFileToStorage(profileImage, 'sciencegents', 'developer_images');
@@ -279,7 +271,6 @@ export const CapabilityWizardProvider: React.FC<{children: React.ReactNode}> = (
         }
       }
       
-      // Upload documentation if exists
       if (documentation) {
         try {
           const docUpload = await uploadFileToStorage(documentation, 'sciencegents', 'documentation');
@@ -289,7 +280,6 @@ export const CapabilityWizardProvider: React.FC<{children: React.ReactNode}> = (
         }
       }
       
-      // Upload integration guide if exists
       if (integrationGuide) {
         try {
           const guideUpload = await uploadFileToStorage(integrationGuide, 'sciencegents', 'guides');
@@ -299,7 +289,6 @@ export const CapabilityWizardProvider: React.FC<{children: React.ReactNode}> = (
         }
       }
       
-      // Upload additional files if exist
       const additionalFileUrls: Array<{name: string, url: string}> = [];
       if (additionalFiles && additionalFiles.length > 0) {
         for (const file of additionalFiles) {
@@ -315,7 +304,6 @@ export const CapabilityWizardProvider: React.FC<{children: React.ReactNode}> = (
         }
       }
       
-      // Create capability social links array
       const capabilitySocialLinks = [
         ...(formData.twitter ? [{ type: 'twitter', url: formData.twitter }] : []),
         ...(formData.telegram ? [{ type: 'telegram', url: formData.telegram }] : []),
@@ -324,7 +312,6 @@ export const CapabilityWizardProvider: React.FC<{children: React.ReactNode}> = (
         ...formData.socialLinks.filter(link => link.type && link.url)
       ];
       
-      // Create developer social links array
       const developerSocialLinks = [
         ...(formData.developerTwitter ? [{ type: 'twitter', url: formData.developerTwitter }] : []),
         ...(formData.developerTelegram ? [{ type: 'telegram', url: formData.developerTelegram }] : []),
@@ -333,13 +320,12 @@ export const CapabilityWizardProvider: React.FC<{children: React.ReactNode}> = (
         ...formData.developerSocialLinks.filter(link => link.type && link.url)
       ];
       
-      // Create a capability object to add to Supabase
       const capabilityObj = {
         id: formData.id,
         name: formData.name,
         domain: formData.domain,
         description: formData.description,
-        detailed_description: formData.detailedDescription, // Add detailed description
+        detailed_description: formData.detailedDescription,
         price: parseFloat(formData.fee),
         creator: formData.creatorAddress,
         createdAt: new Date().toISOString(),
@@ -364,12 +350,10 @@ export const CapabilityWizardProvider: React.FC<{children: React.ReactNode}> = (
         }
       };
       
-      // Add to Supabase
       try {
         await upsertCapabilityToSupabase(capabilityObj, true);
         console.log("Capability added to Supabase");
         
-        // Save developer profile if provided
         if (formData.developerName || formData.bio) {
           try {
             const { upsertDeveloperProfile } = await import('@/services/developerProfileService');
@@ -399,7 +383,6 @@ export const CapabilityWizardProvider: React.FC<{children: React.ReactNode}> = (
         return;
       }
       
-      // Refresh capabilities data
       await refreshCapabilities();
       
       toast({
@@ -408,7 +391,6 @@ export const CapabilityWizardProvider: React.FC<{children: React.ReactNode}> = (
         variant: "default",
       });
 
-      // Navigate to the capability details page
       navigate(`/capability/${formData.id}`);
     } catch (error) {
       console.error('Error registering capability:', error);

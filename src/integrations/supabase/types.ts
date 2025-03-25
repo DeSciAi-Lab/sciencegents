@@ -15,6 +15,7 @@ export type Database = {
           created_at: string
           creator: string
           description: string
+          detailed_description: string | null
           developer_profile_pic: string | null
           developer_social_links: Json | null
           display_image: string | null
@@ -35,6 +36,7 @@ export type Database = {
           created_at?: string
           creator: string
           description: string
+          detailed_description?: string | null
           developer_profile_pic?: string | null
           developer_social_links?: Json | null
           display_image?: string | null
@@ -55,6 +57,7 @@ export type Database = {
           created_at?: string
           creator?: string
           description?: string
+          detailed_description?: string | null
           developer_profile_pic?: string | null
           developer_social_links?: Json | null
           display_image?: string | null
