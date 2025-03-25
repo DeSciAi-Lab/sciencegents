@@ -1,7 +1,7 @@
 
 import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '@/integrations/supabase/client'; 
-import { Capability, CapabilitySocialLink, mapSupabaseToCapability } from '@/types/capability';
+import { Capability, CapabilitySocialLink, SupabaseCapability, mapSupabaseToCapability } from '@/types/capability';
 
 // Add the missing export functions for fetchCapabilitiesFromSupabase and fetchCapabilityById
 export const fetchCapabilitiesFromSupabase = async () => {
@@ -12,7 +12,8 @@ export const fetchCapabilitiesFromSupabase = async () => {
     
     if (error) throw error;
     
-    return data.map(mapSupabaseToCapability) || [];
+    // Use type assertion to fix the compatibility issue
+    return (data as unknown as SupabaseCapability[]).map(mapSupabaseToCapability) || [];
   } catch (error) {
     console.error('Error fetching capabilities from Supabase:', error);
     throw error;
@@ -35,8 +36,8 @@ export const fetchCapabilityById = async (id: string): Promise<Capability | null
       throw error;
     }
     
-    // Transform the Supabase record to a Capability object
-    return data ? mapSupabaseToCapability(data) : null;
+    // Transform the Supabase record to a Capability object with type assertion
+    return data ? mapSupabaseToCapability(data as unknown as SupabaseCapability) : null;
   } catch (error) {
     console.error(`Error fetching capability ${id} from Supabase:`, error);
     throw error;

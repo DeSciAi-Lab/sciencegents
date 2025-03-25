@@ -40,6 +40,12 @@ export interface Capability {
   developer_info?: CapabilityDeveloperInfo;
   files?: CapabilityFiles;
   docs?: string; // For backward compatibility
+  
+  // Add these properties to match the Supabase response
+  usage_count?: number;
+  rating?: number;
+  revenue?: number;
+  additional_files?: any;
 }
 
 export interface CapabilityDetail extends Capability {
@@ -61,9 +67,9 @@ export interface SupabaseCapability {
   features: string[];
   display_image?: string;
   developer_profile_pic?: string;
-  social_links?: string;
-  developer_social_links?: string;
-  additional_files?: string;
+  social_links?: string | CapabilitySocialLink[];
+  developer_social_links?: string | CapabilitySocialLink[];
+  additional_files?: string | Array<{name: string, url: string}>;
   docs?: string;
   developer_name?: string;
   developer_email?: string;
@@ -140,6 +146,12 @@ export const mapSupabaseToCapability = (record: SupabaseCapability): Capability 
       documentation: record.docs,
       additionalFiles: additionalFiles
     },
-    docs: record.docs // For backward compatibility
+    docs: record.docs, // For backward compatibility
+    
+    // Add these properties to match what's being used in the code
+    usage_count: record.usage_count,
+    rating: record.rating,
+    revenue: record.revenue,
+    additional_files: record.additional_files
   };
 };

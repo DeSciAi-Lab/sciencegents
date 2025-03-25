@@ -99,9 +99,18 @@ export const getCapabilityById = async (id: string): Promise<Capability | undefi
       
       // Parse JSON fields safely
       const socialLinks = safeJsonParse<CapabilitySocialLink[]>(capability.social_links, []);
+      
+      // Handle the additional_files property safely
+      let additionalFiles = [];
+      if (capability.additional_files) {
+        additionalFiles = safeJsonParse(capability.additional_files, []);
+      } else if (capability.files?.additionalFiles) {
+        additionalFiles = capability.files.additionalFiles;
+      }
+      
       const files = {
         documentation: capability.docs,
-        additionalFiles: safeJsonParse(capability.additional_files, [])
+        additionalFiles: additionalFiles
       };
       
       return {
@@ -109,9 +118,9 @@ export const getCapabilityById = async (id: string): Promise<Capability | undefi
         social_links: socialLinks,
         files,
         stats: {
-          usageCount: capability.usage_count || 0,
-          rating: capability.rating || 4.5,
-          revenue: capability.revenue || 0
+          usageCount: capability.usage_count || capability.stats?.usageCount || 0,
+          rating: capability.rating || capability.stats?.rating || 4.5,
+          revenue: capability.revenue || capability.stats?.revenue || 0
         }
       } as Capability;
     } else {
@@ -152,9 +161,18 @@ export const getAllCapabilities = async (forceRefresh = false): Promise<Capabili
       const validCapabilities = supabaseCapabilities.map(cap => {
         // Parse JSON fields safely
         const socialLinks = safeJsonParse<CapabilitySocialLink[]>(cap.social_links, []);
+        
+        // Handle the additional_files property safely
+        let additionalFiles = [];
+        if (cap.additional_files) {
+          additionalFiles = safeJsonParse(cap.additional_files, []);
+        } else if (cap.files?.additionalFiles) {
+          additionalFiles = cap.files.additionalFiles;
+        }
+        
         const files = {
           documentation: cap.docs,
-          additionalFiles: safeJsonParse(cap.additional_files, [])
+          additionalFiles: additionalFiles
         };
         
         return {
@@ -162,9 +180,9 @@ export const getAllCapabilities = async (forceRefresh = false): Promise<Capabili
           social_links: socialLinks,
           files,
           stats: {
-            usageCount: cap.usage_count || 0,
-            rating: cap.rating || 4.5,
-            revenue: cap.revenue || 0
+            usageCount: cap.usage_count || cap.stats?.usageCount || 0,
+            rating: cap.rating || cap.stats?.rating || 4.5,
+            revenue: cap.revenue || cap.stats?.revenue || 0
           }
         } as Capability;
       });
