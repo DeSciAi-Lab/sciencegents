@@ -1,7 +1,6 @@
 
 import React, { useEffect } from 'react';
-import Navbar from '@/components/layout/Navbar';
-import Footer from '@/components/layout/Footer';
+import { NavbarLayout } from '@/components/layout/NavbarLayout';
 import Hero from '@/components/home/Hero';
 import Stats from '@/components/home/Stats';
 import Featured from '@/components/home/Featured';
@@ -14,16 +13,14 @@ const Index = () => {
   }, []);
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <Navbar />
-      <main className="flex-grow pt-16">
+    <NavbarLayout>
+      <main className="pt-16">
         <Hero />
         <Stats />
         <Featured />
         <CallToAction />
       </main>
-      <Footer />
-    </div>
+    </NavbarLayout>
   );
 };
 
