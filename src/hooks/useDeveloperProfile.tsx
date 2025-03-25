@@ -10,7 +10,17 @@ import { toast } from '@/components/ui/use-toast';
  * @returns Developer profile data, loading state, and update function
  */
 export function useDeveloperProfile() {
-  const { address } = useAccount();
+  // Try to get account information, handling potential errors
+  let address: string | undefined;
+  try {
+    const accountResult = useAccount();
+    address = accountResult.address;
+  } catch (error) {
+    console.error("Wagmi provider error:", error);
+    // Re-throw the error to be caught by the component
+    throw new Error("Wallet connection required");
+  }
+
   const [profile, setProfile] = useState<DeveloperProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);

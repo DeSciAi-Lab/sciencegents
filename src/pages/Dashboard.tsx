@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useUserDashboard } from '@/hooks/useUserDashboard';
 import { Button } from "@/components/ui/button";
 import { Wallet } from "lucide-react";
@@ -13,6 +13,22 @@ const Dashboard = () => {
 
   // If a tab param exists, use it as the initial tab
   const initialTab = tab || 'investments';
+
+  // Refresh the page when mounting if wallet provider might not be initialized yet
+  useEffect(() => {
+    // If the wallet appears to be connected but Wagmi provider might not be initialized
+    // This handles cases where a user navigates directly to a dashboard tab
+    // that requires the Wagmi provider, like the profile tab
+    if (isConnected && window.ethereum?.selectedAddress && 
+        window.location.pathname.includes('/dashboard/profile') && 
+        !window.location.search.includes('refreshed')) {
+      
+      // Add a flag in URL to prevent infinite refresh loop
+      const url = new URL(window.location.href);
+      url.searchParams.set('refreshed', 'true');
+      window.location.href = url.toString();
+    }
+  }, [isConnected]);
 
   if (!isConnected) {
     return (

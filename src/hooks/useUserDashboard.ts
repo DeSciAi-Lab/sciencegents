@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
 import { supabase } from '@/integrations/supabase/client';
-import { contractConfig, factoryABI } from '@/utils/contractConfig';
 import { toast } from "@/components/ui/use-toast";
 
 export interface DashboardScienceGent {
@@ -67,38 +66,10 @@ export const useUserDashboard = () => {
       const provider = new ethers.providers.Web3Provider(window.ethereum);
       await provider.send("eth_requestAccounts", []);
       
-      // Check if on the right network (Sepolia)
+      // Get network and accounts
       const network = await provider.getNetwork();
-      if (network.chainId !== parseInt(contractConfig.network.chainId, 16)) {
-        try {
-          await window.ethereum.request({
-            method: 'wallet_switchEthereumChain',
-            params: [{ chainId: contractConfig.network.chainId }],
-          });
-        } catch (switchError: any) {
-          // This error code indicates that the chain has not been added to MetaMask
-          if (switchError.code === 4902) {
-            try {
-              await window.ethereum.request({
-                method: 'wallet_addEthereumChain',
-                params: [
-                  {
-                    chainId: contractConfig.network.chainId,
-                    chainName: contractConfig.network.chainName,
-                    nativeCurrency: contractConfig.network.nativeCurrency,
-                    rpcUrls: contractConfig.network.rpcUrls,
-                    blockExplorerUrls: contractConfig.network.blockExplorerUrls,
-                  },
-                ],
-              });
-            } catch (addError) {
-              console.error("Error adding Ethereum chain:", addError);
-            }
-          }
-        }
-      }
-      
       const accounts = await provider.listAccounts();
+      
       if (accounts.length > 0) {
         setAccount(accounts[0]);
         setIsConnected(true);
@@ -107,6 +78,9 @@ export const useUserDashboard = () => {
           title: "Wallet Connected",
           description: `Connected with ${accounts[0].substring(0, 6)}...${accounts[0].substring(38)}`,
         });
+        
+        // Force reload after connection to ensure Wagmi context is updated
+        window.location.reload();
       }
     } catch (error: any) {
       console.error("Error connecting wallet:", error);
@@ -137,8 +111,7 @@ export const useUserDashboard = () => {
         const provider = new ethers.providers.Web3Provider(window.ethereum);
         
         try {
-          // Get user's created ScienceGents from Supabase instead of blockchain
-          // This avoids the contract method errors
+          // Get user's created ScienceGents from Supabase
           const { data: createdScienceGents, error: scienceGentsError } = await supabase
             .from('sciencegents')
             .select('*')
@@ -190,8 +163,7 @@ export const useUserDashboard = () => {
         }
         
         try {
-          // Get user's created capabilities from Supabase instead of blockchain
-          // This avoids the contract method errors
+          // Get user's created capabilities from Supabase
           const { data: createdCapabilities, error: capabilitiesError } = await supabase
             .from('capabilities')
             .select('*')
