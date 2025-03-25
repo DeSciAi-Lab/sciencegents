@@ -12,15 +12,15 @@ import {
  * Syncs all capabilities from the blockchain to Supabase
  * This is an admin function that should be scheduled or triggered manually
  */
-export const syncCapabilitiesWithBlockchain = async (): Promise<{ synced: number; failed: number }> => {
+export const syncCapabilitiesWithBlockchain = async (): Promise<{ added: number; updated: number; total: number }> => {
   try {
     console.log("Starting capability sync with blockchain...");
     
     const capabilityIds = await fetchCapabilityIdsFromBlockchain();
     console.log(`Found ${capabilityIds.length} capabilities on the blockchain`);
     
-    let synced = 0;
-    let failed = 0;
+    let added = 0;
+    let updated = 0;
     
     // Process each capability
     for (const id of capabilityIds) {
@@ -42,6 +42,12 @@ export const syncCapabilitiesWithBlockchain = async (): Promise<{ synced: number
             console.log(`Skipping capability ${id} as it was synced recently`);
             continue;
           }
+
+          // Mark as an update since it exists
+          updated++;
+        } else {
+          // New capability
+          added++;
         }
         
         // Fetch details from blockchain
@@ -49,7 +55,6 @@ export const syncCapabilitiesWithBlockchain = async (): Promise<{ synced: number
         
         if (!blockchainCapability) {
           console.error(`Failed to fetch capability ${id} from blockchain`);
-          failed++;
           continue;
         }
         
@@ -69,19 +74,19 @@ export const syncCapabilitiesWithBlockchain = async (): Promise<{ synced: number
           
         if (error) {
           console.error(`Failed to save capability ${id} to Supabase:`, error);
-          failed++;
+          // Revert the count
+          if (existingCapability) updated--;
+          else added--;
         } else {
           console.log(`Successfully synced capability ${id}`);
-          synced++;
         }
       } catch (err) {
         console.error(`Error processing capability ${id}:`, err);
-        failed++;
       }
     }
     
-    console.log(`Capability sync complete. Synced: ${synced}, Failed: ${failed}`);
-    return { synced, failed };
+    console.log(`Capability sync complete. Added: ${added}, Updated: ${updated}, Total: ${capabilityIds.length}`);
+    return { added, updated, total: capabilityIds.length };
   } catch (error) {
     console.error('Error in syncCapabilitiesWithBlockchain:', error);
     throw error;
@@ -102,7 +107,7 @@ export const upsertCapability = async (capability: Capability, onChain = false):
     };
     
     // Save to Supabase
-    await upsertCapabilityToSupabase(capabilityWithStats, !capability.createdAt);
+    await upsertCapabilityToSupabase(capabilityWithStats);
     
     // If onChain is true, also register on blockchain
     if (onChain) {
@@ -114,7 +119,7 @@ export const upsertCapability = async (capability: Capability, onChain = false):
     console.error('Error upserting capability:', error);
     return { 
       success: false, 
-      error: error.message || 'An unknown error occurred' 
+      error: error instanceof Error ? error.message : 'An unknown error occurred' 
     };
   }
 };

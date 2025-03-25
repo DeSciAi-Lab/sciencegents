@@ -1,6 +1,6 @@
 
 import { fetchCapabilitiesFromSupabase, fetchCapabilityById } from "@/services/capabilityService";
-import { Capability } from "@/types/capability";
+import { Capability, CapabilitySocialLink } from "@/types/capability";
 
 // Mock capabilities data (this will be used as fallback if Supabase fetch fails)
 export const capabilities: Capability[] = [
@@ -75,6 +75,20 @@ export const capabilities: Capability[] = [
   }
 ];
 
+// Function to parse JSON data safely
+const safeJsonParse = <T>(jsonString: any, defaultValue: T): T => {
+  if (!jsonString) return defaultValue;
+  try {
+    if (typeof jsonString === 'string') {
+      return JSON.parse(jsonString) as T;
+    }
+    return jsonString as T;
+  } catch (e) {
+    console.error('Error parsing JSON:', e);
+    return defaultValue;
+  }
+};
+
 // Function to get a capability by ID from Supabase
 export const getCapabilityById = async (id: string): Promise<Capability | undefined> => {
   try {
@@ -82,7 +96,24 @@ export const getCapabilityById = async (id: string): Promise<Capability | undefi
     const capability = await fetchCapabilityById(id);
     if (capability) {
       console.log(`Found capability ${id} in Supabase`);
-      return capability;
+      
+      // Parse JSON fields safely
+      const socialLinks = safeJsonParse<CapabilitySocialLink[]>(capability.social_links, []);
+      const files = {
+        documentation: capability.docs,
+        additionalFiles: safeJsonParse(capability.additional_files, [])
+      };
+      
+      return {
+        ...capability,
+        social_links: socialLinks,
+        files,
+        stats: {
+          usageCount: capability.usage_count || 0,
+          rating: capability.rating || 4.5,
+          revenue: capability.revenue || 0
+        }
+      } as Capability;
     } else {
       console.log(`Capability ${id} not found in Supabase, using fallback`);
       return capabilities.find(capability => capability.id === id);
@@ -117,19 +148,25 @@ export const getAllCapabilities = async (forceRefresh = false): Promise<Capabili
     if (supabaseCapabilities && supabaseCapabilities.length > 0) {
       console.log(`Got ${supabaseCapabilities.length} capabilities from Supabase`);
       
-      // Ensure all capabilities have a stats property
+      // Transform capabilities to ensure they have all required fields
       const validCapabilities = supabaseCapabilities.map(cap => {
-        if (!cap.stats) {
-          return {
-            ...cap,
-            stats: {
-              usageCount: cap.usage_count || 0,
-              rating: 4.5,
-              revenue: 0
-            }
-          };
-        }
-        return cap;
+        // Parse JSON fields safely
+        const socialLinks = safeJsonParse<CapabilitySocialLink[]>(cap.social_links, []);
+        const files = {
+          documentation: cap.docs,
+          additionalFiles: safeJsonParse(cap.additional_files, [])
+        };
+        
+        return {
+          ...cap,
+          social_links: socialLinks,
+          files,
+          stats: {
+            usageCount: cap.usage_count || 0,
+            rating: cap.rating || 4.5,
+            revenue: cap.revenue || 0
+          }
+        } as Capability;
       });
       
       // Update cache

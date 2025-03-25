@@ -28,6 +28,7 @@ export interface Capability {
   name: string;
   domain: string;
   description: string;
+  detailed_description?: string;  // Add this field
   price: number;
   creator: string;
   createdAt?: string;
@@ -50,6 +51,7 @@ export interface SupabaseCapability {
   name: string;
   domain: string;
   description: string;
+  detailed_description?: string;  // Add this field
   price: number;
   creator: string;
   created_at?: string;
@@ -74,7 +76,11 @@ export const mapSupabaseToCapability = (record: SupabaseCapability): Capability 
   let socialLinks: CapabilitySocialLink[] = [];
   try {
     if (record.social_links) {
-      socialLinks = JSON.parse(record.social_links);
+      if (typeof record.social_links === 'string') {
+        socialLinks = JSON.parse(record.social_links);
+      } else if (Array.isArray(record.social_links)) {
+        socialLinks = record.social_links;
+      }
     }
   } catch (error) {
     console.error('Error parsing social links:', error);
@@ -83,7 +89,11 @@ export const mapSupabaseToCapability = (record: SupabaseCapability): Capability 
   let developerSocialLinks: CapabilitySocialLink[] = [];
   try {
     if (record.developer_social_links) {
-      developerSocialLinks = JSON.parse(record.developer_social_links);
+      if (typeof record.developer_social_links === 'string') {
+        developerSocialLinks = JSON.parse(record.developer_social_links);
+      } else if (Array.isArray(record.developer_social_links)) {
+        developerSocialLinks = record.developer_social_links;
+      }
     }
   } catch (error) {
     console.error('Error parsing developer social links:', error);
@@ -92,7 +102,11 @@ export const mapSupabaseToCapability = (record: SupabaseCapability): Capability 
   let additionalFiles: Array<{name: string, url: string}> | string[] = [];
   try {
     if (record.additional_files) {
-      additionalFiles = JSON.parse(record.additional_files);
+      if (typeof record.additional_files === 'string') {
+        additionalFiles = JSON.parse(record.additional_files);
+      } else if (Array.isArray(record.additional_files)) {
+        additionalFiles = record.additional_files;
+      }
     }
   } catch (error) {
     console.error('Error parsing additional files:', error);
@@ -103,6 +117,7 @@ export const mapSupabaseToCapability = (record: SupabaseCapability): Capability 
     name: record.name,
     domain: record.domain,
     description: record.description,
+    detailed_description: record.detailed_description,
     price: record.price,
     creator: record.creator,
     createdAt: record.created_at,
