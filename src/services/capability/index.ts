@@ -22,7 +22,7 @@ export {
   upsertCapability
 } from './admin';
 
-// Re-export type using export type syntax for isolatedModules
+// Export type using export type syntax for isolatedModules
 export type { Capability };
 
 // Export wallet-related functions

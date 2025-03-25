@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import './App.css';
 
 // Pages
@@ -23,7 +23,7 @@ function App() {
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/dashboard/:tab" element={<Dashboard />} />
         <Route path="/sciencegents" element={<Explore />} />
-        <Route path="/explore" element={<Explore />} /> {/* Add this line to support both routes */}
+        <Route path="/explore" element={<Explore />} />
         <Route path="/sciencegent/:address" element={<ScienceGentDetails />} />
         <Route path="/create-sciencegent" element={<CreateScienceGent />} />
         <Route path="/capabilities" element={<ExploreCapabilities />} />

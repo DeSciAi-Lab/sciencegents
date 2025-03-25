@@ -7,34 +7,27 @@ import MyCreatedCapabilities from './MyCreatedCapabilities';
 import MyInvestmentsTab from './MyInvestmentsTab';
 import SettingsTab from './SettingsTab';
 import DeveloperProfileTab from './DeveloperProfileTab';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 interface DashboardTabsProps {
   initialTab?: string;
 }
 
 const DashboardTabs: React.FC<DashboardTabsProps> = ({ initialTab = 'investments' }) => {
-  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<string>(initialTab);
 
   // Initialize tab from URL parameter or initial prop
   useEffect(() => {
-    const tabParam = searchParams.get('tab');
-    if (tabParam && ['investments', 'sciencegents', 'capabilities', 'profile', 'settings'].includes(tabParam)) {
-      setActiveTab(tabParam);
-    } else if (initialTab && initialTab !== 'investments') {
-      // If initialTab prop is provided and not the default, use it
-      if (['investments', 'sciencegents', 'capabilities', 'profile', 'settings'].includes(initialTab)) {
-        setActiveTab(initialTab);
-      }
+    if (initialTab && ['investments', 'sciencegents', 'capabilities', 'profile', 'settings'].includes(initialTab)) {
+      setActiveTab(initialTab);
     }
-  }, [searchParams, initialTab]);
+  }, [initialTab]);
 
   // Update URL when tab changes
   const handleTabChange = (value: string) => {
     setActiveTab(value);
-    navigate(`/dashboard?tab=${value}`, { replace: true });
+    navigate(`/dashboard/${value}`, { replace: true });
   };
 
   return (

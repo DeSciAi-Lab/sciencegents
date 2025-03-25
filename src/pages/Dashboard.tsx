@@ -3,12 +3,11 @@ import React from 'react';
 import { useUserDashboard } from '@/hooks/useUserDashboard';
 import { Button } from "@/components/ui/button";
 import { Wallet } from "lucide-react";
-import { useNavigate, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { NavbarLayout } from '@/components/layout/NavbarLayout';
 import DashboardTabs from '@/components/dashboard/DashboardTabs';
 
 const Dashboard = () => {
-  const navigate = useNavigate();
   const { tab } = useParams();
   const { isConnected, connectWallet } = useUserDashboard();
 
