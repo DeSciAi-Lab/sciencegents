@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { 
   Download, 
-  FileText,
+  FileText as FileTextIcon,
   FileCode, 
   Code2, 
   User,
@@ -30,13 +30,18 @@ import { fetchCapabilityById } from '@/services/capability/supabase';
 import CapabilityInfoSidebar from './CapabilityInfoSidebar';
 import CapabilityDetails from './CapabilityDetails';
 
-const CapabilityDetailPage: React.FC = () => {
+interface CapabilityDetailPageProps {
+  capability?: Capability;
+}
+
+const CapabilityDetailPage: React.FC<CapabilityDetailPageProps> = ({ capability: propCapability }) => {
   const { id } = useParams<{ id: string }>();
   
   const { data: capability, isLoading, error } = useQuery({
     queryKey: ['capability', id],
     queryFn: () => fetchCapabilityById(id || ''),
-    enabled: !!id
+    enabled: !!id && !propCapability,
+    initialData: propCapability
   });
   
   if (isLoading) {
@@ -112,7 +117,7 @@ const CapabilityDetailPage: React.FC = () => {
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-lg flex items-center">
-                  <FileText className="h-5 w-5 mr-2 text-blue-500" />
+                  <FileTextIcon className="h-5 w-5 mr-2 text-blue-500" />
                   Documentation
                 </CardTitle>
               </CardHeader>
@@ -132,7 +137,7 @@ const CapabilityDetailPage: React.FC = () => {
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-lg flex items-center">
-                  <FileText className="h-5 w-5 mr-2 text-blue-500" />
+                  <FileTextIcon className="h-5 w-5 mr-2 text-blue-500" />
                   Integration Guide
                 </CardTitle>
               </CardHeader>
@@ -157,7 +162,7 @@ const CapabilityDetailPage: React.FC = () => {
                 <Card key={index}>
                   <CardHeader className="pb-2">
                     <CardTitle className="text-lg flex items-center">
-                      <FileText className="h-5 w-5 mr-2 text-blue-500" />
+                      <FileTextIcon className="h-5 w-5 mr-2 text-blue-500" />
                       {file.name || `Resource ${index + 1}`}
                     </CardTitle>
                   </CardHeader>

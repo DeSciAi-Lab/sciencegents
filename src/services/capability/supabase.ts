@@ -1,7 +1,7 @@
 
 import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '@/integrations/supabase/client'; 
-import { Capability, CapabilitySocialLink } from '@/types/capability';
+import { Capability, CapabilitySocialLink, mapSupabaseToCapability } from '@/types/capability';
 
 // Add the missing export functions for fetchCapabilitiesFromSupabase and fetchCapabilityById
 export const fetchCapabilitiesFromSupabase = async () => {
@@ -12,14 +12,14 @@ export const fetchCapabilitiesFromSupabase = async () => {
     
     if (error) throw error;
     
-    return data || [];
+    return data.map(mapSupabaseToCapability) || [];
   } catch (error) {
     console.error('Error fetching capabilities from Supabase:', error);
     throw error;
   }
 };
 
-export const fetchCapabilityById = async (id: string) => {
+export const fetchCapabilityById = async (id: string): Promise<Capability | null> => {
   try {
     const { data, error } = await supabase
       .from('capabilities')
@@ -35,7 +35,8 @@ export const fetchCapabilityById = async (id: string) => {
       throw error;
     }
     
-    return data;
+    // Transform the Supabase record to a Capability object
+    return data ? mapSupabaseToCapability(data) : null;
   } catch (error) {
     console.error(`Error fetching capability ${id} from Supabase:`, error);
     throw error;

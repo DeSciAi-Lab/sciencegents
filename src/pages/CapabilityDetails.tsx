@@ -101,7 +101,13 @@ const CapabilityDetails = () => {
     );
   }
 
-  return <CapabilityDetailPage capability={capability} />;
+  return (
+    <>
+      <Navbar />
+      <CapabilityDetailPage capability={capability} />
+      <Footer />
+    </>
+  );
 };
 
 export default CapabilityDetails;
