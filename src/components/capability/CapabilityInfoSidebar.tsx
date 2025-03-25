@@ -11,6 +11,23 @@ interface CapabilityInfoSidebarProps {
 }
 
 const CapabilityInfoSidebar: React.FC<CapabilityInfoSidebarProps> = ({ capability }) => {
+  const renderRatingStars = (rating: number) => {
+    const fullStars = Math.floor(rating);
+    const hasHalfStar = rating - fullStars >= 0.5;
+    const stars = [];
+    
+    for (let i = 1; i <= 5; i++) {
+      if (i <= fullStars) {
+        stars.push(<Star key={i} className="h-4 w-4 text-yellow-400 fill-yellow-400" />);
+      } else if (i === fullStars + 1 && hasHalfStar) {
+        stars.push(<Star key={i} className="h-4 w-4 text-yellow-400 fill-yellow-400 opacity-60" />);
+      } else {
+        stars.push(<Star key={i} className="h-4 w-4 text-gray-300" />);
+      }
+    }
+    return <div className="flex">{stars}</div>;
+  };
+  
   return (
     <div className="space-y-4">
       <Card>
@@ -21,8 +38,8 @@ const CapabilityInfoSidebar: React.FC<CapabilityInfoSidebarProps> = ({ capabilit
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold mb-2">{capability.price} ETH</div>
-          <Button className="w-full" disabled>
-            Create ScienceGent
+          <Button className="w-full">
+            Include in your ScienceGent
           </Button>
         </CardContent>
       </Card>
@@ -39,7 +56,10 @@ const CapabilityInfoSidebar: React.FC<CapabilityInfoSidebarProps> = ({ capabilit
               <Star className="h-4 w-4 text-yellow-500" />
               <span className="text-sm text-muted-foreground">Rating</span>
             </div>
-            <span className="font-medium">{capability.stats?.rating || 4.5}</span>
+            <div className="flex items-center">
+              {renderRatingStars(capability.stats?.rating || capability.rating || 4.5)}
+              <span className="ml-2 font-medium">{capability.stats?.rating || capability.rating || 4.5}</span>
+            </div>
           </div>
           
           <div className="flex justify-between items-center">
@@ -47,7 +67,7 @@ const CapabilityInfoSidebar: React.FC<CapabilityInfoSidebarProps> = ({ capabilit
               <Users className="h-4 w-4 text-blue-500" />
               <span className="text-sm text-muted-foreground">Usage</span>
             </div>
-            <span className="font-medium">{capability.stats?.usageCount || 0} tokens</span>
+            <span className="font-medium">{capability.stats?.usageCount || capability.usage_count || 0} tokens</span>
           </div>
           
           <div className="flex justify-between items-center">
@@ -55,7 +75,7 @@ const CapabilityInfoSidebar: React.FC<CapabilityInfoSidebarProps> = ({ capabilit
               <Download className="h-4 w-4 text-green-500" />
               <span className="text-sm text-muted-foreground">Revenue</span>
             </div>
-            <span className="font-medium">{capability.stats?.revenue || 0} ETH</span>
+            <span className="font-medium">{capability.stats?.revenue || capability.revenue || 0} DSI</span>
           </div>
         </CardContent>
       </Card>
