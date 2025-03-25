@@ -46,17 +46,23 @@ export const fetchCapabilityById = async (id: string): Promise<Capability | null
 
 export const uploadFileToStorage = async (file: File, folderName: string) => {
   try {
-    // Validate file size (1MB max)
-    if (file.size > 1 * 1024 * 1024) {
-      throw new Error('File size exceeds the 1MB limit');
+    // Validate file size (2MB max)
+    if (file.size > 2 * 1024 * 1024) {
+      throw new Error('File size exceeds the 2MB limit');
     }
     
-    // Validate file type
+    // Get file extension
     const fileExt = file.name.split('.').pop()?.toLowerCase();
-    const allowedTypes = ['pdf', 'txt', 'md'];
     
-    if (!fileExt || !allowedTypes.includes(fileExt)) {
-      throw new Error('File type not allowed. Only PDF, TXT, and MD files are permitted.');
+    // Check if it's an image file
+    const isImage = fileExt && ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(fileExt);
+    
+    // If not an image, validate document type
+    if (!isImage) {
+      const allowedTypes = ['pdf', 'txt', 'md', 'docx'];
+      if (!fileExt || !allowedTypes.includes(fileExt)) {
+        throw new Error('File type not allowed. Only PDF, TXT, MD, DOCX, and common image formats are permitted.');
+      }
     }
     
     const fileName = `${folderName}/${uuidv4()}-${file.name}`;

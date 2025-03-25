@@ -92,8 +92,6 @@ const DetailedDescription: React.FC = () => {
             <p className="text-sm text-gray-500">No features added yet.</p>
           )}
         </div>
-        
-        <Button type="button">Save</Button>
       </div>
     </div>
   );

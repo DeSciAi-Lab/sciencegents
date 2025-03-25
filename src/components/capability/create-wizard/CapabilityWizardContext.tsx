@@ -48,6 +48,8 @@ interface CapabilityWizardContextProps {
   setAdditionalFiles: React.Dispatch<React.SetStateAction<File[]>>;
   addFile: (file: File) => void;
   removeFile: (index: number) => void;
+  displayImage: File | null;
+  setDisplayImage: React.Dispatch<React.SetStateAction<File | null>>;
   
   // Wizard state
   currentStep: number;
@@ -61,6 +63,7 @@ interface CapabilityWizardContextProps {
     documentationUrl?: string;
     integrationGuideUrl?: string;
     additionalFilesUrls: Array<{ name: string; url: string }>;
+    displayImageUrl?: string;
   }>;
   
   // Developer profile from Supabase
@@ -85,8 +88,6 @@ interface CapabilityWizardContextProps {
   };
   handleInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
   handleSelectChange: (field: string, value: string) => void;
-  displayImage: File | null;
-  setDisplayImage: React.Dispatch<React.SetStateAction<File | null>>;
   
   // Social link handlers
   updateSocialLink: (index: number, key: string, value: string) => void;
@@ -291,6 +292,7 @@ export const CapabilityWizardProvider: React.FC<{ children: React.ReactNode }> =
       documentationUrl?: string;
       integrationGuideUrl?: string;
       additionalFilesUrls: Array<{ name: string; url: string }>;
+      displayImageUrl?: string;
     } = {
       additionalFilesUrls: []
     };
@@ -320,6 +322,12 @@ export const CapabilityWizardProvider: React.FC<{ children: React.ReactNode }> =
             url: fileResult.url
           });
         }
+      }
+      
+      // Upload display image if available
+      if (displayImage) {
+        const imageResult = await uploadFileToStorage(displayImage, folderName);
+        result.displayImageUrl = imageResult.url;
       }
       
       return result;
@@ -360,6 +368,8 @@ export const CapabilityWizardProvider: React.FC<{ children: React.ReactNode }> =
         setAdditionalFiles,
         addFile,
         removeFile,
+        displayImage,
+        setDisplayImage,
         currentStep,
         setCurrentStep,
         goToNextStep,
@@ -375,8 +385,6 @@ export const CapabilityWizardProvider: React.FC<{ children: React.ReactNode }> =
         formData,
         handleInputChange,
         handleSelectChange,
-        displayImage,
-        setDisplayImage,
         updateSocialLink,
         addSocialLink,
         removeSocialLink,

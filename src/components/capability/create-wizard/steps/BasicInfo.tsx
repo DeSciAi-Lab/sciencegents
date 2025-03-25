@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { useCapabilityWizard } from '../CapabilityWizardContext';
-import { Info, Plus, Trash2 } from 'lucide-react';
+import { Info, Plus, Trash2, UploadCloud } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -23,7 +23,9 @@ const BasicInfo: React.FC = () => {
     creatorAddress,
     setCreatorAddress,
     socialLinks,
-    setSocialLinks
+    setSocialLinks,
+    displayImage,
+    setDisplayImage
   } = useCapabilityWizard();
   
   const { address } = useWallet();
@@ -63,6 +65,12 @@ const BasicInfo: React.FC = () => {
     { value: 'Drug Discovery', label: 'Drug Discovery' },
     { value: 'Genomics', label: 'Genomics' },
   ];
+
+  const handleDisplayImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setDisplayImage(e.target.files[0]);
+    }
+  };
 
   return (
     <div>
@@ -124,11 +132,48 @@ const BasicInfo: React.FC = () => {
             
             <div>
               <Label htmlFor="display-picture">Display Picture for capability (optional)</Label>
-              <div className="border-2 border-dashed border-gray-300 rounded-md p-6 mt-1 text-center">
-                <div className="flex flex-col items-center">
-                  <Plus className="h-8 w-8 text-gray-400" />
-                  <span className="mt-2 text-sm text-gray-500">No file chosen (under 1MB)</span>
-                </div>
+              <div className="border-2 border-dashed border-gray-300 rounded-md p-6 mt-1">
+                {displayImage ? (
+                  <div className="flex flex-col items-center">
+                    <div className="w-32 h-32 bg-gray-100 rounded-md overflow-hidden mb-2">
+                      <img 
+                        src={URL.createObjectURL(displayImage)} 
+                        alt="Display" 
+                        className="w-full h-full object-cover" 
+                      />
+                    </div>
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => setDisplayImage(null)}
+                      className="text-red-500"
+                    >
+                      Remove Image
+                    </Button>
+                  </div>
+                ) : (
+                  <label className="flex flex-col items-center cursor-pointer">
+                    <UploadCloud className="h-8 w-8 text-gray-400" />
+                    <span className="mt-2 text-sm text-gray-500">No file chosen (under 1MB)</span>
+                    <input
+                      id="display-picture"
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleDisplayImageChange}
+                    />
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      size="sm" 
+                      className="mt-2"
+                      onClick={() => document.getElementById('display-picture')?.click()}
+                    >
+                      Choose Image
+                    </Button>
+                  </label>
+                )}
               </div>
             </div>
             
@@ -162,39 +207,7 @@ const BasicInfo: React.FC = () => {
             </div>
             
             <div className="space-y-3">
-              <Label>Socials links for capability (optional)</Label>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="social-type" className="text-xs">Social Type</Label>
-                  <Input
-                    id="social-type"
-                    placeholder="e.g. Twitter"
-                    value={newSocialLink.type}
-                    onChange={(e) => setNewSocialLink({...newSocialLink, type: e.target.value})}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="social-url" className="text-xs">URL</Label>
-                  <div className="flex space-x-2">
-                    <Input
-                      id="social-url"
-                      placeholder="https://..."
-                      value={newSocialLink.url}
-                      onChange={(e) => setNewSocialLink({...newSocialLink, url: e.target.value})}
-                    />
-                    <Button 
-                      type="button" 
-                      variant="outline" 
-                      size="icon"
-                      onClick={addSocialLink}
-                      disabled={!newSocialLink.type || !newSocialLink.url}
-                    >
-                      <Plus className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              </div>
+              <Label>Social links for capability (optional)</Label>
               
               {socialLinks.length > 0 && (
                 <div className="space-y-2 mt-2">
@@ -216,6 +229,38 @@ const BasicInfo: React.FC = () => {
                   ))}
                 </div>
               )}
+              
+              <div className="grid grid-cols-1 gap-4">
+                <div className="flex items-end space-x-2">
+                  <div className="flex-1">
+                    <Label htmlFor="social-type" className="text-xs">Social Type</Label>
+                    <Input
+                      id="social-type"
+                      placeholder="e.g. Twitter"
+                      value={newSocialLink.type}
+                      onChange={(e) => setNewSocialLink({...newSocialLink, type: e.target.value})}
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <Label htmlFor="social-url" className="text-xs">URL</Label>
+                    <Input
+                      id="social-url"
+                      placeholder="https://..."
+                      value={newSocialLink.url}
+                      onChange={(e) => setNewSocialLink({...newSocialLink, url: e.target.value})}
+                    />
+                  </div>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={addSocialLink}
+                    disabled={!newSocialLink.type || !newSocialLink.url}
+                    className="whitespace-nowrap mb-0"
+                  >
+                    <Plus className="h-4 w-4 mr-1" /> Add Link
+                  </Button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
