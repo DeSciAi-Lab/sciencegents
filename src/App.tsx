@@ -21,6 +21,7 @@ function App() {
       <Routes>
         <Route path="/" element={<Index />} />
         <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/dashboard/:tab" element={<Dashboard />} />
         <Route path="/sciencegents" element={<Explore />} />
         <Route path="/explore" element={<Explore />} /> {/* Add this line to support both routes */}
         <Route path="/sciencegent/:address" element={<ScienceGentDetails />} />
