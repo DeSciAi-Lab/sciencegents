@@ -10,6 +10,9 @@ import Footer from '@/components/layout/Footer';
 import { Capability } from '@/types/capability';
 import ReactMarkdown from 'react-markdown';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import rehypeRaw from 'rehype-raw';
+import rehypeSanitize from 'rehype-sanitize';
+import remarkGfm from 'remark-gfm';
 
 interface CapabilityDetailPageProps {
   capability: Capability;
@@ -48,6 +51,46 @@ const CapabilityDetailPage: React.FC<CapabilityDetailPageProps> = ({ capability 
   const developerBio = capability.developer_info?.bio;
   const socialLinks = capability.developer_info?.social_links || [];
   const hasDeveloperInfo = developerName !== 'Unknown Developer' || developerEmail || developerBio || socialLinks.length > 0;
+
+  // Helper to get the correct file icon
+  const getFileIcon = (fileName: string) => {
+    if (!fileName) return null;
+    
+    const extension = fileName.split('.').pop()?.toLowerCase();
+    
+    switch (extension) {
+      case 'pdf':
+        return <div className="bg-red-100 p-1 rounded text-red-600 mr-2"><FileText size={16} /></div>;
+      case 'md':
+        return <div className="bg-blue-100 p-1 rounded text-blue-600 mr-2"><FileText size={16} /></div>;
+      case 'txt':
+        return <div className="bg-gray-100 p-1 rounded text-gray-600 mr-2"><FileText size={16} /></div>;
+      default:
+        return <div className="bg-purple-100 p-1 rounded text-purple-600 mr-2"><FileText size={16} /></div>;
+    }
+  };
+
+  // Helper to get file name from URL
+  const getFileNameFromUrl = (url: string) => {
+    if (!url) return 'File';
+    
+    // Try to extract file name from URL
+    const parts = url.split('/');
+    const lastPart = parts[parts.length - 1];
+    
+    // If there's a query string, remove it
+    const fileNameWithoutQuery = lastPart.split('?')[0];
+    
+    // If the file name has a UUID prefix, try to remove it
+    const cleanedName = fileNameWithoutQuery.replace(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}-/, '');
+    
+    // Decode URI components
+    try {
+      return decodeURIComponent(cleanedName);
+    } catch (e) {
+      return cleanedName;
+    }
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
@@ -135,7 +178,10 @@ const CapabilityDetailPage: React.FC<CapabilityDetailPageProps> = ({ capability 
                   <TabsContent value="detailed_description" className="pt-6">
                     <div className="prose max-w-none">
                       {capability.detailed_description || capability.description ? (
-                        <ReactMarkdown>
+                        <ReactMarkdown
+                          rehypePlugins={[rehypeRaw, rehypeSanitize]}
+                          remarkPlugins={[remarkGfm]}
+                        >
                           {capability.detailed_description || capability.description}
                         </ReactMarkdown>
                       ) : (
@@ -158,46 +204,50 @@ const CapabilityDetailPage: React.FC<CapabilityDetailPageProps> = ({ capability 
                   <TabsContent value="sdk" className="pt-6">
                     <div className="bg-gray-50 p-8 rounded-md">
                       <h3 className="text-xl font-semibold mb-4 text-center">SDK Documentation</h3>
-                      <p className="text-center mb-6">You can view or download the SDK documentation below:</p>
                       
+                      {/* Main Documentation */}
                       {capability.files?.documentation || capability.docs ? (
-                        <div className="flex justify-center">
-                          <div className="space-y-4 max-w-md w-full">
-                            <Button 
-                              variant="outline" 
-                              className="w-full" 
-                              asChild
-                            >
-                              <a href={capability.files?.documentation || capability.docs} target="_blank" rel="noopener noreferrer">
-                                <Download className="mr-2 h-4 w-4" /> View Documentation
-                              </a>
-                            </Button>
-                            
-                            <Button 
-                              variant="default" 
-                              className="w-full bg-science-600 hover:bg-science-700" 
-                              asChild
-                            >
-                              <a 
-                                href={capability.files?.documentation || capability.docs} 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                download
+                        <div className="mb-8">
+                          <p className="text-center mb-6">You can view or download the SDK documentation below:</p>
+                          <div className="flex justify-center">
+                            <div className="space-y-4 max-w-md w-full">
+                              <Button 
+                                variant="outline" 
+                                className="w-full" 
+                                asChild
                               >
-                                <Download className="mr-2 h-4 w-4" /> Download Documentation
-                              </a>
-                            </Button>
+                                <a href={capability.files?.documentation || capability.docs} target="_blank" rel="noopener noreferrer">
+                                  <Download className="mr-2 h-4 w-4" /> View Documentation
+                                </a>
+                              </Button>
+                              
+                              <Button 
+                                variant="default" 
+                                className="w-full bg-science-600 hover:bg-science-700" 
+                                asChild
+                              >
+                                <a 
+                                  href={capability.files?.documentation || capability.docs} 
+                                  download={getFileNameFromUrl(capability.files?.documentation || capability.docs || '')}
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                >
+                                  <Download className="mr-2 h-4 w-4" /> Download Documentation
+                                </a>
+                              </Button>
+                            </div>
                           </div>
                         </div>
                       ) : (
-                        <div className="text-center text-gray-500">
+                        <div className="text-center text-gray-500 mb-8">
                           <p>No SDK documentation available for this capability.</p>
                         </div>
                       )}
                       
+                      {/* Additional Files */}
                       {capability.files?.additionalFiles && 
                        Array.isArray(capability.files.additionalFiles) && 
-                       capability.files.additionalFiles.length > 0 && (
+                       capability.files.additionalFiles.length > 0 ? (
                         <div className="mt-8">
                           <h4 className="text-lg font-medium mb-3 text-center">Additional Resources</h4>
                           <div className="space-y-2 max-w-md mx-auto">
@@ -205,8 +255,8 @@ const CapabilityDetailPage: React.FC<CapabilityDetailPageProps> = ({ capability 
                               // Handle both string array and object array formats
                               const fileUrl = typeof file === 'string' ? file : file.url;
                               const fileName = typeof file === 'string' 
-                                ? fileUrl.split('/').pop() || `File ${index + 1}` 
-                                : file.name || `File ${index + 1}`;
+                                ? getFileNameFromUrl(fileUrl)
+                                : file.name || getFileNameFromUrl(fileUrl);
                               
                               return (
                                 <Button 
@@ -216,13 +266,25 @@ const CapabilityDetailPage: React.FC<CapabilityDetailPageProps> = ({ capability 
                                   className="w-full justify-start" 
                                   asChild
                                 >
-                                  <a href={fileUrl} target="_blank" rel="noopener noreferrer">
-                                    <Download className="mr-2 h-3 w-3" /> {fileName}
+                                  <a 
+                                    href={fileUrl} 
+                                    download={fileName}
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                  >
+                                    <div className="flex items-center">
+                                      {getFileIcon(fileName)}
+                                      <span className="truncate max-w-[85%]">{fileName}</span>
+                                    </div>
                                   </a>
                                 </Button>
                               );
                             })}
                           </div>
+                        </div>
+                      ) : (
+                        <div className="text-center text-gray-500">
+                          <p>No additional resources available for this capability.</p>
                         </div>
                       )}
                     </div>

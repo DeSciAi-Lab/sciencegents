@@ -42,14 +42,26 @@ export const fetchCapabilityById = async (id: string) => {
   }
 };
 
-export const uploadFileToStorage = async (file: File, bucketName: string, folderName: string) => {
+export const uploadFileToStorage = async (file: File, folderName: string) => {
   try {
-    const fileExt = file.name.split('.').pop();
-    const filePath = `${folderName}/${uuidv4()}.${fileExt}`;
+    // Validate file size (1MB max)
+    if (file.size > 1 * 1024 * 1024) {
+      throw new Error('File size exceeds the 1MB limit');
+    }
+    
+    // Validate file type
+    const fileExt = file.name.split('.').pop()?.toLowerCase();
+    const allowedTypes = ['pdf', 'txt', 'md'];
+    
+    if (!fileExt || !allowedTypes.includes(fileExt)) {
+      throw new Error('File type not allowed. Only PDF, TXT, and MD files are permitted.');
+    }
+    
+    const fileName = `${folderName}/${uuidv4()}-${file.name}`;
 
     const { data, error } = await supabase.storage
-      .from(bucketName)
-      .upload(filePath, file, {
+      .from('capability_documents')
+      .upload(fileName, file, {
         cacheControl: '3600',
         upsert: false
       });
@@ -59,8 +71,17 @@ export const uploadFileToStorage = async (file: File, bucketName: string, folder
       throw error;
     }
 
-    const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/${bucketName}/${filePath}`;
-    return { data, url };
+    // Get the public URL for the uploaded file
+    const { data: urlData } = supabase.storage
+      .from('capability_documents')
+      .getPublicUrl(fileName);
+
+    return { 
+      name: file.name,
+      url: urlData.publicUrl,
+      size: file.size,
+      type: fileExt
+    };
   } catch (error) {
     console.error('Error in uploadFileToStorage:', error);
     throw error;
@@ -75,7 +96,7 @@ const prepareForDatabase = (value: any) => {
   return value;
 };
 
-// Update the upsertCapabilityToSupabase function to include detailed_description field
+// Update the upsertCapabilityToSupabase function to handle file uploads
 export const upsertCapabilityToSupabase = async (capability: Capability, isNew = false) => {
   try {
     // Prepare social links for database (ensure it's a string)
@@ -84,7 +105,7 @@ export const upsertCapabilityToSupabase = async (capability: Capability, isNew =
     // Prepare additional files for database
     const additional_files = prepareForDatabase(capability.files?.additionalFiles || []);
     
-    // Upsert to Supabase (without returning parameter)
+    // Upsert to Supabase
     const { error } = await supabase
       .from('capabilities')
       .upsert({
@@ -99,7 +120,7 @@ export const upsertCapabilityToSupabase = async (capability: Capability, isNew =
         developer_profile_pic: capability.developer_profile_pic,
         social_links: social_links,
         additional_files: additional_files,
-        docs: capability.files?.documentation || capability.files?.integrationGuide, // Backward compatibility
+        docs: capability.files?.documentation || capability.docs, // Documentation URL
         features: capability.features || [],
         // Stats fields have defaults in the database
         created_at: isNew ? new Date().toISOString() : undefined,

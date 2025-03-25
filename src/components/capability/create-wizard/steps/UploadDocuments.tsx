@@ -1,5 +1,5 @@
 
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { useCapabilityWizard } from '../CapabilityWizardContext';
 import { Button } from '@/components/ui/button';
 import { Upload, Trash2, Plus, AlertCircle, FileText } from 'lucide-react';
@@ -20,15 +20,26 @@ const UploadDocuments: React.FC = () => {
   const guideInputRef = useRef<HTMLInputElement>(null);
   const additionalFileInputRef = useRef<HTMLInputElement>(null);
   
-  const [error, setError] = React.useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const handleDocumentationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 10 * 1024 * 1024) {
-        setError("Documentation file size should be less than 10MB");
+      // Validate file size (1MB max)
+      if (file.size > 1 * 1024 * 1024) {
+        setError("Documentation file size should be less than 1MB");
         return;
       }
+      
+      // Validate file type
+      const fileExt = file.name.split('.').pop()?.toLowerCase();
+      const allowedTypes = ['pdf', 'txt', 'md'];
+      
+      if (!fileExt || !allowedTypes.includes(fileExt)) {
+        setError("File type not allowed. Only PDF, TXT, and MD files are permitted.");
+        return;
+      }
+      
       setDocumentation(file);
       setError(null);
     }
@@ -37,10 +48,21 @@ const UploadDocuments: React.FC = () => {
   const handleIntegrationGuideChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 10 * 1024 * 1024) {
-        setError("Integration guide file size should be less than 10MB");
+      // Validate file size (1MB max)
+      if (file.size > 1 * 1024 * 1024) {
+        setError("Integration guide file size should be less than 1MB");
         return;
       }
+      
+      // Validate file type
+      const fileExt = file.name.split('.').pop()?.toLowerCase();
+      const allowedTypes = ['pdf', 'txt', 'md'];
+      
+      if (!fileExt || !allowedTypes.includes(fileExt)) {
+        setError("File type not allowed. Only PDF, TXT, and MD files are permitted.");
+        return;
+      }
+      
       setIntegrationGuide(file);
       setError(null);
     }
@@ -54,16 +76,18 @@ const UploadDocuments: React.FC = () => {
         return;
       }
       
-      if (file.size > 5 * 1024 * 1024) {
-        setError("Additional file size should be less than 5MB");
+      // Validate file size (1MB max)
+      if (file.size > 1 * 1024 * 1024) {
+        setError("Additional file size should be less than 1MB");
         return;
       }
       
-      const allowedTypes = ['.pdf', '.txt', '.md', '.docx', '.doc'];
-      const fileExtension = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+      // Validate file type
+      const fileExt = file.name.split('.').pop()?.toLowerCase();
+      const allowedTypes = ['pdf', 'txt', 'md'];
       
-      if (!allowedTypes.includes(fileExtension)) {
-        setError(`File type not supported. Supported file types: ${allowedTypes.join(', ')}`);
+      if (!fileExt || !allowedTypes.includes(fileExt)) {
+        setError("File type not allowed. Only PDF, TXT, and MD files are permitted.");
         return;
       }
       
@@ -100,9 +124,6 @@ const UploadDocuments: React.FC = () => {
         return <div className="bg-blue-100 p-2 rounded text-blue-600"><FileText size={24} /></div>;
       case 'txt':
         return <div className="bg-gray-100 p-2 rounded text-gray-600"><FileText size={24} /></div>;
-      case 'doc':
-      case 'docx':
-        return <div className="bg-blue-100 p-2 rounded text-blue-600"><FileText size={24} /></div>;
       default:
         return <div className="bg-purple-100 p-2 rounded text-purple-600"><FileText size={24} /></div>;
     }
@@ -127,7 +148,7 @@ const UploadDocuments: React.FC = () => {
         <div className="space-y-4">
           <h3 className="text-lg font-medium">Documentation</h3>
           <p className="text-sm text-gray-500">
-            Upload a PDF or Markdown file that explains how your capability works in detail.
+            Upload a PDF, TXT, or MD file that explains how your capability works in detail.
           </p>
           
           {documentation ? (
@@ -150,12 +171,12 @@ const UploadDocuments: React.FC = () => {
             >
               <Upload className="h-10 w-10 text-gray-400 mb-2" />
               <p className="text-sm text-gray-600 font-medium">Click to upload documentation</p>
-              <p className="text-xs text-gray-500 mt-1">PDF, Markdown, Doc (10MB max)</p>
+              <p className="text-xs text-gray-500 mt-1">PDF, TXT, or MD (1MB max)</p>
               <input 
                 type="file" 
                 ref={docInputRef} 
                 className="hidden" 
-                accept=".pdf,.md,.txt,.docx,.doc" 
+                accept=".pdf,.md,.txt" 
                 onChange={handleDocumentationChange} 
               />
             </div>
@@ -188,12 +209,12 @@ const UploadDocuments: React.FC = () => {
             >
               <Upload className="h-10 w-10 text-gray-400 mb-2" />
               <p className="text-sm text-gray-600 font-medium">Click to upload integration guide</p>
-              <p className="text-xs text-gray-500 mt-1">PDF, Markdown, Doc (10MB max)</p>
+              <p className="text-xs text-gray-500 mt-1">PDF, TXT, or MD (1MB max)</p>
               <input 
                 type="file" 
                 ref={guideInputRef} 
                 className="hidden" 
-                accept=".pdf,.md,.txt,.docx,.doc" 
+                accept=".pdf,.md,.txt" 
                 onChange={handleIntegrationGuideChange} 
               />
             </div>
@@ -219,7 +240,7 @@ const UploadDocuments: React.FC = () => {
             type="file" 
             ref={additionalFileInputRef} 
             className="hidden" 
-            accept=".pdf,.md,.txt,.docx,.doc" 
+            accept=".pdf,.md,.txt" 
             onChange={handleAdditionalFileChange} 
           />
         </div>
@@ -258,7 +279,7 @@ const UploadDocuments: React.FC = () => {
         
         <div className="mt-6 p-4 bg-blue-50 border border-blue-100 rounded-md">
           <p className="text-sm text-blue-800">
-            <strong>Note:</strong> Only up to 5 additional files can be added. Supported file formats: .pdf, .txt, .md, .doc, and .docx
+            <strong>Note:</strong> Only up to 5 additional files can be added. Supported file formats: PDF, TXT, and MD. Maximum file size: 1MB.
           </p>
         </div>
       </div>

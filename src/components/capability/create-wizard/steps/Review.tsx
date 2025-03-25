@@ -1,148 +1,276 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useCapabilityWizard } from '../CapabilityWizardContext';
-import { Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { 
+  Check, 
+  AlertTriangle,
+  CheckCircle2 
+} from 'lucide-react';
+import { upsertCapabilityToSupabase } from '@/services/capability/supabase';
+import { toast } from '@/components/ui/use-toast';
 
 const Review: React.FC = () => {
-  const { formData, isSubmitting, documentation, integrationGuide, additionalFiles, displayImage, profileImage } = useCapabilityWizard();
-
+  const {
+    name,
+    id,
+    domain,
+    description,
+    detailedDescription,
+    price,
+    features,
+    creatorAddress,
+    developerName,
+    developerEmail,
+    developerBio,
+    socialLinks,
+    documentation,
+    integrationGuide,
+    additionalFiles,
+    isSubmitting,
+    setIsSubmitting,
+    handleFileUploads,
+    resetForm
+  } = useCapabilityWizard();
+  
+  const [isSuccess, setIsSuccess] = useState(false);
+  
+  const handleSubmit = async () => {
+    if (isSubmitting) return;
+    
+    setIsSubmitting(true);
+    
+    try {
+      // First, upload any files to storage
+      const fileUploadResults = await handleFileUploads();
+      
+      // Prepare capability data
+      const capabilityData = {
+        id,
+        name,
+        domain,
+        description,
+        detailed_description: detailedDescription,
+        price: parseFloat(price),
+        creator: creatorAddress,
+        developer_info: {
+          name: developerName,
+          email: developerEmail,
+          bio: developerBio,
+          social_links: socialLinks
+        },
+        stats: {
+          usageCount: 0,
+          rating: 4.5,
+          revenue: 0
+        },
+        features,
+        files: {
+          documentation: fileUploadResults.documentationUrl,
+          integrationGuide: fileUploadResults.integrationGuideUrl,
+          additionalFiles: fileUploadResults.additionalFilesUrls
+        }
+      };
+      
+      // Save to database
+      await upsertCapabilityToSupabase(capabilityData, true);
+      
+      setIsSuccess(true);
+      toast({
+        title: "Capability Created",
+        description: "Your capability has been successfully created.",
+        variant: "default",
+      });
+    } catch (error) {
+      console.error('Error creating capability:', error);
+      toast({
+        title: "Error",
+        description: "There was an error creating your capability. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+  
+  const handleCreateAnother = () => {
+    resetForm();
+    setIsSuccess(false);
+  };
+  
+  // Success screen
+  if (isSuccess) {
+    return (
+      <div className="flex flex-col items-center justify-center py-8">
+        <div className="bg-green-50 w-16 h-16 rounded-full flex items-center justify-center mb-4">
+          <CheckCircle2 className="h-8 w-8 text-green-600" />
+        </div>
+        
+        <h2 className="text-2xl font-bold mb-2">Capability Created Successfully</h2>
+        <p className="text-gray-600 text-center mb-6 max-w-md">
+          Your capability has been created and is now available for ScienceGent creators to include in their agents.
+        </p>
+        
+        <div className="space-x-4">
+          <Button 
+            variant="outline" 
+            onClick={handleCreateAnother}
+          >
+            Create Another Capability
+          </Button>
+          
+          <Button 
+            variant="default"
+            asChild
+          >
+            <a href={`/capabilities/${id}`}>
+              View Capability
+            </a>
+          </Button>
+        </div>
+      </div>
+    );
+  }
+  
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-xl font-semibold text-gray-800 mb-2">Review Your Capability</h3>
-        <p className="text-gray-600 mb-4">
-          Please review all the information below before submitting your capability.
+        <h3 className="text-lg font-medium mb-2">Review Your Capability</h3>
+        <p className="text-sm text-gray-500">
+          Please review all information below before submitting. Once submitted, your capability will be available for ScienceGent creators to include in their agents.
         </p>
       </div>
-
-      <div className="grid grid-cols-1 gap-6">
-        <div className="bg-blue-50 rounded-lg p-6">
-          <h4 className="font-medium text-lg mb-3">Basic Information</h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <p className="text-sm text-gray-500">Capability Name</p>
-              <p className="font-medium">{formData.name}</p>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="space-y-4 bg-gray-50 p-4 rounded-md">
+          <h4 className="font-medium">Basic Information</h4>
+          
+          <div className="space-y-2">
+            <div className="flex justify-between">
+              <span className="text-gray-500">Name:</span>
+              <span className="font-medium">{name}</span>
             </div>
-            <div>
-              <p className="text-sm text-gray-500">Capability ID</p>
-              <p className="font-medium">{formData.id}</p>
+            
+            <div className="flex justify-between">
+              <span className="text-gray-500">ID:</span>
+              <span className="font-medium">{id}</span>
             </div>
-            <div>
-              <p className="text-sm text-gray-500">Domain</p>
-              <p className="font-medium">{formData.domain}</p>
+            
+            <div className="flex justify-between">
+              <span className="text-gray-500">Domain:</span>
+              <span className="font-medium">{domain}</span>
             </div>
-            <div>
-              <p className="text-sm text-gray-500">Fee (ETH)</p>
-              <p className="font-medium">{formData.fee} ETH</p>
+            
+            <div className="flex justify-between">
+              <span className="text-gray-500">Price:</span>
+              <span className="font-medium">{price} ETH</span>
             </div>
-            <div className="md:col-span-2">
-              <p className="text-sm text-gray-500">Short Description</p>
-              <p className="font-medium">{formData.description}</p>
-            </div>
-            <div className="md:col-span-2">
-              <p className="text-sm text-gray-500">Fee Receiving Address</p>
-              <p className="font-medium">{formData.creatorAddress}</p>
+            
+            <div className="flex justify-between">
+              <span className="text-gray-500">Features:</span>
+              <span className="font-medium">{features.length} features</span>
             </div>
           </div>
         </div>
         
-        <div className="bg-gray-50 rounded-lg p-6">
-          <h4 className="font-medium text-lg mb-3">Detailed Description</h4>
-          <div>
-            <p className="whitespace-pre-wrap">{formData.detailedDescription}</p>
-          </div>
-        </div>
-
-        <div className="bg-gray-50 rounded-lg p-6">
-          <h4 className="font-medium text-lg mb-3">Documents</h4>
+        <div className="space-y-4 bg-gray-50 p-4 rounded-md">
+          <h4 className="font-medium">Developer Information</h4>
+          
           <div className="space-y-2">
-            <div>
-              <p className="text-sm text-gray-500">Display Image</p>
-              <p className="font-medium">{displayImage ? displayImage.name : 'None'}</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">Documentation</p>
-              <p className="font-medium">{documentation ? documentation.name : 'None'}</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">Integration Guide</p>
-              <p className="font-medium">{integrationGuide ? integrationGuide.name : 'None'}</p>
-            </div>
-            {additionalFiles && additionalFiles.length > 0 && (
-              <div>
-                <p className="text-sm text-gray-500">Additional Files</p>
-                <ul className="list-disc list-inside">
-                  {additionalFiles.map((file, index) => (
-                    <li key={index} className="font-medium">{file.name}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {(formData.developerName || formData.bio || profileImage) && (
-          <div className="bg-gray-50 rounded-lg p-6">
-            <h4 className="font-medium text-lg mb-3">Developer Information</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {formData.developerName && (
-                <div>
-                  <p className="text-sm text-gray-500">Developer Name</p>
-                  <p className="font-medium">{formData.developerName}</p>
-                </div>
-              )}
-              {profileImage && (
-                <div>
-                  <p className="text-sm text-gray-500">Profile Picture</p>
-                  <p className="font-medium">{profileImage.name}</p>
-                </div>
-              )}
-              {formData.bio && (
-                <div className="md:col-span-2">
-                  <p className="text-sm text-gray-500">Bio</p>
-                  <p className="font-medium">{formData.bio}</p>
-                </div>
-              )}
+            <div className="flex justify-between">
+              <span className="text-gray-500">Name:</span>
+              <span className="font-medium">{developerName || 'Not provided'}</span>
             </div>
             
-            {/* Developer Social Links */}
-            {(formData.developerTwitter || formData.developerGithub || formData.developerWebsite || formData.developerTelegram) && (
-              <div className="mt-4">
-                <p className="text-sm text-gray-500 mb-2">Social Links</p>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                  {formData.developerTwitter && (
-                    <div>
-                      <p className="text-sm font-medium">Twitter: {formData.developerTwitter}</p>
-                    </div>
-                  )}
-                  {formData.developerGithub && (
-                    <div>
-                      <p className="text-sm font-medium">GitHub: {formData.developerGithub}</p>
-                    </div>
-                  )}
-                  {formData.developerWebsite && (
-                    <div>
-                      <p className="text-sm font-medium">Website: {formData.developerWebsite}</p>
-                    </div>
-                  )}
-                  {formData.developerTelegram && (
-                    <div>
-                      <p className="text-sm font-medium">Telegram: {formData.developerTelegram}</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
+            <div className="flex justify-between">
+              <span className="text-gray-500">Email:</span>
+              <span className="font-medium">{developerEmail || 'Not provided'}</span>
+            </div>
+            
+            <div className="flex justify-between">
+              <span className="text-gray-500">Bio:</span>
+              <span className="font-medium">{developerBio ? 'Provided' : 'Not provided'}</span>
+            </div>
+            
+            <div className="flex justify-between">
+              <span className="text-gray-500">Social Links:</span>
+              <span className="font-medium">{socialLinks.length} links</span>
+            </div>
+            
+            <div className="flex justify-between">
+              <span className="text-gray-500">Creator Address:</span>
+              <span className="font-medium truncate max-w-[180px]">{creatorAddress || 'Not provided'}</span>
+            </div>
           </div>
-        )}
-      </div>
-
-      {isSubmitting && (
-        <div className="mt-4 p-4 bg-blue-50 rounded-lg flex items-center justify-center">
-          <Loader2 className="h-5 w-5 animate-spin text-blue-500 mr-2" />
-          <p className="text-blue-700">Submitting your capability to the blockchain...</p>
         </div>
-      )}
+      </div>
+      
+      <div className="space-y-4 bg-gray-50 p-4 rounded-md">
+        <h4 className="font-medium">Uploaded Files</h4>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="space-y-2">
+            <div className="font-medium">Documentation</div>
+            <div className="flex items-center">
+              {documentation ? (
+                <>
+                  <Check className="text-green-600 h-4 w-4 mr-2" />
+                  <span className="text-sm truncate max-w-[180px]">{documentation.name}</span>
+                </>
+              ) : (
+                <>
+                  <AlertTriangle className="text-amber-500 h-4 w-4 mr-2" />
+                  <span className="text-sm text-gray-500">Not uploaded</span>
+                </>
+              )}
+            </div>
+          </div>
+          
+          <div className="space-y-2">
+            <div className="font-medium">Integration Guide</div>
+            <div className="flex items-center">
+              {integrationGuide ? (
+                <>
+                  <Check className="text-green-600 h-4 w-4 mr-2" />
+                  <span className="text-sm truncate max-w-[180px]">{integrationGuide.name}</span>
+                </>
+              ) : (
+                <>
+                  <AlertTriangle className="text-amber-500 h-4 w-4 mr-2" />
+                  <span className="text-sm text-gray-500">Not uploaded</span>
+                </>
+              )}
+            </div>
+          </div>
+          
+          <div className="space-y-2">
+            <div className="font-medium">Additional Files</div>
+            <div className="flex items-center">
+              {additionalFiles.length > 0 ? (
+                <>
+                  <Check className="text-green-600 h-4 w-4 mr-2" />
+                  <span className="text-sm">{additionalFiles.length} files</span>
+                </>
+              ) : (
+                <>
+                  <AlertTriangle className="text-amber-500 h-4 w-4 mr-2" />
+                  <span className="text-sm text-gray-500">None uploaded</span>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div className="pt-4">
+        <Button 
+          className="w-full"
+          onClick={handleSubmit}
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? 'Creating Capability...' : 'Create Capability'}
+        </Button>
+      </div>
     </div>
   );
 };
