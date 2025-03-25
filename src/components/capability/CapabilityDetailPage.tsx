@@ -20,7 +20,8 @@ import {
   Twitter,
   Github,
   Globe,
-  Mail
+  Mail,
+  Star
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import rehypeRaw from 'rehype-raw';
@@ -63,6 +64,24 @@ const CapabilityDetailPage: React.FC<CapabilityDetailPageProps> = ({ capability:
     queryFn: () => fetchDeveloperProfile(capability?.creator || ''),
     enabled: !!capability?.creator
   });
+  
+  // Function to render rating stars
+  const renderRatingStars = (rating: number) => {
+    const fullStars = Math.floor(rating);
+    const hasHalfStar = rating - fullStars >= 0.5;
+    const stars = [];
+    
+    for (let i = 1; i <= 5; i++) {
+      if (i <= fullStars) {
+        stars.push(<Star key={i} className="h-4 w-4 text-yellow-400 fill-yellow-400" />);
+      } else if (i === fullStars + 1 && hasHalfStar) {
+        stars.push(<Star key={i} className="h-4 w-4 text-yellow-400 fill-yellow-400 opacity-60" />);
+      } else {
+        stars.push(<Star key={i} className="h-4 w-4 text-gray-300" />);
+      }
+    }
+    return stars;
+  };
   
   // Function to copy address to clipboard
   const copyAddressToClipboard = (address: string) => {
