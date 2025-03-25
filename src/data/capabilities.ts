@@ -1,3 +1,4 @@
+
 import { fetchCapabilitiesFromSupabase, fetchCapabilityById } from "@/services/capabilityService";
 import { Capability } from "@/types/capability";
 
@@ -113,12 +114,28 @@ export const getAllCapabilities = async (forceRefresh = false): Promise<Capabili
     console.log("Getting fresh capabilities data...");
     const supabaseCapabilities = await fetchCapabilitiesFromSupabase();
     
-    if (supabaseCapabilities.length > 0) {
+    if (supabaseCapabilities && supabaseCapabilities.length > 0) {
       console.log(`Got ${supabaseCapabilities.length} capabilities from Supabase`);
+      
+      // Ensure all capabilities have a stats property
+      const validCapabilities = supabaseCapabilities.map(cap => {
+        if (!cap.stats) {
+          return {
+            ...cap,
+            stats: {
+              usageCount: cap.usage_count || 0,
+              rating: 4.5,
+              revenue: 0
+            }
+          };
+        }
+        return cap;
+      });
+      
       // Update cache
-      cachedCapabilities = supabaseCapabilities;
+      cachedCapabilities = validCapabilities;
       lastFetchTime = now;
-      return supabaseCapabilities;
+      return validCapabilities;
     } else {
       console.log("No capabilities found in Supabase, using fallback");
       // Update cache with fallback data

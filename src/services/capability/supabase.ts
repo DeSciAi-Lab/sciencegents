@@ -10,7 +10,16 @@ export const fetchCapabilitiesFromSupabase = async () => {
       .select('*');
     
     if (error) throw error;
-    return data;
+    
+    // Transform data to include stats property
+    return data.map(item => ({
+      ...item,
+      stats: {
+        usageCount: item.usage_count || 0,
+        rating: item.rating || 4.5,
+        revenue: item.revenue || 0
+      }
+    }));
   } catch (error) {
     console.error('Error fetching capabilities from Supabase:', error);
     throw error;
@@ -33,7 +42,15 @@ export const fetchCapabilityById = async (id: string) => {
       throw error;
     }
     
-    return data;
+    // Transform to include stats property
+    return data ? {
+      ...data,
+      stats: {
+        usageCount: data.usage_count || 0,
+        rating: data.rating || 4.5,
+        revenue: data.revenue || 0
+      }
+    } : null;
   } catch (error) {
     console.error(`Error fetching capability ${id} from Supabase:`, error);
     throw error;
@@ -68,7 +85,8 @@ export const uploadFileToStorage = async (file: File, bucketName: string, folder
 // Update the upsertCapabilityToSupabase function to include detailed_description field
 export const upsertCapabilityToSupabase = async (capability: any, isNew = false) => {
   try {
-    const { data, error } = await supabase
+    // Remove 'returning' parameter which is causing the error
+    const { error } = await supabase
       .from('capabilities')
       .upsert({
         id: capability.id,
@@ -87,7 +105,7 @@ export const upsertCapabilityToSupabase = async (capability: any, isNew = false)
         // Stats fields have defaults in the database
         created_at: isNew ? new Date().toISOString() : undefined,
         last_synced_at: new Date().toISOString()
-      }, { returning: 'minimal' });
+      });
     
     if (error) throw error;
     return { success: true };
