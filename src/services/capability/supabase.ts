@@ -46,9 +46,10 @@ export const fetchCapabilityById = async (id: string): Promise<Capability | null
 
 export const uploadFileToStorage = async (file: File, folderName: string) => {
   try {
-    // Validate file size (2MB max)
-    if (file.size > 2 * 1024 * 1024) {
-      throw new Error('File size exceeds the 2MB limit');
+    // Validate file size
+    const sizeLimit = file.type.startsWith('image/') ? 1 * 1024 * 1024 : 2 * 1024 * 1024; // 1MB for images, 2MB for docs
+    if (file.size > sizeLimit) {
+      throw new Error(`File size exceeds the ${file.type.startsWith('image/') ? '1MB' : '2MB'} limit`);
     }
     
     // Get file extension

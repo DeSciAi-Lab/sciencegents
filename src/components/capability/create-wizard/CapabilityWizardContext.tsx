@@ -5,7 +5,7 @@ import { fetchDeveloperProfile } from '@/services/developerProfileService';
 import { useWallet } from '@/hooks/useWallet';
 import { DeveloperProfile } from '@/types/profile';
 
-// Define the wizard steps (removed Personal Details step)
+// Define the wizard steps
 export const wizardSteps = [
   { id: 1, title: "Basic Information", description: "Enter basic details about your capability" },
   { id: 2, title: "Detailed Description", description: "Provide comprehensive description and features" },
@@ -70,7 +70,7 @@ interface CapabilityWizardContextProps {
   developerProfile: DeveloperProfile | null;
   isLoadingProfile: boolean;
   
-  // Form compatibility props (to fix the component errors)
+  // Form compatibility props
   formData: {
     name: string;
     id: string;
@@ -117,7 +117,12 @@ export const CapabilityWizardProvider: React.FC<{ children: React.ReactNode }> =
   const [creatorAddress, setCreatorAddress] = useState('');
   
   // Social Links (for capability)
-  const [socialLinks, setSocialLinks] = useState<Array<{ type: string; url: string }>>([]);
+  const [socialLinks, setSocialLinks] = useState<Array<{ type: string; url: string }>>([
+    { type: 'twitter', url: '' },
+    { type: 'telegram', url: '' },
+    { type: 'github', url: '' },
+    { type: 'website', url: '' }
+  ]);
   
   // UI Form compatibility
   const [displayImage, setDisplayImage] = useState<File | null>(null);
@@ -168,10 +173,10 @@ export const CapabilityWizardProvider: React.FC<{ children: React.ReactNode }> =
     creatorAddress,
     displayImage,
     features,
-    twitter: '',
-    github: '',
-    website: '',
-    telegram: ''
+    twitter: socialLinks.find(link => link.type === 'twitter')?.url || '',
+    github: socialLinks.find(link => link.type === 'github')?.url || '',
+    website: socialLinks.find(link => link.type === 'website')?.url || '',
+    telegram: socialLinks.find(link => link.type === 'telegram')?.url || ''
   };
   
   // Form handlers
@@ -216,7 +221,7 @@ export const CapabilityWizardProvider: React.FC<{ children: React.ReactNode }> =
   };
   
   // Helper for updating social link objects
-  const updateSocialLink = (index: number, key: string, value: string) => {
+  const updateSocialLink = (index: number, key: 'type' | 'url', value: string) => {
     setSocialLinks(prev => {
       const newLinks = [...prev];
       newLinks[index] = { ...newLinks[index], [key]: value };
@@ -278,7 +283,12 @@ export const CapabilityWizardProvider: React.FC<{ children: React.ReactNode }> =
     setPrice('0.1');
     setFeatures([]);
     setCreatorAddress('');
-    setSocialLinks([]);
+    setSocialLinks([
+      { type: 'twitter', url: '' },
+      { type: 'telegram', url: '' },
+      { type: 'github', url: '' },
+      { type: 'website', url: '' }
+    ]);
     setDocumentation(null);
     setIntegrationGuide(null);
     setAdditionalFiles([]);
@@ -301,6 +311,12 @@ export const CapabilityWizardProvider: React.FC<{ children: React.ReactNode }> =
       // Create folder name using ID to group related files
       const folderName = `capability_${id}`;
       
+      // Upload display image if available
+      if (displayImage) {
+        const imageResult = await uploadFileToStorage(displayImage, folderName);
+        result.displayImageUrl = imageResult.url;
+      }
+      
       // Upload documentation if available
       if (documentation) {
         const docResult = await uploadFileToStorage(documentation, folderName);
@@ -322,12 +338,6 @@ export const CapabilityWizardProvider: React.FC<{ children: React.ReactNode }> =
             url: fileResult.url
           });
         }
-      }
-      
-      // Upload display image if available
-      if (displayImage) {
-        const imageResult = await uploadFileToStorage(displayImage, folderName);
-        result.displayImageUrl = imageResult.url;
       }
       
       return result;

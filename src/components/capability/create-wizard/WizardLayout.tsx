@@ -1,9 +1,9 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
+import { ChevronRight } from 'lucide-react';
 import { useCapabilityWizard, wizardSteps } from './CapabilityWizardContext';
 import WizardProgress from './WizardProgress';
-import { Info } from 'lucide-react';
 
 interface WizardLayoutProps {
   children: React.ReactNode;
@@ -39,44 +39,47 @@ const WizardLayout: React.FC<WizardLayoutProps> = ({ children }) => {
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-6">Create Capability</h1>
         
-        <div className="flex flex-col md:flex-row gap-8">
-          {/* Left sidebar with steps */}
-          <div className="w-full md:w-1/4">
-            <WizardProgress 
-              steps={wizardSteps.map(step => ({
-                id: step.id,
-                title: step.title
-              }))} 
-              currentStep={currentStep} 
-            />
-          </div>
-          
-          {/* Main content area */}
-          <div className="w-full md:w-3/4 bg-white rounded-lg p-6">
-            {children}
+        <div className="bg-white rounded-lg border shadow-sm">
+          <div className="flex flex-col md:flex-row">
+            {/* Left sidebar with steps */}
+            <div className="w-full md:w-1/4 border-r p-6">
+              <WizardProgress 
+                steps={wizardSteps.map(step => ({
+                  id: step.id,
+                  title: step.title
+                }))} 
+                currentStep={currentStep} 
+              />
+            </div>
             
-            {/* Navigation buttons */}
-            <div className="flex justify-between mt-8">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleBack}
-                disabled={isFirstStep || isSubmitting}
-                className="px-6"
-              >
-                Back
-              </Button>
+            {/* Main content area */}
+            <div className="w-full md:w-3/4 p-6">
+              {children}
               
-              {!isLastStep && (
+              {/* Navigation buttons */}
+              <div className="flex justify-between mt-8 pt-4 border-t">
                 <Button
                   type="button"
-                  onClick={handleContinue}
-                  disabled={!canProceed || isSubmitting}
+                  variant="outline"
+                  onClick={handleBack}
+                  disabled={isFirstStep || isSubmitting}
                   className="px-6"
                 >
-                  Continue
+                  Back
                 </Button>
-              )}
+                
+                {!isLastStep && (
+                  <Button
+                    type="button"
+                    onClick={handleContinue}
+                    disabled={!canProceed || isSubmitting}
+                    className="px-6"
+                  >
+                    Continue
+                    <ChevronRight className="ml-2 h-4 w-4" />
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
         </div>

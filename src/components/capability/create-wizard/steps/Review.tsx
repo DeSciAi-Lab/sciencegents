@@ -3,8 +3,6 @@ import React, { useState } from 'react';
 import { useCapabilityWizard } from '../CapabilityWizardContext';
 import { Button } from '@/components/ui/button';
 import { 
-  Check, 
-  AlertTriangle,
   CheckCircle2,
   Info
 } from 'lucide-react';
@@ -26,6 +24,7 @@ const Review: React.FC = () => {
     documentation,
     integrationGuide,
     additionalFiles,
+    displayImage,
     isSubmitting,
     setIsSubmitting,
     handleFileUploads,
@@ -65,7 +64,8 @@ const Review: React.FC = () => {
           documentation: fileUploadResults.documentationUrl,
           integrationGuide: fileUploadResults.integrationGuideUrl,
           additionalFiles: fileUploadResults.additionalFilesUrls
-        }
+        },
+        display_image: fileUploadResults.displayImageUrl
       };
       
       // Save to database
@@ -137,7 +137,7 @@ const Review: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-10">
       <div>
         <h3 className="text-lg font-medium mb-2">Review Your Capability</h3>
         <p className="text-sm text-gray-500">
@@ -145,129 +145,111 @@ const Review: React.FC = () => {
         </p>
       </div>
       
-      {/* Basic Information Section */}
+      {/* Basic Information Card */}
       <div className="bg-blue-50 rounded-md p-6">
-        <h4 className="font-medium text-center mb-4">Basic Information</h4>
-        <div className="space-y-2">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <span className="text-gray-500">Capability Name:</span>
-              <span className="font-medium ml-2">{name}</span>
+        <div className="flex items-center justify-between mb-4">
+          <h4 className="font-medium">Basic Information</h4>
+          {displayImage && (
+            <Avatar className="h-12 w-12">
+              <AvatarImage src={URL.createObjectURL(displayImage)} alt="Capability" />
+              <AvatarFallback>LO</AvatarFallback>
+            </Avatar>
+          )}
+        </div>
+        
+        <div className="space-y-4">
+          <div className="grid grid-cols-3 gap-4">
+            <div className="col-span-3 md:col-span-1">
+              <p className="text-gray-500 text-sm">Capability Name</p>
+              <p className="font-medium">{name || 'XXXXXXXXXX'}</p>
             </div>
             
-            <div>
-              <span className="text-gray-500">ID:</span>
-              <span className="font-medium ml-2">{id}</span>
+            <div className="col-span-3 md:col-span-1">
+              <p className="text-gray-500 text-sm">ID</p>
+              <p className="font-medium">{id || 'XXXXXXXXXX'}</p>
             </div>
             
-            <div>
-              <span className="text-gray-500">Domain:</span>
-              <span className="font-medium ml-2">{domain}</span>
-            </div>
-            
-            <div>
-              <span className="text-gray-500">Description:</span>
-              <span className="font-medium ml-2">{description}</span>
-            </div>
-            
-            <div>
-              <span className="text-gray-500">Capability Fee:</span>
-              <span className="font-medium ml-2">{price} ETH</span>
-            </div>
-            
-            <div>
-              <span className="text-gray-500">Fee Receiving Address:</span>
-              <span className="font-medium ml-2 truncate">{creatorAddress}</span>
+            <div className="col-span-3 md:col-span-1">
+              <p className="text-gray-500 text-sm">Domain</p>
+              <p className="font-medium">{domain || 'XXXXXXXXXX'}</p>
             </div>
           </div>
           
-          {/* Social Links */}
-          <div className="mt-4">
-            <span className="text-gray-500">Social Links:</span>
-            <div className="flex flex-wrap gap-2 mt-1">
-              {socialLinks.map((link, idx) => (
-                <div key={idx} className="flex items-center">
-                  <span className="font-medium">{link.type}:</span>
-                  <span className="text-sm truncate ml-1">{link.url}</span>
-                </div>
-              ))}
-              {socialLinks.length === 0 && (
-                <span className="text-sm text-gray-400">No social links provided</span>
-              )}
+          <div>
+            <p className="text-gray-500 text-sm">Description</p>
+            <p className="font-medium">{description || 'XXXXXXXXXX'}</p>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <p className="text-gray-500 text-sm">capability Fee</p>
+              <p className="font-medium">{price || 'XXXXXX'} ETH</p>
+            </div>
+            
+            <div>
+              <p className="text-gray-500 text-sm">capability receiving address</p>
+              <p className="font-medium">{creatorAddress || 'XXXXXXX'}</p>
+            </div>
+          </div>
+          
+          <div>
+            <p className="text-gray-500 text-sm">Social Links</p>
+            <div className="grid grid-cols-2 gap-2 mt-1">
+              <div>
+                <p className="text-gray-500 text-xs">Twitter</p>
+                <p className="text-sm">{socialLinks.find(link => link.type === 'twitter')?.url || 'XXXXXXXX'}</p>
+              </div>
+              <div>
+                <p className="text-gray-500 text-xs">Telegram</p>
+                <p className="text-sm">{socialLinks.find(link => link.type === 'telegram')?.url || 'XXXXXXX'}</p>
+              </div>
+              <div>
+                <p className="text-gray-500 text-xs">Github</p>
+                <p className="text-sm">{socialLinks.find(link => link.type === 'github')?.url || 'XXXXXXX'}</p>
+              </div>
+              <div>
+                <p className="text-gray-500 text-xs">Website</p>
+                <p className="text-sm">{socialLinks.find(link => link.type === 'website')?.url || 'XXXXXXXXXX'}</p>
+              </div>
             </div>
           </div>
         </div>
       </div>
       
-      {/* Documents Section */}
+      {/* Documents Card */}
       <div className="bg-orange-50 rounded-md p-6">
-        <h4 className="font-medium text-center mb-4">Documents Uploaded</h4>
-        <div className="space-y-2">
-          <div className="grid grid-cols-3 gap-2">
-            <div>
-              <span className="text-gray-500">Documentation:</span>
-              {documentation ? (
-                <div className="flex items-center">
-                  <Check className="text-green-600 h-4 w-4 mr-1" />
-                  <span className="text-sm truncate">{documentation.name}</span>
-                </div>
-              ) : (
-                <div className="flex items-center">
-                  <AlertTriangle className="text-amber-500 h-4 w-4 mr-1" />
-                  <span className="text-sm text-gray-400">Not uploaded</span>
-                </div>
-              )}
+        <h4 className="font-medium mb-4">Documents Uploaded</h4>
+        <div className="space-y-1">
+          {documentation && (
+            <div className="inline-block bg-white px-3 py-1 rounded text-sm mr-2 mb-2">
+              {documentation.name}
             </div>
-            
-            <div>
-              <span className="text-gray-500">Integration Guide:</span>
-              {integrationGuide ? (
-                <div className="flex items-center">
-                  <Check className="text-green-600 h-4 w-4 mr-1" />
-                  <span className="text-sm truncate">{integrationGuide.name}</span>
-                </div>
-              ) : (
-                <div className="flex items-center">
-                  <AlertTriangle className="text-amber-500 h-4 w-4 mr-1" />
-                  <span className="text-sm text-gray-400">Not uploaded</span>
-                </div>
-              )}
+          )}
+          {integrationGuide && (
+            <div className="inline-block bg-white px-3 py-1 rounded text-sm mr-2 mb-2">
+              {integrationGuide.name}
             </div>
-            
-            <div>
-              <span className="text-gray-500">Additional Files:</span>
-              {additionalFiles.length > 0 ? (
-                <div className="flex items-center">
-                  <Check className="text-green-600 h-4 w-4 mr-1" />
-                  <span className="text-sm">{additionalFiles.length} files</span>
-                </div>
-              ) : (
-                <div className="flex items-center">
-                  <AlertTriangle className="text-amber-500 h-4 w-4 mr-1" />
-                  <span className="text-sm text-gray-400">None uploaded</span>
-                </div>
-              )}
+          )}
+          {additionalFiles.map((file, idx) => (
+            <div key={idx} className="inline-block bg-white px-3 py-1 rounded text-sm mr-2 mb-2">
+              {file.name}
             </div>
-          </div>
-          
-          {additionalFiles.length > 0 && (
-            <div className="mt-2">
-              <span className="text-gray-500">Additional File List:</span>
-              <div className="flex flex-wrap gap-2 mt-1">
-                {additionalFiles.map((file, idx) => (
-                  <span key={idx} className="text-sm bg-white px-2 py-1 rounded border border-gray-200">
-                    {file.name}
-                  </span>
-                ))}
-              </div>
-            </div>
+          ))}
+          {!documentation && !integrationGuide && additionalFiles.length === 0 && (
+            <p className="text-gray-500 text-sm">XXXXXXXXXX.pdf, XXXXXXXX.jpg, XXXXXXX.pdf, XXXXXXX.txt, XXXXXXXX.md</p>
           )}
         </div>
       </div>
       
-      {/* Developer Information */}
+      {/* Developer Information Card */}
       <div className="bg-blue-50 rounded-md p-6">
-        <h4 className="font-medium text-center mb-4">Developer Information</h4>
+        <div className="flex items-center justify-between mb-4">
+          <h4 className="font-medium">Developer Information</h4>
+          <Avatar className="h-12 w-12">
+            <AvatarImage src={developerProfile?.profile_pic || ''} alt="Developer" />
+            <AvatarFallback>{generateInitials()}</AvatarFallback>
+          </Avatar>
+        </div>
         
         {isLoadingProfile ? (
           <div className="text-center py-4">
@@ -276,72 +258,44 @@ const Review: React.FC = () => {
           </div>
         ) : developerProfile ? (
           <div className="space-y-4">
-            <div className="flex justify-center mb-4">
-              <Avatar className="h-20 w-20">
-                <AvatarImage src={developerProfile.profile_pic || ''} alt="Developer" />
-                <AvatarFallback>{generateInitials()}</AvatarFallback>
-              </Avatar>
-            </div>
-            
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <span className="text-gray-500">Developer Name:</span>
-                <span className="font-medium ml-2">{developerProfile.developer_name || 'Not provided'}</span>
+                <p className="text-gray-500 text-sm">Developer Name</p>
+                <p className="font-medium">{developerProfile.developer_name || 'XXXXXXXXXX'}</p>
               </div>
               
               <div>
-                <span className="text-gray-500">Ethereum Address:</span>
-                <span className="font-medium ml-2 truncate">{creatorAddress}</span>
+                <p className="text-gray-500 text-sm">Ethereum Address</p>
+                <p className="font-medium truncate">{creatorAddress || 'XXXXXXXXXX'}</p>
               </div>
               
               {developerProfile.bio && (
                 <div className="col-span-2">
-                  <span className="text-gray-500">Bio:</span>
-                  <p className="text-sm mt-1">{developerProfile.bio}</p>
+                  <p className="text-gray-500 text-sm">Bio</p>
+                  <p className="text-sm">{developerProfile.bio}</p>
                 </div>
               )}
             </div>
             
-            {/* Developer Social Links */}
             <div>
-              <span className="text-gray-500">Developer Social Links:</span>
+              <p className="text-gray-500 text-sm">Developer Social Links</p>
               <div className="grid grid-cols-2 gap-2 mt-1">
-                {developerProfile.developer_website && (
-                  <div>
-                    <span className="text-gray-500">Website:</span>
-                    <span className="text-sm ml-2 truncate">{developerProfile.developer_website}</span>
-                  </div>
-                )}
-                
-                {developerProfile.developer_twitter && (
-                  <div>
-                    <span className="text-gray-500">Twitter:</span>
-                    <span className="text-sm ml-2 truncate">{developerProfile.developer_twitter}</span>
-                  </div>
-                )}
-                
-                {developerProfile.developer_github && (
-                  <div>
-                    <span className="text-gray-500">GitHub:</span>
-                    <span className="text-sm ml-2 truncate">{developerProfile.developer_github}</span>
-                  </div>
-                )}
-                
-                {developerProfile.developer_telegram && (
-                  <div>
-                    <span className="text-gray-500">Telegram:</span>
-                    <span className="text-sm ml-2 truncate">{developerProfile.developer_telegram}</span>
-                  </div>
-                )}
-                
-                {(!developerProfile.developer_website && 
-                  !developerProfile.developer_twitter && 
-                  !developerProfile.developer_github && 
-                  !developerProfile.developer_telegram) && (
-                  <div className="col-span-2 text-sm text-gray-400">
-                    No social links provided
-                  </div>
-                )}
+                <div>
+                  <p className="text-gray-500 text-xs">Twitter</p>
+                  <p className="text-sm">{developerProfile.developer_twitter || 'XXXXXXXX'}</p>
+                </div>
+                <div>
+                  <p className="text-gray-500 text-xs">Telegram</p>
+                  <p className="text-sm">{developerProfile.developer_telegram || 'XXXXXXX'}</p>
+                </div>
+                <div>
+                  <p className="text-gray-500 text-xs">Github</p>
+                  <p className="text-sm">{developerProfile.developer_github || 'XXXXXXX'}</p>
+                </div>
+                <div>
+                  <p className="text-gray-500 text-xs">Website</p>
+                  <p className="text-sm">{developerProfile.developer_website || 'XXXXXXXXXX'}</p>
+                </div>
               </div>
             </div>
           </div>
