@@ -57,18 +57,18 @@ const WizardLayout: React.FC<WizardLayoutProps> = ({ children }) => {
               {children}
               
               {/* Navigation buttons */}
-              <div className="flex justify-between mt-8 pt-4 border-t">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={handleBack}
-                  disabled={isFirstStep || isSubmitting}
-                  className="px-6"
-                >
-                  Back
-                </Button>
-                
-                {!isLastStep && (
+              {!isLastStep && (
+                <div className="flex justify-between mt-8 pt-4 border-t">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleBack}
+                    disabled={isFirstStep || isSubmitting}
+                    className="px-6"
+                  >
+                    Back
+                  </Button>
+                  
                   <Button
                     type="button"
                     onClick={handleContinue}
@@ -78,8 +78,8 @@ const WizardLayout: React.FC<WizardLayoutProps> = ({ children }) => {
                     Continue
                     <ChevronRight className="ml-2 h-4 w-4" />
                   </Button>
-                )}
-              </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

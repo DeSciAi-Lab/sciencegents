@@ -1,11 +1,13 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useCapabilityWizard } from '../CapabilityWizardContext';
-import { Info, Plus, X } from 'lucide-react';
+import { useWallet } from '@/hooks/useWallet';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import { X, Plus, Upload } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 const BasicInfo: React.FC = () => {
   const {
@@ -21,288 +23,259 @@ const BasicInfo: React.FC = () => {
     setPrice,
     creatorAddress,
     setCreatorAddress,
-    socialLinks,
-    setSocialLinks,
     displayImage,
-    setDisplayImage
+    setDisplayImage,
+    socialLinks,
+    updateSocialLink,
+    addSocialLink,
+    removeSocialLink
   } = useCapabilityWizard();
-
-  const domainOptions = [
-    'Chemistry',
-    'Physics',
-    'Biochemistry',
-    'Materials Science',
-    'Protein Analysis',
-    'Drug Discovery',
-    'Genomics',
-    'General Science'
-  ];
   
-  const handleDisplayImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const { address, isConnected } = useWallet();
+  const [newSocialType, setNewSocialType] = useState('');
+  const [newSocialUrl, setNewSocialUrl] = useState('');
+  
+  // Set creator address from wallet if connected
+  React.useEffect(() => {
+    if (isConnected && address && !creatorAddress) {
+      setCreatorAddress(address);
+    }
+  }, [isConnected, address, creatorAddress, setCreatorAddress]);
+  
+  // Handle display image upload
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       setDisplayImage(e.target.files[0]);
     }
   };
   
-  const addSocialLink = () => {
-    setSocialLinks([...socialLinks, { type: '', url: '' }]);
+  // Handle domain selection
+  const handleDomainChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setDomain(e.target.value);
   };
   
-  const removeSocialLink = (index: number) => {
-    const newLinks = [...socialLinks];
-    newLinks.splice(index, 1);
-    setSocialLinks(newLinks);
+  // Add custom social link
+  const handleAddSocialLink = () => {
+    if (newSocialType && newSocialUrl) {
+      addSocialLink(newSocialType, newSocialUrl);
+      setNewSocialType('');
+      setNewSocialUrl('');
+    }
   };
   
-  const updateSocialLink = (index: number, field: 'type' | 'url', value: string) => {
-    const newLinks = [...socialLinks];
-    newLinks[index] = { ...newLinks[index], [field]: value };
-    setSocialLinks(newLinks);
+  // Check if a social link exists
+  const socialLinkExists = (type: string) => {
+    const standardTypes = ['twitter', 'github', 'website', 'telegram'];
+    return standardTypes.includes(type.toLowerCase());
   };
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-xl font-semibold mb-2">Basic Information</h2>
+      <div className="flex items-start gap-4">
+        <div>
+          <label htmlFor="display-image-upload" className="cursor-pointer">
+            <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center border-2 border-dashed border-gray-300 hover:border-blue-500 transition-colors">
+              {displayImage ? (
+                <Avatar className="w-16 h-16">
+                  <AvatarImage 
+                    src={URL.createObjectURL(displayImage)} 
+                    alt="Display" 
+                    className="object-cover" 
+                  />
+                  <AvatarFallback>DP</AvatarFallback>
+                </Avatar>
+              ) : (
+                <Upload className="h-6 w-6 text-gray-400" />
+              )}
+            </div>
+          </label>
+          <input
+            id="display-image-upload"
+            type="file"
+            className="hidden"
+            accept="image/*"
+            onChange={handleImageUpload}
+          />
+        </div>
+        
+        <div className="flex-1">
+          <h2 className="text-xl font-semibold mb-4">Basic Information</h2>
+          <p className="text-sm text-gray-500 mb-2">
+            Provide essential details about your capability.
+          </p>
+        </div>
       </div>
       
-      <div className="grid grid-cols-1 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <Label htmlFor="name">Capability Name</Label>
+          <Label htmlFor="name" className="mb-1 block">Capability Name</Label>
           <Input
             id="name"
-            placeholder="e.g. Molecule Vision"
+            placeholder="e.g., Molecule Visualization"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="mt-1"
           />
         </div>
         
         <div>
-          <Label htmlFor="id">Capability ID</Label>
+          <Label htmlFor="id" className="mb-1 block">Capability ID</Label>
           <Input
             id="id"
-            placeholder="e.g. Molecular_vision_44"
+            placeholder="e.g., mol-viz-3d"
             value={id}
             onChange={(e) => setId(e.target.value)}
-            className="mt-1"
           />
-          <div className="mt-1 flex items-start">
-            <Info className="h-4 w-4 text-gray-500 mr-1 mt-0.5" />
-            <p className="text-xs text-gray-500">Unique identifier. Use letters, numbers and underscores only.</p>
-          </div>
+          <p className="text-xs text-gray-500 mt-1">
+            Used in smart contracts. Use lowercase letters, numbers, and hyphens.
+          </p>
         </div>
-        
+      </div>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <Label htmlFor="domain">Domain</Label>
-          <Select 
-            value={domain} 
-            onValueChange={(value) => setDomain(value)}
+          <Label htmlFor="domain" className="mb-1 block">Scientific Domain</Label>
+          <select
+            id="domain"
+            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+            value={domain}
+            onChange={handleDomainChange}
           >
-            <SelectTrigger id="domain" className="mt-1">
-              <SelectValue placeholder="e.g. Biochemistry" />
-            </SelectTrigger>
-            <SelectContent>
-              {domainOptions.map((option) => (
-                <SelectItem key={option} value={option}>
-                  {option}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            <option value="" disabled>Select a domain</option>
+            <option value="Chemistry">Chemistry</option>
+            <option value="Physics">Physics</option>
+            <option value="Biochemistry">Biochemistry</option>
+            <option value="Materials Science">Materials Science</option>
+            <option value="Protein Analysis">Protein Analysis</option>
+            <option value="Drug Discovery">Drug Discovery</option>
+            <option value="Genomics">Genomics</option>
+          </select>
         </div>
         
         <div>
-          <Label htmlFor="description">Description</Label>
-          <Input
-            id="description"
-            placeholder="Short Description of your ScienceGents (40 words)"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            className="mt-1"
-          />
+          <Label htmlFor="price" className="mb-1 block">Capability Fee (ETH)</Label>
+          <div className="relative">
+            <Input
+              id="price"
+              placeholder="e.g., 0.25"
+              type="number"
+              step="0.01"
+              min="0"
+              value={price}
+              onChange={(e) => setPrice(e.target.value)}
+            />
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500">
+              ETH
+            </span>
+          </div>
         </div>
+      </div>
+      
+      <div>
+        <Label htmlFor="description" className="mb-1 block">Description</Label>
+        <Textarea
+          id="description"
+          placeholder="Describe what your capability does and how it can help ScienceGents..."
+          rows={3}
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          className="resize-none"
+        />
+      </div>
+      
+      <div>
+        <Label htmlFor="creator-address" className="mb-1 block">Creator Ethereum Address</Label>
+        <Input
+          id="creator-address"
+          placeholder="0x..."
+          value={creatorAddress}
+          onChange={(e) => setCreatorAddress(e.target.value)}
+          className={isConnected ? "bg-gray-50" : ""}
+        />
+        <p className="text-xs text-gray-500 mt-1">
+          {isConnected ? "Using your connected wallet address" : "Address that will receive capability fees"}
+        </p>
+      </div>
+      
+      <div>
+        <Label className="mb-2 block">Social Links</Label>
         
-        <div>
-          <Label htmlFor="display-image">Display Picture for capability (optional)</Label>
-          <div className="mt-1 border-2 border-dashed rounded-md p-4 text-center cursor-pointer" onClick={() => document.getElementById('display-image')?.click()}>
-            {displayImage ? (
-              <div className="flex flex-col items-center">
-                <img 
-                  src={URL.createObjectURL(displayImage)} 
-                  alt="Display" 
-                  className="h-24 w-24 object-cover mb-2" 
-                />
-                <span className="text-sm text-gray-500">{displayImage.name}</span>
+        <div className="space-y-3">
+          {/* Standard social links */}
+          {socialLinks.filter(link => ['twitter', 'github', 'website', 'telegram'].includes(link.type)).map((link, index) => (
+            <div key={index} className="flex items-center gap-2">
+              <div className="w-24 flex-shrink-0">
+                <span className="text-sm font-medium capitalize">{link.type}</span>
               </div>
-            ) : (
-              <div className="flex flex-col items-center">
-                <Plus className="h-8 w-8 text-gray-400 mb-1" />
-                <span className="text-sm text-gray-500">No file choosen (under 1MB)</span>
-              </div>
-            )}
-          </div>
-          <input
-            id="display-image"
-            type="file"
-            accept="image/*"
-            onChange={handleDisplayImageChange}
-            className="hidden"
-          />
-        </div>
-        
-        <div>
-          <Label htmlFor="fee">Fee (ETH)</Label>
-          <Input
-            id="fee"
-            type="number"
-            step="0.01"
-            min="0"
-            placeholder="e.g. 0.5"
-            value={price}
-            onChange={(e) => setPrice(e.target.value)}
-            className="mt-1"
-          />
-          <div className="mt-1 flex items-start">
-            <Info className="h-4 w-4 text-gray-500 mr-1 mt-0.5" />
-            <p className="text-xs text-gray-500">Fee that ScienceGent creators will pay to use this capability.</p>
-          </div>
-        </div>
-        
-        <div>
-          <Label htmlFor="creator-address">Fee recieving address</Label>
-          <Input
-            id="creator-address"
-            placeholder="0x10x...F463e3"
-            value={creatorAddress}
-            onChange={(e) => setCreatorAddress(e.target.value)}
-            className="mt-1"
-          />
-          <div className="mt-1 flex items-start">
-            <Info className="h-4 w-4 text-gray-500 mr-1 mt-0.5" />
-            <p className="text-xs text-gray-500">Ethereum address that will receive capability fees.</p>
-          </div>
-        </div>
-        
-        <div>
-          <Label>Socials links for capability (optional)</Label>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
-            <div>
-              <Label htmlFor="twitter" className="text-sm">Twitter</Label>
               <Input
-                id="twitter"
-                placeholder="https://..."
-                value={socialLinks.find(link => link.type === 'twitter')?.url || ''}
-                onChange={(e) => {
-                  const twitterIndex = socialLinks.findIndex(link => link.type === 'twitter');
-                  if (twitterIndex >= 0) {
-                    updateSocialLink(twitterIndex, 'url', e.target.value);
-                  } else {
-                    setSocialLinks([...socialLinks, { type: 'twitter', url: e.target.value }]);
-                  }
-                }}
-                className="mt-1"
-              />
-            </div>
-            
-            <div>
-              <Label htmlFor="telegram" className="text-sm">Telegram</Label>
-              <Input
-                id="telegram"
-                placeholder="https://..."
-                value={socialLinks.find(link => link.type === 'telegram')?.url || ''}
-                onChange={(e) => {
-                  const telegramIndex = socialLinks.findIndex(link => link.type === 'telegram');
-                  if (telegramIndex >= 0) {
-                    updateSocialLink(telegramIndex, 'url', e.target.value);
-                  } else {
-                    setSocialLinks([...socialLinks, { type: 'telegram', url: e.target.value }]);
-                  }
-                }}
-                className="mt-1"
-              />
-            </div>
-            
-            <div>
-              <Label htmlFor="github" className="text-sm">Github</Label>
-              <Input
-                id="github"
-                placeholder="https://..."
-                value={socialLinks.find(link => link.type === 'github')?.url || ''}
-                onChange={(e) => {
-                  const githubIndex = socialLinks.findIndex(link => link.type === 'github');
-                  if (githubIndex >= 0) {
-                    updateSocialLink(githubIndex, 'url', e.target.value);
-                  } else {
-                    setSocialLinks([...socialLinks, { type: 'github', url: e.target.value }]);
-                  }
-                }}
-                className="mt-1"
-              />
-            </div>
-            
-            <div>
-              <Label htmlFor="website" className="text-sm">Website</Label>
-              <Input
-                id="website"
-                placeholder="https://..."
-                value={socialLinks.find(link => link.type === 'website')?.url || ''}
-                onChange={(e) => {
-                  const websiteIndex = socialLinks.findIndex(link => link.type === 'website');
-                  if (websiteIndex >= 0) {
-                    updateSocialLink(websiteIndex, 'url', e.target.value);
-                  } else {
-                    setSocialLinks([...socialLinks, { type: 'website', url: e.target.value }]);
-                  }
-                }}
-                className="mt-1"
-              />
-            </div>
-          </div>
-          
-          {socialLinks.filter(link => !['twitter', 'telegram', 'github', 'website'].includes(link.type)).map((link, index) => (
-            <div key={index} className="flex items-center gap-2 mt-2">
-              <Input
-                placeholder="Type (e.g. Discord)"
-                value={link.type}
-                onChange={(e) => updateSocialLink(
-                  socialLinks.indexOf(link),
-                  'type',
-                  e.target.value
-                )}
-                className="flex-1"
-              />
-              <Input
-                placeholder="URL"
                 value={link.url}
                 onChange={(e) => updateSocialLink(
-                  socialLinks.indexOf(link),
-                  'url',
+                  socialLinks.findIndex(l => l.type === link.type),
+                  link.type,
                   e.target.value
                 )}
-                className="flex-1"
+                placeholder={`${link.type} URL`}
+                className="flex-grow"
+              />
+            </div>
+          ))}
+          
+          {/* Custom social links */}
+          {socialLinks.filter(link => !['twitter', 'github', 'website', 'telegram'].includes(link.type)).map((link, index) => (
+            <div key={`custom-${index}`} className="flex items-center gap-2">
+              <div className="w-24 flex-shrink-0">
+                <span className="text-sm font-medium capitalize">{link.type}</span>
+              </div>
+              <Input
+                value={link.url}
+                onChange={(e) => updateSocialLink(
+                  socialLinks.findIndex(l => l.type === link.type && l.url === link.url),
+                  link.type,
+                  e.target.value
+                )}
+                placeholder={`${link.type} URL`}
+                className="flex-grow"
               />
               <Button
                 type="button"
                 variant="ghost"
                 size="icon"
-                onClick={() => removeSocialLink(socialLinks.indexOf(link))}
+                onClick={() => removeSocialLink(
+                  socialLinks.findIndex(l => l.type === link.type && l.url === link.url)
+                )}
+                className="h-8 w-8"
               >
                 <X className="h-4 w-4" />
               </Button>
             </div>
           ))}
           
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={addSocialLink}
-            className="mt-2"
-          >
-            <Plus className="h-4 w-4 mr-1" /> Add more
-          </Button>
+          {/* Add new social link */}
+          <div className="flex items-end gap-2 pt-2">
+            <div className="w-24 flex-shrink-0">
+              <Input
+                value={newSocialType}
+                onChange={(e) => setNewSocialType(e.target.value)}
+                placeholder="Type"
+                className="text-sm"
+              />
+            </div>
+            <Input
+              value={newSocialUrl}
+              onChange={(e) => setNewSocialUrl(e.target.value)}
+              placeholder="URL"
+              className="flex-grow"
+            />
+            <Button
+              type="button"
+              size="sm"
+              onClick={handleAddSocialLink}
+              disabled={!newSocialType || !newSocialUrl || socialLinkExists(newSocialType)}
+              className="flex-shrink-0 h-10"
+            >
+              <Plus className="h-4 w-4 mr-1" />
+              Add
+            </Button>
+          </div>
         </div>
       </div>
     </div>

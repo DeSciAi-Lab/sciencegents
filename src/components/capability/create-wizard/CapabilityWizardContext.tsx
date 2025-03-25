@@ -1,414 +1,332 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { uploadFileToStorage } from '@/services/capability/supabase';
-import { fetchDeveloperProfile } from '@/services/developerProfileService';
+import { CapabilitySocialLink } from '@/types/capability';
+import { v4 as uuidv4 } from 'uuid';
+import { useDeveloperProfile } from '@/hooks/useDeveloperProfile';
 import { useWallet } from '@/hooks/useWallet';
-import { DeveloperProfile } from '@/types/profile';
+import { uploadFileToStorage } from '@/services/capability/supabase';
 
-// Define the wizard steps
+// Define wizard steps
 export const wizardSteps = [
-  { id: 1, title: "Basic Information", description: "Enter basic details about your capability" },
-  { id: 2, title: "Detailed Description", description: "Provide comprehensive description and features" },
-  { id: 3, title: "Upload Documents", description: "Upload documentation and resources" },
-  { id: 4, title: "Review", description: "Review and submit your capability" }
+  { id: 1, title: 'Basic Information' },
+  { id: 2, title: 'Detailed Description' },
+  { id: 3, title: 'Upload Documents' },
+  { id: 4, title: 'Review & Launch' }
 ];
 
-// Define the extended context props interface with all required properties
-interface CapabilityWizardContextProps {
-  // Basic information
+// Define context type
+export interface CapabilityWizardContextProps {
+  currentStep: number;
   name: string;
-  setName: React.Dispatch<React.SetStateAction<string>>;
   id: string;
-  setId: React.Dispatch<React.SetStateAction<string>>;
   domain: string;
-  setDomain: React.Dispatch<React.SetStateAction<string>>;
   description: string;
-  setDescription: React.Dispatch<React.SetStateAction<string>>;
   detailedDescription: string;
-  setDetailedDescription: React.Dispatch<React.SetStateAction<string>>;
   price: string;
-  setPrice: React.Dispatch<React.SetStateAction<string>>;
+  creatorAddress: string;
+  displayImage: File | null;
+  socialLinks: CapabilitySocialLink[];
+  documentation: File | null;
+  integrationGuide: File | null;
+  additionalFiles: File[];
   features: string[];
-  setFeatures: React.Dispatch<React.SetStateAction<string[]>>;
+  isSubmitting: boolean;
+  canProceed: boolean;
+  developerProfile: any;
+  isLoadingProfile: boolean;
+  
+  // Methods
+  setName: (name: string) => void;
+  setId: (id: string) => void;
+  setDomain: (domain: string) => void;
+  setDescription: (description: string) => void;
+  setDetailedDescription: (description: string) => void;
+  setPrice: (price: string) => void;
+  setCreatorAddress: (address: string) => void;
+  setDisplayImage: (file: File | null) => void;
+  addSocialLink: (type: string, url: string) => void;
+  updateSocialLink: (index: number, type: string, url: string) => void;
+  removeSocialLink: (index: number) => void;
+  setDocumentation: (file: File | null) => void;
+  setIntegrationGuide: (file: File | null) => void;
+  addAdditionalFile: (file: File) => void;
+  removeAdditionalFile: (index: number) => void;
   addFeature: (feature: string) => void;
   removeFeature: (index: number) => void;
-  creatorAddress: string;
-  setCreatorAddress: React.Dispatch<React.SetStateAction<string>>;
+  setIsSubmitting: (isSubmitting: boolean) => void;
   
-  // Social links
-  socialLinks: Array<{ type: string; url: string }>;
-  setSocialLinks: React.Dispatch<React.SetStateAction<Array<{ type: string; url: string }>>>;
-  
-  // Files
-  documentation: File | null;
-  setDocumentation: React.Dispatch<React.SetStateAction<File | null>>;
-  integrationGuide: File | null;
-  setIntegrationGuide: React.Dispatch<React.SetStateAction<File | null>>;
-  additionalFiles: File[];
-  setAdditionalFiles: React.Dispatch<React.SetStateAction<File[]>>;
-  addFile: (file: File) => void;
-  removeFile: (index: number) => void;
-  displayImage: File | null;
-  setDisplayImage: React.Dispatch<React.SetStateAction<File | null>>;
-  
-  // Wizard state
-  currentStep: number;
-  setCurrentStep: React.Dispatch<React.SetStateAction<number>>;
+  // Navigation
   goToNextStep: () => void;
   goToPreviousStep: () => void;
   resetForm: () => void;
-  isSubmitting: boolean;
-  setIsSubmitting: React.Dispatch<React.SetStateAction<boolean>>;
+  
+  // File handling
   handleFileUploads: () => Promise<{
-    documentationUrl?: string;
-    integrationGuideUrl?: string;
-    additionalFilesUrls: Array<{ name: string; url: string }>;
-    displayImageUrl?: string;
+    displayImageUrl: string | null;
+    documentationUrl: string | null;
+    integrationGuideUrl: string | null;
+    additionalFilesUrls: Array<{name: string, url: string}>;
   }>;
-  
-  // Developer profile from Supabase
-  developerProfile: DeveloperProfile | null;
-  isLoadingProfile: boolean;
-  
-  // Form compatibility props
-  formData: {
-    name: string;
-    id: string;
-    domain: string;
-    description: string;
-    detailedDescription: string;
-    fee: string;
-    creatorAddress: string;
-    displayImage?: File | null;
-    features: string[];
-    twitter: string;
-    github: string;
-    website: string;
-    telegram: string;
-  };
-  handleInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
-  handleSelectChange: (field: string, value: string) => void;
-  
-  // Social link handlers
-  updateSocialLink: (index: number, key: string, value: string) => void;
-  addSocialLink: () => void;
-  removeSocialLink: (index: number) => void;
-  
-  // Navigation and form submission
-  nextStep: () => void;
-  prevStep: () => void;
-  canProceed: boolean;
-  submitCapability: () => void;
 }
 
+// Create context
 const CapabilityWizardContext = createContext<CapabilityWizardContextProps | undefined>(undefined);
 
-export const CapabilityWizardProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { address } = useWallet();
+// Default social links
+const defaultSocialLinks: CapabilitySocialLink[] = [
+  { type: 'twitter', url: '' },
+  { type: 'github', url: '' },
+  { type: 'website', url: '' },
+  { type: 'telegram', url: '' }
+];
+
+// Provider component
+export const CapabilityWizardProvider: React.FC<{children: React.ReactNode}> = ({ children }) => {
+  const [currentStep, setCurrentStep] = useState(1);
   
-  // Basic Information
+  // Basic information
   const [name, setName] = useState('');
   const [id, setId] = useState('');
   const [domain, setDomain] = useState('');
   const [description, setDescription] = useState('');
-  const [detailedDescription, setDetailedDescription] = useState('');
-  const [price, setPrice] = useState('0.1');
-  const [features, setFeatures] = useState<string[]>([]);
-  const [creatorAddress, setCreatorAddress] = useState('');
-  
-  // Social Links (for capability)
-  const [socialLinks, setSocialLinks] = useState<Array<{ type: string; url: string }>>([
-    { type: 'twitter', url: '' },
-    { type: 'telegram', url: '' },
-    { type: 'github', url: '' },
-    { type: 'website', url: '' }
-  ]);
-  
-  // UI Form compatibility
+  const [price, setPrice] = useState('');
   const [displayImage, setDisplayImage] = useState<File | null>(null);
+  const [socialLinks, setSocialLinks] = useState<CapabilitySocialLink[]>(defaultSocialLinks);
+  
+  // Detailed description
+  const [detailedDescription, setDetailedDescription] = useState('');
   
   // Files
   const [documentation, setDocumentation] = useState<File | null>(null);
   const [integrationGuide, setIntegrationGuide] = useState<File | null>(null);
   const [additionalFiles, setAdditionalFiles] = useState<File[]>([]);
   
-  // Wizard state
-  const [currentStep, setCurrentStep] = useState(1);
+  // Features
+  const [features, setFeatures] = useState<string[]>([]);
+  
+  // Form state
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  // Developer profile from Supabase
-  const [developerProfile, setDeveloperProfile] = useState<DeveloperProfile | null>(null);
-  const [isLoadingProfile, setIsLoadingProfile] = useState(false);
+  // Get wallet address for creator
+  const { address } = useWallet();
+  const [creatorAddress, setCreatorAddress] = useState('');
+
+  // Fetch developer profile
+  const { profile: developerProfile, isLoading: isLoadingProfile } = useDeveloperProfile(address || '');
   
-  // Fetch developer profile when wallet address changes
+  // Set creator address when wallet connected
   useEffect(() => {
-    const loadDeveloperProfile = async () => {
-      if (!address) return;
-      
-      setIsLoadingProfile(true);
-      try {
-        // Set creator address to connected wallet by default
-        setCreatorAddress(address);
-        
-        const profile = await fetchDeveloperProfile(address);
-        setDeveloperProfile(profile);
-      } catch (error) {
-        console.error("Error loading developer profile:", error);
-      } finally {
-        setIsLoadingProfile(false);
-      }
-    };
-    
-    loadDeveloperProfile();
-  }, [address]);
+    if (address && !creatorAddress) {
+      setCreatorAddress(address);
+    }
+  }, [address, creatorAddress]);
   
-  // Form data object (to fix component errors)
-  const formData = {
-    name,
-    id,
-    domain,
-    description,
-    detailedDescription,
-    fee: price,
-    creatorAddress,
-    displayImage,
-    features,
-    twitter: socialLinks.find(link => link.type === 'twitter')?.url || '',
-    github: socialLinks.find(link => link.type === 'github')?.url || '',
-    website: socialLinks.find(link => link.type === 'website')?.url || '',
-    telegram: socialLinks.find(link => link.type === 'telegram')?.url || ''
-  };
-  
-  // Form handlers
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    
-    // Update the appropriate state based on the input name
-    switch (name) {
-      case 'name':
-        setName(value);
-        break;
-      case 'id':
-        setId(value);
-        break;
-      case 'domain':
-        setDomain(value);
-        break;
-      case 'description':
-        setDescription(value);
-        break;
-      case 'detailedDescription':
-        setDetailedDescription(value);
-        break;
-      case 'fee':
-        setPrice(value);
-        break;
-      case 'creatorAddress':
-        setCreatorAddress(value);
-        break;
-      // Add more cases as needed
+  // Navigation methods
+  const goToNextStep = () => {
+    if (currentStep < wizardSteps.length) {
+      setCurrentStep(prev => prev + 1);
     }
   };
   
-  const handleSelectChange = (field: string, value: string) => {
-    // Update the appropriate state based on the field name
-    switch (field) {
-      case 'domain':
-        setDomain(value);
-        break;
-      // Add more cases as needed
+  const goToPreviousStep = () => {
+    if (currentStep > 1) {
+      setCurrentStep(prev => prev - 1);
     }
   };
   
-  // Helper for updating social link objects
-  const updateSocialLink = (index: number, key: 'type' | 'url', value: string) => {
+  // Social links methods
+  const addSocialLink = (type: string, url: string) => {
+    setSocialLinks(prev => [...prev, { type, url }]);
+  };
+  
+  const updateSocialLink = (index: number, type: string, url: string) => {
     setSocialLinks(prev => {
       const newLinks = [...prev];
-      newLinks[index] = { ...newLinks[index], [key]: value };
+      newLinks[index] = { type, url };
       return newLinks;
     });
   };
   
+  const removeSocialLink = (index: number) => {
+    setSocialLinks(prev => prev.filter((_, i) => i !== index));
+  };
+  
+  // Additional files methods
+  const addAdditionalFile = (file: File) => {
+    setAdditionalFiles(prev => [...prev, file]);
+  };
+  
+  const removeAdditionalFile = (index: number) => {
+    setAdditionalFiles(prev => prev.filter((_, i) => i !== index));
+  };
+  
+  // Features methods
   const addFeature = (feature: string) => {
-    setFeatures([...features, feature]);
+    setFeatures(prev => [...prev, feature]);
   };
   
   const removeFeature = (index: number) => {
-    setFeatures(features.filter((_, i) => i !== index));
+    setFeatures(prev => prev.filter((_, i) => i !== index));
   };
   
-  const addSocialLink = () => {
-    setSocialLinks([...socialLinks, { type: '', url: '' }]);
-  };
-  
-  const removeSocialLink = (index: number) => {
-    setSocialLinks(socialLinks.filter((_, i) => i !== index));
-  };
-  
-  const addFile = (file: File) => {
-    setAdditionalFiles([...additionalFiles, file]);
-  };
-  
-  const removeFile = (index: number) => {
-    setAdditionalFiles(additionalFiles.filter((_, i) => i !== index));
-  };
-  
-  const goToNextStep = () => {
-    setCurrentStep(prevStep => prevStep + 1);
-  };
-  
-  const goToPreviousStep = () => {
-    setCurrentStep(prevStep => prevStep - 1);
-  };
-  
-  // Alias functions for component compatibility
-  const nextStep = goToNextStep;
-  const prevStep = goToPreviousStep;
-  
-  // Check if current step is valid to proceed
-  const canProceed = true; // This would be implemented with validation logic
-  
-  // Form submission
-  const submitCapability = () => {
-    console.log('Submitting capability...');
-    // Implement submission logic
-  };
-  
+  // Reset form
   const resetForm = () => {
+    setCurrentStep(1);
     setName('');
     setId('');
     setDomain('');
     setDescription('');
     setDetailedDescription('');
-    setPrice('0.1');
-    setFeatures([]);
-    setCreatorAddress('');
-    setSocialLinks([
-      { type: 'twitter', url: '' },
-      { type: 'telegram', url: '' },
-      { type: 'github', url: '' },
-      { type: 'website', url: '' }
-    ]);
+    setPrice('');
+    setDisplayImage(null);
+    setSocialLinks(defaultSocialLinks);
     setDocumentation(null);
     setIntegrationGuide(null);
     setAdditionalFiles([]);
-    setCurrentStep(1);
+    setFeatures([]);
     setIsSubmitting(false);
-    setDisplayImage(null);
   };
   
+  // Handle file uploads
   const handleFileUploads = async () => {
-    const result: {
-      documentationUrl?: string;
-      integrationGuideUrl?: string;
-      additionalFilesUrls: Array<{ name: string; url: string }>;
-      displayImageUrl?: string;
-    } = {
-      additionalFilesUrls: []
-    };
+    const capabilityFolder = `capability_${id}_${uuidv4().substring(0, 8)}`;
     
-    try {
-      // Create folder name using ID to group related files
-      const folderName = `capability_${id}`;
-      
-      // Upload display image if available
-      if (displayImage) {
-        const imageResult = await uploadFileToStorage(displayImage, folderName);
-        result.displayImageUrl = imageResult.url;
+    // Upload display image
+    let displayImageUrl = null;
+    if (displayImage) {
+      try {
+        const result = await uploadFileToStorage(displayImage, capabilityFolder);
+        displayImageUrl = result.url;
+      } catch (error) {
+        console.error('Error uploading display image:', error);
       }
-      
-      // Upload documentation if available
-      if (documentation) {
-        const docResult = await uploadFileToStorage(documentation, folderName);
-        result.documentationUrl = docResult.url;
-      }
-      
-      // Upload integration guide if available
-      if (integrationGuide) {
-        const guideResult = await uploadFileToStorage(integrationGuide, folderName);
-        result.integrationGuideUrl = guideResult.url;
-      }
-      
-      // Upload additional files if available
-      if (additionalFiles.length > 0) {
-        for (const file of additionalFiles) {
-          const fileResult = await uploadFileToStorage(file, folderName);
-          result.additionalFilesUrls.push({
-            name: file.name,
-            url: fileResult.url
-          });
-        }
-      }
-      
-      return result;
-    } catch (error) {
-      console.error('Error uploading files:', error);
-      throw error;
     }
+    
+    // Upload documentation
+    let documentationUrl = null;
+    if (documentation) {
+      try {
+        const result = await uploadFileToStorage(documentation, capabilityFolder);
+        documentationUrl = result.url;
+      } catch (error) {
+        console.error('Error uploading documentation:', error);
+      }
+    }
+    
+    // Upload integration guide
+    let integrationGuideUrl = null;
+    if (integrationGuide) {
+      try {
+        const result = await uploadFileToStorage(integrationGuide, capabilityFolder);
+        integrationGuideUrl = result.url;
+      } catch (error) {
+        console.error('Error uploading integration guide:', error);
+      }
+    }
+    
+    // Upload additional files
+    const additionalFilesUrls: Array<{name: string, url: string}> = [];
+    for (const file of additionalFiles) {
+      try {
+        const result = await uploadFileToStorage(file, capabilityFolder);
+        additionalFilesUrls.push({ name: file.name, url: result.url });
+      } catch (error) {
+        console.error(`Error uploading additional file ${file.name}:`, error);
+      }
+    }
+    
+    return {
+      displayImageUrl,
+      documentationUrl,
+      integrationGuideUrl,
+      additionalFilesUrls
+    };
   };
-
+  
+  // Calculate if can proceed to next step
+  const calculateCanProceed = () => {
+    if (currentStep === 1) {
+      // Basic Info validation
+      return (
+        name.trim() !== '' && 
+        id.trim() !== '' && 
+        domain !== '' && 
+        description.trim() !== '' &&
+        price.trim() !== '' && 
+        parseFloat(price) > 0 &&
+        creatorAddress.trim() !== ''
+      );
+    } else if (currentStep === 2) {
+      // Detailed Description - always can proceed
+      return true;
+    } else if (currentStep === 3) {
+      // Upload Documents - always can proceed
+      return true;
+    } else if (currentStep === 4) {
+      // Review - always can proceed
+      return true;
+    }
+    
+    return false;
+  };
+  
+  const canProceed = calculateCanProceed();
+  
+  // Context value
+  const value: CapabilityWizardContextProps = {
+    currentStep,
+    name,
+    id,
+    domain,
+    description,
+    detailedDescription,
+    price,
+    creatorAddress,
+    displayImage,
+    socialLinks,
+    documentation,
+    integrationGuide,
+    additionalFiles,
+    features,
+    isSubmitting,
+    canProceed,
+    developerProfile,
+    isLoadingProfile,
+    
+    setName,
+    setId,
+    setDomain,
+    setDescription,
+    setDetailedDescription,
+    setPrice,
+    setCreatorAddress,
+    setDisplayImage,
+    addSocialLink,
+    updateSocialLink,
+    removeSocialLink,
+    setDocumentation,
+    setIntegrationGuide,
+    addAdditionalFile,
+    removeAdditionalFile,
+    addFeature,
+    removeFeature,
+    setIsSubmitting,
+    
+    goToNextStep,
+    goToPreviousStep,
+    resetForm,
+    
+    handleFileUploads
+  };
+  
   return (
-    <CapabilityWizardContext.Provider
-      value={{
-        name,
-        setName,
-        id,
-        setId,
-        domain,
-        setDomain,
-        description,
-        setDescription,
-        detailedDescription,
-        setDetailedDescription,
-        price,
-        setPrice,
-        features,
-        setFeatures,
-        addFeature,
-        removeFeature,
-        creatorAddress,
-        setCreatorAddress,
-        socialLinks,
-        setSocialLinks,
-        documentation,
-        setDocumentation,
-        integrationGuide,
-        setIntegrationGuide,
-        additionalFiles,
-        setAdditionalFiles,
-        addFile,
-        removeFile,
-        displayImage,
-        setDisplayImage,
-        currentStep,
-        setCurrentStep,
-        goToNextStep,
-        goToPreviousStep,
-        resetForm,
-        isSubmitting,
-        setIsSubmitting,
-        handleFileUploads,
-        // Developer profile from Supabase
-        developerProfile,
-        isLoadingProfile,
-        // Additional properties for component compatibility
-        formData,
-        handleInputChange,
-        handleSelectChange,
-        updateSocialLink,
-        addSocialLink,
-        removeSocialLink,
-        nextStep,
-        prevStep,
-        canProceed,
-        submitCapability
-      }}
-    >
+    <CapabilityWizardContext.Provider value={value}>
       {children}
     </CapabilityWizardContext.Provider>
   );
 };
 
+// Hook for using the context
 export const useCapabilityWizard = () => {
   const context = useContext(CapabilityWizardContext);
   if (context === undefined) {

@@ -7,6 +7,7 @@ import {
   Info
 } from 'lucide-react';
 import { upsertCapabilityToSupabase } from '@/services/capability/supabase';
+import { registerCapabilityOnBlockchain } from '@/services/capability/blockchain';
 import { toast } from '@/components/ui/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
@@ -34,6 +35,7 @@ const Review: React.FC = () => {
   } = useCapabilityWizard();
   
   const [isSuccess, setIsSuccess] = useState(false);
+  const [txHash, setTxHash] = useState<string | null>(null);
   
   const handleSubmit = async () => {
     if (isSubmitting) return;
@@ -41,7 +43,30 @@ const Review: React.FC = () => {
     setIsSubmitting(true);
     
     try {
-      // First, upload any files to storage
+      // First, register on blockchain
+      toast({
+        title: "Registering capability on blockchain",
+        description: "Please confirm the transaction in your wallet...",
+      });
+      
+      // Convert price to string for blockchain registration
+      const feeInEth = price.toString();
+      
+      const txHash = await registerCapabilityOnBlockchain(
+        id,
+        description,
+        feeInEth,
+        creatorAddress
+      );
+      
+      setTxHash(txHash);
+      
+      toast({
+        title: "Blockchain registration successful",
+        description: "Your capability is now being uploaded to the database...",
+      });
+      
+      // Now, upload files to storage
       const fileUploadResults = await handleFileUploads();
       
       // Prepare capability data
@@ -65,7 +90,8 @@ const Review: React.FC = () => {
           integrationGuide: fileUploadResults.integrationGuideUrl,
           additionalFiles: fileUploadResults.additionalFilesUrls
         },
-        display_image: fileUploadResults.displayImageUrl
+        display_image: fileUploadResults.displayImageUrl,
+        developer_profile_pic: developerProfile?.profile_pic
       };
       
       // Save to database
@@ -81,7 +107,7 @@ const Review: React.FC = () => {
       console.error('Error creating capability:', error);
       toast({
         title: "Error",
-        description: "There was an error creating your capability. Please try again.",
+        description: error.message || "There was an error creating your capability. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -106,6 +132,12 @@ const Review: React.FC = () => {
         <p className="text-gray-600 text-center mb-6 max-w-md">
           Your capability has been created and is now available for ScienceGent creators to include in their agents.
         </p>
+        
+        {txHash && (
+          <p className="text-sm text-gray-500 mb-4">
+            Transaction Hash: <a href={`https://sepolia.etherscan.io/tx/${txHash}`} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline truncate max-w-xs inline-block">{txHash.substring(0, 20)}...</a>
+          </p>
+        )}
         
         <div className="space-x-4">
           <Button 
@@ -211,6 +243,14 @@ const Review: React.FC = () => {
                 <p className="text-gray-500 text-xs">Website</p>
                 <p className="text-sm">{socialLinks.find(link => link.type === 'website')?.url || 'XXXXXXXXXX'}</p>
               </div>
+              
+              {/* Display additional social links */}
+              {socialLinks.filter(link => !['twitter', 'telegram', 'github', 'website'].includes(link.type)).map((link, idx) => (
+                <div key={idx} className="col-span-2">
+                  <p className="text-gray-500 text-xs">{link.type}</p>
+                  <p className="text-sm">{link.url || 'XXXXXXXXXX'}</p>
+                </div>
+              ))}
             </div>
           </div>
         </div>

@@ -76,6 +76,7 @@ export const registerCapabilityOnBlockchain = async (
       throw new Error("No wallet detected. Please install MetaMask or another Web3 provider.");
     }
     
+    await window.ethereum.request({ method: 'eth_requestAccounts' });
     const provider = new ethers.providers.Web3Provider(window.ethereum);
     const signer = provider.getSigner();
     
