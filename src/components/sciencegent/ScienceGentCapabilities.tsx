@@ -7,7 +7,7 @@ interface ScienceGentCapabilitiesProps {
 }
 
 const ScienceGentCapabilities: React.FC<ScienceGentCapabilitiesProps> = ({ scienceGent }) => {
-  // Map capability IDs to more user-friendly names and categories
+  // Map capability IDs to more user-friendly names
   const capabilityMap: Record<string, { name: string, category?: string }> = {
     'chat': { name: 'Chat', category: 'Core' },
     'molecular_vision': { name: 'Molecular Vision', category: 'Chemistry' },
@@ -43,21 +43,22 @@ const ScienceGentCapabilities: React.FC<ScienceGentCapabilitiesProps> = ({ scien
     return capabilityMap[id]?.name || id;
   };
 
+  const capabilityCount = displayCapabilities.length;
+
   return (
     <div className="border rounded-lg p-4">
-      <div className="text-lg font-medium mb-2">
-        {displayCapabilities.length} Capabilities:
+      <div className="text-lg font-medium mb-3">
+        {capabilityCount} Capabilities:
       </div>
       <div className="flex flex-wrap gap-2">
-        {displayCapabilities.map((cap: string, index: number) => (
-          index < 4 && (
-            <Badge 
-              key={index} 
-              className="bg-white border rounded-full px-3 py-1 hover:bg-gray-100"
-            >
-              {getCapabilityName(cap)}
-            </Badge>
-          )
+        {displayCapabilities.slice(0, 4).map((cap: string, index: number) => (
+          <Badge 
+            key={index} 
+            variant="outline"
+            className="bg-white border rounded-full px-3 py-1 hover:bg-gray-100"
+          >
+            {getCapabilityName(cap)}
+          </Badge>
         ))}
         
         {displayCapabilities.length > 4 && (

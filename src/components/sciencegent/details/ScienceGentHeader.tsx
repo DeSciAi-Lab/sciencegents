@@ -42,6 +42,8 @@ const ScienceGentHeader: React.FC<ScienceGentHeaderProps> = ({ scienceGent, addr
 
   const symbol = scienceGent?.symbol || "TICKER";
   const domain = scienceGent?.domain || "General";
+  const name = scienceGent?.name || "ScienceGent Name";
+  const description = scienceGent?.description || "Description ----- ---- ----- ------ ----- ------ ---";
 
   return (
     <div className="flex flex-col md:flex-row items-start gap-4">
@@ -49,23 +51,23 @@ const ScienceGentHeader: React.FC<ScienceGentHeaderProps> = ({ scienceGent, addr
         {scienceGent?.profile_pic ? (
           <img 
             src={scienceGent.profile_pic} 
-            alt={scienceGent.name} 
+            alt={name} 
             className="w-full h-full object-cover"
             onError={(e) => {
               e.currentTarget.style.display = 'none';
-              e.currentTarget.parentElement!.innerHTML = `<div class="w-20 h-20 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center text-white text-4xl font-bold">${scienceGent?.name?.charAt(0) || '?'}</div>`;
+              e.currentTarget.parentElement!.innerHTML = `<div class="w-20 h-20 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center text-white text-4xl font-bold">${name?.charAt(0) || '?'}</div>`;
             }}
           />
         ) : (
-          <div className="w-20 h-20 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center text-white text-4xl font-bold">
-            {scienceGent?.name?.charAt(0) || '?'}
+          <div className="text-white text-4xl font-bold">
+            {name?.charAt(0) || '?'}
           </div>
         )}
       </div>
 
       <div className="flex-1">
         <div className="flex flex-wrap items-center gap-2 mb-2">
-          <h1 className="text-2xl font-bold">{scienceGent?.name || "ScienceGent Name"}</h1>
+          <h1 className="text-2xl font-bold">{name}</h1>
           <Badge className="ml-1 bg-gray-100 text-gray-800 font-medium border-0 rounded">${symbol}</Badge>
           <div className="text-xs font-bold text-gray-500 ml-1 uppercase">STICKER</div>
         </div>
@@ -123,7 +125,7 @@ const ScienceGentHeader: React.FC<ScienceGentHeaderProps> = ({ scienceGent, addr
         </div>
 
         <div className="bg-white border rounded-full px-4 py-1.5 text-sm text-gray-600 max-w-3xl">
-          {scienceGent?.description || "Description ----- ---- ----- ------ ----- ------ ---"}
+          {description}
           <button className="text-blue-500 ml-1 text-xs">see more</button>
         </div>
       </div>

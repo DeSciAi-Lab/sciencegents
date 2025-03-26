@@ -31,7 +31,12 @@ const ScienceGentMaturityStatus: React.FC<ScienceGentMaturityStatusProps> = ({
       </div>
       
       <div className="mb-3">
-        <Progress value={progress} className="h-2 bg-gray-200" />
+        <div className="w-full bg-blue-100 h-2 rounded-full">
+          <div 
+            className="bg-blue-600 h-2 rounded-full" 
+            style={{ width: `${progress}%` }}
+          />
+        </div>
       </div>
       
       <div className="text-sm text-gray-600">
