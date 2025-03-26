@@ -3,8 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, Filter, ChevronDown, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import Navbar from '@/components/layout/Navbar';
-import Footer from '@/components/layout/Footer';
+import NavbarLayout from '@/components/layout/NavbarLayout';
 import Reveal from '@/components/animations/Reveal';
 import { 
   fetchScienceGents, 
@@ -241,16 +240,14 @@ const Explore = () => {
   );
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
-      <Navbar />
-      
-      <main className="flex-grow pt-24 pb-16">
+    <NavbarLayout>
+      <div className="pt-6 pb-16 bg-gray-50">
         <div className="container mx-auto px-4 max-w-7xl">
           <div className="mb-6">
             <h1 className="text-2xl font-medium mb-8">Explore ScienceGents</h1>
             
             {/* Stats Section */}
-            <div className="grid grid-cols-4 gap-4 mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
               <div className="p-4 bg-white rounded-lg shadow-sm">
                 <p className="text-4xl font-bold">{stats.totalScienceGents}</p>
                 <p className="text-sm text-gray-500">Total ScienceGents</p>
@@ -393,10 +390,8 @@ const Explore = () => {
             </div>
           </div>
         </div>
-      </main>
-      
-      <Footer />
-    </div>
+      </div>
+    </NavbarLayout>
   );
 };
 
