@@ -32,21 +32,17 @@ const NavHeader: React.FC = () => {
   return (
     <header className="fixed top-0 left-0 right-0 z-40 bg-white shadow-sm border-b">
       <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between h-20">
+        <div className="flex items-center justify-between h-16">
           {/* Logo with DeSciAi + Heart + ScienceGents */}
           <Link to="/" className="flex items-center">
             <div className="flex items-center">
               <img 
                 src="/lovable-uploads/0bc5a9bb-08f4-4c6a-9e4a-008edc993782.png" 
                 alt="DeSciAi Logo" 
-                className="h-12 mr-1" 
+                className="h-8 mr-1" 
               />
-              <Heart className="h-5 w-5 mx-1 text-[#ea384c] fill-[#ea384c]" />
-              <img 
-                src="/lovable-uploads/c0c4945d-21f5-4b1d-8709-e3de5c39cf35.png" 
-                alt="ScienceGents Logo" 
-                className="h-12 ml-1" 
-              />
+              <Heart className="h-4 w-4 mx-1 text-[#ea384c] fill-[#ea384c]" />
+              <span className="text-purple-600 font-bold text-lg">SCIENCEGENTS</span>
             </div>
           </Link>
 
@@ -54,7 +50,7 @@ const NavHeader: React.FC = () => {
           <nav className="hidden md:flex items-center space-x-8">
             <Link
               to="/sciencegents"
-              className={`text-gray-800 font-medium ${
+              className={`text-gray-700 font-medium ${
                 location.pathname === '/sciencegents'
                   ? 'text-purple-700'
                   : 'hover:text-purple-700'
@@ -64,7 +60,7 @@ const NavHeader: React.FC = () => {
             </Link>
             <Link
               to="/capabilities"
-              className={`text-gray-800 font-medium ${
+              className={`text-gray-700 font-medium ${
                 location.pathname === '/capabilities'
                   ? 'text-purple-700'
                   : 'hover:text-purple-700'
@@ -77,7 +73,7 @@ const NavHeader: React.FC = () => {
             {isAdmin && (
               <Link
                 to="/admin"
-                className={`text-gray-800 font-medium ${
+                className={`text-gray-700 font-medium ${
                   location.pathname === '/admin'
                     ? 'text-purple-700'
                     : 'hover:text-purple-700'
@@ -89,11 +85,12 @@ const NavHeader: React.FC = () => {
           </nav>
 
           {/* Action Buttons */}
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-3">
             <Button 
               asChild
-              className="bg-white border-purple-500 border text-purple-500 hover:bg-purple-50"
               variant="outline"
+              className="border-purple-200 text-purple-700 hover:bg-purple-50"
+              size="sm"
             >
               <Link to="/create-sciencegent">
                 Create ScienceGent
@@ -102,8 +99,9 @@ const NavHeader: React.FC = () => {
             
             <Button 
               asChild
-              className="bg-white border-purple-500 border text-purple-500 hover:bg-purple-50"
               variant="outline"
+              className="border-purple-200 text-purple-700 hover:bg-purple-50"
+              size="sm"
             >
               <Link to="/create-capability">
                 Create Capability

@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, ChevronDown, ChevronLeft, ChevronRight, Star } from 'lucide-react';
+import { Search, ChevronDown, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import NavbarLayout from '@/components/layout/NavbarLayout';
 import { 
@@ -13,8 +13,8 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { syncAllScienceGents } from '@/services/scienceGentDataService';
 import { toast } from '@/components/ui/use-toast';
-import { Badge } from '@/components/ui/badge';
-import { Checkbox } from '@/components/ui/checkbox';
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
+import ScienceGentTable from '@/components/sciencegent/ScienceGentTable';
 
 const Explore = () => {
   const navigate = useNavigate();
@@ -111,35 +111,6 @@ const Explore = () => {
     return filteredGents.slice(startIndex, endIndex);
   };
 
-  // Render star rating (1-5)
-  const renderRating = (rating: number) => {
-    return (
-      <div className="flex">
-        {[1, 2, 3, 4, 5].map((star) => (
-          <Star
-            key={star}
-            size={16}
-            className={star <= rating ? "text-yellow-400 fill-yellow-400" : "text-gray-300"}
-          />
-        ))}
-      </div>
-    );
-  };
-
-  // Render maturity progress
-  const renderMaturityProgress = (status: string) => {
-    return (
-      <div className="w-full max-w-[150px]">
-        <div className="h-2 bg-gray-200 rounded-full">
-          <div 
-            className={`h-full rounded-full ${status === 'Ready' ? 'bg-blue-500' : status === 'Migrated' ? 'bg-green-500' : 'bg-purple-500'}`} 
-            style={{ width: status === 'Migrated' ? '100%' : status === 'Ready' ? '80%' : '30%' }}
-          />
-        </div>
-      </div>
-    );
-  };
-
   // Generate skeleton for loading state
   const renderSkeleton = () => (
     <div className="space-y-4">
@@ -149,6 +120,9 @@ const Explore = () => {
     </div>
   );
 
+  // Calculate total pages
+  const totalPages = Math.ceil(totalResults / itemsPerPage);
+
   return (
     <NavbarLayout>
       <div className="container max-w-7xl mx-auto px-4 py-6">
@@ -156,43 +130,16 @@ const Explore = () => {
         
         <div className="bg-white rounded-lg border shadow-sm p-6 mb-6">
           <div className="flex flex-col gap-4">
-            {/* Search and action buttons */}
-            <div className="flex flex-wrap gap-4 items-center">
-              <div className="relative flex-grow max-w-md">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Search"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-purple-500"
-                />
-              </div>
-              
-              <div className="flex gap-3 ml-auto">
-                <Button 
-                  variant="outline"
-                  className="border-purple-300 text-purple-700"
-                  onClick={() => navigate('/create-sciencegent')}
-                >
-                  Create ScienceGent
-                </Button>
-                
-                <Button 
-                  variant="outline"
-                  className="border-purple-300 text-purple-700"
-                  onClick={() => navigate('/create-capability')}
-                >
-                  Create Capability
-                </Button>
-                
-                <Button 
-                  className="bg-purple-600 hover:bg-purple-700 text-white"
-                  onClick={() => {}}
-                >
-                  Connect Wallet
-                </Button>
-              </div>
+            {/* Search input */}
+            <div className="relative max-w-md">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-purple-500"
+              />
             </div>
             
             {/* Filter buttons */}
@@ -261,9 +208,9 @@ const Explore = () => {
                   variant="ghost"
                   size="sm"
                   onClick={clearFilters}
-                  className="ml-auto text-sm"
+                  className="ml-auto flex items-center gap-1 text-sm text-gray-500"
                 >
-                  Clear filters
+                  Clear filters <X className="h-3.5 w-3.5" />
                 </Button>
               )}
             </div>
@@ -278,84 +225,12 @@ const Explore = () => {
             </div>
           ) : filteredGents.length > 0 ? (
             <>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="p-4 text-left">
-                        <Checkbox />
-                      </th>
-                      <th className="p-4 text-left font-medium">Logo</th>
-                      <th className="p-4 text-left font-medium">NAME</th>
-                      <th className="p-4 text-left font-medium">Age</th>
-                      <th className="p-4 text-left font-medium">Market cap</th>
-                      <th className="p-4 text-left font-medium">24h Chg</th>
-                      <th className="p-4 text-left font-medium">24h vol</th>
-                      <th className="p-4 text-left font-medium">Revenue</th>
-                      <th className="p-4 text-left font-medium">Price</th>
-                      <th className="p-4 text-left font-medium">Rating</th>
-                      <th className="p-4 text-left font-medium">Maturity</th>
-                      <th className="p-4 text-left font-medium">Domain</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {getCurrentPageItems().map((gent) => (
-                      <tr 
-                        key={gent.id}
-                        className="border-b hover:bg-gray-50 cursor-pointer"
-                        onClick={() => navigate(`/sciencegent/${gent.address}`)}
-                      >
-                        <td className="p-4">
-                          <Checkbox onClick={(e) => e.stopPropagation()} />
-                        </td>
-                        <td className="p-4">
-                          <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold bg-purple-500">
-                            {gent.profilePic ? (
-                              <img 
-                                src={gent.profilePic} 
-                                alt={gent.name} 
-                                className="w-full h-full object-cover rounded-full" 
-                              />
-                            ) : (
-                              gent.symbol.substring(0, 1)
-                            )}
-                          </div>
-                        </td>
-                        <td className="p-4">
-                          <div>
-                            <div className="font-medium flex items-center gap-2">
-                              {gent.name} ${gent.symbol}
-                            </div>
-                            <div className="flex items-center text-sm text-gray-500">
-                              <span className="text-xs font-mono">
-                                {gent.address.substring(0, 11)}...{gent.address.slice(-4)}
-                              </span>
-                              {gent.isCurated && (
-                                <Badge variant="outline" className="ml-2 text-xs">
-                                  curated
-                                </Badge>
-                              )}
-                            </div>
-                          </div>
-                        </td>
-                        <td className="p-4 text-gray-700">{gent.age}</td>
-                        <td className="p-4 text-gray-700">{formatValue(gent.marketCap)}</td>
-                        <td className={`p-4 ${gent.priceChange24h >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                          {gent.priceChange24h > 0 ? '+' : ''}{gent.priceChange24h}%
-                        </td>
-                        <td className="p-4 text-gray-700">{formatValue(gent.volume24h)}</td>
-                        <td className="p-4 text-gray-700">{formatValue(gent.revenue)} DSI</td>
-                        <td className="p-4 text-gray-700">{gent.tokenPrice.toFixed(3)}</td>
-                        <td className="p-4">{renderRating(gent.rating)}</td>
-                        <td className="p-4">{renderMaturityProgress(gent.maturityStatus)}</td>
-                        <td className="p-4">
-                          <Badge variant="outline" className="text-xs">{gent.domain.toLowerCase()}</Badge>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <ScienceGentTable 
+                scienceGents={getCurrentPageItems()}
+                onSortChange={handleSortChange}
+                sortBy={sortBy}
+                sortOrder={sortOrder}
+              />
               
               {/* Pagination */}
               <div className="p-4 border-t flex items-center justify-between">
@@ -363,50 +238,68 @@ const Explore = () => {
                   Show 1 to {Math.min(page * itemsPerPage, totalResults)} of {totalResults} results
                 </div>
                 
-                <div className="flex items-center gap-2">
-                  <Button 
-                    variant="ghost" 
-                    size="icon"
-                    disabled={page === 1}
-                    onClick={() => setPage(p => Math.max(1, p - 1))}
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                  </Button>
-                  
-                  {[...Array(Math.min(5, Math.ceil(totalResults / itemsPerPage)))].map((_, i) => (
-                    <Button
-                      key={i + 1}
-                      variant={page === i + 1 ? "default" : "outline"}
-                      size="sm"
-                      className={page === i + 1 ? "bg-purple-600" : ""}
-                      onClick={() => setPage(i + 1)}
-                    >
-                      {i + 1}
-                    </Button>
-                  ))}
-                  
-                  {Math.ceil(totalResults / itemsPerPage) > 5 && (
-                    <>
-                      <span>...</span>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setPage(Math.ceil(totalResults / itemsPerPage))}
-                      >
-                        {Math.ceil(totalResults / itemsPerPage)}
-                      </Button>
-                    </>
-                  )}
-                  
-                  <Button 
-                    variant="ghost" 
-                    size="icon"
-                    disabled={page >= Math.ceil(totalResults / itemsPerPage)}
-                    onClick={() => setPage(p => Math.min(Math.ceil(totalResults / itemsPerPage), p + 1))}
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-                </div>
+                <Pagination>
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious 
+                        href="#" 
+                        onClick={(e) => {
+                          e.preventDefault();
+                          if (page > 1) setPage(page - 1);
+                        }}
+                        className={page === 1 ? "pointer-events-none opacity-50" : ""}
+                      />
+                    </PaginationItem>
+                    
+                    {Array.from({ length: Math.min(5, totalPages) }).map((_, i) => (
+                      <PaginationItem key={i + 1}>
+                        <PaginationLink 
+                          href="#" 
+                          onClick={(e) => {
+                            e.preventDefault();
+                            setPage(i + 1);
+                          }}
+                          isActive={page === i + 1}
+                        >
+                          {i + 1}
+                        </PaginationLink>
+                      </PaginationItem>
+                    ))}
+                    
+                    {totalPages > 5 && (
+                      <>
+                        <PaginationItem>
+                          <PaginationLink href="#" onClick={(e) => e.preventDefault()}>
+                            ...
+                          </PaginationLink>
+                        </PaginationItem>
+                        <PaginationItem>
+                          <PaginationLink 
+                            href="#" 
+                            onClick={(e) => {
+                              e.preventDefault();
+                              setPage(totalPages);
+                            }}
+                            isActive={page === totalPages}
+                          >
+                            {totalPages}
+                          </PaginationLink>
+                        </PaginationItem>
+                      </>
+                    )}
+                    
+                    <PaginationItem>
+                      <PaginationNext 
+                        href="#" 
+                        onClick={(e) => {
+                          e.preventDefault();
+                          if (page < totalPages) setPage(page + 1);
+                        }}
+                        className={page >= totalPages ? "pointer-events-none opacity-50" : ""}
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
               </div>
             </>
           ) : (
@@ -437,16 +330,6 @@ const Explore = () => {
       </div>
     </NavbarLayout>
   );
-};
-
-// Helper function to format values
-const formatValue = (value: number) => {
-  if (value >= 1000000) {
-    return `${(value / 1000000).toFixed(1)}M`;
-  } else if (value >= 1000) {
-    return `${(value / 1000).toFixed(0)}k`;
-  }
-  return value.toString();
 };
 
 export default Explore;

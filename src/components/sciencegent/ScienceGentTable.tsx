@@ -66,7 +66,7 @@ const ScienceGentTable: React.FC<ScienceGentTableProps> = ({
   // Render maturity progress
   const renderMaturityProgress = (status: string) => {
     return (
-      <div className="w-full max-w-[150px]">
+      <div className="w-full max-w-[120px]">
         <div className="h-2 bg-gray-200 rounded-full">
           <div 
             className={`h-full rounded-full ${status === 'Ready' ? 'bg-blue-500' : status === 'Migrated' ? 'bg-green-500' : 'bg-purple-500'}`} 
@@ -94,7 +94,7 @@ const ScienceGentTable: React.FC<ScienceGentTableProps> = ({
   };
 
   return (
-    <div className="overflow-auto">
+    <div className="overflow-x-auto">
       <Table>
         <TableHeader>
           <TableRow className="border-b border-gray-200">
@@ -107,13 +107,13 @@ const ScienceGentTable: React.FC<ScienceGentTableProps> = ({
             </TableHead>
             <TableHead>{renderSortableHeader('Age', 'age')}</TableHead>
             <TableHead>{renderSortableHeader('Market cap', 'marketCap')}</TableHead>
-            <TableHead>{renderSortableHeader('24h Chg', 'priceChange24h')}</TableHead>
-            <TableHead>{renderSortableHeader('24h vol', 'volume24h')}</TableHead>
+            <TableHead>24h Chg</TableHead>
+            <TableHead>24h vol</TableHead>
             <TableHead>{renderSortableHeader('Revenue', 'revenue')}</TableHead>
             <TableHead>{renderSortableHeader('Price', 'tokenPrice')}</TableHead>
-            <TableHead>{renderSortableHeader('Rating', 'rating')}</TableHead>
+            <TableHead>Rating</TableHead>
             <TableHead>Maturity</TableHead>
-            <TableHead>{renderSortableHeader('Domain', 'domain')}</TableHead>
+            <TableHead>Domain</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -131,7 +131,7 @@ const ScienceGentTable: React.FC<ScienceGentTableProps> = ({
                   className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-medium ${
                     gent.profilePic 
                       ? '' 
-                      : 'bg-gradient-to-br from-purple-400 to-purple-600'
+                      : 'bg-purple-500'
                   }`}
                 >
                   {gent.profilePic ? (
@@ -142,27 +142,22 @@ const ScienceGentTable: React.FC<ScienceGentTableProps> = ({
                       loading="lazy" 
                     />
                   ) : (
-                    <div className="w-10 h-10 rounded-full flex items-center justify-center">
-                      {gent.name.substring(0, 1).toUpperCase()}
-                    </div>
+                    gent.symbol.charAt(0)
                   )}
                 </div>
               </TableCell>
               <TableCell className="py-2">
                 <div>
-                  <div className="font-medium flex items-center gap-2">
-                    {gent.name}
+                  <div className="font-medium">
+                    {gent.name} <span className="text-gray-600">${gent.symbol}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-gray-500">
+                    {formatAddress(gent.address)}
                     {gent.isCurated && (
-                      <Badge variant="outline" className="bg-gray-100 text-xs">
+                      <Badge variant="outline" className="text-xs px-2 py-0 h-5 bg-gray-50">
                         curated
                       </Badge>
                     )}
-                  </div>
-                  <div className="text-sm text-muted-foreground flex items-center gap-1">
-                    <span className="font-semibold">${gent.symbol}</span>
-                    <span className="text-xs text-gray-400">
-                      {formatAddress(gent.address)}
-                    </span>
                   </div>
                 </div>
               </TableCell>
