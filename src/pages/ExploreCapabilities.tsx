@@ -1,16 +1,15 @@
 
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Star, Search, X, Beaker, Activity, Database, Cog, Plus } from 'lucide-react';
+import { Search, X, Beaker, Activity, Database, Cog, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import NavHeader from '@/components/layout/NavHeader';
 import Footer from '@/components/layout/Footer';
-import Reveal from '@/components/animations/Reveal';
 import { getAllCapabilities } from '@/data/capabilities';
 import { Capability } from '@/types/capability';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Badge } from '@/components/ui/badge';
+import CapabilityCard from '@/components/capability/CapabilityCard';
 
 const ExploreCapabilities = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -79,36 +78,6 @@ const ExploreCapabilities = () => {
     setSelectedDomain(null);
     setSortBy('created');
     setSortDirection('desc');
-  };
-
-  const renderRating = (rating: number) => {
-    return (
-      <div className="flex items-center">
-        {[1, 2, 3, 4, 5].map((star) => (
-          <Star
-            key={star}
-            size={14}
-            className={star <= Math.round(rating) ? "text-yellow-400 fill-yellow-400" : "text-gray-300"}
-          />
-        ))}
-        <span className="ml-1 text-xs">{rating.toFixed(1)}</span>
-      </div>
-    );
-  };
-
-  const getDomainIcon = (domain: string) => {
-    switch (domain.toLowerCase()) {
-      case 'chemistry':
-        return <Beaker size={16} />;
-      case 'protein analysis':
-        return <Activity size={16} />;
-      case 'material science':
-        return <Database size={16} />;
-      case 'qm simulations':
-        return <Cog size={16} />;
-      default:
-        return <Beaker size={16} />;
-    }
   };
 
   const domainButtons = [
@@ -244,52 +213,8 @@ const ExploreCapabilities = () => {
                 <Link 
                   key={capability.id}
                   to={`/capability/${capability.id}`}
-                  className="bg-white rounded-md border hover:shadow-md transition-shadow"
                 >
-                  <div className="p-4">
-                    <div className="flex justify-between items-start mb-2">
-                      <div>
-                        <h3 className="font-semibold text-gray-800">{capability.name}</h3>
-                        <div className="text-xs text-blue-600">Capability ID</div>
-                      </div>
-                    </div>
-                    
-                    <p className="text-sm text-gray-600 line-clamp-2 mb-4">
-                      Brief Description: {capability.description}
-                    </p>
-                    
-                    <div className="font-medium mb-2">
-                      FEE {capability.price} ETH
-                    </div>
-                    
-                    <div className="flex flex-wrap items-center gap-2 mb-2">
-                      <div className="text-xs flex items-center gap-1">
-                        usage {capability.stats?.usageCount || 0}
-                      </div>
-                      <div className="text-xs flex items-center gap-1">
-                        rating {renderRating(capability.stats?.rating || 4.1)}
-                      </div>
-                    </div>
-                    
-                    <div className="flex flex-wrap justify-between items-center">
-                      <div className="text-xs text-gray-500">
-                        revenue {capability.stats?.revenue || 2600}DSI
-                      </div>
-                      <Badge variant="outline" className="text-xs">
-                        {capability.domain}
-                      </Badge>
-                    </div>
-                  </div>
-                  
-                  {capability.display_image && (
-                    <div className="h-32 w-full">
-                      <img 
-                        src={capability.display_image} 
-                        alt={capability.name} 
-                        className="h-full w-full object-cover"
-                      />
-                    </div>
-                  )}
+                  <CapabilityCard capability={capability} />
                 </Link>
               ))
             ) : (
@@ -307,4 +232,3 @@ const ExploreCapabilities = () => {
 };
 
 export default ExploreCapabilities;
-

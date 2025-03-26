@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { useEthPriceContext, formatEthToUsd } from '@/context/EthPriceContext';
+import { useEthPriceContext, formatEthToUsd, formatEthPrice } from '@/context/EthPriceContext';
 
 interface ScienceGentStatsCardsProps {
   scienceGent: any;
@@ -21,7 +21,7 @@ const ScienceGentStatsCards: React.FC<ScienceGentStatsCardsProps> = ({ scienceGe
         <div className="text-sm">{title}</div>
         {ethValue !== undefined ? (
           <>
-            <div className="font-medium">{ethValue.toFixed(2)} ETH</div>
+            <div className="font-medium">{formatEthPrice(ethValue)}</div>
             <div className="text-xs text-gray-500">{dollarValue}</div>
           </>
         ) : (

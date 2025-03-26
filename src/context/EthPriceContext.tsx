@@ -42,3 +42,13 @@ export const formatEthToUsd = (ethValue: number, ethPrice: number): string => {
     return `$${usdValue.toFixed(2)}`;
   }
 };
+
+// Utility function to format ETH value
+export const formatEthPrice = (value: number): string => {
+  if (value >= 1000000) {
+    return `${(value / 1000000).toFixed(2)}M ETH`;
+  } else if (value >= 1000) {
+    return `${(value / 1000).toFixed(2)}K ETH`;
+  }
+  return `${value.toFixed(4)} ETH`;
+};

@@ -3,31 +3,15 @@ import React from 'react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Star, MessageSquare, Download, Users } from 'lucide-react';
+import { Star, Download, Users } from 'lucide-react';
 import { Capability } from '@/types/capability';
+import { renderRating } from '@/components/capability/CapabilityCard';
 
 interface CapabilityInfoSidebarProps {
   capability: Capability;
 }
 
 const CapabilityInfoSidebar: React.FC<CapabilityInfoSidebarProps> = ({ capability }) => {
-  const renderRatingStars = (rating: number) => {
-    const fullStars = Math.floor(rating);
-    const hasHalfStar = rating - fullStars >= 0.5;
-    const stars = [];
-    
-    for (let i = 1; i <= 5; i++) {
-      if (i <= fullStars) {
-        stars.push(<Star key={i} className="h-4 w-4 text-yellow-400 fill-yellow-400" />);
-      } else if (i === fullStars + 1 && hasHalfStar) {
-        stars.push(<Star key={i} className="h-4 w-4 text-yellow-400 fill-yellow-400 opacity-60" />);
-      } else {
-        stars.push(<Star key={i} className="h-4 w-4 text-gray-300" />);
-      }
-    }
-    return <div className="flex">{stars}</div>;
-  };
-  
   return (
     <div className="space-y-4">
       <Card>
@@ -57,7 +41,7 @@ const CapabilityInfoSidebar: React.FC<CapabilityInfoSidebarProps> = ({ capabilit
               <span className="text-sm text-muted-foreground">Rating</span>
             </div>
             <div className="flex items-center">
-              {renderRatingStars(capability.stats?.rating || capability.rating || 4.5)}
+              {renderRating(capability.stats?.rating || capability.rating || 4.5)}
               <span className="ml-2 font-medium">{capability.stats?.rating || capability.rating || 4.5}</span>
             </div>
           </div>
