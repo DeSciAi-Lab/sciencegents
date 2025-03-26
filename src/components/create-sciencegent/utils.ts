@@ -27,12 +27,36 @@ export const calculateTotalCapabilityFeesSynchronous = (selectedCapabilities: st
 
 // Updated wizard steps with Detailed Description instead of Personal Info
 export const wizardSteps = [
-  { id: 1, title: 'Basic Info' },
-  { id: 2, title: 'Detailed Description' },
-  { id: 3, title: 'Persona Customization' },
-  { id: 4, title: 'Capability' },
-  { id: 5, title: 'Liquidity' },
-  { id: 6, title: 'Review' }
+  {
+    id: 1,
+    title: 'Basic Info',
+    description: 'Name, Ticker, and Logo'
+  },
+  {
+    id: 2,
+    title: 'Detailed Description',
+    description: 'Detailed information about the ScienceGent'
+  },
+  {
+    id: 3,
+    title: 'Persona',
+    description: 'Agent Personality'
+  },
+  {
+    id: 4,
+    title: 'Capabilities',
+    description: 'Choose Capabilities'
+  },
+  {
+    id: 5,
+    title: 'Liquidity',
+    description: 'Set Initial Liquidity'
+  },
+  {
+    id: 6,
+    title: 'Review & Launch',
+    description: 'Launch ScienceGent'
+  }
 ];
 
 // Validate if the current step is filled correctly

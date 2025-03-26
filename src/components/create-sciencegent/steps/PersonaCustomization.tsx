@@ -43,7 +43,9 @@ const PersonaCustomization: React.FC<PersonaCustomizationProps> = ({ formData, h
 
   return (
     <div className="space-y-6">
-      <h2 className="text-xl font-semibold mb-2">Set the virtual ETH amount to set the initial price of your token and initialize the pool</h2>
+      <h2 className="text-xl font-semibold mb-2">
+        Customize your ScienceGent's personality, expertise, and communication style
+      </h2>
       
       <div>
         <div className="flex justify-between items-center mb-2">

@@ -35,7 +35,7 @@ const LiquiditySettings: React.FC<LiquiditySettingsProps> = ({ formData, handleI
     <div className="space-y-8">
       <div>
         <h2 className="text-xl font-semibold mb-2">
-          Customize your ScienceGent's personality, expertise, and communication style
+          Set the virtual ETH amount to set the initial price of your token and initialize the pool
         </h2>
       </div>
       
