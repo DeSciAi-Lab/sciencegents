@@ -116,7 +116,10 @@ export const saveScienceGentToSupabase = async (
         created_on_chain_at: scienceGent.created_on_chain_at,
         maturity_deadline: scienceGent.maturity_deadline,
         // Convert remaining_maturity_time to a number to fix the type mismatch
-        remaining_maturity_time: scienceGent.remaining_maturity_time ? Number(scienceGent.remaining_maturity_time) : null,
+        // First check if it's null, then convert to Number if it exists
+        remaining_maturity_time: scienceGent.remaining_maturity_time !== null && scienceGent.remaining_maturity_time !== undefined 
+          ? Number(scienceGent.remaining_maturity_time) 
+          : null,
         maturity_progress: scienceGent.maturity_progress,
         token_price: scienceGent.token_price,
         market_cap: scienceGent.market_cap,
