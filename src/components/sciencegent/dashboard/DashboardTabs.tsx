@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LoadingStatus } from '@/hooks/useScienceGentDetails';
@@ -5,6 +6,8 @@ import OverviewTab from './OverviewTab';
 import TradeTab from './TradeTab';
 import ChatTab from './ChatTab';
 import InfoTab from './InfoTab';
+import { Skeleton } from '@/components/ui/skeleton';
+import { BarChart3, MessageCircle, FileText } from 'lucide-react';
 
 interface DashboardTabsProps {
   address: string;
@@ -42,6 +45,9 @@ const DashboardTabs: React.FC<DashboardTabsProps> = ({
     setActiveTradingTab(value);
   };
 
+  // Determine if content is loading
+  const isLoading = status === LoadingStatus.Loading || isRefreshing;
+
   return (
     <div className="flex flex-col md:flex-row gap-6 p-6">
       {/* Main content - now it takes full width */}
@@ -51,20 +57,23 @@ const DashboardTabs: React.FC<DashboardTabsProps> = ({
             <TabsList className="w-full justify-start bg-white rounded-none p-0">
               <TabsTrigger 
                 value="overview"
-                className="rounded-none px-6 py-3 text-gray-700 data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:text-blue-600"
+                className="rounded-none px-6 py-3 text-gray-700 data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:text-blue-600 flex items-center gap-2"
               >
+                <FileText className="h-4 w-4" />
                 Overview
               </TabsTrigger>
               <TabsTrigger 
                 value="trades"
-                className="rounded-none px-6 py-3 text-gray-700 data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:text-blue-600"
+                className="rounded-none px-6 py-3 text-gray-700 data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:text-blue-600 flex items-center gap-2"
               >
+                <BarChart3 className="h-4 w-4" />
                 Trades
               </TabsTrigger>
               <TabsTrigger 
                 value="agent"
-                className="rounded-none px-6 py-3 text-gray-700 data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:text-blue-600"
+                className="rounded-none px-6 py-3 text-gray-700 data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:text-blue-600 flex items-center gap-2"
               >
+                <MessageCircle className="h-4 w-4" />
                 Agent Interface
               </TabsTrigger>
             </TabsList>
@@ -97,10 +106,18 @@ const DashboardTabs: React.FC<DashboardTabsProps> = ({
               </div>
               
               <div className="p-6">
-                <InfoTab 
-                  activeTab={activeOverviewTab}
-                  scienceGent={scienceGentData}
-                />
+                {isLoading ? (
+                  <div className="space-y-4">
+                    <Skeleton className="h-8 w-48" />
+                    <Skeleton className="h-24 w-full" />
+                    <Skeleton className="h-32 w-full" />
+                  </div>
+                ) : (
+                  <InfoTab 
+                    activeTab={activeOverviewTab}
+                    scienceGent={scienceGentData}
+                  />
+                )}
               </div>
             </Tabs>
           </TabsContent>
@@ -132,11 +149,23 @@ const DashboardTabs: React.FC<DashboardTabsProps> = ({
               </div>
             
               <div className="p-6">
-                <TradeTab 
-                  address={address} 
-                  scienceGentData={scienceGentData}
-                  activeTab={activeTradingTab}
-                />
+                {isLoading ? (
+                  <div className="space-y-4">
+                    <Skeleton className="h-8 w-32" />
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <Skeleton className="h-32 w-full" />
+                      <Skeleton className="h-32 w-full" />
+                      <Skeleton className="h-32 w-full" />
+                    </div>
+                    <Skeleton className="h-64 w-full" />
+                  </div>
+                ) : (
+                  <TradeTab 
+                    address={address} 
+                    scienceGentData={scienceGentData}
+                    activeTab={activeTradingTab}
+                  />
+                )}
               </div>
             </Tabs>
           </TabsContent>
