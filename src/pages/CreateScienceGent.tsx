@@ -6,7 +6,7 @@ import ScienceGentWizard from '@/components/create-sciencegent/ScienceGentWizard
 const CreateScienceGent = () => {
   return (
     <NavbarLayout>
-      <div className="py-8">
+      <div className="max-w-6xl mx-auto py-8">
         <ScienceGentWizard />
       </div>
     </NavbarLayout>
