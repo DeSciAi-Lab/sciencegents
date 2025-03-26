@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Loader2, RefreshCcw } from 'lucide-react';
 import WizardProgress from './WizardProgress';
 import { useWizard } from './WizardContext';
 import { wizardSteps } from './utils';
@@ -21,7 +21,8 @@ const WizardLayout: React.FC<WizardLayoutProps> = ({ children }) => {
     isLaunching,
     status,
     isDSIApproved,
-    isCheckingAllowance
+    isCheckingAllowance,
+    resetWizard
   } = useWizard();
   
   const isLastStep = currentStep === wizardSteps.length;
@@ -82,12 +83,27 @@ const WizardLayout: React.FC<WizardLayoutProps> = ({ children }) => {
     );
   };
   
+  const handleReset = () => {
+    if (window.confirm("Are you sure you want to reset the form? All your progress will be lost.")) {
+      resetWizard();
+    }
+  };
+  
   return (
     <div className="max-w-6xl mx-auto bg-white">
       <div className="bg-white rounded-lg shadow-sm border">
         {!isSuccessStep && (
-          <div className="p-6 border-b">
+          <div className="p-6 border-b flex justify-between items-center">
             <h2 className="text-2xl font-bold text-gray-800">Create ScienceGent</h2>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleReset}
+              className="text-gray-600"
+            >
+              <RefreshCcw className="mr-2 h-4 w-4" />
+              Reset Form
+            </Button>
           </div>
         )}
         

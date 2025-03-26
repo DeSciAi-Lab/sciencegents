@@ -1,9 +1,14 @@
+
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ScienceGentFormData } from '@/types/sciencegent';
 import { validateStep, wizardSteps } from '@/components/create-sciencegent/utils';
 import useScienceGentCreation, { CreationStatus } from '@/hooks/useScienceGentCreation';
 import { useDeveloperProfile } from '@/hooks/useDeveloperProfile';
+
+// Keys for localStorage
+const FORM_DATA_KEY = 'sciencegent_wizard_form_data';
+const CURRENT_STEP_KEY = 'sciencegent_wizard_current_step';
 
 // Initial form data
 const initialFormData: ScienceGentFormData = {
@@ -44,6 +49,7 @@ interface WizardContextType {
   nextStep: () => void;
   prevStep: () => void;
   handleApproveAndLaunch: () => Promise<void>;
+  resetWizard: () => void;
   canProceed: boolean;
 }
 
@@ -51,7 +57,36 @@ const WizardContext = createContext<WizardContextType | undefined>(undefined);
 
 export const WizardProvider: React.FC<{children: React.ReactNode}> = ({ children }) => {
   const navigate = useNavigate();
-  const [currentStep, setCurrentStep] = useState(1);
+  const [isInitialized, setIsInitialized] = useState(false);
+  
+  // Get saved form data and current step from localStorage
+  const getSavedFormData = (): ScienceGentFormData => {
+    const savedFormData = localStorage.getItem(FORM_DATA_KEY);
+    if (savedFormData) {
+      try {
+        const parsedData = JSON.parse(savedFormData);
+        // File objects can't be stored in localStorage, so profileImage will be null
+        return { ...parsedData, profileImage: null };
+      } catch (error) {
+        console.error('Error parsing saved form data:', error);
+      }
+    }
+    return initialFormData;
+  };
+
+  const getSavedCurrentStep = (): number => {
+    const savedStep = localStorage.getItem(CURRENT_STEP_KEY);
+    if (savedStep) {
+      try {
+        return parseInt(savedStep, 10);
+      } catch (error) {
+        console.error('Error parsing saved step:', error);
+      }
+    }
+    return 1;
+  };
+  
+  const [currentStep, setCurrentStep] = useState(1); // Default to 1, will be updated in useEffect
   const [isLaunching, setIsLaunching] = useState(false);
   const [formData, setFormData] = useState<ScienceGentFormData>(initialFormData);
   const [isCheckingAllowance, setIsCheckingAllowance] = useState(false);
@@ -71,6 +106,36 @@ export const WizardProvider: React.FC<{children: React.ReactNode}> = ({ children
     isDSIApproved
   } = useScienceGentCreation();
 
+  // Load saved data on component mount
+  useEffect(() => {
+    if (!isInitialized) {
+      const savedFormData = getSavedFormData();
+      const savedStep = getSavedCurrentStep();
+      
+      setFormData(savedFormData);
+      setCurrentStep(savedStep);
+      setIsInitialized(true);
+    }
+  }, [isInitialized]);
+  
+  // Save form data to localStorage whenever it changes
+  useEffect(() => {
+    if (isInitialized) {
+      const dataToSave = { ...formData };
+      // Remove file object before saving to localStorage
+      delete dataToSave.profileImage;
+      
+      localStorage.setItem(FORM_DATA_KEY, JSON.stringify(dataToSave));
+    }
+  }, [formData, isInitialized]);
+  
+  // Save current step to localStorage whenever it changes
+  useEffect(() => {
+    if (isInitialized) {
+      localStorage.setItem(CURRENT_STEP_KEY, currentStep.toString());
+    }
+  }, [currentStep, isInitialized]);
+
   // Calculate if user can proceed to next step
   const canProceed = validateStep(currentStep, formData);
 
@@ -82,6 +147,12 @@ export const WizardProvider: React.FC<{children: React.ReactNode}> = ({ children
   useEffect(() => {
     if (status === CreationStatus.Success) {
       setCurrentStep(wizardSteps.length + 1); // Move to success screen
+      
+      // If successful, clear the saved data
+      if (tokenAddress && !isSyncing) {
+        localStorage.removeItem(FORM_DATA_KEY);
+        localStorage.removeItem(CURRENT_STEP_KEY);
+      }
     }
     
     // Reset launching state when not in progress
@@ -90,7 +161,7 @@ export const WizardProvider: React.FC<{children: React.ReactNode}> = ({ children
         status !== CreationStatus.WaitingConfirmation) {
       setIsLaunching(false);
     }
-  }, [status]);
+  }, [status, tokenAddress, isSyncing]);
 
   // Navigate to details page when token is successfully synced
   useEffect(() => {
@@ -145,6 +216,14 @@ export const WizardProvider: React.FC<{children: React.ReactNode}> = ({ children
     if (currentStep > 1) {
       setCurrentStep(prev => prev - 1);
     }
+  };
+  
+  // Add a reset function to clear the form
+  const resetWizard = () => {
+    localStorage.removeItem(FORM_DATA_KEY);
+    localStorage.removeItem(CURRENT_STEP_KEY);
+    setFormData(initialFormData);
+    setCurrentStep(1);
   };
 
   const handleApproveAndLaunch = async () => {
@@ -212,6 +291,7 @@ export const WizardProvider: React.FC<{children: React.ReactNode}> = ({ children
       nextStep,
       prevStep,
       handleApproveAndLaunch,
+      resetWizard,
       canProceed
     }}>
       {children}

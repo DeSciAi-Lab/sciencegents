@@ -30,7 +30,8 @@ const WizardStepRenderer: React.FC = () => {
     isLaunching,
     isDSIApproved,
     developerProfile,
-    isLoadingProfile
+    isLoadingProfile,
+    resetWizard
   } = useWizard();
   
   const [capabilities, setCapabilities] = useState<Capability[]>([]);
