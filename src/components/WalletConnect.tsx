@@ -1,7 +1,8 @@
 
 import React, { useState } from 'react';
-import { Wallet, LogOut, ChevronDown } from 'lucide-react';
+import { Wallet, LogOut, ChevronDown, UserRound, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Link } from 'react-router-dom';
 import {
   Dialog,
   DialogContent,
@@ -14,6 +15,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useWallet } from '@/hooks/useWallet';
@@ -24,7 +26,7 @@ interface WalletConnectProps {
 }
 
 const WalletConnect: React.FC<WalletConnectProps> = ({ variant = 'default', className = '' }) => {
-  const { address, isConnected, connect, disconnect, formatAddress } = useWallet();
+  const { address, isConnected, connect, disconnect, formatAddress, isAdmin } = useWallet();
   const [isOpen, setIsOpen] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
 
@@ -53,7 +55,25 @@ const WalletConnect: React.FC<WalletConnectProps> = ({ variant = 'default', clas
               <ChevronDown className="ml-2 h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
+          <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuItem asChild className="cursor-pointer">
+              <Link to="/dashboard" className="flex items-center w-full">
+                <UserRound className="mr-2 h-4 w-4" />
+                <span>Dashboard</span>
+              </Link>
+            </DropdownMenuItem>
+            
+            {isAdmin && (
+              <DropdownMenuItem asChild className="cursor-pointer">
+                <Link to="/admin" className="flex items-center w-full">
+                  <ShieldCheck className="mr-2 h-4 w-4" />
+                  <span>Admin Panel</span>
+                </Link>
+              </DropdownMenuItem>
+            )}
+            
+            <DropdownMenuSeparator />
+            
             <DropdownMenuItem onClick={disconnect} className="cursor-pointer">
               <LogOut className="mr-2 h-4 w-4" />
               <span>Disconnect</span>
