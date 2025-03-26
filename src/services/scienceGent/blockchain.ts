@@ -1,92 +1,66 @@
+
 import { ethers } from "ethers";
-import { contractConfig, factoryABI } from "@/utils/contractConfig";
-import { toast } from "@/components/ui/use-toast";
-import { ScienceGentData, TokenStats, CapabilityDetail } from "./types";
+import { getProvider } from "@/services/walletService";
+import { contractConfig } from "@/utils/contractConfig";
+import { ScienceGentData, TokenStats } from "./types";
 
 /**
- * Fetches ScienceGent details from the blockchain
- * @param address Token address
+ * Fetches ScienceGent data from the blockchain
+ * @param address Token address 
  * @returns ScienceGent data or null if not found
  */
-export const fetchScienceGentFromBlockchain = async (address: string): Promise<ScienceGentData | null> => {
+export const fetchScienceGentFromBlockchain = async (
+  address: string
+): Promise<ScienceGentData | null> => {
   try {
     console.log("Fetching ScienceGent from blockchain:", address);
     
-    if (!window.ethereum) {
-      throw new Error("No Ethereum provider found");
-    }
+    const provider = await getProvider();
     
-    const provider = new ethers.providers.Web3Provider(window.ethereum);
+    // ABI fragments for the specific functions we need
+    const factoryAbi = [
+      "function getTokenDetails(address token) view returns (string, string, uint256, address, bool, bool, uint256, uint256, uint256, bool)",
+      "function getTokenCapabilitiesPage(address token, uint256 offset, uint256 limit) view returns (string[])"
+    ];
+    
+    // Initialize contract interfaces
     const factoryContract = new ethers.Contract(
       contractConfig.addresses.ScienceGentsFactory,
-      factoryABI,
+      factoryAbi,
       provider
     );
     
-    // Get token details from factory
-    const details = await factoryContract.getTokenDetails(address);
-    console.log("Token details from blockchain:", details);
+    // Fetch token details from factory
+    const tokenDetails = await factoryContract.getTokenDetails(address);
     
-    // Get token capabilities
-    const capabilities = await factoryContract.getTokenAssignedCapabilities(address);
-    console.log("Token capabilities from blockchain:", capabilities);
+    // Fetch token capabilities
+    const capabilities = await factoryContract.getTokenCapabilitiesPage(address, 0, 100);
     
-    // Create ScienceGentData object
+    // Process timestamp
+    let creationTimestamp = 0;
+    if (tokenDetails[6] && typeof tokenDetails[6] === 'object' && tokenDetails[6]._isBigNumber) {
+      creationTimestamp = tokenDetails[6].toNumber();
+    } else if (tokenDetails[6]) {
+      creationTimestamp = Number(tokenDetails[6]);
+    }
+    
+    // Create ScienceGent data object
     const scienceGentData: ScienceGentData = {
-      address,
-      name: details[0],
-      symbol: details[1],
-      totalSupply: details[2].toString(),
-      creator: details[3],
-      tradingEnabled: details[4],
-      isMigrated: details[5],
-      capabilities,
-      // Store additional details from the contract
-      adminLockAmount: details[7].toString(),
-      adminLockRemainingTime: details[8].toString(),
-      isAdminTokensUnlocked: details[9]
+      address: address,
+      name: tokenDetails[0],
+      symbol: tokenDetails[1],
+      totalSupply: tokenDetails[2].toString(),
+      creator: tokenDetails[3],
+      isMigrated: tokenDetails[5],
+      creationTimestamp: creationTimestamp,
+      maturityDeadline: tokenDetails[7]?.toNumber() || 0,
+      capabilities: capabilities || []
     };
     
+    console.log("Blockchain data:", scienceGentData);
     return scienceGentData;
   } catch (error) {
-    console.error("Error fetching ScienceGent from blockchain:", error);
-    return null;
-  }
-};
-
-/**
- * Fetches capability details from blockchain
- * @param capabilityId Capability ID
- * @returns Capability details or null if error
- */
-export const fetchCapabilityDetailsFromBlockchain = async (
-  capabilityId: string
-): Promise<CapabilityDetail | null> => {
-  try {
-    console.log(`Fetching capability ${capabilityId} from blockchain`);
-    
-    if (!window.ethereum) {
-      throw new Error("No Ethereum provider found");
-    }
-    
-    const provider = new ethers.providers.Web3Provider(window.ethereum);
-    const factoryContract = new ethers.Contract(
-      contractConfig.addresses.ScienceGentsFactory,
-      factoryABI,
-      provider
-    );
-    
-    // Get capability details from contract
-    const [description, feeInETH, creator] = await factoryContract.getCapabilityDetails(capabilityId);
-    
-    return {
-      id: capabilityId,
-      description,
-      feeInETH: feeInETH.toString(),
-      creator
-    };
-  } catch (error) {
-    console.error(`Error fetching capability ${capabilityId}:`, error);
+    console.error("Error fetching from blockchain:", error);
     return null;
   }
 };
@@ -94,65 +68,50 @@ export const fetchCapabilityDetailsFromBlockchain = async (
 /**
  * Fetches token statistics from the blockchain
  * @param address Token address
- * @returns Token statistics or null if error
+ * @returns Token statistics or null if not found
  */
-export const fetchTokenStatsFromBlockchain = async (address: string): Promise<TokenStats | null> => {
+export const fetchTokenStatsFromBlockchain = async (
+  address: string
+): Promise<TokenStats | null> => {
   try {
     console.log("Fetching token stats from blockchain:", address);
     
-    if (!window.ethereum) {
-      throw new Error("No Ethereum provider found");
-    }
+    const provider = await getProvider();
     
-    const provider = new ethers.providers.Web3Provider(window.ethereum);
-    
-    // Enhanced ABI for the ScienceGentsSwap contract to include more stats
-    const swapABI = [
-      "function getTokenStats(address token) external view returns (uint256 tokenReserve, uint256 ethReserve, uint256 virtualETH, uint256 collectedFees, bool tradingEnabled, address creator, uint256 creationTimestamp, uint256 maturityDeadline, bool migrated, uint256 lpUnlockTime, uint256 lockedLPAmount, uint256 currentPrice, bool migrationEligible)",
-      "function isMigrationEligible(address token) external view returns (bool)"
+    // ABI fragments for the specific functions we need
+    const swapAbi = [
+      "function getTokenStats(address token) view returns (uint256, uint256, uint256, uint256, bool, address, uint256, uint256, bool, uint256, uint256, uint256, bool)"
     ];
     
+    // Initialize contract interfaces
     const swapContract = new ethers.Contract(
       contractConfig.addresses.ScienceGentsSwap,
-      swapABI,
+      swapAbi,
       provider
     );
     
-    // Get token stats from swap contract
-    const stats = await swapContract.getTokenStats(address);
-    console.log("Raw token stats from blockchain:", stats);
+    // Fetch token stats from swap
+    const tokenStats = await swapContract.getTokenStats(address);
     
-    // Get migration eligibility
-    const isMigrationEligible = await swapContract.isMigrationEligible(address);
-    console.log("Migration eligibility:", isMigrationEligible);
-    
-    // Get current timestamp for age calculation
-    const currentTimestamp = Math.floor(Date.now() / 1000);
-    
-    // Create enhanced TokenStats object
-    const tokenStats: TokenStats = {
-      tokenReserve: stats[0].toString(),
-      ethReserve: stats[1].toString(),
-      virtualETH: stats[2].toString(),
-      collectedFees: stats[3].toString(),
-      tradingEnabled: stats[4],
-      creator: stats[5],
-      creationTimestamp: stats[6].toString(),
-      maturityDeadline: stats[7].toString(),
-      migrated: stats[8],
-      lpUnlockTime: stats[9].toString(),
-      lockedLPAmount: stats[10].toString(),
-      currentPrice: stats[11].toString(),
-      migrationEligible: isMigrationEligible,
-      // Add derived properties for easier UI display
-      tokenAge: currentTimestamp - parseInt(stats[6].toString()),
-      remainingMaturityTime: Math.max(0, parseInt(stats[7].toString()) - currentTimestamp),
-      maturityProgress: calculateMaturityProgress(stats[3].toString(), stats[2].toString())
+    // Create TokenStats object
+    const stats: TokenStats = {
+      tokenReserve: tokenStats[0].toString(),
+      ethReserve: tokenStats[1].toString(),
+      virtualETH: tokenStats[2].toString(),
+      collectedFees: tokenStats[3].toString(),
+      tradingEnabled: tokenStats[4],
+      creator: tokenStats[5],
+      creationTimestamp: tokenStats[6].toNumber(),
+      maturityDeadline: tokenStats[7].toNumber(),
+      isMigrated: tokenStats[8],
+      lpUnlockTime: tokenStats[9].toNumber(),
+      lockedLPAmount: tokenStats[10].toString(),
+      currentPrice: tokenStats[11].toString(),
+      migrationEligible: tokenStats[12]
     };
     
-    console.log("Formatted token stats:", tokenStats);
-    
-    return tokenStats;
+    console.log("Token stats:", stats);
+    return stats;
   } catch (error) {
     console.error("Error fetching token stats from blockchain:", error);
     return null;
@@ -160,186 +119,58 @@ export const fetchTokenStatsFromBlockchain = async (address: string): Promise<To
 };
 
 /**
- * Calculate maturity progress percentage
- * @param collectedFees Collected fees in the pool
- * @param virtualETH Virtual ETH amount
- * @returns Progress percentage (0-100)
- */
-const calculateMaturityProgress = (collectedFees: string, virtualETH: string): number => {
-  try {
-    const fees = ethers.BigNumber.from(collectedFees);
-    const vETH = ethers.BigNumber.from(virtualETH);
-    
-    // Target is 2x virtualETH (according to contract logic)
-    const target = vETH.mul(2);
-    
-    if (target.isZero()) return 0;
-    
-    // Calculate progress percentage (capped at 100%)
-    const progress = fees.mul(100).div(target);
-    return Math.min(100, progress.toNumber());
-  } catch (error) {
-    console.error("Error calculating maturity progress:", error);
-    return 0;
-  }
-};
-
-/**
- * Syncs all ScienceGents from blockchain to Supabase
- */
-export const syncAllScienceGentsFromBlockchain = async (): Promise<{ syncCount: number; errorCount: number }> => {
-  try {
-    console.log("Starting sync of all ScienceGents");
-    
-    if (!window.ethereum) {
-      throw new Error("No Ethereum wallet found");
-    }
-    
-    const provider = new ethers.providers.Web3Provider(window.ethereum);
-    const factoryContract = new ethers.Contract(
-      contractConfig.addresses.ScienceGentsFactory,
-      factoryABI,
-      provider
-    );
-    
-    // Get total token count
-    const tokenCount = await factoryContract.getTokenCount();
-    console.log(`Found ${tokenCount.toString()} tokens to sync`);
-    
-    // Process in batches to avoid timeout
-    const batchSize = 10;
-    let syncCount = 0;
-    let errorCount = 0;
-    
-    // Import required functions
-    const { saveScienceGentToSupabase } = await import('./supabase');
-    const { syncCapabilityDetailsToSupabase } = await import('./supabase');
-    
-    for (let offset = 0; offset < tokenCount.toNumber(); offset += batchSize) {
-      const limit = Math.min(batchSize, tokenCount.toNumber() - offset);
-      
-      // Use getTokensWithPagination to get tokens in batches
-      const result = await factoryContract.getTokensWithPagination(offset, limit);
-      const tokens = result.tokens;
-      
-      console.log(`Processing batch of ${tokens.length} tokens (offset: ${offset}, limit: ${limit})`);
-      
-      // Sync each token
-      for (const tokenAddress of tokens) {
-        try {
-          // Fetch token details and stats
-          const scienceGentData = await fetchScienceGentFromBlockchain(tokenAddress);
-          const tokenStats = await fetchTokenStatsFromBlockchain(tokenAddress);
-          
-          if (scienceGentData && tokenStats) {
-            // Calculate total capability fees for this token
-            let totalCapabilityFees = 0;
-            if (scienceGentData.capabilities && scienceGentData.capabilities.length > 0) {
-              for (const capId of scienceGentData.capabilities) {
-                try {
-                  const capDetails = await fetchCapabilityDetailsFromBlockchain(capId);
-                  if (capDetails && capDetails.feeInETH) {
-                    totalCapabilityFees += parseFloat(ethers.utils.formatEther(capDetails.feeInETH));
-                  }
-                  
-                  // Also sync capability details to Supabase
-                  await syncCapabilityDetailsToSupabase(capDetails);
-                } catch (capError) {
-                  console.error(`Error fetching capability ${capId}:`, capError);
-                }
-              }
-            }
-            
-            // Create a modified ScienceGentData with capability fees
-            const enrichedData: ScienceGentData = {
-              ...scienceGentData,
-              capabilityFees: totalCapabilityFees
-            };
-            
-            // Save to Supabase
-            await saveScienceGentToSupabase(enrichedData, tokenStats);
-            
-            syncCount++;
-            console.log(`Successfully synced token ${tokenAddress} (${syncCount}/${tokens.length})`);
-          } else {
-            console.error(`Failed to fetch data for token ${tokenAddress}`);
-            errorCount++;
-          }
-        } catch (error) {
-          console.error(`Error syncing token ${tokenAddress}:`, error);
-          errorCount++;
-        }
-      }
-    }
-    
-    console.log(`Sync completed. Synced ${syncCount} tokens with ${errorCount} errors.`);
-    
-    return { syncCount, errorCount };
-  } catch (error) {
-    console.error("Error syncing ScienceGents:", error);
-    throw error;
-  }
-};
-
-/**
- * Utility function to extract token address from transaction hash
+ * Extracts token address from a transaction receipt
  * @param transactionHash Transaction hash
- * @returns Token address if found
+ * @returns Token address or null if not found
  */
-export const extractTokenAddressFromTransactionHash = async (transactionHash: string): Promise<string | null> => {
+export const extractTokenAddressFromReceipt = async (transactionHash: string): Promise<string | null> => {
   try {
-    console.log("Extracting token address from transaction hash:", transactionHash);
+    console.log("Extracting token address from transaction:", transactionHash);
     
-    if (!window.ethereum) {
-      throw new Error("No Ethereum provider found");
-    }
-    
-    const provider = new ethers.providers.Web3Provider(window.ethereum);
+    const provider = await getProvider();
     
     // Get transaction receipt
     const receipt = await provider.getTransactionReceipt(transactionHash);
-    if (!receipt || receipt.status !== 1) {
-      console.log("Transaction not confirmed or failed:", receipt);
+    if (!receipt || !receipt.logs) {
+      console.error("No receipt or logs found");
       return null;
     }
     
-    console.log("Transaction receipt:", receipt);
-    
-    // Get the factory contract
-    const factoryContract = new ethers.Contract(
-      contractConfig.addresses.ScienceGentsFactory,
-      factoryABI,
-      provider
-    );
-    
-    // Find the TokenCreated event
-    if (receipt.logs && receipt.logs.length > 0) {
-      for (const log of receipt.logs) {
-        // Check if the log is from our factory contract
-        if (log.address.toLowerCase() === contractConfig.addresses.ScienceGentsFactory.toLowerCase()) {
-          try {
-            // Try to parse the log using our contract interface
-            const parsedLog = factoryContract.interface.parseLog(log);
-            console.log("Parsed log:", parsedLog);
-            
-            // Check if this is the TokenCreated event
-            if (parsedLog && parsedLog.name === "TokenCreated") {
-              // The first parameter should be the token address
-              return parsedLog.args[0];
-            }
-          } catch (parseError) {
-            console.log("Could not parse log:", parseError);
-            // Continue to next log
-          }
+    // Look for the TokenCreated event in the logs
+    for (const log of receipt.logs) {
+      // Check if this log is from the ScienceGentsFactory contract
+      if (log.address.toLowerCase() === contractConfig.addresses.ScienceGentsFactory.toLowerCase()) {
+        try {
+          // The first topic is the event signature
+          // The first parameter is usually the token address
+          const tokenAddress = ethers.utils.defaultAbiCoder.decode(['address'], log.topics[1])[0];
+          console.log("Found token address:", tokenAddress);
+          return tokenAddress;
+        } catch (e) {
+          console.error("Error decoding log:", e);
+          continue;
         }
       }
     }
     
-    console.log("Could not find TokenCreated event in logs");
+    // Fallback: iterate over logs and check for Transfer events
+    for (const log of receipt.logs) {
+      try {
+        // Check if this log has a Transfer event signature
+        if (log.topics[0] === ethers.utils.id("Transfer(address,address,uint256)")) {
+          // The token address is the contract that emitted this event
+          console.log("Found potential token address from Transfer event:", log.address);
+          return log.address;
+        }
+      } catch (e) {
+        continue;
+      }
+    }
+    
+    console.error("Token address not found in logs");
     return null;
   } catch (error) {
-    console.error("Error extracting token address from transaction hash:", error);
+    console.error("Error extracting token address:", error);
     return null;
   }
 };
-

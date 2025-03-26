@@ -59,7 +59,9 @@ export const transformBlockchainToSupabaseFormat = (
     created_on_chain_at: blockchainData.creationTimestamp 
       ? new Date(blockchainData.creationTimestamp * 1000).toISOString() 
       : null,
-    maturity_deadline: blockchainData.maturityDeadline || null,
+    maturity_deadline: blockchainData.maturityDeadline 
+      ? new Date(blockchainData.maturityDeadline * 1000).toISOString() 
+      : null,
     remaining_maturity_time: remainingMaturityTime,
     maturity_progress: maturityProgress,
     token_price: tokenStats.currentPrice ? parseFloat(ethers.utils.formatEther(tokenStats.currentPrice)) : 0,

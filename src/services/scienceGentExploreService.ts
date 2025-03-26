@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { formatDistanceToNow } from "date-fns";
 import { ethers } from "ethers";
@@ -95,9 +96,16 @@ export const fetchScienceGents = async (): Promise<ScienceGentListItem[]> => {
         : 0;
       
       // Calculate age from created_on_chain_at
-      const age = item.created_on_chain_at 
-        ? formatDistanceToNow(new Date(item.created_on_chain_at), { addSuffix: false })
-        : "unknown";
+      let age = "unknown";
+      if (item.created_on_chain_at) {
+        try {
+          // Parse the timestamp and format it as a relative time
+          const creationDate = new Date(item.created_on_chain_at);
+          age = formatDistanceToNow(creationDate, { addSuffix: false });
+        } catch (e) {
+          console.error("Error parsing creation date:", e, item.created_on_chain_at);
+        }
+      }
 
       // Featured status based on market cap or other criteria
       const featured = item.market_cap > 500000;
@@ -140,7 +148,8 @@ export const fetchScienceGents = async (): Promise<ScienceGentListItem[]> => {
         priceChange24h: item.price_change_24h || 0,
         rating,
         maturityStatus,
-        isCurated: Math.random() > 0.7 // Random for demo, will update with real data
+        isCurated: Math.random() > 0.7, // Random for demo, will update with real data
+        creationTimestamp: item.created_on_chain_at
       };
     });
 

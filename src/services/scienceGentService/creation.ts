@@ -113,6 +113,18 @@ export const createScienceGent = async (formData: ScienceGentFormData & { transa
         // Parse agent fee if it exists
         const agentFee = formData.agentFee ? parseFloat(formData.agentFee) : 2;
         
+        // Get the blockchain timestamp
+        let creationTimestamp = new Date().toISOString();
+        try {
+          const provider = new ethers.providers.Web3Provider(window.ethereum);
+          const block = await provider.getBlock('latest');
+          if (block && block.timestamp) {
+            creationTimestamp = new Date(block.timestamp * 1000).toISOString();
+          }
+        } catch (timestampError) {
+          console.error("Error getting blockchain timestamp:", timestampError);
+        }
+        
         // Save basic info to Supabase immediately
         const { error } = await supabase
           .from('sciencegents')
@@ -133,7 +145,7 @@ export const createScienceGent = async (formData: ScienceGentFormData & { transa
             total_supply: parseFloat(formData.totalSupply),
             virtual_eth: parseFloat(formData.initialLiquidity),
             creator_address: signerAddress,
-            created_on_chain_at: new Date().toISOString(),
+            created_on_chain_at: creationTimestamp,
             last_synced_at: new Date().toISOString(),
             persona: formData.persona || "",
             developer_name: formData.developerName || "",
@@ -143,7 +155,7 @@ export const createScienceGent = async (formData: ScienceGentFormData & { transa
             developer_github: formData.developerGithub || "",
             developer_website: formData.developerWebsite || ""
           });
-          
+        
         if (error) {
           console.error("Error saving ScienceGent to Supabase:", error);
         } else {
