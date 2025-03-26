@@ -2,6 +2,7 @@
 import React from 'react';
 import { useEthPriceContext } from '@/context/EthPriceContext';
 import { Skeleton } from '@/components/ui/skeleton';
+import { CircleCheckBig, CircleX, Clock } from 'lucide-react';
 
 interface ScienceGentStatsCardsProps {
   scienceGent: any;
@@ -19,19 +20,26 @@ const ScienceGentStatsCards: React.FC<ScienceGentStatsCardsProps> = ({
   const liquidity = scienceGent?.liquidity || scienceGent?.total_liquidity || 0;
   const volume24h = scienceGent?.volume24h || scienceGent?.volume_24h || 0;
   const holders = scienceGent?.holders || 0;
+  
+  // Check if token is migrated or migration eligible
+  const isMigrated = scienceGent?.isMigrated || scienceGent?.is_migrated || false;
+  const isEligible = scienceGent?.migrationEligible || scienceGent?.migration_eligible || false;
+  const maturityStatus = isMigrated ? 'Migrated' : isEligible ? 'Ready' : 'Immature';
 
   const CardWithBorder = ({ 
     title, 
     value, 
     ethValue, 
     dollarValue, 
-    isLoading 
+    isLoading,
+    status
   }: { 
     title: string, 
     value?: number, 
     ethValue?: number, 
     dollarValue?: string,
-    isLoading?: boolean
+    isLoading?: boolean,
+    status?: string
   }) => (
     <div className="bg-white rounded-md p-3 border">
       <div className="text-gray-800">
@@ -46,15 +54,34 @@ const ScienceGentStatsCards: React.FC<ScienceGentStatsCardsProps> = ({
             <div className="font-medium">{formatEthPrice(ethValue)}</div>
             <div className="text-xs text-gray-500">{dollarValue}</div>
           </>
+        ) : status ? (
+          <div className="flex items-center gap-2 mt-1">
+            {status === 'Migrated' ? (
+              <>
+                <CircleCheckBig size={16} className="text-green-500" />
+                <span className="font-medium text-green-600">Migrated</span>
+              </>
+            ) : status === 'Ready' ? (
+              <>
+                <Clock size={16} className="text-blue-500" />
+                <span className="font-medium text-blue-600">Ready</span>
+              </>
+            ) : (
+              <>
+                <CircleX size={16} className="text-gray-400" />
+                <span className="font-medium text-gray-500">Immature</span>
+              </>
+            )}
+          </div>
         ) : (
-          <div className="font-medium">{value || 0}</div>
+          <div className="font-medium">{value?.toLocaleString() || 0}</div>
         )}
       </div>
     </div>
   );
 
   return (
-    <div className="grid grid-cols-4 gap-3">
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
       <CardWithBorder 
         title="Market Cap" 
         ethValue={marketCap} 
@@ -70,7 +97,7 @@ const ScienceGentStatsCards: React.FC<ScienceGentStatsCardsProps> = ({
       />
       
       <CardWithBorder 
-        title="24h volume" 
+        title="24h Volume" 
         ethValue={volume24h} 
         dollarValue={formatEthToUsd(volume24h)} 
         isLoading={isLoading}
@@ -79,6 +106,12 @@ const ScienceGentStatsCards: React.FC<ScienceGentStatsCardsProps> = ({
       <CardWithBorder 
         title="Holders" 
         value={holders} 
+        isLoading={isLoading}
+      />
+      
+      <CardWithBorder 
+        title="Maturity" 
+        status={maturityStatus}
         isLoading={isLoading}
       />
     </div>

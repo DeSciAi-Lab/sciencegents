@@ -1,6 +1,9 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { formatDistanceToNow } from "date-fns";
+import { ethers } from "ethers";
+import { getProvider } from "@/services/walletService";
+import { contractConfig } from "@/utils/contractConfig";
 
 // Interface for ScienceGent data structure
 export interface ScienceGentListItem {
@@ -23,6 +26,8 @@ export interface ScienceGentListItem {
   rating: number;
   maturityStatus: string;
   isCurated?: boolean;
+  capabilities?: string[];
+  creationTimestamp?: string;
 }
 
 /**
@@ -50,6 +55,8 @@ export const fetchScienceGents = async (): Promise<ScienceGentListItem[]> => {
         is_migrated,
         migration_eligible,
         maturity_progress,
+        agent_fee,
+        total_supply,
         stats:sciencegent_stats(volume_24h, transactions, holders, trade_volume_eth)
       `)
       .order('market_cap', { ascending: false });
@@ -67,7 +74,7 @@ export const fetchScienceGents = async (): Promise<ScienceGentListItem[]> => {
     console.log(`Found ${data.length} ScienceGents`);
 
     // Format the data for the UI
-    return data.map(item => {
+    const formattedData = data.map(item => {
       // Calculate ROI (simplified calculation for now)
       const virtualEth = item.virtual_eth || 0;
       const volume = item.stats?.[0]?.volume_24h || 0;
@@ -95,11 +102,14 @@ export const fetchScienceGents = async (): Promise<ScienceGentListItem[]> => {
         maturityStatus = "Near";
       }
 
-      // Calculate revenue for demo purposes based on market cap
-      const revenue = Math.floor(item.market_cap * 0.1);
+      // Calculate revenue for demo purposes based on market cap and agent fee
+      const agentFee = item.agent_fee || 2;
+      const revenue = Math.floor(item.market_cap * 0.1 * agentFee);
       
-      // Random rating between 3-5 for demo
-      const rating = Math.floor(Math.random() * (5 - 3 + 1) + 3);
+      // Rating based on transaction volume and maturity
+      const volumeScore = Math.min(5, Math.max(3, 3 + (item.stats?.[0]?.volume_24h || 0) / 1000));
+      const maturityScore = item.is_migrated ? 5 : (item.migration_eligible ? 4 : 3);
+      const rating = Math.round((volumeScore + maturityScore) / 2);
 
       return {
         id: item.id,
@@ -120,12 +130,64 @@ export const fetchScienceGents = async (): Promise<ScienceGentListItem[]> => {
         priceChange24h: item.price_change_24h || 0,
         rating,
         maturityStatus,
-        isCurated: Math.random() > 0.7 // Random for demo
+        isCurated: Math.random() > 0.7 // Random for demo, will update with real data
       };
     });
+
+    return formattedData;
   } catch (error) {
     console.error("Error in fetchScienceGents:", error);
     return [];
+  }
+};
+
+/**
+ * Fetch blockchain details for a specific token
+ */
+export const fetchTokenBlockchainDetails = async (tokenAddress: string) => {
+  try {
+    const provider = await getProvider();
+    
+    // Create contract instances
+    const swapContract = new ethers.Contract(
+      contractConfig.addresses.ScienceGentsSwap, 
+      contractConfig.abis.ScienceGentsSwap, 
+      provider
+    );
+    
+    const factoryContract = new ethers.Contract(
+      contractConfig.addresses.ScienceGentsFactory,
+      contractConfig.abis.ScienceGentsFactory,
+      provider
+    );
+    
+    // Get token details
+    const tokenStats = await swapContract.getTokenStats(tokenAddress);
+    const tokenDetails = await factoryContract.getTokenDetails(tokenAddress);
+    
+    // Return formatted data
+    return {
+      tokenReserve: tokenStats.tokenReserve,
+      ethReserve: tokenStats.ethReserve,
+      virtualETH: tokenStats.virtualETH,
+      collectedFees: tokenStats.collectedFees,
+      tradingEnabled: tokenStats.tradingEnabled,
+      creator: tokenStats.creator,
+      creationTimestamp: tokenStats.creationTimestamp,
+      maturityDeadline: tokenStats.maturityDeadline,
+      isMigrated: tokenStats.migrated,
+      lpUnlockTime: tokenStats.lpUnlockTime,
+      lockedLPAmount: tokenStats.lockedLPAmount,
+      currentPrice: tokenStats.currentPrice,
+      migrationEligible: tokenStats.migrationEligible,
+      name: tokenDetails.name,
+      symbol: tokenDetails.symbol,
+      totalSupply: tokenDetails.totalSupply,
+      capabilities: await factoryContract.getTokenCapabilitiesPage(tokenAddress, 0, 100)
+    };
+  } catch (error) {
+    console.error("Error fetching blockchain details:", error);
+    return null;
   }
 };
 
@@ -193,6 +255,14 @@ export const sortScienceGents = (
     const valueA = a[sortBy];
     const valueB = b[sortBy];
     
+    // Handle string comparison differently
+    if (typeof valueA === 'string' && typeof valueB === 'string') {
+      return sortOrder === 'asc' 
+        ? valueA.localeCompare(valueB) 
+        : valueB.localeCompare(valueA);
+    }
+    
+    // Handle number comparison
     if (sortOrder === 'asc') {
       return valueA > valueB ? 1 : -1;
     } else {
@@ -209,7 +279,7 @@ export const getPlatformStats = (scienceGents: ScienceGentListItem[]) => {
   const totalScienceGents = scienceGents.length;
   
   // Sum up volumes across all tokens for "transactions"
-  const totalTransactions = scienceGents.reduce((sum, gent) => sum + Math.floor(gent.volume24h / 100), 0);
+  const totalTransactions = scienceGents.reduce((sum, gent) => sum + Math.floor(gent.volume24h / 0.01), 0);
   
   // Sum up market caps for "total liquidity"
   const totalLiquidity = scienceGents.reduce((sum, gent) => sum + gent.marketCap, 0);

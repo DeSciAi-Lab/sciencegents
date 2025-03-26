@@ -7,10 +7,13 @@ import Featured from '@/components/home/Featured';
 import CallToAction from '@/components/home/CallToAction';
 import { toast } from '@/components/ui/use-toast';
 import { useEthPriceContext } from '@/context/EthPriceContext';
+import { fetchScienceGents } from '@/services/scienceGentExploreService';
 
 const Index = () => {
   const { ethPrice, isLoading: ethPriceLoading, refreshEthPrice } = useEthPriceContext();
   const [isInitialized, setIsInitialized] = useState(false);
+  const [isLoadingData, setIsLoadingData] = useState(true);
+  const [scienceGents, setScienceGents] = useState([]);
   
   // Scroll to top on component mount and initialize
   useEffect(() => {
@@ -38,6 +41,17 @@ const Index = () => {
         }
       }
       
+      // Fetch science gents data for featured section
+      try {
+        setIsLoadingData(true);
+        const data = await fetchScienceGents();
+        setScienceGents(data);
+      } catch (error) {
+        console.error("Failed to fetch ScienceGents:", error);
+      } finally {
+        setIsLoadingData(false);
+      }
+      
       setIsInitialized(true);
     };
     
@@ -49,7 +63,10 @@ const Index = () => {
       <main className="min-h-screen">
         <Hero />
         <Stats />
-        <Featured />
+        <Featured 
+          scienceGents={scienceGents} 
+          isLoading={isLoadingData} 
+        />
         <CallToAction />
       </main>
     </NavbarLayout>
