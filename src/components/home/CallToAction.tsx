@@ -1,9 +1,10 @@
 
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, Beaker, Brain, Dna, CircleCheck } from 'lucide-react';
+import { ArrowRight, CircleCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Reveal from '@/components/animations/Reveal';
+import { AIAgentIcon, ChemistryIcon, GenomicsIcon, QuantumIcon } from '@/components/icons/ScienceIcons';
 
 const CallToAction = () => {
   const navigate = useNavigate();
@@ -77,32 +78,28 @@ const CallToAction = () => {
               <Reveal delay={300} direction="none">
                 <div className="relative aspect-square max-w-md mx-auto md:ml-auto">
                   <div className="absolute inset-0 grid grid-cols-2 grid-rows-2 gap-4">
-                    {/* Feature Icons */}
+                    {/* Feature Icons - Using our custom icons */}
                     <div className="relative glass-panel flex flex-col justify-center items-center p-6 transform transition-all hover:scale-105 hover:shadow-md">
-                      <Brain className="h-8 w-8 text-science-600 mb-3" />
-                      <span className="text-sm font-medium">AI Agents</span>
+                      <AIAgentIcon className="h-10 w-10 text-science-600 mb-3" />
+                      <span className="text-sm font-medium text-center">AI Agents</span>
                       <div className="absolute -z-10 inset-0 bg-gradient-to-br from-science-100/40 to-transparent rounded-2xl" />
                     </div>
                     
                     <div className="relative glass-panel flex flex-col justify-center items-center p-6 transform transition-all hover:scale-105 hover:shadow-md">
-                      <Beaker className="h-8 w-8 text-science-600 mb-3" />
-                      <span className="text-sm font-medium">Chemistry Tools</span>
+                      <ChemistryIcon className="h-10 w-10 text-science-600 mb-3" />
+                      <span className="text-sm font-medium text-center">Chemistry Tools</span>
                       <div className="absolute -z-10 inset-0 bg-gradient-to-br from-science-100/40 to-transparent rounded-2xl" />
                     </div>
                     
                     <div className="relative glass-panel flex flex-col justify-center items-center p-6 transform transition-all hover:scale-105 hover:shadow-md">
-                      <Dna className="h-8 w-8 text-science-600 mb-3" />
-                      <span className="text-sm font-medium">Genomics Analysis</span>
+                      <GenomicsIcon className="h-10 w-10 text-science-600 mb-3" />
+                      <span className="text-sm font-medium text-center">Genomics Analysis</span>
                       <div className="absolute -z-10 inset-0 bg-gradient-to-br from-science-100/40 to-transparent rounded-2xl" />
                     </div>
                     
                     <div className="relative glass-panel flex flex-col justify-center items-center p-6 transform transition-all hover:scale-105 hover:shadow-md">
-                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-8 w-8 text-science-600 mb-3">
-                        <circle cx="12" cy="12" r="10" />
-                        <path d="M9.17 14.83l5.66-5.66" />
-                        <path d="M14.83 14.83l-5.66-5.66" />
-                      </svg>
-                      <span className="text-sm font-medium">Quantum Models</span>
+                      <QuantumIcon className="h-10 w-10 text-science-600 mb-3" />
+                      <span className="text-sm font-medium text-center">Quantum Models</span>
                       <div className="absolute -z-10 inset-0 bg-gradient-to-br from-science-100/40 to-transparent rounded-2xl" />
                     </div>
                   </div>
