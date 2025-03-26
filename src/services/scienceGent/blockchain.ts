@@ -1,4 +1,3 @@
-
 import { ethers } from "ethers";
 import { getProvider } from "@/services/walletService";
 import { contractConfig } from "@/utils/contractConfig";
@@ -238,6 +237,128 @@ export const syncAllScienceGentsFromBlockchain = async (): Promise<{ syncCount: 
     return { syncCount, errorCount };
   } catch (error) {
     console.error("Error in syncAllScienceGentsFromBlockchain:", error);
+    return { syncCount: 0, errorCount: 1 };
+  }
+};
+
+/**
+ * Fetches the creation timestamp for a ScienceGent token from the blockchain
+ * @param address Token address
+ * @returns Creation timestamp in seconds since epoch, or null if failed
+ */
+export const fetchCreationTimestampFromBlockchain = async (
+  address: string
+): Promise<number | null> => {
+  try {
+    console.log("Fetching creation timestamp from blockchain for:", address);
+    
+    const provider = await getProvider();
+    
+    // ABI fragments for the specific functions we need
+    const factoryAbi = [
+      "function getTokenDetails(address token) view returns (string, string, uint256, address, bool, bool, uint256, uint256, uint256, bool)"
+    ];
+    
+    // Initialize contract interface
+    const factoryContract = new ethers.Contract(
+      contractConfig.addresses.ScienceGentsFactory,
+      factoryAbi,
+      provider
+    );
+    
+    // Fetch token details from factory
+    const tokenDetails = await factoryContract.getTokenDetails(address);
+    
+    // Extract creation timestamp from the return value (index 6 is creationTimestamp)
+    let creationTimestamp = 0;
+    if (tokenDetails[6] && typeof tokenDetails[6] === 'object' && tokenDetails[6]._isBigNumber) {
+      creationTimestamp = tokenDetails[6].toNumber();
+    } else if (tokenDetails[6]) {
+      creationTimestamp = Number(tokenDetails[6]);
+    }
+    
+    console.log("Blockchain creation timestamp:", creationTimestamp);
+    return creationTimestamp;
+  } catch (error) {
+    console.error("Error fetching creation timestamp from blockchain:", error);
+    return null;
+  }
+};
+
+/**
+ * Syncs creation timestamps for all ScienceGents from blockchain to Supabase
+ * @returns Object with counts of synced and failed tokens
+ */
+export const syncAllCreationTimestampsFromBlockchain = async (): Promise<{ syncCount: number; errorCount: number }> => {
+  try {
+    console.log("Starting sync of creation timestamps for all ScienceGents...");
+    
+    const provider = await getProvider();
+    
+    // ABI fragments for the specific functions we need
+    const factoryAbi = [
+      "function getTokenCount() view returns (uint256)",
+      "function getTokensWithPagination(uint256 offset, uint256 limit) view returns (address[], uint256)"
+    ];
+    
+    // Initialize contract interface
+    const factoryContract = new ethers.Contract(
+      contractConfig.addresses.ScienceGentsFactory,
+      factoryAbi,
+      provider
+    );
+    
+    // Get total token count
+    const tokenCount = await factoryContract.getTokenCount();
+    console.log(`Total ScienceGent tokens: ${tokenCount}`);
+    
+    // Fetch tokens in batches of 50
+    const batchSize = 50;
+    let syncCount = 0;
+    let errorCount = 0;
+    
+    for (let offset = 0; offset < tokenCount.toNumber(); offset += batchSize) {
+      console.log(`Fetching tokens ${offset} to ${offset + batchSize}...`);
+      
+      // Get batch of token addresses
+      const [tokenAddresses] = await factoryContract.getTokensWithPagination(offset, batchSize);
+      
+      // Process each token
+      for (const address of tokenAddresses) {
+        try {
+          const timestamp = await fetchCreationTimestampFromBlockchain(address);
+          
+          if (timestamp) {
+            // Update the timestamp in Supabase
+            const { error } = await supabase
+              .from('sciencegents')
+              .update({ 
+                created_on_chain_at: new Date(timestamp * 1000).toISOString(),
+                last_synced_at: new Date().toISOString()
+              })
+              .eq('address', address);
+              
+            if (error) {
+              console.error(`Error updating timestamp for ${address}:`, error);
+              errorCount++;
+            } else {
+              console.log(`Updated creation timestamp for ${address}: ${new Date(timestamp * 1000).toISOString()}`);
+              syncCount++;
+            }
+          } else {
+            errorCount++;
+          }
+        } catch (error) {
+          console.error(`Error syncing timestamp for ${address}:`, error);
+          errorCount++;
+        }
+      }
+    }
+    
+    console.log(`Timestamp sync completed: ${syncCount} synced, ${errorCount} errors`);
+    return { syncCount, errorCount };
+  } catch (error) {
+    console.error("Error in syncAllCreationTimestampsFromBlockchain:", error);
     return { syncCount: 0, errorCount: 1 };
   }
 };

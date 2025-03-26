@@ -1,10 +1,10 @@
-
 import { useState, useEffect } from 'react';
 import { 
   fetchScienceGentFromSupabase, 
   fetchScienceGentFromBlockchain, 
   fetchTokenStatsFromBlockchain,
-  saveScienceGentToSupabase 
+  saveScienceGentToSupabase,
+  formatAge
 } from '@/services/scienceGent';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
@@ -38,8 +38,8 @@ export const useScienceGentDetails = (address: string | undefined) => {
         // Calculate additional properties if needed
         const enrichedData = {
           ...dbData,
-          // Format token age
-          formattedAge: formatTokenAge(dbData.created_on_chain_at),
+          // Format token age using our utility function
+          formattedAge: formatAge(dbData.created_on_chain_at),
           // Format maturity status
           maturityStatus: getMaturityStatus(dbData)
         };
@@ -59,7 +59,7 @@ export const useScienceGentDetails = (address: string | undefined) => {
           if (savedData) {
             const enrichedData = {
               ...savedData,
-              formattedAge: formatTokenAge(savedData.created_on_chain_at),
+              formattedAge: formatAge(savedData.created_on_chain_at),
               maturityStatus: getMaturityStatus(savedData)
             };
             
@@ -80,31 +80,6 @@ export const useScienceGentDetails = (address: string | undefined) => {
         description: "Failed to load ScienceGent details",
         variant: "destructive",
       });
-    }
-  };
-
-  // Helper function to format token age from creation timestamp
-  const formatTokenAge = (creationTimestamp: string | number | undefined): string => {
-    if (!creationTimestamp) return 'Unknown';
-    
-    const creationDate = new Date(creationTimestamp);
-    const now = new Date();
-    const diffInMs = now.getTime() - creationDate.getTime();
-    
-    // Calculate days, hours, etc.
-    const days = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
-    
-    if (days > 365) {
-      const years = Math.floor(days / 365);
-      return `${years} year${years !== 1 ? 's' : ''}`;
-    } else if (days > 30) {
-      const months = Math.floor(days / 30);
-      return `${months} month${months !== 1 ? 's' : ''}`;
-    } else if (days > 0) {
-      return `${days} day${days !== 1 ? 's' : ''}`;
-    } else {
-      const hours = Math.floor(diffInMs / (1000 * 60 * 60));
-      return `${hours} hour${hours !== 1 ? 's' : ''}`;
     }
   };
 
@@ -140,7 +115,7 @@ export const useScienceGentDetails = (address: string | undefined) => {
         if (updatedData) {
           const enrichedData = {
             ...updatedData,
-            formattedAge: formatTokenAge(updatedData.created_on_chain_at),
+            formattedAge: formatAge(updatedData.created_on_chain_at),
             maturityStatus: getMaturityStatus(updatedData)
           };
           

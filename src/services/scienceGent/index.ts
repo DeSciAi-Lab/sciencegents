@@ -3,7 +3,9 @@
 import { 
   fetchScienceGentFromBlockchain,
   fetchTokenStatsFromBlockchain,
-  syncAllScienceGentsFromBlockchain
+  syncAllScienceGentsFromBlockchain,
+  fetchCreationTimestampFromBlockchain,
+  syncAllCreationTimestampsFromBlockchain
 } from './blockchain';
 
 // Export Supabase-related functions
@@ -23,7 +25,8 @@ export type {
 // Export transformation functions
 export {
   transformBlockchainToSupabaseFormat,
-  transformSupabaseToFormattedScienceGent
+  transformSupabaseToFormattedScienceGent,
+  formatAge
 } from './transformations';
 
 // Export the imported functions
@@ -31,6 +34,8 @@ export {
   fetchScienceGentFromBlockchain,
   fetchTokenStatsFromBlockchain,
   syncAllScienceGentsFromBlockchain,
+  fetchCreationTimestampFromBlockchain,
+  syncAllCreationTimestampsFromBlockchain,
   saveScienceGentToSupabase,
   fetchScienceGentFromSupabase
 };

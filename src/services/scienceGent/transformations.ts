@@ -7,6 +7,44 @@ import {
 } from '@/utils/scienceGentCalculations';
 
 /**
+ * Formats a timestamp to a human-readable age string
+ * @param creationTimestamp Creation timestamp (seconds since epoch or ISO string)
+ * @returns Formatted age string (e.g., "2 days" or "3 months")
+ */
+export const formatAge = (creationTimestamp: number | string | undefined): string => {
+  if (!creationTimestamp) return 'Unknown';
+  
+  // Convert timestamp to Date object
+  let creationDate: Date;
+  if (typeof creationTimestamp === 'number') {
+    creationDate = new Date(creationTimestamp * 1000);
+  } else if (typeof creationTimestamp === 'string') {
+    creationDate = new Date(creationTimestamp);
+  } else {
+    return 'Unknown';
+  }
+  
+  const now = new Date();
+  const diffInMs = now.getTime() - creationDate.getTime();
+  
+  // Calculate days, hours, etc.
+  const days = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+  
+  if (days > 365) {
+    const years = Math.floor(days / 365);
+    return `${years} year${years !== 1 ? 's' : ''}`;
+  } else if (days > 30) {
+    const months = Math.floor(days / 30);
+    return `${months} month${months !== 1 ? 's' : ''}`;
+  } else if (days > 0) {
+    return `${days} day${days !== 1 ? 's' : ''}`;
+  } else {
+    const hours = Math.floor(diffInMs / (1000 * 60 * 60));
+    return `${hours || 1} hour${hours !== 1 ? 's' : ''}`;
+  }
+};
+
+/**
  * Transforms blockchain data to Supabase format
  * @param blockchainData ScienceGent data from blockchain
  * @param tokenStats Token statistics from blockchain
@@ -74,7 +112,6 @@ export const transformBlockchainToSupabaseFormat = (
       ? new Date(blockchainData.creationTimestamp * 1000).toISOString() 
       : null,
     maturity_deadline: blockchainData.maturityDeadline || null,
-    // Ensure remaining_maturity_time is a number or null, not a string
     remaining_maturity_time: remainingMaturityTime > 0 ? Number(remainingMaturityTime) : null,
     maturity_progress: maturityProgress,
     token_price: tokenPrice,
@@ -135,7 +172,15 @@ export const transformSupabaseToFormattedScienceGent = (
   } catch (e) {
     console.error("Error parsing social links:", e);
   }
-
+  
+  // Calculate token age from creation timestamp
+  const creationTimestamp = supabaseData.created_on_chain_at 
+    ? new Date(supabaseData.created_on_chain_at).getTime() / 1000
+    : undefined;
+    
+  // Calculate formatted token age
+  const formattedAge = formatAge(supabaseData.created_on_chain_at);
+  
   // Create a formatted ScienceGent object for UI
   return {
     address: supabaseData.address,
@@ -153,14 +198,16 @@ export const transformSupabaseToFormattedScienceGent = (
     virtualEth: supabaseData.virtual_eth ? parseFloat(String(supabaseData.virtual_eth)) : 0,
     collectedFees: supabaseData.collected_fees ? parseFloat(String(supabaseData.collected_fees)) : 0,
     remainingMaturityTime: supabaseData.remaining_maturity_time,
-    creationTimestamp: supabaseData.created_on_chain_at
-      ? new Date(supabaseData.created_on_chain_at).getTime() / 1000
-      : undefined,
+    creationTimestamp,
+    formattedAge,
+    tokenAge: creationTimestamp ? Math.floor(Date.now() / 1000) - creationTimestamp : 0,
     migrationEligible: supabaseData.migration_eligible,
     capabilities,
-    tokenAge: supabaseData.tokenAge || 0,
     domain: supabaseData.domain || "General Science",
     agentFee: supabaseData.agent_fee || 2,
     persona: supabaseData.persona
   };
 };
+
+// Export the formatAge function so it can be used elsewhere
+export { formatAge };
