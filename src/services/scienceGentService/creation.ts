@@ -1,4 +1,3 @@
-
 import { ethers } from "ethers";
 import { contractConfig, factoryABI } from "@/utils/contractConfig";
 import { ScienceGentFormData } from "@/types/sciencegent";
@@ -122,6 +121,7 @@ export const createScienceGent = async (formData: ScienceGentFormData & { transa
             name: formData.name,
             symbol: formData.symbol,
             description: formData.description || "",
+            detailed_description: formData.detailedDescription || "",
             website: formData.website || "",
             socials: {
               twitter: formData.twitter || "",

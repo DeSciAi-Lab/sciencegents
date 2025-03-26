@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { ScienceGentFormData } from '@/types/sciencegent';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -11,6 +11,13 @@ interface PersonaCustomizationProps {
 }
 
 const PersonaCustomization: React.FC<PersonaCustomizationProps> = ({ formData, handleInputChange }) => {
+  const [charCount, setCharCount] = useState<number>(formData.persona?.length || 0);
+  
+  const handlePersonaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setCharCount(e.target.value.length);
+    handleInputChange(e);
+  };
+  
   const samplePersonas = [
     {
       title: "Chemistry Expert",
@@ -36,19 +43,19 @@ const PersonaCustomization: React.FC<PersonaCustomizationProps> = ({ formData, h
 
   return (
     <div className="space-y-6">
-      <h2 className="text-xl font-semibold mb-4">Customize your ScienceGent's personality, expertise, and communication style</h2>
+      <h2 className="text-xl font-semibold mb-2">Set the virtual ETH amount to set the initial price of your token and initialize the pool</h2>
       
       <div>
         <div className="flex justify-between items-center mb-2">
           <Label htmlFor="persona">Custom Persona Instructions</Label>
-          <span className="text-sm text-muted-foreground">{formData.persona.length}/2000 characters</span>
+          <span className="text-sm text-muted-foreground">{charCount}/2000 characters</span>
         </div>
         <Textarea 
           id="persona" 
           name="persona" 
           placeholder="You are an chemistry expert pecialized in spectroscopy. You're helpful, precise, and always explain complex topics in simple terms..." 
           value={formData.persona} 
-          onChange={handleInputChange} 
+          onChange={handlePersonaChange} 
           rows={8}
           maxLength={2000}
           className="font-mono text-sm"
@@ -61,7 +68,7 @@ const PersonaCustomization: React.FC<PersonaCustomizationProps> = ({ formData, h
           {samplePersonas.map((persona, index) => (
             <div 
               key={index} 
-              className="bg-muted/50 border hover:border-science-300 p-4 rounded cursor-pointer"
+              className="bg-orange-100 hover:bg-orange-200 p-4 rounded cursor-pointer"
               onClick={() => {
                 const event = {
                   target: {
@@ -70,10 +77,11 @@ const PersonaCustomization: React.FC<PersonaCustomizationProps> = ({ formData, h
                   }
                 } as React.ChangeEvent<HTMLTextAreaElement>;
                 handleInputChange(event);
+                setCharCount(persona.content.length);
               }}
             >
               <h4 className="font-medium mb-2">{persona.title}</h4>
-              <p className="text-sm text-muted-foreground line-clamp-4">{persona.content}</p>
+              <p className="text-sm text-gray-700 line-clamp-4">{persona.content}</p>
             </div>
           ))}
         </div>

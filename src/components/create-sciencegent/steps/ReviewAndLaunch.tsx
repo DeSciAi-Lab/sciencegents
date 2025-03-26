@@ -2,9 +2,11 @@
 import React, { useEffect, useState } from 'react';
 import { ScienceGentFormData } from '@/types/sciencegent';
 import { Capability } from '@/types/capability';
-import { Loader2 } from 'lucide-react';
+import { Loader2, AlertCircle } from 'lucide-react';
 import { calculateTotalCapabilityFeesSynchronous } from '../utils';
 import { CreationStatus } from '@/hooks/useScienceGentCreation';
+import { DeveloperProfile } from '@/types/profile';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface ReviewAndLaunchProps {
   formData: ScienceGentFormData;
@@ -12,6 +14,8 @@ interface ReviewAndLaunchProps {
   isLaunching?: boolean;
   capabilities: Capability[];
   status: CreationStatus;
+  developerProfile: DeveloperProfile | null;
+  isLoadingProfile: boolean;
 }
 
 const ReviewAndLaunch: React.FC<ReviewAndLaunchProps> = ({ 
@@ -19,7 +23,9 @@ const ReviewAndLaunch: React.FC<ReviewAndLaunchProps> = ({
   onSubmit, 
   isLaunching = false,
   capabilities,
-  status
+  status,
+  developerProfile,
+  isLoadingProfile
 }) => {
   const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null);
   const [tradingFeeAmount, setTradingFeeAmount] = useState<string>("0");
@@ -66,182 +72,192 @@ const ReviewAndLaunch: React.FC<ReviewAndLaunchProps> = ({
     status === CreationStatus.WaitingConfirmation || 
     status === CreationStatus.Success;
 
+  const profileInitials = developerProfile?.developer_name 
+    ? developerProfile.developer_name.charAt(0).toUpperCase() 
+    : formData.symbol?.charAt(0) || "SG";
+
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-semibold mb-4">Review & Launch</h3>
+        <h3 className="text-lg font-medium mb-2">Review & Launch</h3>
         <p className="text-sm text-gray-500 mb-6">
           Review all the details of your ScienceGent before launching. Once launched, some properties cannot be changed.
         </p>
       </div>
       
       <form id="review-form" onSubmit={handleLaunch}>
-        <div className="bg-blue-50 rounded-md p-6 mb-6">
-          <div className="flex justify-center">
-            {profileImageUrl ? (
-              <div className="w-20 h-20 rounded-full overflow-hidden mb-4">
+        <div className="space-y-4">
+          {/* Basic Information */}
+          <div className="bg-blue-50 rounded-md p-4 flex items-center justify-center">
+            <div className="w-20 h-20 rounded-full overflow-hidden flex items-center justify-center bg-purple-500 text-white text-2xl font-bold">
+              {profileImageUrl ? (
                 <img src={profileImageUrl} alt="Profile" className="w-full h-full object-cover" />
-              </div>
-            ) : (
-              <div className="w-20 h-20 bg-blue-600 rounded-full flex items-center justify-center text-2xl text-white font-bold mb-4">
-                {formData.symbol?.charAt(0) || "SG"}
-              </div>
-            )}
+              ) : profileInitials}
+            </div>
           </div>
           
-          <div className="space-y-4">
-            <div className="bg-white rounded-md p-4 border border-gray-200">
-              <h3 className="font-medium text-gray-700 mb-2">Basic Information</h3>
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <p className="text-gray-500">Name</p>
-                  <p className="font-medium">{formData.name}</p>
-                </div>
-                <div>
-                  <p className="text-gray-500">Ticker</p>
-                  <p className="font-medium">{formData.symbol}</p>
-                </div>
-                <div>
-                  <p className="text-gray-500">Total Supply</p>
-                  <p className="font-medium">{formData.totalSupply}</p>
-                </div>
-                <div>
-                  <p className="text-gray-500">Domain</p>
-                  <p className="font-medium">{formData.domain || "General Science"}</p>
-                </div>
-                <div>
-                  <p className="text-gray-500">Agent Fee</p>
-                  <p className="font-medium">{formData.agentFee || "2"} DSI</p>
-                </div>
-                <div>
-                  <p className="text-gray-500">Website</p>
-                  <p className="font-medium">{formData.website || "N/A"}</p>
-                </div>
+          <div className="bg-blue-50 rounded-md p-4 border border-blue-100">
+            <h3 className="font-medium text-gray-700 mb-2">Basic Information</h3>
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div>
+                <p className="text-gray-500">Name</p>
+                <p className="font-medium">{formData.name}</p>
+              </div>
+              <div>
+                <p className="text-gray-500">Ticker</p>
+                <p className="font-medium">{formData.symbol}</p>
+              </div>
+              <div>
+                <p className="text-gray-500">Total Supply</p>
+                <p className="font-medium">{formData.totalSupply}</p>
+              </div>
+              <div>
+                <p className="text-gray-500">Domain</p>
+                <p className="font-medium">{formData.domain || "General Science"}</p>
               </div>
             </div>
-            
-            <div className="bg-white rounded-md p-4 border border-gray-200">
-              <h3 className="font-medium text-gray-700 mb-2">Social Links</h3>
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <p className="text-gray-500">Twitter</p>
-                  <p className="font-medium">{formData.twitter || "N/A"}</p>
-                </div>
-                <div>
-                  <p className="text-gray-500">GitHub</p>
-                  <p className="font-medium">{formData.github || "N/A"}</p>
-                </div>
-                <div>
-                  <p className="text-gray-500">Telegram</p>
-                  <p className="font-medium">{formData.telegram || "N/A"}</p>
-                </div>
-                <div>
-                  <p className="text-gray-500">Website</p>
-                  <p className="font-medium">{formData.website || "N/A"}</p>
-                </div>
+            <div className="mt-2">
+              <p className="text-gray-500">Description</p>
+              <p className="text-sm">{formData.description}</p>
+            </div>
+            <div className="grid grid-cols-2 gap-4 mt-3 text-sm">
+              <div>
+                <p className="text-gray-500">Twitter</p>
+                <p className="font-medium">{formData.twitter || "N/A"}</p>
+              </div>
+              <div>
+                <p className="text-gray-500">Telegram</p>
+                <p className="font-medium">{formData.telegram || "N/A"}</p>
+              </div>
+              <div>
+                <p className="text-gray-500">GitHub</p>
+                <p className="font-medium">{formData.github || "N/A"}</p>
+              </div>
+              <div>
+                <p className="text-gray-500">Website</p>
+                <p className="font-medium">{formData.website || "N/A"}</p>
               </div>
             </div>
+          </div>
+          
+          {/* Persona */}
+          <div className="bg-orange-50 rounded-md p-4 border border-orange-100">
+            <h3 className="font-medium text-gray-700 mb-2">Persona</h3>
+            <p className="text-sm line-clamp-3">
+              {formData.persona || "No persona specified"}
+            </p>
+          </div>
             
-            <div className="bg-white rounded-md p-4 border border-gray-200">
-              <h3 className="font-medium text-gray-700 mb-2">Description</h3>
-              <p className="text-sm">{formData.description || "No description provided"}</p>
-            </div>
+          {/* Selected Capabilities */}
+          <div className="bg-blue-50 rounded-md p-4 border border-blue-100">
+            <h3 className="font-medium text-gray-700 mb-2">Selected Capabilities</h3>
+            {selectedCapabilityNames.length > 0 ? (
+              <div className="flex flex-wrap gap-2">
+                {selectedCapabilityNames.map((name, idx) => (
+                  <span key={idx} className="bg-blue-100 text-blue-700 text-xs py-1 px-2 rounded">
+                    {name}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-gray-500">No capabilities selected</p>
+            )}
+            <p className="mt-2 text-sm font-medium">
+              Total Capability Fee: {totalCapabilityFees.toFixed(2)} ETH
+            </p>
+          </div>
+          
+          {/* Initial Liquidity */}
+          <div className="bg-orange-50 rounded-md p-4 border border-orange-100">
+            <h3 className="font-medium text-gray-700 mb-2">Initial Liquidity</h3>
+            <p className="text-lg font-medium">{formData.initialLiquidity} virtual ETH</p>
+            <p className="text-sm text-gray-500">
+              Initial Price: {
+                formData.initialLiquidity && formData.totalSupply
+                  ? (parseFloat(formData.initialLiquidity) / (parseFloat(formData.totalSupply) * 0.99)).toFixed(8)
+                  : "0.00000000"
+              } ETH
+            </p>
+            <p className="text-sm text-gray-500 mt-2">
+              virtualETH is a synthetic representation of ETH used to initialize your token's price. 
+              You don't need to deposit real ETH until your token is ready to migrate to a public DEX.
+            </p>
+          </div>
+          
+          {/* Developer Information Section */}
+          <div className="bg-blue-50 rounded-md p-4 border border-blue-100">
+            <h3 className="font-medium text-gray-700 mb-2">Developer Information</h3>
             
-            <div className="bg-white rounded-md p-4 border border-gray-200">
-              <h3 className="font-medium text-gray-700 mb-2">Persona</h3>
-              <p className="text-sm line-clamp-3">{formData.persona}</p>
-            </div>
-            
-            {/* Developer Information Section */}
-            <div className="bg-white rounded-md p-4 border border-gray-200">
-              <h3 className="font-medium text-gray-700 mb-2">Developer Information</h3>
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <p className="text-gray-500">Name</p>
-                  <p className="font-medium">{formData.developerName || "N/A"}</p>
+            {isLoadingProfile ? (
+              <div className="flex justify-center py-4">
+                <Loader2 className="animate-spin h-5 w-5 text-gray-400" />
+              </div>
+            ) : developerProfile ? (
+              <div>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <p className="text-gray-500">Name</p>
+                    <p className="font-medium">{developerProfile.developer_name || "N/A"}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500">Wallet Address</p>
+                    <p className="font-medium truncate">{developerProfile.wallet_address || "N/A"}</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-gray-500">Email</p>
-                  <p className="font-medium">{formData.developerEmail || "N/A"}</p>
-                </div>
-                {formData.bio && (
-                  <div className="col-span-2">
+                
+                {developerProfile.bio && (
+                  <div className="mt-2">
                     <p className="text-gray-500">Bio</p>
-                    <p className="font-medium">{formData.bio}</p>
+                    <p className="text-sm">{developerProfile.bio}</p>
                   </div>
                 )}
-              </div>
-              
-              <div className="mt-3">
-                <p className="text-gray-500 text-sm">Developer Social Links</p>
-                <div className="grid grid-cols-2 gap-2 mt-1 text-sm">
+                
+                <div className="grid grid-cols-2 gap-4 mt-3 text-sm">
                   <div>
                     <p className="text-gray-500">Twitter</p>
-                    <p className="font-medium">{formData.developerTwitter || "N/A"}</p>
-                  </div>
-                  <div>
-                    <p className="text-gray-500">GitHub</p>
-                    <p className="font-medium">{formData.developerGithub || "N/A"}</p>
+                    <p className="font-medium">{developerProfile.developer_twitter || "N/A"}</p>
                   </div>
                   <div>
                     <p className="text-gray-500">Telegram</p>
-                    <p className="font-medium">{formData.developerTelegram || "N/A"}</p>
+                    <p className="font-medium">{developerProfile.developer_telegram || "N/A"}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500">GitHub</p>
+                    <p className="font-medium">{developerProfile.developer_github || "N/A"}</p>
                   </div>
                   <div>
                     <p className="text-gray-500">Website</p>
-                    <p className="font-medium">{formData.developerWebsite || "N/A"}</p>
+                    <p className="font-medium">{developerProfile.developer_website || "N/A"}</p>
                   </div>
                 </div>
               </div>
+            ) : (
+              <Alert variant="default" className="bg-yellow-50 border-yellow-200">
+                <AlertCircle className="h-4 w-4 text-yellow-600" />
+                <AlertDescription className="text-yellow-700">
+                  Please consider completing your developer profile after ScienceGent launch.
+                </AlertDescription>
+              </Alert>
+            )}
+          </div>
+          
+          {/* Fees and Conditions */}
+          <div className="grid grid-cols-4 gap-2 text-center">
+            <div className="bg-blue-50 rounded-md p-3 border border-blue-100">
+              <p className="text-xs text-gray-500">Agent Fee per Interaction</p>
+              <p className="font-medium">{formData.agentFee || "2"} DSI</p>
             </div>
-            
-            <div className="bg-white rounded-md p-4 border border-gray-200">
-              <h3 className="font-medium text-gray-700 mb-2">Selected Capabilities</h3>
-              {selectedCapabilityNames.length > 0 ? (
-                <div className="flex flex-wrap gap-2">
-                  {selectedCapabilityNames.map((name, idx) => (
-                    <span key={idx} className="bg-blue-100 text-blue-700 text-xs py-1 px-2 rounded">
-                      {name}
-                    </span>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-gray-500">No capabilities selected</p>
-              )}
-              <p className="mt-2 text-sm font-medium">
-                Total Capability Fee: {totalCapabilityFees.toFixed(2)} ETH
-              </p>
+            <div className="bg-blue-50 rounded-md p-3 border border-blue-100">
+              <p className="text-xs text-gray-500">Launch Fee</p>
+              <p className="font-medium">1000 DSI</p>
             </div>
-            
-            <div className="bg-white rounded-md p-4 border border-gray-200">
-              <h3 className="font-medium text-gray-700 mb-2">Initial Liquidity</h3>
-              <p className="text-lg font-medium">{formData.initialLiquidity} virtual ETH</p>
-              <p className="text-sm text-gray-500">
-                Initial Price: {
-                  formData.initialLiquidity && formData.totalSupply
-                    ? (parseFloat(formData.initialLiquidity) / (parseFloat(formData.totalSupply) * 0.99)).toFixed(8)
-                    : "0.00000000"
-                } ETH
-              </p>
+            <div className="bg-blue-50 rounded-md p-3 border border-blue-100">
+              <p className="text-xs text-gray-500">Trading Fee</p>
+              <p className="font-medium">5 %</p>
             </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-2 text-center">
-              <div className="bg-white rounded-md p-3 border border-gray-200">
-                <p className="text-xs text-gray-500">Agent Fee per Interaction</p>
-                <p className="font-medium">{formData.agentFee || "2"} DSI</p>
-              </div>
-              <div className="bg-white rounded-md p-3 border border-gray-200">
-                <p className="text-xs text-gray-500">Launch Fee</p>
-                <p className="font-medium">1000 DSI</p>
-              </div>
-              <div className="bg-white rounded-md p-3 border border-gray-200">
-                <p className="text-xs text-gray-500">Trading Fee</p>
-                <p className="font-medium">5%</p>
-              </div>
-              <div className="bg-white rounded-md p-3 border border-gray-200">
-                <p className="text-xs text-gray-500">Migration Condition</p>
-                <p className="text-xs font-medium">{tradingFeeAmount} ETH</p>
-              </div>
+            <div className="bg-blue-50 rounded-md p-3 border border-blue-100">
+              <p className="text-xs text-gray-500">Migration Condition</p>
+              <p className="text-xs font-medium">{tradingFeeAmount} ETH</p>
             </div>
           </div>
         </div>

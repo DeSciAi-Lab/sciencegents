@@ -1,4 +1,3 @@
-
 import { Capability } from "@/types/capability";
 
 // Launch fee (1000 DSI tokens)
@@ -26,29 +25,46 @@ export const calculateTotalCapabilityFeesSynchronous = (selectedCapabilities: st
   }, 0);
 };
 
+// Updated wizard steps with Detailed Description instead of Personal Info
 export const wizardSteps = [
   { id: 1, title: 'Basic Info' },
-  { id: 2, title: 'Persona Customization' },
-  { id: 3, title: 'Capability' },
-  { id: 4, title: 'Liquidity' },
-  { id: 5, title: 'Personal Information (optional)' },
+  { id: 2, title: 'Detailed Description' },
+  { id: 3, title: 'Persona Customization' },
+  { id: 4, title: 'Capability' },
+  { id: 5, title: 'Liquidity' },
   { id: 6, title: 'Review' }
 ];
 
-export const validateStep = (step: number, formData: any): boolean => {
-  switch (step) {
-    case 1: // Basic Information
-      return Boolean(formData.name && formData.symbol && formData.totalSupply);
-    case 2: // Persona Customization
-      return formData.persona.length >= 10;
-    case 3: // Capability Selection
-      return formData.selectedCapabilities.length > 0;
-    case 4: // Liquidity Settings
-      return formData.initialLiquidity && !isNaN(parseFloat(formData.initialLiquidity));
-    case 5: // Personal Information
-      return Boolean(formData.developerName && formData.developerEmail);
-    case 6: // Review & Launch
+// Validate if the current step is filled correctly
+export const validateStep = (currentStep: number, formData: any): boolean => {
+  switch (currentStep) {
+    case 1: // Basic Info
+      return (
+        formData.name.trim() !== '' &&
+        formData.symbol.trim() !== '' &&
+        formData.totalSupply.trim() !== '' &&
+        parseFloat(formData.totalSupply) > 0 &&
+        formData.description.trim() !== ''
+      );
+      
+    case 2: // Detailed Description - Always valid
       return true;
+      
+    case 3: // Persona Customization - Always valid since it's optional
+      return true;
+      
+    case 4: // Capability - Always valid since it's optional
+      return true;
+      
+    case 5: // Liquidity
+      return (
+        formData.initialLiquidity.trim() !== '' &&
+        parseFloat(formData.initialLiquidity) > 0
+      );
+      
+    case 6: // Review - Always valid
+      return true;
+      
     default:
       return false;
   }

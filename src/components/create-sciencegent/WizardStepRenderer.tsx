@@ -7,10 +7,10 @@ import { getAllCapabilities } from '@/data/capabilities';
 
 // Import step components
 import BasicInfo from './steps/BasicInfo';
+import DetailedDescription from './steps/DetailedDescription';
 import PersonaCustomization from './steps/PersonaCustomization';
 import CapabilitySelection from './steps/CapabilitySelection';
 import LiquiditySettings from './steps/LiquiditySettings';
-import PersonalInfo from './steps/PersonalInfo';
 import ReviewAndLaunch from './steps/ReviewAndLaunch';
 import SuccessScreen from './steps/SuccessScreen';
 
@@ -28,7 +28,9 @@ const WizardStepRenderer: React.FC = () => {
     tokenAddress,
     handleApproveAndLaunch,
     isLaunching,
-    isDSIApproved
+    isDSIApproved,
+    developerProfile,
+    isLoadingProfile
   } = useWizard();
   
   const [capabilities, setCapabilities] = useState<Capability[]>([]);
@@ -59,32 +61,32 @@ const WizardStepRenderer: React.FC = () => {
         );
       case 2:
         return (
-          <PersonaCustomization 
+          <DetailedDescription 
             formData={formData} 
             handleInputChange={handleInputChange}
           />
         );
       case 3:
         return (
+          <PersonaCustomization 
+            formData={formData} 
+            handleInputChange={handleInputChange}
+          />
+        );
+      case 4:
+        return (
           <CapabilitySelection 
             formData={formData} 
             handleCapabilityToggle={handleCapabilityToggle}
           />
         );
-      case 4:
+      case 5:
         return (
           <LiquiditySettings 
             formData={formData} 
             handleInputChange={handleInputChange}
           />
         );
-      case 5:
-        return (
-          <PersonalInfo
-            formData={formData}
-            handleInputChange={handleInputChange}
-          />
-        );  
       case 6:
         return (
           <ReviewAndLaunch 
@@ -93,6 +95,8 @@ const WizardStepRenderer: React.FC = () => {
             isLaunching={isLaunching}
             capabilities={capabilities}
             status={status}
+            developerProfile={developerProfile}
+            isLoadingProfile={isLoadingProfile}
           />
         );
       case 7:

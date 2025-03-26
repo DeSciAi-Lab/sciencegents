@@ -49,7 +49,7 @@ const WizardLayout: React.FC<WizardLayoutProps> = ({ children }) => {
           <Button 
             onClick={handleApproveAndLaunch} 
             disabled={isDisabled}
-            className="min-w-[180px]"
+            className="min-w-[180px] bg-purple-600 hover:bg-purple-700"
           >
             {isLaunching && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Approve DSI Spending
@@ -61,7 +61,7 @@ const WizardLayout: React.FC<WizardLayoutProps> = ({ children }) => {
         <Button 
           onClick={handleApproveAndLaunch} 
           disabled={isDisabled}
-          className="min-w-[120px]"
+          className="min-w-[120px] bg-purple-600 hover:bg-purple-700"
         >
           {isLaunching && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           Launch
@@ -70,7 +70,11 @@ const WizardLayout: React.FC<WizardLayoutProps> = ({ children }) => {
     }
     
     return (
-      <Button onClick={nextStep} disabled={!canProceed}>
+      <Button 
+        onClick={nextStep} 
+        disabled={!canProceed}
+        className="bg-purple-600 hover:bg-purple-700"
+      >
         Continue
         <ChevronRight className="ml-2 h-4 w-4" />
       </Button>
@@ -78,7 +82,7 @@ const WizardLayout: React.FC<WizardLayoutProps> = ({ children }) => {
   };
   
   return (
-    <div className="max-w-6xl mx-auto">
+    <div className="max-w-6xl mx-auto bg-white">
       <div className="bg-white rounded-lg shadow-sm border">
         {!isSuccessStep && (
           <div className="p-6 border-b">

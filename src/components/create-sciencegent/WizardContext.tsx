@@ -1,9 +1,11 @@
+
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ScienceGentFormData } from '@/types/sciencegent';
 import { validateStep, wizardSteps } from '@/components/create-sciencegent/utils';
 import useScienceGentCreation, { CreationStatus } from '@/hooks/useScienceGentCreation';
 import { checkDSIAllowance } from '@/services/scienceGentService';
+import { useDeveloperProfile } from '@/hooks/useDeveloperProfile';
 
 // Initial form data
 const initialFormData: ScienceGentFormData = {
@@ -11,6 +13,7 @@ const initialFormData: ScienceGentFormData = {
   symbol: '',
   totalSupply: '',
   description: '',
+  detailedDescription: '',
   profileImage: null,
   website: '',
   twitter: '',
@@ -20,15 +23,7 @@ const initialFormData: ScienceGentFormData = {
   agentFee: '2',
   persona: '',
   selectedCapabilities: [],
-  initialLiquidity: '',
-  // New developer information fields
-  developerName: '',
-  developerEmail: '',
-  bio: '',
-  developerTwitter: '',
-  developerTelegram: '',
-  developerGithub: '',
-  developerWebsite: ''
+  initialLiquidity: ''
 };
 
 interface WizardContextType {
@@ -42,6 +37,8 @@ interface WizardContextType {
   isSyncing: boolean;
   isDSIApproved: boolean;
   isCheckingAllowance: boolean;
+  developerProfile: any;
+  isLoadingProfile: boolean;
   handleInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
   handleFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleSelectChange: (name: string, value: string) => void;
@@ -61,6 +58,9 @@ export const WizardProvider: React.FC<{children: React.ReactNode}> = ({ children
   const [formData, setFormData] = useState<ScienceGentFormData>(initialFormData);
   const [isDSIApproved, setIsDSIApproved] = useState(false);
   const [isCheckingAllowance, setIsCheckingAllowance] = useState(false);
+  
+  // Get developer profile for review step
+  const { profile: developerProfile, isLoading: isLoadingProfile } = useDeveloperProfile();
   
   const {
     status,
@@ -199,7 +199,20 @@ export const WizardProvider: React.FC<{children: React.ReactNode}> = ({ children
     } else {
       // DSI is already approved, proceed with token creation
       try {
-        await createToken(formData);
+        // Merge developer profile data with form data if available
+        const tokenData = {
+          ...formData,
+          // These fields are not included in the form anymore, but populated from developer profile
+          developerName: developerProfile?.developer_name || '',
+          developerEmail: '',
+          bio: developerProfile?.bio || '',
+          developerTwitter: developerProfile?.developer_twitter || '',
+          developerTelegram: developerProfile?.developer_telegram || '',
+          developerGithub: developerProfile?.developer_github || '',
+          developerWebsite: developerProfile?.developer_website || ''
+        };
+
+        await createToken(tokenData);
       } catch (error) {
         setIsLaunching(false);
         console.error("Failed to create token:", error);
@@ -219,6 +232,8 @@ export const WizardProvider: React.FC<{children: React.ReactNode}> = ({ children
       isSyncing,
       isDSIApproved,
       isCheckingAllowance,
+      developerProfile,
+      isLoadingProfile,
       handleInputChange,
       handleFileChange,
       handleSelectChange,

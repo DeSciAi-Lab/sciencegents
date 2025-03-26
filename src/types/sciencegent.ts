@@ -5,6 +5,7 @@ export interface ScienceGent {
   address: string;
   symbol: string;
   description?: string;
+  detailedDescription?: string;
   profilePic?: string;
   creatorAddress?: string;
   developerName?: string;
@@ -39,6 +40,7 @@ export interface ScienceGentFormData {
   symbol: string;
   totalSupply: string;
   description: string;
+  detailedDescription: string;
   profileImage: File | null;
   website: string;
   twitter: string;
@@ -49,12 +51,5 @@ export interface ScienceGentFormData {
   persona: string;
   selectedCapabilities: string[];
   initialLiquidity: string;
-  // Developer information fields
-  developerName?: string;
-  developerEmail?: string;
-  bio?: string;
-  developerTwitter?: string;
-  developerTelegram?: string;
-  developerGithub?: string;
-  developerWebsite?: string;
 }
+
