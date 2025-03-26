@@ -37,6 +37,29 @@
 
     --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     --font-mono: 'JetBrains Mono', monospace;
+    
+    /* ScienceGents specific colors */
+    --science-50: 215 35% 97%;
+    --science-100: 215 35% 92%;
+    --science-200: 215 35% 82%;
+    --science-300: 215 35% 72%;
+    --science-400: 215 35% 62%;
+    --science-500: 215 80% 55%;
+    --science-600: 215 80% 45%;
+    --science-700: 215 80% 35%;
+    --science-800: 215 80% 25%;
+    --science-900: 215 80% 15%;
+    
+    --genius-50: 262 35% 97%;
+    --genius-100: 262 35% 92%;
+    --genius-200: 262 35% 82%;
+    --genius-300: 262 35% 72%;
+    --genius-400: 262 35% 62%;
+    --genius-500: 262 80% 55%;
+    --genius-600: 262 80% 45%;
+    --genius-700: 262 80% 35%;
+    --genius-800: 262 80% 25%;
+    --genius-900: 262 80% 15%;
   }
 }
 
@@ -100,6 +123,28 @@
   .hidden-scrollbar::-webkit-scrollbar {
     display: none;
   }
+  
+  .shadow-glass {
+    box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
+  }
+  
+  .shadow-soft {
+    box-shadow: 0 4px 15px -3px rgba(0, 0, 0, 0.05);
+  }
+  
+  /* Animation utilities */
+  .animate-spin-slow {
+    animation: spin 15s linear infinite;
+  }
+  
+  @keyframes spin {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
 }
 
 /* Animations */
@@ -127,3 +172,4 @@
   opacity: 0;
   transition: opacity 300ms;
 }
+

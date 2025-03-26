@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useInView } from 'react-intersection-observer';
 import Reveal from '@/components/animations/Reveal';
 import { supabase } from '@/integrations/supabase/client';
+import { ArrowUp, Users, LineChart, CircleDollarSign } from 'lucide-react';
 
 // CountUp component for animating numbers
 const CountUp = ({ end, duration = 2, decimals = 0 }: { end: number, duration?: number, decimals?: number }) => {
@@ -92,33 +93,37 @@ const Stats = () => {
   const statItems = [
     { 
       label: 'ScienceGents Launched', 
-      value: stats.isLoading || stats.scienceGentsCount === 0 ? 178 : stats.scienceGentsCount 
+      value: stats.isLoading || stats.scienceGentsCount === 0 ? 178 : stats.scienceGentsCount,
+      icon: <Users className="h-7 w-7 text-science-600" />
     },
     { 
       label: 'Total Transactions', 
-      value: stats.isLoading || stats.totalTransactions === 0 ? 15672 : stats.totalTransactions 
+      value: stats.isLoading || stats.totalTransactions === 0 ? 15672 : stats.totalTransactions,
+      icon: <ArrowUp className="h-7 w-7 text-science-600" />
     },
     { 
       label: 'Total Liquidity', 
       value: stats.isLoading || stats.totalLiquidity === 0 ? 2.4 : stats.totalLiquidity, 
       prefix: '$', 
       suffix: 'M', 
-      decimals: 1 
+      decimals: 1,
+      icon: <LineChart className="h-7 w-7 text-science-600" />
     },
     { 
       label: 'Total Market Cap', 
       value: stats.isLoading || stats.totalMarketCap === 0 ? 5.7 : stats.totalMarketCap, 
       prefix: '$', 
       suffix: 'M', 
-      decimals: 1 
+      decimals: 1,
+      icon: <CircleDollarSign className="h-7 w-7 text-science-600" />
     },
   ];
 
   return (
-    <div className="relative bg-science-50 py-16 overflow-hidden">
+    <div className="relative bg-science-50 py-16 md:py-24 overflow-hidden">
       {/* Background elements */}
       <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute -top-16 -right-16 w-64 h-64 bg-science-100 rounded-full blur-3xl opacity-60" />
+        <div className="absolute -top-32 -right-32 w-96 h-96 bg-science-100 rounded-full blur-3xl opacity-60" />
         <div className="absolute -bottom-32 -left-32 w-96 h-96 bg-science-100 rounded-full blur-3xl opacity-60" />
       </div>
       
@@ -129,10 +134,13 @@ const Stats = () => {
           </h2>
         </Reveal>
         
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-10">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 md:gap-10">
           {statItems.map((stat, index) => (
             <Reveal key={index} delay={100 * index} direction="up">
-              <div className="bg-white rounded-2xl shadow-soft p-6 text-center">
+              <div className="bg-white rounded-2xl shadow-soft p-6 text-center hover:shadow-md transition-all duration-300">
+                <div className="flex justify-center mb-4">
+                  {stat.icon}
+                </div>
                 <h3 className="text-3xl md:text-4xl font-bold mb-2 text-science-800">
                   {stat.prefix && <span>{stat.prefix}</span>}
                   <CountUp end={stat.value} decimals={stat.decimals || 0} />

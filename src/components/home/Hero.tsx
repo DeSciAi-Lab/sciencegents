@@ -12,9 +12,9 @@ const Hero = () => {
     <div className="relative overflow-hidden">
       {/* Background elements */}
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
-        <div className="absolute top-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-gradient-to-b from-science-100/50 to-science-200/30 blur-3xl" />
-        <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-gradient-to-tr from-science-100/50 to-science-200/30 blur-3xl" />
-        <div className="absolute top-[40%] left-[20%] w-[10%] h-[10%] rounded-full bg-gradient-to-tr from-genius-200/40 to-genius-300/20 blur-3xl" />
+        <div className="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-gradient-to-b from-science-100/50 to-science-200/30 blur-3xl" />
+        <div className="absolute bottom-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-gradient-to-tr from-science-100/50 to-science-200/30 blur-3xl" />
+        <div className="absolute top-[40%] left-[20%] w-[20%] h-[20%] rounded-full bg-gradient-to-tr from-genius-200/40 to-genius-300/20 blur-3xl" />
       </div>
 
       <div className="container mx-auto px-6 py-24 md:py-32 lg:py-40 relative z-10">
@@ -56,16 +56,16 @@ const Hero = () => {
               <Button 
                 onClick={() => navigate('/create-sciencegent')}
                 size="lg" 
-                className="bg-science-600 hover:bg-science-700 text-white w-full sm:w-auto group"
+                className="bg-science-600 hover:bg-science-700 text-white w-full sm:w-auto group transition-all"
               >
                 <span>Create ScienceGent</span>
                 <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
               </Button>
               <Button 
-                onClick={() => navigate('/explore')}
+                onClick={() => navigate('/sciencegents')}
                 variant="outline"
                 size="lg"
-                className="border-science-200 hover:border-science-300 hover:bg-science-50 w-full sm:w-auto"
+                className="border-science-200 hover:border-science-300 hover:bg-science-50 w-full sm:w-auto transition-all"
               >
                 Explore ScienceGents
               </Button>
@@ -75,7 +75,7 @@ const Hero = () => {
           {/* Feature highlights */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
             <Reveal delay={500} direction="up">
-              <div className="glass-card px-6 py-7 flex flex-col items-center text-center">
+              <div className="glass-card px-6 py-7 flex flex-col items-center text-center hover:shadow-lg transition-all duration-300 hover:translate-y-[-5px]">
                 <div className="w-12 h-12 flex items-center justify-center bg-science-100 text-science-700 rounded-full mb-4">
                   <Brain className="h-6 w-6" />
                 </div>
@@ -87,7 +87,7 @@ const Hero = () => {
             </Reveal>
 
             <Reveal delay={600} direction="up">
-              <div className="glass-card px-6 py-7 flex flex-col items-center text-center">
+              <div className="glass-card px-6 py-7 flex flex-col items-center text-center hover:shadow-lg transition-all duration-300 hover:translate-y-[-5px]">
                 <div className="w-12 h-12 flex items-center justify-center bg-science-100 text-science-700 rounded-full mb-4">
                   <FlaskConical className="h-6 w-6" />
                 </div>
@@ -99,7 +99,7 @@ const Hero = () => {
             </Reveal>
 
             <Reveal delay={700} direction="up">
-              <div className="glass-card px-6 py-7 flex flex-col items-center text-center">
+              <div className="glass-card px-6 py-7 flex flex-col items-center text-center hover:shadow-lg transition-all duration-300 hover:translate-y-[-5px]">
                 <div className="w-12 h-12 flex items-center justify-center bg-science-100 text-science-700 rounded-full mb-4">
                   <TrendingUp className="h-6 w-6" />
                 </div>
