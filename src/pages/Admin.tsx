@@ -6,8 +6,7 @@ import AdminSkeleton from '@/components/admin/AdminSkeleton';
 import CapabilityManagementCard from '@/components/admin/CapabilityManagementCard';
 import FeatureCard from '@/components/admin/FeatureCard';
 import ScienceGentSync from '@/components/admin/ScienceGentSync';
-import Navbar from '@/components/layout/Navbar';
-import Footer from '@/components/layout/Footer';
+import NavbarLayout from '@/components/layout/NavbarLayout';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
 import { RefreshCcw, Layers, Settings } from 'lucide-react';
 
@@ -24,10 +23,8 @@ const Admin: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <Navbar />
-      
-      <main className="flex-grow pt-24 pb-16">
+    <NavbarLayout>
+      <div className="py-6">
         <div className="container mx-auto px-6">
           <h1 className="text-3xl font-bold mb-2">Admin Dashboard</h1>
           <p className="text-muted-foreground mb-6">
@@ -94,10 +91,8 @@ const Admin: React.FC = () => {
             </TabsContent>
           </Tabs>
         </div>
-      </main>
-      
-      <Footer />
-    </div>
+      </div>
+    </NavbarLayout>
   );
 };
 

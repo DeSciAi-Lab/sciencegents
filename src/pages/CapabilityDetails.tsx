@@ -2,29 +2,9 @@
 import React, { useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { getCapabilityById } from '@/data/capabilities';
-import { Capability } from '@/types/capability';
-import Navbar from '@/components/layout/Navbar';
-import Footer from '@/components/layout/Footer';
+import NavbarLayout from '@/components/layout/NavbarLayout';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
-import { 
-  Star, 
-  FileText, 
-  User, 
-  Code2, 
-  Twitter, 
-  Github, 
-  Globe, 
-  Copy, 
-  ExternalLink 
-} from 'lucide-react';
-import ReactMarkdown from 'react-markdown';
-import rehypeRaw from 'rehype-raw';
-import rehypeSanitize from 'rehype-sanitize';
-import remarkGfm from 'remark-gfm';
 import CapabilityDetailPage from '@/components/capability/CapabilityDetailPage';
 import { useQuery } from '@tanstack/react-query';
 import { fetchCapabilityById } from '@/services/capability/supabase';
@@ -82,9 +62,8 @@ const CapabilityDetails = () => {
   }, []);
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <Navbar />
-      <main className="flex-grow bg-gray-50 py-6">
+    <NavbarLayout>
+      <main className="bg-gray-50 py-6">
         {isLoading ? (
           <div className="container mx-auto px-4">
             <div className="mb-6">
@@ -129,8 +108,7 @@ const CapabilityDetails = () => {
           <CapabilityDetailPage capability={capability} />
         )}
       </main>
-      <Footer />
-    </div>
+    </NavbarLayout>
   );
 };
 
