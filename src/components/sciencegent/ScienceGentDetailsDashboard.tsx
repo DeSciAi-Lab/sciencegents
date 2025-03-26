@@ -47,15 +47,13 @@ const ScienceGentDetailsDashboard: React.FC<ScienceGentDetailsDashboardProps> = 
   }
 
   return (
-    <div className="bg-white rounded-lg border overflow-hidden">
-      <DashboardTabs 
-        address={address}
-        scienceGentData={scienceGentData}
-        status={status}
-        isRefreshing={isRefreshing}
-        refreshData={refreshData}
-      />
-    </div>
+    <DashboardTabs 
+      address={address}
+      scienceGentData={scienceGentData}
+      status={status}
+      isRefreshing={isRefreshing}
+      refreshData={refreshData}
+    />
   );
 };
 
