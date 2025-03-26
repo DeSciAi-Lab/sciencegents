@@ -1,10 +1,8 @@
-
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ScienceGentFormData } from '@/types/sciencegent';
 import { validateStep, wizardSteps } from '@/components/create-sciencegent/utils';
 import useScienceGentCreation, { CreationStatus } from '@/hooks/useScienceGentCreation';
-import { checkDSIAllowance } from '@/services/scienceGentService';
 import { useDeveloperProfile } from '@/hooks/useDeveloperProfile';
 
 // Initial form data
@@ -56,7 +54,6 @@ export const WizardProvider: React.FC<{children: React.ReactNode}> = ({ children
   const [currentStep, setCurrentStep] = useState(1);
   const [isLaunching, setIsLaunching] = useState(false);
   const [formData, setFormData] = useState<ScienceGentFormData>(initialFormData);
-  const [isDSIApproved, setIsDSIApproved] = useState(false);
   const [isCheckingAllowance, setIsCheckingAllowance] = useState(false);
   
   // Get developer profile for review step
@@ -70,7 +67,8 @@ export const WizardProvider: React.FC<{children: React.ReactNode}> = ({ children
     isSyncing,
     createToken,
     launchFee,
-    approveDSI
+    approveDSI,
+    isDSIApproved
   } = useScienceGentCreation();
 
   // Calculate if user can proceed to next step
@@ -80,46 +78,17 @@ export const WizardProvider: React.FC<{children: React.ReactNode}> = ({ children
     window.scrollTo(0, 0);
   }, [currentStep]);
 
-  // Check DSI allowance when reaching review step
-  useEffect(() => {
-    const checkAllowance = async () => {
-      if (currentStep === wizardSteps.length) {
-        setIsCheckingAllowance(true);
-        try {
-          const hasAllowance = await checkDSIAllowance(launchFee);
-          setIsDSIApproved(hasAllowance);
-        } catch (error) {
-          console.error("Error checking DSI allowance:", error);
-          setIsDSIApproved(false);
-        } finally {
-          setIsCheckingAllowance(false);
-        }
-      }
-    };
-    
-    checkAllowance();
-  }, [currentStep, launchFee]);
-
   // Move to success screen when creation is successful
   useEffect(() => {
     if (status === CreationStatus.Success) {
       setCurrentStep(wizardSteps.length + 1); // Move to success screen
     }
     
-    // Reset launching state when status changes
-    if (status !== CreationStatus.Idle && status !== CreationStatus.ApprovingDSI) {
+    // Reset launching state when not in progress
+    if (status !== CreationStatus.Creating && 
+        status !== CreationStatus.ApprovingDSI && 
+        status !== CreationStatus.WaitingConfirmation) {
       setIsLaunching(false);
-    }
-    
-    // If DSI is approved, update state
-    if (status === CreationStatus.ApprovingDSI) {
-      // Keep launching state true while approving
-    } else if (status === CreationStatus.CheckingAllowance) {
-      // Keep current state
-    } else if (status === CreationStatus.Creating || 
-               status === CreationStatus.WaitingConfirmation || 
-               status === CreationStatus.Success) {
-      setIsDSIApproved(true);
     }
   }, [status]);
 
@@ -190,8 +159,10 @@ export const WizardProvider: React.FC<{children: React.ReactNode}> = ({ children
     // First check if DSI is approved
     if (!isDSIApproved) {
       try {
-        await approveDSI();
-        // We'll set isDSIApproved in the status effect
+        const approved = await approveDSI();
+        if (!approved) {
+          setIsLaunching(false);
+        }
       } catch (error) {
         setIsLaunching(false);
         console.error("Failed to approve DSI:", error);

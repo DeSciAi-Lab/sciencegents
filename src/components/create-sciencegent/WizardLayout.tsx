@@ -48,10 +48,11 @@ const WizardLayout: React.FC<WizardLayoutProps> = ({ children }) => {
         return (
           <Button 
             onClick={handleApproveAndLaunch} 
-            disabled={isDisabled}
+            disabled={isDisabled || status === CreationStatus.ApprovingDSI}
             className="min-w-[180px] bg-purple-600 hover:bg-purple-700"
           >
-            {isLaunching && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {(isLaunching || status === CreationStatus.ApprovingDSI) && 
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Approve DSI Spending
           </Button>
         );

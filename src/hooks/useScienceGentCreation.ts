@@ -32,6 +32,7 @@ export const useScienceGentCreation = () => {
   const [error, setError] = useState<string | null>(null);
   const [launchFee, setLaunchFee] = useState<string>("1000"); // Default to 1000 DSI
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
+  const [isDSIApproved, setIsDSIApproved] = useState<boolean>(false);
   const isProcessingRef = useRef<boolean>(false);
 
   // Fetch the launch fee on mount
@@ -48,6 +49,23 @@ export const useScienceGentCreation = () => {
     
     fetchLaunchFee();
   }, []);
+
+  // Check DSI allowance when component mounts
+  useEffect(() => {
+    const checkAllowance = async () => {
+      if (isConnected) {
+        try {
+          const hasAllowance = await checkDSIAllowance(launchFee);
+          setIsDSIApproved(hasAllowance);
+        } catch (error) {
+          console.error("Error checking DSI allowance:", error);
+          setIsDSIApproved(false);
+        }
+      }
+    };
+    
+    checkAllowance();
+  }, [isConnected, launchFee]);
 
   // Poll for token address if we have transaction hash but no token address
   useEffect(() => {
@@ -137,9 +155,18 @@ export const useScienceGentCreation = () => {
       setStatus(CreationStatus.ApprovingDSI);
       await approveDSIForFactory(launchFee);
       
+      // Set DSI as approved after successful approval
+      setIsDSIApproved(true);
+      
       // Reset status
       setStatus(CreationStatus.Idle);
       isProcessingRef.current = false;
+      
+      toast({
+        title: "DSI Approval Successful",
+        description: "You can now launch your ScienceGent",
+      });
+      
       return true;
     } catch (err: any) {
       const errorMessage = err.message || "An unknown error occurred";
@@ -180,8 +207,14 @@ export const useScienceGentCreation = () => {
         }
       }
       
-      // We're assuming DSI has already been approved at this point
-      // since we separated the approval process
+      // Double-check DSI approval status before proceeding
+      if (!isDSIApproved) {
+        const hasAllowance = await checkDSIAllowance(launchFee);
+        if (!hasAllowance) {
+          throw new Error("DSI token approval required before launching");
+        }
+        setIsDSIApproved(true);
+      }
       
       // Create the token
       setStatus(CreationStatus.Creating);
@@ -238,6 +271,7 @@ export const useScienceGentCreation = () => {
     tokenAddress,
     launchFee,
     isSyncing,
+    isDSIApproved,
     createToken,
     resetCreation,
     approveDSI
