@@ -47,13 +47,15 @@ const ScienceGentDetailsDashboard: React.FC<ScienceGentDetailsDashboardProps> = 
   }
 
   return (
-    <DashboardTabs 
-      address={address}
-      scienceGentData={scienceGentData}
-      status={status}
-      isRefreshing={isRefreshing}
-      refreshData={refreshData}
-    />
+    <div className="p-6">
+      <DashboardTabs 
+        address={address}
+        scienceGentData={scienceGentData}
+        status={status}
+        isRefreshing={isRefreshing}
+        refreshData={refreshData}
+      />
+    </div>
   );
 };
 

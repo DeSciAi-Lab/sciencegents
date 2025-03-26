@@ -7,8 +7,6 @@ import PriceOverview from './PriceOverview';
 import TokenSwapInterface from '../TokenSwapInterface';
 import ScienceGentDetailsDashboard from '../ScienceGentDetailsDashboard';
 import ScienceGentStatsCards from './ScienceGentStatsCards';
-import ScienceGentMaturityStatus from '../ScienceGentMaturityStatus';
-import ScienceGentCapabilities from '../ScienceGentCapabilities';
 
 interface DetailsLayoutProps {
   scienceGent: any;
@@ -64,17 +62,7 @@ const DetailsLayout: React.FC<DetailsLayoutProps> = ({
                     scienceGent={scienceGent}
                   />
                   
-                  <div className="mt-4 space-y-4">
-                    <ScienceGentMaturityStatus 
-                      maturityProgress={scienceGent?.maturity_progress || 75}
-                      virtualETH={scienceGent?.virtual_eth || 1}
-                      collectedFees={scienceGent?.collected_fees || 0}
-                      isMigrated={scienceGent?.is_migrated || false}
-                      capabilityFees={scienceGent?.capability_fees || 1}
-                    />
-                    
-                    <ScienceGentCapabilities scienceGent={scienceGent} />
-                  </div>
+                  {/* Removed duplicate components: ScienceGentMaturityStatus and ScienceGentCapabilities */}
                 </div>
               </div>
             </div>
