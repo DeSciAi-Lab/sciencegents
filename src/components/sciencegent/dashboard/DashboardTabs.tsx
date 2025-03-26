@@ -5,7 +5,7 @@ import { LoadingStatus } from '@/hooks/useScienceGentDetails';
 import OverviewTab from './OverviewTab';
 import TradeTab from './TradeTab';
 import ChatTab from './ChatTab';
-import InfoTab from './InfoTabs/InfoTab';
+import InfoTab from './InfoTab';
 import ScienceGentMaturityStatus from '../ScienceGentMaturityStatus';
 import ScienceGentCapabilities from '../ScienceGentCapabilities';
 
@@ -53,7 +53,7 @@ const DashboardTabs: React.FC<DashboardTabsProps> = ({
   const capabilityFees = scienceGentData?.capability_fees || 1;
   
   return (
-    <div className="flex flex-col md:flex-row gap-6">
+    <div className="flex flex-col md:flex-row gap-6 p-6">
       {/* Main content */}
       <div className="flex-1">
         <Tabs value={activeMainTab} onValueChange={handleMainTabChange} className="w-full">
@@ -161,7 +161,7 @@ const DashboardTabs: React.FC<DashboardTabsProps> = ({
         </Tabs>
       </div>
       
-      {/* Sidebar: Maturity status and capabilities */}
+      {/* Sidebar: Maturity status and capabilities - only shown here */}
       <div className="md:w-80 space-y-4">
         <ScienceGentMaturityStatus 
           maturityProgress={maturityProgress}

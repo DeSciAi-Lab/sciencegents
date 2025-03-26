@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { LoadingStatus } from '@/hooks/useScienceGentDetails';
 import NavbarLayout from '@/components/layout/NavbarLayout';
 import ScienceGentHeader from './ScienceGentHeader';
@@ -61,8 +61,6 @@ const DetailsLayout: React.FC<DetailsLayoutProps> = ({
                     uniswapPair={scienceGent?.uniswapPair}
                     scienceGent={scienceGent}
                   />
-                  
-                  {/* Removed duplicate components: ScienceGentMaturityStatus and ScienceGentCapabilities */}
                 </div>
               </div>
             </div>
