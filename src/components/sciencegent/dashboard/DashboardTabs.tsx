@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LoadingStatus } from '@/hooks/useScienceGentDetails';
@@ -6,8 +5,6 @@ import OverviewTab from './OverviewTab';
 import TradeTab from './TradeTab';
 import ChatTab from './ChatTab';
 import InfoTab from './InfoTab';
-import ScienceGentMaturityStatus from '../ScienceGentMaturityStatus';
-import ScienceGentCapabilities from '../ScienceGentCapabilities';
 
 interface DashboardTabsProps {
   address: string;
@@ -45,16 +42,9 @@ const DashboardTabs: React.FC<DashboardTabsProps> = ({
     setActiveTradingTab(value);
   };
 
-  // Maturity and capability data
-  const maturityProgress = scienceGentData?.maturity_progress || 75;
-  const virtualETH = scienceGentData?.virtual_eth || 1;
-  const collectedFees = scienceGentData?.collected_fees || 0;
-  const isMigrated = scienceGentData?.is_migrated || false;
-  const capabilityFees = scienceGentData?.capability_fees || 1;
-  
   return (
     <div className="flex flex-col md:flex-row gap-6 p-6">
-      {/* Main content */}
+      {/* Main content - now it takes full width */}
       <div className="flex-1">
         <Tabs value={activeMainTab} onValueChange={handleMainTabChange} className="w-full">
           <div className="border-b">
@@ -159,19 +149,6 @@ const DashboardTabs: React.FC<DashboardTabsProps> = ({
             />
           </TabsContent>
         </Tabs>
-      </div>
-      
-      {/* Sidebar: Maturity status and capabilities - only shown here */}
-      <div className="md:w-80 space-y-4">
-        <ScienceGentMaturityStatus 
-          maturityProgress={maturityProgress}
-          virtualETH={virtualETH}
-          collectedFees={collectedFees}
-          isMigrated={isMigrated}
-          capabilityFees={capabilityFees}
-        />
-        
-        <ScienceGentCapabilities scienceGent={scienceGentData} />
       </div>
     </div>
   );
