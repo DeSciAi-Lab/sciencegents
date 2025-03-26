@@ -47,7 +47,7 @@ const ScienceGentDetailsDashboard: React.FC<ScienceGentDetailsDashboardProps> = 
   }
 
   return (
-    <div>
+    <div className="bg-white rounded-lg border overflow-hidden">
       <DashboardTabs 
         address={address}
         scienceGentData={scienceGentData}

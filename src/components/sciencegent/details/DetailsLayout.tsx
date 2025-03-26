@@ -3,10 +3,12 @@ import React from 'react';
 import { LoadingStatus } from '@/hooks/useScienceGentDetails';
 import NavbarLayout from '@/components/layout/NavbarLayout';
 import ScienceGentHeader from './ScienceGentHeader';
-import ScienceGentStatsCards from '../ScienceGentStatsCards';
 import PriceOverview from './PriceOverview';
 import TokenSwapInterface from '../TokenSwapInterface';
 import ScienceGentDetailsDashboard from '../ScienceGentDetailsDashboard';
+import ScienceGentStatsCards from './ScienceGentStatsCards';
+import ScienceGentMaturityStatus from '../ScienceGentMaturityStatus';
+import ScienceGentCapabilities from '../ScienceGentCapabilities';
 
 interface DetailsLayoutProps {
   scienceGent: any;
@@ -32,8 +34,14 @@ const DetailsLayout: React.FC<DetailsLayoutProps> = ({
           <div className="grid md:grid-cols-3">
             <div className="md:col-span-2 p-5">
               <ScienceGentHeader scienceGent={scienceGent} address={address} />
-              <ScienceGentStatsCards scienceGent={scienceGent} />
-              <PriceOverview scienceGent={scienceGent} />
+              
+              <div className="mt-4">
+                <ScienceGentStatsCards scienceGent={scienceGent} />
+              </div>
+              
+              <div className="mt-6">
+                <PriceOverview scienceGent={scienceGent} />
+              </div>
             </div>
             
             <div className="border-l">
@@ -45,6 +53,18 @@ const DetailsLayout: React.FC<DetailsLayoutProps> = ({
                   uniswapPair={scienceGent?.uniswapPair}
                   scienceGent={scienceGent}
                 />
+                
+                <div className="mt-4 space-y-4">
+                  <ScienceGentMaturityStatus 
+                    maturityProgress={scienceGent?.maturity_progress || 75}
+                    virtualETH={scienceGent?.virtual_eth || 1}
+                    collectedFees={scienceGent?.collected_fees || 0}
+                    isMigrated={scienceGent?.is_migrated || false}
+                    capabilityFees={scienceGent?.capability_fees || 1}
+                  />
+                  
+                  <ScienceGentCapabilities scienceGent={scienceGent} />
+                </div>
               </div>
             </div>
           </div>

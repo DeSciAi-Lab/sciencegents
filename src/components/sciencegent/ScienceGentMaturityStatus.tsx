@@ -24,13 +24,13 @@ const ScienceGentMaturityStatus: React.FC<ScienceGentMaturityStatusProps> = ({
   const totalRequiredFees = (2 * vETH) + capabilityFees;
   
   return (
-    <div className="space-y-3">
-      <div className="text-center font-medium text-lg">
-        Maturity Status
-        <span className="ml-2">{progress}%</span>
+    <div className="border rounded-lg p-4">
+      <div className="text-center mb-2">
+        <div className="text-lg font-medium">Maturity Status</div>
+        <div className="text-xl font-bold">{progress}%</div>
       </div>
       
-      <div>
+      <div className="mb-3">
         <Progress value={progress} className="h-2 bg-gray-200" />
       </div>
       
@@ -39,35 +39,24 @@ const ScienceGentMaturityStatus: React.FC<ScienceGentMaturityStatusProps> = ({
           "This ScienceGent has been migrated to Uniswap."
         ) : (
           <>
-            The ScienceGent will become eligible to migrate to Uniswap on generating {totalRequiredFees.toFixed(2)} ETH in trading fees
-            (2x virtualETH = {(vETH * 2).toFixed(2)} + capability fees = {capabilityFees.toFixed(2)})
+            The ScienceGent will become eligible to migrate to Uniswap on generating {totalRequiredFees.toFixed(2)} ETH in trading fee 
+            (2× virtualETH = {(vETH * 2).toFixed(2)} + capability fees = {capabilityFees.toFixed(2)})
           </>
         )}
       </div>
       
-      <div className="grid grid-cols-3 gap-2 mt-2">
-        <div className="bg-gray-50 border rounded-md p-3 text-center">
-          <p className="text-sm text-gray-500">Users</p>
+      <div className="grid grid-cols-3 gap-2 mt-4">
+        <div className="bg-gray-50 border rounded p-2 text-center">
+          <p className="text-xs text-gray-500">Users</p>
           <p className="font-medium">1273</p>
         </div>
-        <div className="bg-gray-50 border rounded-md p-3 text-center">
-          <p className="text-sm text-gray-500">Interactions</p>
+        <div className="bg-gray-50 border rounded p-2 text-center">
+          <p className="text-xs text-gray-500">Interactions</p>
           <p className="font-medium">1273</p>
         </div>
-        <div className="bg-gray-50 border rounded-md p-3 text-center">
-          <p className="text-sm text-gray-500">Revenue</p>
+        <div className="bg-gray-50 border rounded p-2 text-center">
+          <p className="text-xs text-gray-500">Revenue</p>
           <p className="font-medium">1273</p>
-        </div>
-      </div>
-      
-      <div>
-        <h4 className="text-sm mb-2">5 Capabilities:</h4>
-        <div className="flex flex-wrap gap-2">
-          <div className="bg-white border rounded-full px-3 py-1 text-sm">Chat</div>
-          <div className="bg-white border rounded-full px-3 py-1 text-sm">Molecular Vision</div>
-          <div className="bg-white border rounded-full px-3 py-1 text-sm">LLAMPS</div>
-          <div className="bg-white border rounded-full px-3 py-1 text-sm">Bose-Einstein Simulation</div>
-          <div className="bg-white border rounded-full px-3 py-1 text-sm">more</div>
         </div>
       </div>
     </div>

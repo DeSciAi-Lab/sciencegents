@@ -30,16 +30,20 @@ const ScienceGentCapabilities: React.FC<ScienceGentCapabilitiesProps> = ({ scien
   };
 
   return (
-    <div className="border rounded-xl p-4">
-      <div className="text-xl font-medium mb-2">{displayCapabilities.length} Capabilities:</div>
+    <div className="border rounded-lg p-4">
+      <div className="text-lg font-medium mb-2">
+        {displayCapabilities.length} Capabilities:
+      </div>
       <div className="flex flex-wrap gap-2">
-        {displayCapabilities.slice(0, 4).map((cap: string) => (
-          <Badge 
-            key={cap} 
-            className="bg-white border rounded-full px-3 py-1 hover:bg-gray-100"
-          >
-            {getCapabilityName(cap)}
-          </Badge>
+        {displayCapabilities.map((cap: string, index: number) => (
+          index < 4 && (
+            <Badge 
+              key={cap} 
+              className="bg-white border rounded-full px-3 py-1 hover:bg-gray-100"
+            >
+              {getCapabilityName(cap)}
+            </Badge>
+          )
         ))}
         
         {displayCapabilities.length > 4 && (
