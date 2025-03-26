@@ -53,7 +53,7 @@ const Navbar = () => {
 
   const navLinks = [
     { href: '/', label: 'Home' },
-    { href: '/explore', label: 'ScienceGents' },
+    { href: '/sciencegents', label: 'ScienceGents' },
     { href: '/capabilities', label: 'Capabilities' },
     { href: '/dashboard', label: 'Dashboard' },
   ];

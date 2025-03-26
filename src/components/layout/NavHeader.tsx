@@ -53,9 +53,9 @@ const NavHeader: React.FC = () => {
           {/* Navigation Links */}
           <nav className="hidden md:flex items-center space-x-8">
             <Link
-              to="/explore"
+              to="/sciencegents"
               className={`text-gray-800 font-medium ${
-                location.pathname === '/explore' || location.pathname === '/sciencegents'
+                location.pathname === '/sciencegents'
                   ? 'text-purple-700'
                   : 'hover:text-purple-700'
               }`}
