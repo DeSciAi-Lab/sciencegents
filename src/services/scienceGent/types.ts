@@ -42,10 +42,10 @@ export interface TokenStats {
   collectedFees: string;
   tradingEnabled: boolean;
   creator: string;
-  creationTimestamp: string;
-  maturityDeadline: string;
-  migrated: boolean;
-  lpUnlockTime: string;
+  creationTimestamp: number; // Changed from string to number
+  maturityDeadline: number; // Changed from string to number
+  migrated: boolean; // Changed from isMigrated to migrated to match contract response
+  lpUnlockTime: number; // Changed from string to number
   lockedLPAmount: string;
   currentPrice: string;
   migrationEligible: boolean;

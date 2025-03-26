@@ -6,7 +6,7 @@ import {
   fetchScienceGentFromBlockchain,
   fetchTokenStatsFromBlockchain,
   syncAllScienceGentsFromBlockchain
-} from "./scienceGent/blockchain";
+} from "./scienceGent";
 import { 
   saveScienceGentToSupabase,
   fetchScienceGentFromSupabase,

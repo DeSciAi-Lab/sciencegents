@@ -1,4 +1,3 @@
-
 import { ScienceGentData, TokenStats, CapabilityDetail } from './types';
 import { supabase } from '@/integrations/supabase/client';
 import { transformBlockchainToSupabaseFormat } from './transformations';
@@ -115,13 +114,23 @@ export const saveScienceGentToSupabase = async (
         migration_eligible: scienceGent.migration_eligible,
         created_on_chain_at: scienceGent.created_on_chain_at,
         maturity_deadline: scienceGent.maturity_deadline,
-        remaining_maturity_time: scienceGent.remaining_maturity_time,
+        remaining_maturity_time: Number(scienceGent.remaining_maturity_time),
         maturity_progress: scienceGent.maturity_progress,
         token_price: scienceGent.token_price,
         market_cap: scienceGent.market_cap,
         virtual_eth: scienceGent.virtual_eth,
         collected_fees: scienceGent.collected_fees,
-        last_synced_at: scienceGent.last_synced_at
+        last_synced_at: scienceGent.last_synced_at,
+        domain: scienceGent.domain,
+        agent_fee: scienceGent.agent_fee,
+        persona: scienceGent.persona,
+        developer_name: scienceGent.developer_name,
+        developer_email: scienceGent.developer_email,
+        bio: scienceGent.bio,
+        developer_twitter: scienceGent.developer_twitter,
+        developer_telegram: scienceGent.developer_telegram,
+        developer_github: scienceGent.developer_github,
+        developer_website: scienceGent.developer_website
       })
       .select();
     

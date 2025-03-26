@@ -93,7 +93,7 @@ export const fetchTokenStatsFromBlockchain = async (
     // Fetch token stats from swap
     const tokenStats = await swapContract.getTokenStats(address);
     
-    // Create TokenStats object
+    // Create TokenStats object - Fix the property name from 'isMigrated' to 'migrated'
     const stats: TokenStats = {
       tokenReserve: tokenStats[0].toString(),
       ethReserve: tokenStats[1].toString(),
@@ -103,7 +103,7 @@ export const fetchTokenStatsFromBlockchain = async (
       creator: tokenStats[5],
       creationTimestamp: tokenStats[6].toNumber(),
       maturityDeadline: tokenStats[7].toNumber(),
-      isMigrated: tokenStats[8],
+      migrated: tokenStats[8], // Changed from isMigrated to migrated
       lpUnlockTime: tokenStats[9].toNumber(),
       lockedLPAmount: tokenStats[10].toString(),
       currentPrice: tokenStats[11].toString(),
@@ -172,5 +172,72 @@ export const extractTokenAddressFromReceipt = async (transactionHash: string): P
   } catch (error) {
     console.error("Error extracting token address:", error);
     return null;
+  }
+};
+
+/**
+ * Synchronizes all ScienceGents from the blockchain to Supabase
+ * @returns Object with counts of synced tokens and errors
+ */
+export const syncAllScienceGentsFromBlockchain = async (): Promise<{ syncCount: number; errorCount: number }> => {
+  try {
+    console.log("Starting blockchain sync for all ScienceGents...");
+    
+    const provider = await getProvider();
+    
+    // ABI fragments for the specific functions we need
+    const factoryAbi = [
+      "function getTokenCount() view returns (uint256)",
+      "function getTokensWithPagination(uint256 offset, uint256 limit) view returns (address[], uint256)"
+    ];
+    
+    // Initialize contract interface
+    const factoryContract = new ethers.Contract(
+      contractConfig.addresses.ScienceGentsFactory,
+      factoryAbi,
+      provider
+    );
+    
+    // Get total token count
+    const tokenCount = await factoryContract.getTokenCount();
+    console.log(`Total ScienceGent tokens: ${tokenCount}`);
+    
+    // Fetch tokens in batches of 50
+    const batchSize = 50;
+    let syncCount = 0;
+    let errorCount = 0;
+    
+    for (let offset = 0; offset < tokenCount.toNumber(); offset += batchSize) {
+      console.log(`Fetching tokens ${offset} to ${offset + batchSize}...`);
+      
+      // Get batch of token addresses
+      const [tokenAddresses] = await factoryContract.getTokensWithPagination(offset, batchSize);
+      
+      // Process each token
+      for (const address of tokenAddresses) {
+        try {
+          // Import locally to avoid circular dependencies
+          const { syncSingleScienceGent } = await import("@/services/scienceGentDataService");
+          
+          // Sync the token
+          const success = await syncSingleScienceGent(address);
+          
+          if (success) {
+            syncCount++;
+          } else {
+            errorCount++;
+          }
+        } catch (error) {
+          console.error(`Error syncing token ${address}:`, error);
+          errorCount++;
+        }
+      }
+    }
+    
+    console.log(`Sync completed: ${syncCount} synced, ${errorCount} errors`);
+    return { syncCount, errorCount };
+  } catch (error) {
+    console.error("Error in syncAllScienceGentsFromBlockchain:", error);
+    return { syncCount: 0, errorCount: 1 };
   }
 };
