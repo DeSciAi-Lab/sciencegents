@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Copy, Check, Twitter, GitHub, Globe, AtSign } from 'lucide-react';
+import { Copy, Check, Twitter, Github, Globe, AtSign } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface DeveloperInfoProps {

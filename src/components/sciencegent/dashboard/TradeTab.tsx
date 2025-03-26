@@ -3,7 +3,6 @@ import React from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Copy, Check, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useTable, useSortBy } from 'react-table';
 
 interface TradeTabProps {
   address: string;
