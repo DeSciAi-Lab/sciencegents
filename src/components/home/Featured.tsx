@@ -9,15 +9,31 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { fetchScienceGents, ScienceGentListItem } from '@/services/scienceGentExploreService';
 import { toast } from '@/components/ui/use-toast';
 
-const Featured = () => {
+interface FeaturedProps {
+  scienceGents?: ScienceGentListItem[];
+  isLoading?: boolean;
+}
+
+const Featured: React.FC<FeaturedProps> = ({ 
+  scienceGents: initialScienceGents, 
+  isLoading: initialLoading 
+}) => {
   const navigate = useNavigate();
   const [featuredGents, setFeaturedGents] = useState<ScienceGentListItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(initialLoading ?? true);
   const [isRetrying, setIsRetrying] = useState(false);
 
   useEffect(() => {
-    loadFeaturedGents();
-  }, []);
+    if (initialScienceGents?.length) {
+      setFeaturedGents(initialScienceGents
+        .sort((a, b) => b.marketCap - a.marketCap)
+        .slice(0, 3)
+        .map(gent => ({ ...gent, featured: true })));
+      setIsLoading(false);
+    } else {
+      loadFeaturedGents();
+    }
+  }, [initialScienceGents]);
 
   const loadFeaturedGents = async () => {
     try {

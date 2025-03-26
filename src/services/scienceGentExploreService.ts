@@ -1,9 +1,19 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { formatDistanceToNow } from "date-fns";
 import { ethers } from "ethers";
 import { getProvider } from "@/services/walletService";
 import { contractConfig } from "@/utils/contractConfig";
+
+// Mock ABIs for development until we have the real ones
+// These will be replaced with actual ABIs from the contract config once available
+const mockScienceGentsSwapABI = [
+  "function getTokenStats(address token) view returns (uint256, uint256, uint256, uint256, bool, address, uint256, uint256, bool, uint256, uint256, uint256, bool)"
+];
+
+const mockScienceGentsFactoryABI = [
+  "function getTokenDetails(address token) view returns (string, string, uint256, address, bool, bool, uint256, uint256, uint256, bool)",
+  "function getTokenCapabilitiesPage(address token, uint256 offset, uint256 limit) view returns (string[])"
+];
 
 // Interface for ScienceGent data structure
 export interface ScienceGentListItem {
@@ -148,16 +158,16 @@ export const fetchTokenBlockchainDetails = async (tokenAddress: string) => {
   try {
     const provider = await getProvider();
     
-    // Create contract instances
+    // Create contract instances with mock ABIs for now
     const swapContract = new ethers.Contract(
       contractConfig.addresses.ScienceGentsSwap, 
-      contractConfig.abis.ScienceGentsSwap, 
+      mockScienceGentsSwapABI, 
       provider
     );
     
     const factoryContract = new ethers.Contract(
       contractConfig.addresses.ScienceGentsFactory,
-      contractConfig.abis.ScienceGentsFactory,
+      mockScienceGentsFactoryABI,
       provider
     );
     

@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, ChevronDown, X, Filter, Sliders, ArrowDown, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import NavbarLayout from '@/components/layout/NavbarLayout';
 import ScienceGentTable from '@/components/sciencegent/ScienceGentTable';
