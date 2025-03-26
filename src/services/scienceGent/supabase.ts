@@ -1,3 +1,4 @@
+
 import { ScienceGentData, TokenStats, CapabilityDetail } from './types';
 import { supabase } from '@/integrations/supabase/client';
 import { transformBlockchainToSupabaseFormat } from './transformations';
@@ -114,7 +115,8 @@ export const saveScienceGentToSupabase = async (
         migration_eligible: scienceGent.migration_eligible,
         created_on_chain_at: scienceGent.created_on_chain_at,
         maturity_deadline: scienceGent.maturity_deadline,
-        remaining_maturity_time: Number(scienceGent.remaining_maturity_time),
+        // Convert remaining_maturity_time to a number to fix the type mismatch
+        remaining_maturity_time: scienceGent.remaining_maturity_time ? Number(scienceGent.remaining_maturity_time) : null,
         maturity_progress: scienceGent.maturity_progress,
         token_price: scienceGent.token_price,
         market_cap: scienceGent.market_cap,
