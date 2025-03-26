@@ -4,6 +4,7 @@ import { ScienceGentFormData } from '@/types/sciencegent';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Info } from 'lucide-react';
+import { useEthPriceContext, formatEthToUsd } from '@/context/EthPriceContext';
 
 interface LiquiditySettingsProps {
   formData: ScienceGentFormData;
@@ -12,6 +13,7 @@ interface LiquiditySettingsProps {
 
 const LiquiditySettings: React.FC<LiquiditySettingsProps> = ({ formData, handleInputChange }) => {
   const [tokenPrice, setTokenPrice] = useState<string>("0.000000");
+  const { ethPrice } = useEthPriceContext();
   
   // Calculate token price whenever initialLiquidity changes
   useEffect(() => {
@@ -67,7 +69,7 @@ const LiquiditySettings: React.FC<LiquiditySettingsProps> = ({ formData, handleI
               className="bg-gray-50"
             />
             <div className="bg-gray-100 border border-gray-300 px-4 py-2 rounded">
-              ${parseFloat(tokenPrice) * 3000} 
+              {formatEthToUsd(parseFloat(tokenPrice), ethPrice)}
             </div>
           </div>
         </div>

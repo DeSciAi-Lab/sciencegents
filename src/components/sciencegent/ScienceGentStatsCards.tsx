@@ -1,21 +1,19 @@
 
 import React from 'react';
+import { useEthPriceContext, formatEthToUsd } from '@/context/EthPriceContext';
 
 interface ScienceGentStatsCardsProps {
   scienceGent: any;
 }
 
 const ScienceGentStatsCards: React.FC<ScienceGentStatsCardsProps> = ({ scienceGent }) => {
+  const { ethPrice } = useEthPriceContext();
+  
   // Use the values from the image
   const marketCap = scienceGent?.marketCap || 4.32;
   const liquidity = scienceGent?.liquidity || 2.14;
   const volume24h = scienceGent?.volume24h || 4.32;
   const holders = scienceGent?.holders || 877;
-
-  // Format dollar values 
-  const formatDollars = (ethValue: number) => {
-    return `$${(ethValue * 3000).toFixed(2)}k`;
-  };
 
   const CardWithBorder = ({ title, value, ethValue, dollarValue }: { title: string, value?: number, ethValue?: number, dollarValue?: string }) => (
     <div className="bg-white rounded-md p-3 border">
@@ -38,19 +36,19 @@ const ScienceGentStatsCards: React.FC<ScienceGentStatsCardsProps> = ({ scienceGe
       <CardWithBorder 
         title="Market Cap" 
         ethValue={marketCap} 
-        dollarValue={formatDollars(marketCap)} 
+        dollarValue={formatEthToUsd(marketCap, ethPrice)} 
       />
       
       <CardWithBorder 
         title="Liquidity" 
         ethValue={liquidity} 
-        dollarValue={formatDollars(liquidity)} 
+        dollarValue={formatEthToUsd(liquidity, ethPrice)} 
       />
       
       <CardWithBorder 
         title="24h volume" 
         ethValue={volume24h} 
-        dollarValue={formatDollars(volume24h)} 
+        dollarValue={formatEthToUsd(volume24h, ethPrice)} 
       />
       
       <CardWithBorder 

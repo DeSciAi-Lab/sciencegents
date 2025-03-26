@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Loader2, RefreshCw } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useEthPriceContext, formatEthToUsd } from '@/context/EthPriceContext';
 
 interface TokenBalanceInfoProps {
   tokenSymbol: string;
@@ -23,9 +24,15 @@ const TokenBalanceInfo: React.FC<TokenBalanceInfoProps> = ({
   onRefresh
 }) => {
   const isMobile = useIsMobile();
+  const { ethPrice } = useEthPriceContext();
+  
   const formattedPrice = parseFloat(tokenPrice) > 0 
     ? parseFloat(tokenPrice).toFixed(8) 
     : "0.00000000";
+    
+  const tokenPriceUsd = parseFloat(tokenPrice) > 0
+    ? formatEthToUsd(parseFloat(tokenPrice), ethPrice)
+    : "$0.00";
 
   return (
     <div className="space-y-4">
@@ -35,7 +42,10 @@ const TokenBalanceInfo: React.FC<TokenBalanceInfoProps> = ({
           {isPending ? (
             <Skeleton className="h-7 w-48 mt-1" />
           ) : (
-            <p className="text-xl font-semibold">{formattedPrice} ETH per {tokenSymbol}</p>
+            <div>
+              <p className="text-xl font-semibold">{formattedPrice} ETH per {tokenSymbol}</p>
+              <p className="text-xs text-muted-foreground">{tokenPriceUsd}</p>
+            </div>
           )}
         </div>
         <div>
@@ -62,10 +72,15 @@ const TokenBalanceInfo: React.FC<TokenBalanceInfoProps> = ({
           {isPending ? (
             <Skeleton className="h-6 w-24" />
           ) : (
-            <div className="flex items-center">
+            <div>
               <p className="font-medium truncate">
                 {parseFloat(tokenBalance).toFixed(6)} {tokenSymbol}
               </p>
+              {parseFloat(tokenBalance) > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  {formatEthToUsd(parseFloat(tokenBalance) * parseFloat(tokenPrice), ethPrice)}
+                </p>
+              )}
             </div>
           )}
         </div>
@@ -74,10 +89,15 @@ const TokenBalanceInfo: React.FC<TokenBalanceInfoProps> = ({
           {isPending ? (
             <Skeleton className="h-6 w-24" />
           ) : (
-            <div className="flex items-center">
+            <div>
               <p className="font-medium truncate">
                 {parseFloat(ethBalance).toFixed(6)} ETH
               </p>
+              {parseFloat(ethBalance) > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  {formatEthToUsd(parseFloat(ethBalance), ethPrice)}
+                </p>
+              )}
             </div>
           )}
         </div>

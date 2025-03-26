@@ -1,14 +1,16 @@
 
 import React from 'react';
+import { useEthPriceContext, formatEthToUsd } from '@/context/EthPriceContext';
 
 interface PriceOverviewProps {
   scienceGent: any;
 }
 
 const PriceOverview: React.FC<PriceOverviewProps> = ({ scienceGent }) => {
+  const { ethPrice } = useEthPriceContext();
   const symbol = scienceGent?.symbol || "TICKER";
   const tokenPrice = scienceGent?.tokenPrice || 0.000004;
-  const priceUSD = scienceGent?.tokenPriceUSD || 0.0003;
+  const priceUSD = formatEthToUsd(tokenPrice, ethPrice);
   const priceChange24h = scienceGent?.priceChange24h || -942.38;
   const highPrice24h = scienceGent?.highPrice24h || 47444.1;
   const lowPrice24h = scienceGent?.lowPrice24h || 45555.1;
@@ -28,7 +30,7 @@ const PriceOverview: React.FC<PriceOverviewProps> = ({ scienceGent }) => {
               {tokenPrice.toFixed(7)}
             </div>
             <div>
-              <span className="text-gray-500 text-sm">${priceUSD}</span>
+              <span className="text-gray-500 text-sm">{priceUSD}</span>
             </div>
           </div>
         </div>

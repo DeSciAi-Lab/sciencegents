@@ -6,6 +6,7 @@ import { RefreshCcw, ExternalLink, TrendingUp, TrendingDown, GitMerge } from "lu
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import MaturityTracker from './MaturityTracker';
+import { useEthPriceContext, formatEthToUsd } from '@/context/EthPriceContext';
 
 interface TokenStatisticsProps {
   scienceGent: any;
@@ -18,6 +19,8 @@ const TokenStatistics: React.FC<TokenStatisticsProps> = ({
   isRefreshing,
   refreshData
 }) => {
+  const { ethPrice } = useEthPriceContext();
+  
   if (!scienceGent) {
     return <Skeleton className="h-[400px] w-full" />;
   }
@@ -99,6 +102,7 @@ const TokenStatistics: React.FC<TokenStatisticsProps> = ({
           <div>
             <p className="text-sm text-muted-foreground mb-1">Market Cap</p>
             <p className="text-xl font-medium">{marketCap.toFixed(4)} ETH</p>
+            <p className="text-xs text-muted-foreground">{formatEthToUsd(marketCap, ethPrice)}</p>
           </div>
           <div>
             <p className="text-sm text-muted-foreground mb-1">Total Supply</p>
@@ -107,6 +111,7 @@ const TokenStatistics: React.FC<TokenStatisticsProps> = ({
           <div>
             <p className="text-sm text-muted-foreground mb-1">Liquidity</p>
             <p className="text-xl font-medium">{totalLiquidity.toFixed(4)} ETH</p>
+            <p className="text-xs text-muted-foreground">{formatEthToUsd(totalLiquidity, ethPrice)}</p>
           </div>
           <div>
             <p className="text-sm text-muted-foreground mb-1">Trading Status</p>
@@ -135,6 +140,7 @@ const TokenStatistics: React.FC<TokenStatisticsProps> = ({
           <div>
             <p className="text-sm text-muted-foreground mb-1">24h Volume</p>
             <p className="text-xl font-medium">{volume24h.toFixed(4)} ETH</p>
+            <p className="text-xs text-muted-foreground">{formatEthToUsd(volume24h, ethPrice)}</p>
           </div>
           <div>
             <p className="text-sm text-muted-foreground mb-1">Holders</p>
@@ -143,6 +149,7 @@ const TokenStatistics: React.FC<TokenStatisticsProps> = ({
           <div>
             <p className="text-sm text-muted-foreground mb-1">Virtual ETH</p>
             <p className="text-xl font-medium">{virtualETH.toFixed(4)} ETH</p>
+            <p className="text-xs text-muted-foreground">{formatEthToUsd(virtualETH, ethPrice)}</p>
           </div>
         </div>
         
