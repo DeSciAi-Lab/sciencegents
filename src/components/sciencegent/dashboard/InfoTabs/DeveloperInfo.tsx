@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -246,7 +245,7 @@ const DeveloperInfo: React.FC<DeveloperInfoProps> = ({ scienceGent }) => {
                   <Twitter className="h-4 w-4 text-gray-500" />
                 </Button>
                 <Button size="sm" variant="ghost" className="h-7 w-7 p-0 rounded-full">
-                  <GitHub className="h-4 w-4 text-gray-500" />
+                  <Github className="h-4 w-4 text-gray-500" />
                 </Button>
                 <Button size="sm" variant="ghost" className="h-7 w-7 p-0 rounded-full">
                   <Globe className="h-4 w-4 text-gray-500" />
