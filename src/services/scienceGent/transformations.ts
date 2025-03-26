@@ -1,6 +1,11 @@
 
 import { ScienceGentData, TokenStats, FormattedScienceGent } from './types';
 import { ethers } from 'ethers';
+import { 
+  calculateMaturityProgress,
+  calculateTokenPrice,
+  calculateMarketCap
+} from '@/utils/scienceGentCalculations';
 
 /**
  * Transforms blockchain data to Supabase format
@@ -25,24 +30,33 @@ export const transformBlockchainToSupabaseFormat = (
     ? Math.max(0, blockchainData.maturityDeadline - currentTimestamp)
     : 0;
   
+  // Calculate token price
+  const tokenPrice = calculateTokenPrice(tokenStats.currentPrice);
+  
   // Calculate market cap
-  let marketCap = 0;
-  if (tokenStats.currentPrice && blockchainData.totalSupply) {
-    const price = parseFloat(ethers.utils.formatEther(tokenStats.currentPrice));
-    const supply = parseFloat(ethers.utils.formatEther(blockchainData.totalSupply));
-    marketCap = price * supply;
-  }
+  const marketCap = calculateMarketCap(
+    tokenPrice,
+    blockchainData.totalSupply || '0'
+  );
   
   // Calculate maturity progress
-  let maturityProgress = 0;
-  if (tokenStats.virtualETH && tokenStats.collectedFees) {
-    const virtualETH = parseFloat(ethers.utils.formatEther(tokenStats.virtualETH));
-    const collectedFees = parseFloat(ethers.utils.formatEther(tokenStats.collectedFees));
-    
-    // Target is 2x virtualETH
-    const targetFees = 2 * virtualETH;
-    maturityProgress = Math.min(Math.round((collectedFees / targetFees) * 100), 100);
+  let virtualETH = 0;
+  let collectedFees = 0;
+  
+  if (tokenStats.virtualETH) {
+    virtualETH = parseFloat(ethers.utils.formatEther(tokenStats.virtualETH));
   }
+  
+  if (tokenStats.collectedFees) {
+    collectedFees = parseFloat(ethers.utils.formatEther(tokenStats.collectedFees));
+  }
+  
+  // Calculate maturity progress using the utility function
+  const maturityProgress = calculateMaturityProgress(
+    virtualETH,
+    collectedFees,
+    blockchainData.capabilityFees || 0
+  );
   
   // Main ScienceGent data for the sciencegents table
   const scienceGent = {
@@ -64,12 +78,12 @@ export const transformBlockchainToSupabaseFormat = (
       ? new Date(blockchainData.maturityDeadline * 1000).toISOString() 
       : null,
     // Ensure this is a number or null, not a string
-    remaining_maturity_time: remainingMaturityTime > 0 ? remainingMaturityTime : null,
+    remaining_maturity_time: remainingMaturityTime > 0 ? Number(remainingMaturityTime) : null,
     maturity_progress: maturityProgress,
-    token_price: tokenStats.currentPrice ? parseFloat(ethers.utils.formatEther(tokenStats.currentPrice)) : 0,
+    token_price: tokenPrice,
     market_cap: marketCap,
-    virtual_eth: tokenStats.virtualETH ? parseFloat(ethers.utils.formatEther(tokenStats.virtualETH)) : 0,
-    collected_fees: tokenStats.collectedFees ? parseFloat(ethers.utils.formatEther(tokenStats.collectedFees)) : 0,
+    virtual_eth: virtualETH,
+    collected_fees: collectedFees,
     last_synced_at: new Date().toISOString(),
     domain: blockchainData.domain || "General Science",
     agent_fee: blockchainData.agentFee || 2,

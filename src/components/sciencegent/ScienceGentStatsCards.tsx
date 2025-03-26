@@ -20,6 +20,7 @@ const ScienceGentStatsCards: React.FC<ScienceGentStatsCardsProps> = ({
   const liquidity = scienceGent?.liquidity || scienceGent?.total_liquidity || 0;
   const volume24h = scienceGent?.volume24h || scienceGent?.volume_24h || 0;
   const holders = scienceGent?.holders || 0;
+  const maturityProgress = scienceGent?.maturityProgress || scienceGent?.maturity_progress || 0;
   
   // Check if token is migrated or migration eligible
   const isMigrated = scienceGent?.isMigrated || scienceGent?.is_migrated || false;
@@ -32,14 +33,16 @@ const ScienceGentStatsCards: React.FC<ScienceGentStatsCardsProps> = ({
     ethValue, 
     dollarValue, 
     isLoading,
-    status
+    status,
+    progress
   }: { 
     title: string, 
     value?: number, 
     ethValue?: number, 
     dollarValue?: string,
     isLoading?: boolean,
-    status?: string
+    status?: string,
+    progress?: number
   }) => (
     <div className="bg-white rounded-md p-3 border">
       <div className="text-gray-800">
@@ -69,7 +72,7 @@ const ScienceGentStatsCards: React.FC<ScienceGentStatsCardsProps> = ({
             ) : (
               <>
                 <CircleX size={16} className="text-gray-400" />
-                <span className="font-medium text-gray-500">Immature</span>
+                <span className="font-medium text-gray-500">Immature {progress}%</span>
               </>
             )}
           </div>
@@ -112,6 +115,7 @@ const ScienceGentStatsCards: React.FC<ScienceGentStatsCardsProps> = ({
       <CardWithBorder 
         title="Maturity" 
         status={maturityStatus}
+        progress={maturityProgress}
         isLoading={isLoading}
       />
     </div>

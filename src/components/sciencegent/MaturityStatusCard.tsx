@@ -4,9 +4,10 @@ import { Card } from '@/components/ui/card';
 import { useEthPriceContext } from '@/context/EthPriceContext';
 import { Info } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { calculateMaturityProgress } from '@/utils/scienceGentCalculations';
 
 interface MaturityStatusCardProps {
-  progress: number;
+  progress?: number;
   compact?: boolean;
   className?: string;
   virtualEth?: number;
@@ -24,21 +25,28 @@ const MaturityStatusCard: React.FC<MaturityStatusCardProps> = ({
 }) => {
   const { formatEthToUsd } = useEthPriceContext();
   
+  // Calculate progress if not provided
+  const maturityProgress = progress || calculateMaturityProgress(
+    virtualEth,
+    collectedFees,
+    capabilityFees
+  );
+  
   // Calculate threshold (2× virtualETH + capability fees)
   const migrationThreshold = (2 * virtualEth) + capabilityFees;
   
   // Determine color based on progress
   const getColorClass = () => {
-    if (progress >= 100) return 'bg-green-500'; // Eligible for migration
-    if (progress >= 75) return 'bg-blue-500';   // Getting close
-    if (progress >= 50) return 'bg-yellow-500'; // Halfway there
+    if (maturityProgress >= 100) return 'bg-green-500'; // Eligible for migration
+    if (maturityProgress >= 75) return 'bg-blue-500';   // Getting close
+    if (maturityProgress >= 50) return 'bg-yellow-500'; // Halfway there
     return 'bg-purple-500';                     // Still far
   };
 
   // Determine status text
   const getStatusText = () => {
-    if (progress >= 100) return 'Ready for migration';
-    return `${Math.floor(progress)}% complete`;
+    if (maturityProgress >= 100) return 'Ready for migration';
+    return `${Math.floor(maturityProgress)}% complete`;
   };
 
   return (
@@ -62,12 +70,12 @@ const MaturityStatusCard: React.FC<MaturityStatusCardProps> = ({
         <div className="w-full bg-gray-200 h-2.5 rounded-full mb-2">
           <div 
             className={`${getColorClass()} h-2.5 rounded-full transition-all duration-500`} 
-            style={{ width: `${Math.min(progress, 100)}%` }}
+            style={{ width: `${Math.min(maturityProgress, 100)}%` }}
           ></div>
         </div>
         <div className="flex justify-between items-center text-sm">
           <div className="text-gray-700 font-medium">{getStatusText()}</div>
-          {progress >= 100 && 
+          {maturityProgress >= 100 && 
             <span className="text-xs px-2 py-0.5 bg-green-100 text-green-800 rounded-full">
               Eligible
             </span>

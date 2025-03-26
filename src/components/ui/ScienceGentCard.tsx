@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { calculateMaturityProgress } from '@/utils/scienceGentCalculations';
 
 interface ScienceGentCardProps {
   id: string;
@@ -26,6 +27,10 @@ interface ScienceGentCardProps {
   featured?: boolean;
   isMigrated?: boolean;
   migrationEligible?: boolean;
+  virtualEth?: number;
+  collectedFees?: number;
+  capabilityFees?: number;
+  maturityProgress?: number;
 }
 
 const ScienceGentCard: React.FC<ScienceGentCardProps> = ({
@@ -40,9 +45,23 @@ const ScienceGentCard: React.FC<ScienceGentCardProps> = ({
   domain,
   featured = false,
   isMigrated = false,
-  migrationEligible = false
+  migrationEligible = false,
+  virtualEth = 0,
+  collectedFees = 0,
+  capabilityFees = 0,
+  maturityProgress
 }) => {
   const navigate = useNavigate();
+  
+  // Calculate maturity progress if not provided but we have the necessary inputs
+  const calculatedProgress = maturityProgress !== undefined 
+    ? maturityProgress 
+    : (virtualEth > 0 
+      ? calculateMaturityProgress(virtualEth, collectedFees, capabilityFees)
+      : 0);
+  
+  // Determine migration eligibility from the calculated progress if not explicitly provided
+  const isEligibleForMigration = migrationEligible || calculatedProgress >= 100;
   
   // Format address for display
   const formatAddress = (address: string) => {
@@ -123,10 +142,16 @@ const ScienceGentCard: React.FC<ScienceGentCardProps> = ({
                 Uniswap
               </Badge>
             )}
-            {!isMigrated && migrationEligible && (
+            {!isMigrated && isEligibleForMigration && (
               <Badge className="bg-blue-100 text-blue-800 flex items-center">
                 <ShieldCheck size={10} className="mr-1" />
                 Ready for Migration
+              </Badge>
+            )}
+            {!isMigrated && !isEligibleForMigration && calculatedProgress > 0 && (
+              <Badge className="bg-purple-100 text-purple-800 flex items-center">
+                <Clock size={10} className="mr-1" />
+                {calculatedProgress}% Mature
               </Badge>
             )}
           </div>
@@ -181,12 +206,22 @@ const ScienceGentCard: React.FC<ScienceGentCardProps> = ({
       )}
       
       {/* Status indicator for migration-eligible tokens */}
-      {!isMigrated && migrationEligible && (
+      {!isMigrated && isEligibleForMigration && (
         <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-400 to-blue-600" />
       )}
       
+      {/* Progress indicator for immature tokens */}
+      {!isMigrated && !isEligibleForMigration && (
+        <div className="absolute bottom-0 left-0 right-0 h-1 bg-gray-200">
+          <div 
+            className="h-1 bg-gradient-to-r from-purple-400 to-purple-600" 
+            style={{ width: `${calculatedProgress}%` }} 
+          />
+        </div>
+      )}
+      
       {/* Gradient border indicator for featured cards */}
-      {featured && !isMigrated && !migrationEligible && (
+      {featured && !isMigrated && !isEligibleForMigration && (
         <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-science-400 to-science-600" />
       )}
     </Card>

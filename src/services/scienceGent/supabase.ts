@@ -1,8 +1,8 @@
-
 import { ScienceGentData, TokenStats, CapabilityDetail } from './types';
 import { supabase } from '@/integrations/supabase/client';
 import { transformBlockchainToSupabaseFormat } from './transformations';
 import { ethers } from 'ethers';
+import { calculateMaturityProgress } from '@/utils/scienceGentCalculations';
 
 /**
  * Fetches a ScienceGent from Supabase by address
@@ -98,45 +98,45 @@ export const saveScienceGentToSupabase = async (
     // Transform the data to Supabase format
     const { scienceGent, scienceGentStats } = transformBlockchainToSupabaseFormat(scienceGentData, tokenStats);
     
-    // Insert or update the ScienceGent - ensure all values match Supabase column types
+    // Prepare data for upsert, ensuring all value types match the database schema
+    const scienceGentData = {
+      address: scienceGent.address,
+      name: scienceGent.name,
+      symbol: scienceGent.symbol,
+      total_supply: scienceGent.total_supply,
+      creator_address: scienceGent.creator_address,
+      description: scienceGent.description,
+      profile_pic: scienceGent.profile_pic,
+      website: scienceGent.website,
+      socials: scienceGent.socials,
+      is_migrated: scienceGent.is_migrated,
+      migration_eligible: scienceGent.migration_eligible,
+      created_on_chain_at: scienceGent.created_on_chain_at,
+      maturity_deadline: scienceGent.maturity_deadline,
+      // Ensure remaining_maturity_time is a number or null, not a string
+      remaining_maturity_time: scienceGent.remaining_maturity_time,
+      maturity_progress: scienceGent.maturity_progress,
+      token_price: scienceGent.token_price,
+      market_cap: scienceGent.market_cap,
+      virtual_eth: scienceGent.virtual_eth,
+      collected_fees: scienceGent.collected_fees,
+      last_synced_at: scienceGent.last_synced_at,
+      domain: scienceGent.domain,
+      agent_fee: scienceGent.agent_fee,
+      persona: scienceGent.persona,
+      developer_name: scienceGent.developer_name,
+      developer_email: scienceGent.developer_email,
+      bio: scienceGent.bio,
+      developer_twitter: scienceGent.developer_twitter,
+      developer_telegram: scienceGent.developer_telegram,
+      developer_github: scienceGent.developer_github,
+      developer_website: scienceGent.developer_website
+    };
+    
+    // Insert or update the ScienceGent
     const { data, error } = await supabase
       .from('sciencegents')
-      .upsert({
-        address: scienceGent.address,
-        name: scienceGent.name,
-        symbol: scienceGent.symbol,
-        total_supply: scienceGent.total_supply,
-        creator_address: scienceGent.creator_address,
-        description: scienceGent.description,
-        profile_pic: scienceGent.profile_pic,
-        website: scienceGent.website,
-        socials: scienceGent.socials,
-        is_migrated: scienceGent.is_migrated,
-        migration_eligible: scienceGent.migration_eligible,
-        created_on_chain_at: scienceGent.created_on_chain_at,
-        maturity_deadline: scienceGent.maturity_deadline,
-        // Convert remaining_maturity_time to a number to fix the type mismatch
-        // First check if it's null, then convert to Number if it exists
-        remaining_maturity_time: scienceGent.remaining_maturity_time !== null && scienceGent.remaining_maturity_time !== undefined 
-          ? Number(scienceGent.remaining_maturity_time) 
-          : null,
-        maturity_progress: scienceGent.maturity_progress,
-        token_price: scienceGent.token_price,
-        market_cap: scienceGent.market_cap,
-        virtual_eth: scienceGent.virtual_eth,
-        collected_fees: scienceGent.collected_fees,
-        last_synced_at: scienceGent.last_synced_at,
-        domain: scienceGent.domain,
-        agent_fee: scienceGent.agent_fee,
-        persona: scienceGent.persona,
-        developer_name: scienceGent.developer_name,
-        developer_email: scienceGent.developer_email,
-        bio: scienceGent.bio,
-        developer_twitter: scienceGent.developer_twitter,
-        developer_telegram: scienceGent.developer_telegram,
-        developer_github: scienceGent.developer_github,
-        developer_website: scienceGent.developer_website
-      })
+      .upsert(scienceGentData)
       .select();
     
     if (error) {

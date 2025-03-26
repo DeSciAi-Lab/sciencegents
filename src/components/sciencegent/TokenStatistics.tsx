@@ -6,7 +6,8 @@ import { RefreshCcw, ExternalLink, TrendingUp, TrendingDown, GitMerge } from "lu
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import MaturityTracker from './MaturityTracker';
-import { useEthPriceContext, formatEthToUsd } from '@/context/EthPriceContext';
+import { useEthPriceContext } from '@/context/EthPriceContext';
+import { calculateMaturityProgress } from '@/utils/scienceGentCalculations';
 
 interface TokenStatisticsProps {
   scienceGent: any;
@@ -19,31 +20,31 @@ const TokenStatistics: React.FC<TokenStatisticsProps> = ({
   isRefreshing,
   refreshData
 }) => {
-  const { ethPrice } = useEthPriceContext();
+  const { ethPrice, formatEthToUsd } = useEthPriceContext();
   
   if (!scienceGent) {
     return <Skeleton className="h-[400px] w-full" />;
   }
 
   const {
-    tokenPrice = 0,
-    marketCap = 0,
-    totalSupply = 0,
-    totalLiquidity = 0,
-    priceChange24h = 0,
-    maturityProgress = 0,
-    isMigrated = false,
-    transactions = 0,
-    volume24h = 0,
-    holders = 0,
-    virtualETH = 0,
-    collectedFees = 0,
-    capabilityFees = 0
+    tokenPrice = scienceGent.token_price || 0,
+    marketCap = scienceGent.market_cap || 0,
+    totalSupply = scienceGent.total_supply || 0,
+    totalLiquidity = scienceGent.total_liquidity || 0,
+    priceChange24h = scienceGent.price_change_24h || 0,
+    maturityProgress = scienceGent.maturity_progress || 0,
+    isMigrated = scienceGent.is_migrated || false,
+    transactions = scienceGent.transactions || 0,
+    volume24h = scienceGent.volume_24h || 0,
+    holders = scienceGent.holders || 0,
+    virtualETH = scienceGent.virtual_eth || 0,
+    collectedFees = scienceGent.collected_fees || 0,
+    capabilityFees = scienceGent.capability_fees || 0
   } = scienceGent;
 
   // Calculate migration status
   const getMigrationStatus = () => {
-    if (isMigrated || scienceGent.is_migrated) {
+    if (isMigrated) {
       return {
         text: "Migrated to Uniswap",
         color: "bg-green-100 text-green-800",
@@ -51,11 +52,10 @@ const TokenStatistics: React.FC<TokenStatisticsProps> = ({
       };
     }
     
-    // Calculate fee progress
-    const requiredFees = virtualETH * 2 + capabilityFees;
-    const feeProgress = requiredFees > 0 ? (collectedFees / requiredFees) * 100 : 0;
+    // Use the utility function to calculate maturity progress
+    const calculatedProgress = calculateMaturityProgress(virtualETH, collectedFees, capabilityFees);
     
-    if (feeProgress >= 100) {
+    if (calculatedProgress >= 100) {
       return {
         text: "Ready for Migration",
         color: "bg-blue-100 text-blue-800",
@@ -102,7 +102,7 @@ const TokenStatistics: React.FC<TokenStatisticsProps> = ({
           <div>
             <p className="text-sm text-muted-foreground mb-1">Market Cap</p>
             <p className="text-xl font-medium">{marketCap.toFixed(4)} ETH</p>
-            <p className="text-xs text-muted-foreground">{formatEthToUsd(marketCap, ethPrice)}</p>
+            <p className="text-xs text-muted-foreground">{formatEthToUsd(marketCap)}</p>
           </div>
           <div>
             <p className="text-sm text-muted-foreground mb-1">Total Supply</p>
@@ -111,7 +111,7 @@ const TokenStatistics: React.FC<TokenStatisticsProps> = ({
           <div>
             <p className="text-sm text-muted-foreground mb-1">Liquidity</p>
             <p className="text-xl font-medium">{totalLiquidity.toFixed(4)} ETH</p>
-            <p className="text-xs text-muted-foreground">{formatEthToUsd(totalLiquidity, ethPrice)}</p>
+            <p className="text-xs text-muted-foreground">{formatEthToUsd(totalLiquidity)}</p>
           </div>
           <div>
             <p className="text-sm text-muted-foreground mb-1">Trading Status</p>
@@ -120,7 +120,7 @@ const TokenStatistics: React.FC<TokenStatisticsProps> = ({
                 {migrationStatus.icon}
                 {migrationStatus.text}
               </Badge>
-              {(isMigrated || scienceGent.is_migrated) && (
+              {isMigrated && (
                 <a 
                   href={getUniswapLink()} 
                   target="_blank" 
@@ -140,7 +140,7 @@ const TokenStatistics: React.FC<TokenStatisticsProps> = ({
           <div>
             <p className="text-sm text-muted-foreground mb-1">24h Volume</p>
             <p className="text-xl font-medium">{volume24h.toFixed(4)} ETH</p>
-            <p className="text-xs text-muted-foreground">{formatEthToUsd(volume24h, ethPrice)}</p>
+            <p className="text-xs text-muted-foreground">{formatEthToUsd(volume24h)}</p>
           </div>
           <div>
             <p className="text-sm text-muted-foreground mb-1">Holders</p>
@@ -149,7 +149,7 @@ const TokenStatistics: React.FC<TokenStatisticsProps> = ({
           <div>
             <p className="text-sm text-muted-foreground mb-1">Virtual ETH</p>
             <p className="text-xl font-medium">{virtualETH.toFixed(4)} ETH</p>
-            <p className="text-xs text-muted-foreground">{formatEthToUsd(virtualETH, ethPrice)}</p>
+            <p className="text-xs text-muted-foreground">{formatEthToUsd(virtualETH)}</p>
           </div>
         </div>
         
