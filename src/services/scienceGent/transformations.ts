@@ -1,4 +1,3 @@
-
 import { ScienceGentData, TokenStats, FormattedScienceGent } from './types';
 import { ethers } from 'ethers';
 import { 
@@ -74,10 +73,8 @@ export const transformBlockchainToSupabaseFormat = (
     created_on_chain_at: blockchainData.creationTimestamp 
       ? new Date(blockchainData.creationTimestamp * 1000).toISOString() 
       : null,
-    maturity_deadline: blockchainData.maturityDeadline 
-      ? new Date(blockchainData.maturityDeadline * 1000).toISOString() 
-      : null,
-    // Ensure this is a number or null, not a string
+    maturity_deadline: blockchainData.maturityDeadline || null,
+    // Ensure remaining_maturity_time is a number or null, not a string
     remaining_maturity_time: remainingMaturityTime > 0 ? Number(remainingMaturityTime) : null,
     maturity_progress: maturityProgress,
     token_price: tokenPrice,

@@ -1,8 +1,10 @@
+
 import { ScienceGentData, TokenStats, CapabilityDetail } from './types';
 import { supabase } from '@/integrations/supabase/client';
 import { transformBlockchainToSupabaseFormat } from './transformations';
 import { ethers } from 'ethers';
-import { calculateMaturityProgress } from '@/utils/scienceGentCalculations';
+// Remove duplicate import that conflicts with local declaration
+// import { calculateMaturityProgress } from '@/utils/scienceGentCalculations';
 
 /**
  * Fetches a ScienceGent from Supabase by address
@@ -99,7 +101,7 @@ export const saveScienceGentToSupabase = async (
     const { scienceGent, scienceGentStats } = transformBlockchainToSupabaseFormat(scienceGentData, tokenStats);
     
     // Prepare data for upsert, ensuring all value types match the database schema
-    const scienceGentData = {
+    const supabaseData = {
       address: scienceGent.address,
       name: scienceGent.name,
       symbol: scienceGent.symbol,
@@ -112,9 +114,14 @@ export const saveScienceGentToSupabase = async (
       is_migrated: scienceGent.is_migrated,
       migration_eligible: scienceGent.migration_eligible,
       created_on_chain_at: scienceGent.created_on_chain_at,
-      maturity_deadline: scienceGent.maturity_deadline,
+      // Ensure maturity_deadline is properly typed as a number or null
+      maturity_deadline: typeof scienceGent.maturity_deadline === 'string' 
+        ? Number(scienceGent.maturity_deadline) 
+        : scienceGent.maturity_deadline,
       // Ensure remaining_maturity_time is a number or null, not a string
-      remaining_maturity_time: scienceGent.remaining_maturity_time,
+      remaining_maturity_time: typeof scienceGent.remaining_maturity_time === 'string'
+        ? Number(scienceGent.remaining_maturity_time)
+        : scienceGent.remaining_maturity_time,
       maturity_progress: scienceGent.maturity_progress,
       token_price: scienceGent.token_price,
       market_cap: scienceGent.market_cap,
@@ -136,7 +143,7 @@ export const saveScienceGentToSupabase = async (
     // Insert or update the ScienceGent
     const { data, error } = await supabase
       .from('sciencegents')
-      .upsert(scienceGentData)
+      .upsert(supabaseData)
       .select();
     
     if (error) {
