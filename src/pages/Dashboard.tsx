@@ -3,7 +3,8 @@ import React from 'react';
 import { useParams, Navigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Wallet, Loader2 } from "lucide-react";
-import { NavbarLayout } from '@/components/layout/NavbarLayout';
+import NavHeader from '@/components/layout/NavHeader';
+import Footer from '@/components/layout/Footer';
 import DashboardTabs from '@/components/dashboard/DashboardTabs';
 import { useWallet } from '@/hooks/useWallet';
 import DashboardHeader from '@/components/dashboard/DashboardHeader';
@@ -17,8 +18,9 @@ const Dashboard = () => {
 
   if (isConnected === undefined) {
     return (
-      <NavbarLayout>
-        <div className="container py-12">
+      <div className="min-h-screen flex flex-col">
+        <NavHeader />
+        <div className="container py-12 pt-24 flex-grow">
           <div className="max-w-md mx-auto text-center">
             <div className="flex justify-center mb-6">
               <div className="rounded-full bg-blue-100 p-6">
@@ -31,14 +33,16 @@ const Dashboard = () => {
             </p>
           </div>
         </div>
-      </NavbarLayout>
+        <Footer />
+      </div>
     );
   }
 
   if (!isConnected || !address) {
     return (
-      <NavbarLayout>
-        <div className="container py-12">
+      <div className="min-h-screen flex flex-col">
+        <NavHeader />
+        <div className="container py-12 pt-24 flex-grow">
           <div className="max-w-md mx-auto text-center">
             <div className="flex justify-center mb-6">
               <div className="rounded-full bg-blue-100 p-6">
@@ -59,7 +63,8 @@ const Dashboard = () => {
             </Button>
           </div>
         </div>
-      </NavbarLayout>
+        <Footer />
+      </div>
     );
   }
 
@@ -69,14 +74,16 @@ const Dashboard = () => {
   }
 
   return (
-    <NavbarLayout>
-      <div className="container mx-auto px-4 py-6">
+    <div className="min-h-screen flex flex-col">
+      <NavHeader />
+      <div className="container mx-auto px-4 py-6 pt-24 flex-grow">
         <DashboardHeader userName="User Name" />
         <div className="bg-white rounded-lg border overflow-hidden">
           <DashboardTabs initialTab={initialTab} />
         </div>
       </div>
-    </NavbarLayout>
+      <Footer />
+    </div>
   );
 };
 

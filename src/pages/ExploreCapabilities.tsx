@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Star, Search, Plus, ChevronDown, Filter, X, Beaker, Activity, Database } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import Navbar from '@/components/layout/Navbar';
+import NavHeader from '@/components/layout/NavHeader';
 import Footer from '@/components/layout/Footer';
 import Reveal from '@/components/animations/Reveal';
 import { getAllCapabilities } from '@/data/capabilities';
@@ -146,7 +146,7 @@ const ExploreCapabilities = () => {
   
   return (
     <div className="min-h-screen flex flex-col">
-      <Navbar />
+      <NavHeader />
       
       <main className="flex-grow pt-24 pb-16 bg-gray-50">
         <div className="container mx-auto px-6">

@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { LoadingStatus } from '@/hooks/useScienceGentDetails';
-import Navbar from '@/components/layout/Navbar';
+import NavHeader from '@/components/layout/NavHeader';
 import Footer from '@/components/layout/Footer';
 import ScienceGentHeader from './ScienceGentHeader';
 import ScienceGentStatsCards from '../ScienceGentStatsCards';
@@ -28,8 +28,8 @@ const DetailsLayout: React.FC<DetailsLayoutProps> = ({
   
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
-      <Navbar />
-      <main className="flex-grow">
+      <NavHeader />
+      <main className="flex-grow pt-20">
         <div className="container mx-auto px-4 py-4">
           <div className="bg-white rounded-lg border overflow-hidden mb-4">
             <div className="grid md:grid-cols-3">
