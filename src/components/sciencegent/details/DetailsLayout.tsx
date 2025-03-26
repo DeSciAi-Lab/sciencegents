@@ -1,8 +1,7 @@
 
 import React from 'react';
 import { LoadingStatus } from '@/hooks/useScienceGentDetails';
-import NavHeader from '@/components/layout/NavHeader';
-import Footer from '@/components/layout/Footer';
+import NavbarLayout from '@/components/layout/NavbarLayout';
 import ScienceGentHeader from './ScienceGentHeader';
 import ScienceGentStatsCards from '../ScienceGentStatsCards';
 import PriceOverview from './PriceOverview';
@@ -27,43 +26,39 @@ const DetailsLayout: React.FC<DetailsLayoutProps> = ({
   const symbol = scienceGent?.symbol || "TICKER";
   
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
-      <NavHeader />
-      <main className="flex-grow pt-20">
-        <div className="container mx-auto px-4 py-4">
-          <div className="bg-white rounded-lg border overflow-hidden mb-4">
-            <div className="grid md:grid-cols-3">
-              <div className="md:col-span-2 p-5">
-                <ScienceGentHeader scienceGent={scienceGent} address={address} />
-                <ScienceGentStatsCards scienceGent={scienceGent} />
-                <PriceOverview scienceGent={scienceGent} />
-              </div>
-              
-              <div className="border-l">
-                <div className="p-4">
-                  <TokenSwapInterface 
-                    tokenAddress={address || ''}
-                    tokenSymbol={symbol}
-                    isMigrated={scienceGent?.is_migrated || false}
-                    uniswapPair={scienceGent?.uniswapPair}
-                    scienceGent={scienceGent}
-                  />
-                </div>
+    <NavbarLayout>
+      <div className="container mx-auto px-4 py-4">
+        <div className="bg-white rounded-lg border overflow-hidden mb-4">
+          <div className="grid md:grid-cols-3">
+            <div className="md:col-span-2 p-5">
+              <ScienceGentHeader scienceGent={scienceGent} address={address} />
+              <ScienceGentStatsCards scienceGent={scienceGent} />
+              <PriceOverview scienceGent={scienceGent} />
+            </div>
+            
+            <div className="border-l">
+              <div className="p-4">
+                <TokenSwapInterface 
+                  tokenAddress={address || ''}
+                  tokenSymbol={symbol}
+                  isMigrated={scienceGent?.is_migrated || false}
+                  uniswapPair={scienceGent?.uniswapPair}
+                  scienceGent={scienceGent}
+                />
               </div>
             </div>
           </div>
-
-          <ScienceGentDetailsDashboard
-            address={address || ''}
-            scienceGentData={scienceGent}
-            status={status}
-            isRefreshing={isRefreshing}
-            refreshData={refreshData}
-          />
         </div>
-      </main>
-      <Footer />
-    </div>
+
+        <ScienceGentDetailsDashboard
+          address={address || ''}
+          scienceGentData={scienceGent}
+          status={status}
+          isRefreshing={isRefreshing}
+          refreshData={refreshData}
+        />
+      </div>
+    </NavbarLayout>
   );
 };
 

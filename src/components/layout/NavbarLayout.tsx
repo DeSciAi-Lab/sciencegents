@@ -18,3 +18,5 @@ export const NavbarLayout: React.FC<NavbarLayoutProps> = ({ children }) => {
     </div>
   );
 };
+
+export default NavbarLayout;

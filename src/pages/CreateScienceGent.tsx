@@ -1,20 +1,15 @@
 
 import React from 'react';
-import NavHeader from '@/components/layout/NavHeader';
-import Footer from '@/components/layout/Footer';
+import NavbarLayout from '@/components/layout/NavbarLayout';
 import ScienceGentWizard from '@/components/create-sciencegent/ScienceGentWizard';
 
 const CreateScienceGent = () => {
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
-      <NavHeader />
-      
-      <main className="flex-grow py-12 pt-24">
+    <NavbarLayout>
+      <div className="bg-gray-50 py-12">
         <ScienceGentWizard />
-      </main>
-      
-      <Footer />
-    </div>
+      </div>
+    </NavbarLayout>
   );
 };
 
