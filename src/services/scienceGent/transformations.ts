@@ -1,215 +1,145 @@
 import { ScienceGentData, TokenStats, FormattedScienceGent } from './types';
+import { formatDistance } from 'date-fns';
+import { formatEthValue, convertEthToUsd } from '@/utils/scienceGentCalculations';
+import { supabase } from '@/integrations/supabase/client';
 import { ethers } from 'ethers';
-import { 
-  calculateMaturityProgress,
-  formatEthValue
-} from '@/utils/scienceGentCalculations';
 
-/**
- * Formats a timestamp to a human-readable age string
- * @param creationTimestamp Creation timestamp (seconds since epoch or ISO string)
- * @returns Formatted age string (e.g., "2 days" or "3 months")
- */
-export const formatAge = (creationTimestamp: number | string | undefined): string => {
-  if (!creationTimestamp) return 'Unknown';
-  
-  // Convert timestamp to Date object
-  let creationDate: Date;
-  if (typeof creationTimestamp === 'number') {
-    creationDate = new Date(creationTimestamp * 1000);
-  } else if (typeof creationTimestamp === 'string') {
-    creationDate = new Date(creationTimestamp);
-  } else {
-    return 'Unknown';
-  }
-  
-  const now = new Date();
-  const diffInMs = now.getTime() - creationDate.getTime();
-  
-  // Calculate days, hours, etc.
-  const days = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
-  
-  if (days > 365) {
-    const years = Math.floor(days / 365);
-    return `${years} year${years !== 1 ? 's' : ''}`;
-  } else if (days > 30) {
-    const months = Math.floor(days / 30);
-    return `${months} month${months !== 1 ? 's' : ''}`;
-  } else if (days > 0) {
-    return `${days} day${days !== 1 ? 's' : ''}`;
-  } else {
-    const hours = Math.floor(diffInMs / (1000 * 60 * 60));
-    return `${hours || 1} hour${hours !== 1 ? 's' : ''}`;
+// Add implementation for the missing functions
+const calculateTokenPrice = (priceInWei: string | undefined): number => {
+  if (!priceInWei) return 0;
+  try {
+    return parseFloat(ethers.utils.formatEther(priceInWei));
+  } catch (error) {
+    console.error("Error calculating token price:", error);
+    return 0;
   }
 };
 
-/**
- * Transforms blockchain data to Supabase format
- * @param blockchainData ScienceGent data from blockchain
- * @param tokenStats Token statistics from blockchain
- * @returns Object with scienceGent and scienceGentStats data
- */
+const calculateMarketCap = (tokenPrice: number, totalSupplyInWei: string): number => {
+  if (!tokenPrice || !totalSupplyInWei) return 0;
+  try {
+    const totalSupply = parseFloat(ethers.utils.formatEther(totalSupplyInWei));
+    return tokenPrice * totalSupply;
+  } catch (error) {
+    console.error("Error calculating market cap:", error);
+    return 0;
+  }
+};
+
 export const transformBlockchainToSupabaseFormat = (
-  blockchainData: ScienceGentData,
+  scienceGentData: ScienceGentData, 
   tokenStats: TokenStats
-) => {
-  // Calculate current timestamp in seconds
-  const currentTimestamp = Math.floor(Date.now() / 1000);
+): any => {
+  const tokenPrice = calculateTokenPrice(tokenStats.currentPrice);
+  const marketCap = calculateMarketCap(tokenPrice, scienceGentData.totalSupply);
   
-  // Calculate token age in seconds
-  const tokenAge = blockchainData.creationTimestamp 
-    ? currentTimestamp - blockchainData.creationTimestamp 
-    : 0;
-  
-  // Calculate remaining maturity time
-  const remainingMaturityTime = blockchainData.maturityDeadline 
-    ? Math.max(0, blockchainData.maturityDeadline - currentTimestamp)
-    : 0;
-  
-  // Calculate token price
-  const tokenPrice = parseFloat(ethers.utils.formatEther(tokenStats.currentPrice || '0'));
-  
-  // Calculate market cap
-  const marketCap = (() => {
-    if (!tokenPrice || !blockchainData.totalSupply) return 0;
-    try {
-      const totalSupply = parseFloat(ethers.utils.formatEther(blockchainData.totalSupply));
-      return tokenPrice * totalSupply;
-    } catch (error) {
-      console.error("Error calculating market cap:", error);
-      return 0;
-    }
-  })();
-  
+  return {
+    address: scienceGentData.address,
+    name: scienceGentData.name,
+    symbol: scienceGentData.symbol,
+    description: scienceGentData.description || '',
+    creator: scienceGentData.creator,
+    total_supply: scienceGentData.totalSupply,
+    virtual_eth: scienceGentData.virtualETH,
+    collected_fees: tokenStats.collectedFees,
+    capability_fees: tokenStats.capabilityFees,
+    current_price: tokenStats.currentPrice,
+    market_cap: marketCap,
+    total_liquidity: tokenStats.totalLiquidity,
+    holders_count: tokenStats.holdersCount,
+    transactions: tokenStats.transactions,
+    is_migrated: scienceGentData.isMigrated,
+    trading_enabled: scienceGentData.tradingEnabled,
+    uniswap_pair: tokenStats.uniswapPair || null,
+    capabilities: scienceGentData.capabilities.map(cap => ({
+      capability_id: cap.id,
+      capability_name: cap.name,
+      capability_fee: cap.fee,
+      capability_creator: cap.creator
+    }))
+  };
+};
+
+export const transformSupabaseToFormattedScienceGent = (data: any): FormattedScienceGent => {
   // Calculate maturity progress
-  let virtualETH = 0;
-  let collectedFees = 0;
+  const virtualETH = parseFloat(ethers.utils.formatEther(data.virtual_eth || '0'));
+  const collectedFees = parseFloat(ethers.utils.formatEther(data.collected_fees || '0'));
+  const capabilityFees = parseFloat(ethers.utils.formatEther(data.capability_fees || '0'));
   
-  if (tokenStats.virtualETH) {
-    virtualETH = parseFloat(ethers.utils.formatEther(tokenStats.virtualETH));
-  }
+  // Calculate maturity progress (0-100%)
+  const targetFees = (2 * virtualETH) + capabilityFees;
+  const maturityProgress = targetFees > 0 
+    ? Math.min(Math.round((collectedFees / targetFees) * 100), 100) 
+    : 0;
   
-  if (tokenStats.collectedFees) {
-    collectedFees = parseFloat(ethers.utils.formatEther(tokenStats.collectedFees));
-  }
+  // Format token price
+  const tokenPrice = parseFloat(ethers.utils.formatEther(data.current_price || '0'));
+  const formattedPrice = formatEthValue(tokenPrice);
+  const formattedPriceUsd = convertEthToUsd(tokenPrice);
   
-  // Calculate maturity progress using the utility function
-  const maturityProgress = calculateMaturityProgress(
+  // Format market cap
+  const marketCap = parseFloat(String(data.market_cap || '0'));
+  const formattedMarketCap = formatEthValue(marketCap);
+  const formattedMarketCapUsd = convertEthToUsd(marketCap);
+  
+  // Format liquidity
+  const liquidity = parseFloat(String(data.total_liquidity || '0'));
+  const formattedLiquidity = formatEthValue(liquidity);
+  const formattedLiquidityUsd = convertEthToUsd(liquidity);
+  
+  // Format capabilities
+  const capabilities = data.capabilities?.map((cap: any) => ({
+    id: cap.capability_id,
+    name: cap.capability_name,
+    fee: cap.capability_fee,
+    creator: cap.capability_creator
+  })) || [];
+  
+  // Calculate age
+  const createdAt = data.created_at ? new Date(data.created_at) : new Date();
+  const age = formatAge(createdAt);
+  
+  return {
+    id: data.id,
+    address: data.address,
+    name: data.name,
+    symbol: data.symbol,
+    description: data.description || '',
+    creator: data.creator,
+    totalSupply: data.total_supply,
     virtualETH,
     collectedFees,
-    blockchainData.capabilityFees || 0
-  );
-  
-  // Main ScienceGent data for the sciencegents table
-  const scienceGent = {
-    address: blockchainData.address,
-    name: blockchainData.name,
-    symbol: blockchainData.symbol,
-    total_supply: blockchainData.totalSupply ? parseFloat(ethers.utils.formatEther(blockchainData.totalSupply)) : null,
-    creator_address: blockchainData.creator,
-    description: blockchainData.description || null,
-    profile_pic: blockchainData.profilePic || null,
-    website: blockchainData.website || null,
-    socials: blockchainData.socialLinks ? JSON.stringify(blockchainData.socialLinks) : null,
-    is_migrated: blockchainData.isMigrated,
-    migration_eligible: tokenStats.migrationEligible,
-    created_on_chain_at: blockchainData.creationTimestamp 
-      ? new Date(blockchainData.creationTimestamp * 1000).toISOString() 
-      : null,
-    maturity_deadline: blockchainData.maturityDeadline || null,
-    remaining_maturity_time: tokenStats.remainingMaturityTime || null,
-    maturity_progress: tokenStats.maturityProgress || 0,
-    token_price: tokenPrice,
-    market_cap: marketCap,
-    virtual_eth: parseFloat(ethers.utils.formatEther(tokenStats.virtualETH || '0')),
-    collected_fees: parseFloat(ethers.utils.formatEther(tokenStats.collectedFees || '0')),
-    last_synced_at: new Date().toISOString(),
-    domain: blockchainData.domain || "General Science",
-    agent_fee: blockchainData.agentFee || 2,
-    persona: blockchainData.persona || null,
-    developer_name: blockchainData.developerName || null,
-    developer_email: blockchainData.developerEmail || null,
-    bio: blockchainData.bio || null,
-    developer_twitter: blockchainData.developerTwitter || null,
-    developer_telegram: blockchainData.developerTelegram || null,
-    developer_github: blockchainData.developerGithub || null,
-    developer_website: blockchainData.developerWebsite || null
+    capabilityFees,
+    tokenPrice,
+    formattedPrice,
+    formattedPriceUsd,
+    marketCap,
+    formattedMarketCap,
+    formattedMarketCapUsd,
+    liquidity,
+    formattedLiquidity,
+    formattedLiquidityUsd,
+    holdersCount: data.holders_count || 0,
+    transactions: data.transactions || 0,
+    isMigrated: data.is_migrated || false,
+    tradingEnabled: data.trading_enabled || false,
+    uniswapPair: data.uniswap_pair || null,
+    capabilities,
+    maturityProgress,
+    created_at: createdAt,
+    age
   };
-  
-  // Stats data for the sciencegent_stats table
-  const scienceGentStats = {
-    sciencegent_address: blockchainData.address,
-    // Default values for now, can be populated with real data later
-    volume_24h: 0,
-    transactions: 0,
-    holders: 0,
-    updated_at: new Date().toISOString()
-  };
-  
-  return { scienceGent, scienceGentStats };
 };
 
-/**
- * Transforms Supabase data to formatted ScienceGent for UI
- * @param supabaseData ScienceGent data from Supabase
- * @returns Formatted ScienceGent for UI display
- */
-export const transformSupabaseToFormattedScienceGent = (
-  supabaseData: any
-): FormattedScienceGent => {
-  if (!supabaseData) return null;
-
-  // Extract capabilities from the supabase data if available
-  const capabilities = supabaseData.capabilities
-    ? supabaseData.capabilities.map(cap => cap.capability_id)
-    : [];
-
-  // Convert socials JSON string to object if needed
-  let socialLinks = {};
+export const formatAge = (timestamp: string | number | Date): string => {
   try {
-    if (supabaseData.socials) {
-      if (typeof supabaseData.socials === 'string') {
-        socialLinks = JSON.parse(supabaseData.socials);
-      } else {
-        socialLinks = supabaseData.socials;
-      }
-    }
-  } catch (e) {
-    console.error("Error parsing social links:", e);
-  }
-  
-  // Calculate token age from creation timestamp
-  const creationTimestamp = supabaseData.created_on_chain_at 
-    ? new Date(supabaseData.created_on_chain_at).getTime() / 1000
-    : undefined;
+    const date = typeof timestamp === 'string' || typeof timestamp === 'number' 
+      ? new Date(timestamp) 
+      : timestamp;
     
-  // Calculate formatted token age
-  const formattedAge = formatAge(supabaseData.created_on_chain_at);
-  
-  // Create a formatted ScienceGent object for UI
-  return {
-    address: supabaseData.address,
-    name: supabaseData.name,
-    symbol: supabaseData.symbol,
-    description: supabaseData.description,
-    profilePic: supabaseData.profile_pic,
-    website: supabaseData.website,
-    socialLinks,
-    isMigrated: !!supabaseData.is_migrated,
-    totalSupply: supabaseData.total_supply?.toString(),
-    tokenPrice: supabaseData.token_price ? parseFloat(String(supabaseData.token_price)) : 0,
-    marketCap: supabaseData.market_cap ? parseFloat(String(supabaseData.market_cap)) : 0,
-    maturityProgress: supabaseData.maturity_progress || 0,
-    virtualEth: supabaseData.virtual_eth ? parseFloat(String(supabaseData.virtual_eth)) : 0,
-    collectedFees: supabaseData.collected_fees ? parseFloat(String(supabaseData.collected_fees)) : 0,
-    remainingMaturityTime: supabaseData.remaining_maturity_time,
-    creationTimestamp,
-    formattedAge,
-    tokenAge: creationTimestamp ? Math.floor(Date.now() / 1000) - creationTimestamp : 0,
-    migrationEligible: supabaseData.migration_eligible,
-    capabilities,
-    domain: supabaseData.domain || "General Science",
-    agentFee: supabaseData.agent_fee || 2,
-    persona: supabaseData.persona
-  };
+    return formatDistance(date, new Date(), { addSuffix: true });
+  } catch (error) {
+    console.error("Error formatting age:", error);
+    return "Unknown";
+  }
 };

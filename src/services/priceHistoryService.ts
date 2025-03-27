@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { ethers } from 'ethers';
 import { contractConfig } from '@/utils/contractConfig';
@@ -114,7 +113,7 @@ export const syncTradeEventsFromBlockchain = async (tokenAddress: string): Promi
     let fromBlock = 0;
     
     if (tokenData?.created_at) {
-      // Get approximate block number from timestamp
+      // Use created_at instead of created_on_chain_at
       const creationDate = new Date(tokenData.created_at);
       const currentBlock = await provider.getBlockNumber();
       const currentBlockData = await provider.getBlock(currentBlock);
