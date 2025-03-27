@@ -37,8 +37,8 @@ export const saveScienceGentToSupabase = async (scienceGentData: any, tokenStats
         trading_enabled: tradingEnabled,
         is_migrated: isMigrated,
         capability_count: capabilityCount,
-        admin_lock_amount: adminLockAmount,
-        admin_lock_remaining_time: adminLockRemainingTime,
+        admin_lock_amount: adminLockAmount ? adminLockAmount.toString() : null,
+        admin_lock_remaining_time: adminLockRemainingTime ? adminLockRemainingTime.toString() : null,
         admin_lock_is_unlocked: adminLockIsUnlocked,
         token_price: tokenPrice,
         market_cap: marketCap,
@@ -62,7 +62,7 @@ export const saveScienceGentToSupabase = async (scienceGentData: any, tokenStats
 
 export const fetchScienceGentFromSupabase = async (address: string): Promise<FormattedScienceGent | null> => {
   try {
-    const { data, error } = await supabase
+    const { data: rawData, error } = await supabase
       .from('sciencegents')
       .select(`
         *,
@@ -83,9 +83,12 @@ export const fetchScienceGentFromSupabase = async (address: string): Promise<For
     }
 
     // Check if data exists to avoid TypeScript errors
-    if (!data) {
+    if (!rawData) {
       return null;
     }
+
+    // Type assertion to avoid direct property access errors
+    const data = rawData as any;
 
     // Transform to formatted ScienceGent with correct property names
     const formattedScienceGent: FormattedScienceGent = {
@@ -94,29 +97,29 @@ export const fetchScienceGentFromSupabase = async (address: string): Promise<For
       symbol: data.symbol,
       totalSupply: data.total_supply,
       creator: data.creator_address, // Mapping from creator_address
-      tradingEnabled: data.trading_enabled,
-      isMigrated: data.is_migrated,
-      maturityProgress: data.maturity_progress,
-      virtualEth: data.virtual_eth,
-      collectedFees: data.collected_fees,
-      tokenPrice: data.token_price,
-      marketCap: data.market_cap,
-      liquidity: data.total_liquidity,
+      tradingEnabled: !!data.trading_enabled,
+      isMigrated: !!data.is_migrated,
+      maturityProgress: data.maturity_progress || 0,
+      virtualEth: data.virtual_eth || 0,
+      collectedFees: data.collected_fees || 0,
+      tokenPrice: data.token_price || 0,
+      marketCap: data.market_cap || 0,
+      liquidity: data.total_liquidity || 0,
       holdersCount: data.holders || 0, // Add fallback for missing fields
       transactions: data.transactions || 0, // Add fallback for missing fields
       capabilities: data.capabilities || [],
       created_at: data.created_at,
-      description: data.description,
+      description: data.description || '',
       profilePic: data.profile_pic,
-      website: data.website,
+      website: data.website || '',
       // Handle JSON data safely
       socialLinks: typeof data.socials === 'object' ? data.socials as Record<string, string> : {},
-      domain: data.domain,
-      agentFee: data.agent_fee,
-      remainingMaturityTime: data.remaining_maturity_time,
-      migrationEligible: data.migration_eligible,
-      uniswapPair: data.uniswap_pair,
-      capabilityFees: data.capability_fees
+      domain: data.domain || 'General',
+      agentFee: data.agent_fee || 0,
+      remainingMaturityTime: data.remaining_maturity_time || 0,
+      migrationEligible: !!data.migration_eligible,
+      uniswapPair: data.uniswap_pair || null,
+      capabilityFees: data.capability_fees || 0
     };
 
     return formattedScienceGent;
