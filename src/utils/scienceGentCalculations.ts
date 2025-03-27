@@ -94,6 +94,14 @@ export const updateEthPrice = async (): Promise<number> => {
 };
 
 /**
+ * Fetch current ETH price (for services)
+ * @returns Current ETH price in USD
+ */
+export const fetchCurrentEthPrice = async (): Promise<number> => {
+  return await updateEthPrice();
+};
+
+/**
  * Set ETH price manually (for testing or fallback)
  * @param price New ETH price in USD
  */

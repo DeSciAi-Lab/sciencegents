@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Loader2, RefreshCw } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { useEthPriceContext, formatEthToUsd } from '@/context/EthPriceContext';
+import { useEthPriceContext } from '@/context/EthPriceContext';
 
 interface TokenBalanceInfoProps {
   tokenSymbol: string;
@@ -24,14 +24,14 @@ const TokenBalanceInfo: React.FC<TokenBalanceInfoProps> = ({
   onRefresh
 }) => {
   const isMobile = useIsMobile();
-  const { ethPrice } = useEthPriceContext();
+  const { ethPrice, formatEthToUsd } = useEthPriceContext();
   
   const formattedPrice = parseFloat(tokenPrice) > 0 
     ? parseFloat(tokenPrice).toFixed(8) 
     : "0.00000000";
     
   const tokenPriceUsd = parseFloat(tokenPrice) > 0
-    ? formatEthToUsd(parseFloat(tokenPrice), ethPrice)
+    ? formatEthToUsd(parseFloat(tokenPrice))
     : "$0.00";
 
   return (
@@ -78,7 +78,7 @@ const TokenBalanceInfo: React.FC<TokenBalanceInfoProps> = ({
               </p>
               {parseFloat(tokenBalance) > 0 && (
                 <p className="text-xs text-muted-foreground">
-                  {formatEthToUsd(parseFloat(tokenBalance) * parseFloat(tokenPrice), ethPrice)}
+                  {formatEthToUsd(parseFloat(tokenBalance) * parseFloat(tokenPrice))}
                 </p>
               )}
             </div>
@@ -95,7 +95,7 @@ const TokenBalanceInfo: React.FC<TokenBalanceInfoProps> = ({
               </p>
               {parseFloat(ethBalance) > 0 && (
                 <p className="text-xs text-muted-foreground">
-                  {formatEthToUsd(parseFloat(ethBalance), ethPrice)}
+                  {formatEthToUsd(parseFloat(ethBalance))}
                 </p>
               )}
             </div>

@@ -32,7 +32,7 @@ export const saveScienceGentToSupabase = async (scienceGentData: any, tokenStats
         address: scienceGentData.contractAddress || scienceGentData.address,
         name,
         symbol,
-        total_supply: totalSupply,
+        total_supply: totalSupply.toString(), // Convert to string to match database type
         creator_address: creator, // Updated to match DB schema
         trading_enabled: tradingEnabled,
         is_migrated: isMigrated,
@@ -82,6 +82,11 @@ export const fetchScienceGentFromSupabase = async (address: string): Promise<For
       return null;
     }
 
+    // Check if data exists to avoid TypeScript errors
+    if (!data) {
+      return null;
+    }
+
     // Transform to formatted ScienceGent with correct property names
     const formattedScienceGent: FormattedScienceGent = {
       address: data.address,
@@ -97,14 +102,15 @@ export const fetchScienceGentFromSupabase = async (address: string): Promise<For
       tokenPrice: data.token_price,
       marketCap: data.market_cap,
       liquidity: data.total_liquidity,
-      holdersCount: data.holders,
-      transactions: data.transactions,
+      holdersCount: data.holders || 0, // Add fallback for missing fields
+      transactions: data.transactions || 0, // Add fallback for missing fields
       capabilities: data.capabilities || [],
       created_at: data.created_at,
       description: data.description,
       profilePic: data.profile_pic,
       website: data.website,
-      socialLinks: data.socials,
+      // Handle JSON data safely
+      socialLinks: typeof data.socials === 'object' ? data.socials as Record<string, string> : {},
       domain: data.domain,
       agentFee: data.agent_fee,
       remainingMaturityTime: data.remaining_maturity_time,

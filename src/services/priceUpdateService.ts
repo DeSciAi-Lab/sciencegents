@@ -2,7 +2,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { ethers } from 'ethers';
 import { contractConfig } from '@/utils/contractConfig';
-import { fetchCurrentEthPrice } from '@/utils/scienceGentCalculations';
+import { updateEthPrice } from '@/utils/scienceGentCalculations';
 
 /**
  * Update price data for a specific token in Supabase
@@ -41,7 +41,7 @@ export const updateTokenPrice = async (address: string): Promise<any> => {
     const marketCap = currentPriceInEth * totalSupply;
     
     // Get current ETH to USD rate
-    const ethToUsdRate = await fetchCurrentEthPrice();
+    const ethToUsdRate = await updateEthPrice();
     const priceInUsd = currentPriceInEth * ethToUsdRate;
     
     // Update token data in Supabase

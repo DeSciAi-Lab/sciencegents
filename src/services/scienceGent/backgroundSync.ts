@@ -2,7 +2,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { ethers } from 'ethers';
 import { contractConfig } from '@/utils/contractConfig';
-import { fetchCurrentEthPrice } from '@/utils/scienceGentCalculations';
+import { updateEthPrice } from '@/utils/scienceGentCalculations';
 
 /**
  * Update prices of multiple tokens in Supabase
@@ -24,7 +24,7 @@ export const syncPriceData = async (count: number = 10): Promise<number> => {
     }
     
     // Get current ETH to USD rate
-    const ethToUsdRate = await fetchCurrentEthPrice();
+    const ethToUsdRate = await updateEthPrice();
     
     // Update prices for tokens
     let updatedCount = 0;
