@@ -63,24 +63,57 @@ export const saveScienceGentToSupabase = async (
     if (existingData) {
       // Update existing record
       console.log("Updating existing ScienceGent record");
+      
+      // Make sure total_supply is handled properly
+      const scienceGentRecord = {
+        ...scienceGent
+      };
+      
+      // Remove total_supply from the update operation as it's handled separately
+      delete scienceGentRecord.total_supply;
+      
+      // If we have a numeric total supply, use it
+      if (data.totalSupply) {
+        // Parse total supply as a number if possible
+        try {
+          const totalSupplyNumber = parseFloat(data.totalSupply);
+          if (!isNaN(totalSupplyNumber) && isFinite(totalSupplyNumber)) {
+            scienceGentRecord.total_supply = totalSupplyNumber;
+          }
+        } catch (e) {
+          console.warn("Could not parse totalSupply as number:", data.totalSupply);
+        }
+      }
+      
       saveOperation = supabase
         .from('sciencegents')
-        .update({
-          ...scienceGent,
-          // Ensure total_supply is properly formatted as string
-          total_supply: data.totalSupply
-        })
+        .update(scienceGentRecord)
         .eq('address', data.address);
     } else {
       // Insert new record
       console.log("Inserting new ScienceGent record");
+      
+      // Make sure total_supply is handled properly
+      const scienceGentRecord = {
+        ...scienceGent
+      };
+      
+      // Handle total_supply for new records
+      if (data.totalSupply) {
+        // Parse total supply as a number if possible
+        try {
+          const totalSupplyNumber = parseFloat(data.totalSupply);
+          if (!isNaN(totalSupplyNumber) && isFinite(totalSupplyNumber)) {
+            scienceGentRecord.total_supply = totalSupplyNumber;
+          }
+        } catch (e) {
+          console.warn("Could not parse totalSupply as number:", data.totalSupply);
+        }
+      }
+      
       saveOperation = supabase
         .from('sciencegents')
-        .insert({
-          ...scienceGent,
-          // Ensure total_supply is properly formatted as string
-          total_supply: data.totalSupply
-        });
+        .insert(scienceGentRecord);
     }
     
     // Execute the save operation

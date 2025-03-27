@@ -1,4 +1,3 @@
-
 /**
  * ScienceGent token data from blockchain
  */
@@ -61,6 +60,7 @@ export interface CapabilityDetail {
   feeInETH: string; // Stored as string to handle large numbers
   creator: string;
   domain?: string;
+  price?: number; // Add price property for UI display convenience
 }
 
 /**
