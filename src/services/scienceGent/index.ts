@@ -14,15 +14,6 @@ import {
   fetchScienceGentFromSupabase
 } from './supabase';
 
-// Import calculation utilities
-import { 
-  fetchCurrentEthPrice, 
-  calculateTokenPrice 
-} from '@/utils/scienceGentCalculations';
-
-// Import ethers library
-import { ethers } from 'ethers';
-
 // Export types
 export type {
   ScienceGentData,
@@ -67,41 +58,7 @@ export const syncScienceGent = async (address: string): Promise<boolean> => {
     }
     
     // Save to Supabase
-    const savedData = await saveScienceGentToSupabase(scienceGentData, tokenStats);
-    
-    if (!savedData) {
-      throw new Error("Failed to save ScienceGent data to Supabase");
-    }
-    
-    // Verify market cap calculation
-    const ethPrice = await fetchCurrentEthPrice();
-    const tokenPrice = calculateTokenPrice(tokenStats.currentPrice);
-    const priceUSD = tokenPrice * ethPrice;
-    
-    // Ensure totalSupply is properly formatted
-    let totalSupply: number;
-    try {
-      if (typeof scienceGentData.totalSupply === 'string' && 
-          scienceGentData.totalSupply.length > 18) {
-        totalSupply = parseFloat(ethers.utils.formatEther(scienceGentData.totalSupply));
-      } else {
-        totalSupply = parseFloat(String(scienceGentData.totalSupply || '0'));
-      }
-    } catch (e) {
-      console.warn("Failed to format totalSupply, using direct parse");
-      totalSupply = parseFloat(String(scienceGentData.totalSupply || '0'));
-    }
-    
-    const expectedMarketCap = priceUSD * totalSupply;
-    
-    console.log("Market cap verification:", {
-      tokenPrice,
-      ethPrice,
-      priceUSD,
-      totalSupply,
-      expectedMarketCap,
-      calculation: `${priceUSD} * ${totalSupply} = ${expectedMarketCap}`
-    });
+    await saveScienceGentToSupabase(scienceGentData, tokenStats);
     
     const { toast } = await import('@/components/ui/use-toast');
     toast({

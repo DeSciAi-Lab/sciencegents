@@ -115,37 +115,12 @@ export const calculateMarketCap = (
   totalSupply: string | number
 ): number => {
   try {
-    // Convert totalSupply to a proper number if it's a string
-    let supply: number;
+    // Convert totalSupply to number if it's a string
+    const supply = typeof totalSupply === 'string' 
+      ? parseFloat(ethers.utils.formatEther(totalSupply))
+      : totalSupply;
     
-    if (typeof totalSupply === 'string') {
-      // Check if it's a Wei string that needs to be formatted
-      if (totalSupply.length > 18) {
-        try {
-          supply = parseFloat(ethers.utils.formatEther(totalSupply));
-        } catch (e) {
-          console.warn("Failed to format totalSupply as ETH, using direct parse");
-          supply = parseFloat(totalSupply);
-        }
-      } else {
-        supply = parseFloat(totalSupply);
-      }
-    } else {
-      supply = totalSupply;
-    }
-    
-    // Ensure values are valid numbers
-    if (isNaN(tokenPrice) || isNaN(supply)) {
-      console.warn("Invalid inputs for market cap calculation", { tokenPrice, supply });
-      return 0;
-    }
-    
-    const marketCap = tokenPrice * supply;
-    
-    // Log the calculation for debugging
-    console.log("Market cap calculation:", { tokenPrice, supply, marketCap });
-    
-    return marketCap;
+    return tokenPrice * supply;
   } catch (error) {
     console.error("Error calculating market cap:", error);
     return 0;
@@ -159,10 +134,7 @@ export const calculateMarketCap = (
  * @returns Token price in USD
  */
 export const calculateTokenPriceUSD = (ethPrice: number, tokenPrice: number): number => {
-  // Log the calculation for debugging
-  const result = ethPrice * tokenPrice;
-  console.log("Token price USD calculation:", { ethPrice, tokenPrice, result });
-  return result;
+  return ethPrice * tokenPrice;
 };
 
 /**
@@ -172,18 +144,7 @@ export const calculateTokenPriceUSD = (ethPrice: number, tokenPrice: number): nu
  * @returns Market cap in USD
  */
 export const calculateMarketCapUSD = (priceUSD: number, totalSupply: number): number => {
-  // Ensure values are valid numbers
-  if (isNaN(priceUSD) || isNaN(totalSupply)) {
-    console.warn("Invalid inputs for USD market cap calculation", { priceUSD, totalSupply });
-    return 0;
-  }
-  
-  const marketCapUSD = priceUSD * totalSupply;
-  
-  // Log the calculation for debugging
-  console.log("Market cap USD calculation:", { priceUSD, totalSupply, marketCapUSD });
-  
-  return marketCapUSD;
+  return priceUSD * totalSupply;
 };
 
 /**
@@ -217,28 +178,10 @@ export const getTokenMetrics = async (
   // Fetch current ETH price
   const ethPrice = await fetchCurrentEthPrice();
   
-  // Ensure totalSupply is properly formatted
-  let formattedTotalSupply: number;
-  try {
-    formattedTotalSupply = parseFloat(ethers.utils.formatEther(totalSupply));
-  } catch (e) {
-    console.warn("Failed to format totalSupply as ETH, using direct parse");
-    formattedTotalSupply = parseFloat(totalSupply);
-  }
-  
   // Calculate USD values
   const tokenPriceUSD = calculateTokenPriceUSD(ethPrice, tokenPrice);
-  const marketCap = calculateMarketCap(tokenPrice, formattedTotalSupply);
-  const marketCapUSD = tokenPriceUSD * formattedTotalSupply;
-  
-  console.log("Token metrics calculation:", {
-    tokenPrice,
-    ethPrice,
-    tokenPriceUSD,
-    formattedTotalSupply,
-    marketCap,
-    marketCapUSD
-  });
+  const marketCap = calculateMarketCap(tokenPrice, totalSupply);
+  const marketCapUSD = calculateMarketCapUSD(tokenPriceUSD, parseFloat(ethers.utils.formatEther(totalSupply)));
   
   const virtualETH = tokenStats.virtualETH
     ? parseFloat(ethers.utils.formatEther(tokenStats.virtualETH))
