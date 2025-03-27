@@ -111,3 +111,24 @@ export const getTokenMetrics = (
     isMigrationEligible: maturityProgress >= 100,
   };
 };
+
+/**
+ * Fetches the current ETH price in USD
+ * @returns Promise resolving to ETH price in USD
+ */
+export const fetchCurrentEthPrice = async (): Promise<number> => {
+  try {
+    // Use CoinGecko API to get the latest ETH price in USD
+    const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd');
+    const data = await response.json();
+    
+    if (data?.ethereum?.usd) {
+      return data.ethereum.usd;
+    }
+    
+    throw new Error('Could not fetch ETH price');
+  } catch (error) {
+    console.error('Error fetching ETH price:', error);
+    return 1800; // Default fallback price if API fails
+  }
+};

@@ -1,137 +1,145 @@
 
-import { toast } from '@/components/ui/use-toast';
-import { 
-  syncScienceGent,
-  syncAllScienceGentsFromBlockchain,
-  syncAllCreationTimestampsFromBlockchain
-} from '@/services/scienceGent';
+import { fetchScienceGentFromBlockchain, fetchTokenStatsFromBlockchain, syncAllScienceGentsFromBlockchain, syncAllCreationTimestampsFromBlockchain } from '@/services/scienceGent/blockchain';
+import { saveScienceGentToSupabase } from '@/services/scienceGent/supabase';
+import { fetchCurrentEthPrice } from '@/utils/scienceGentCalculations';
 import { supabase } from '@/integrations/supabase/client';
+import { ethers } from 'ethers';
 
 /**
- * Syncs all ScienceGents from blockchain to Supabase
- * @returns Promise that resolves with sync stats
+ * Syncs all ScienceGents from the blockchain to Supabase
+ * @returns Object with sync counts and errors
  */
-export const syncAllScienceGents = async (): Promise<{ syncCount: number; errorCount: number }> => {
+export const syncAllScienceGents = async () => {
   try {
-    console.log("Starting sync of all ScienceGents");
-    
-    // Get all sciencegent addresses from Supabase
-    const { data: scienceGents, error } = await supabase
-      .from('sciencegents')
-      .select('address')
-      .order('created_at', { ascending: false });
-    
-    if (error) {
-      throw new Error(`Failed to fetch ScienceGent addresses: ${error.message}`);
-    }
-    
-    if (!scienceGents || scienceGents.length === 0) {
-      toast({
-        title: "No ScienceGents Found",
-        description: "There are no ScienceGents to sync"
-      });
-      return { syncCount: 0, errorCount: 0 };
-    }
-    
-    // First sync all creation timestamps
-    await syncAllCreationTimestamps();
-    
-    // Then sync full token details
-    const totalTokens = scienceGents.length;
-    let successCount = 0;
-    let errorCount = 0;
-    
-    // Process tokens in batches to avoid rate limits
-    const batchSize = 5;
-    for (let i = 0; i < scienceGents.length; i += batchSize) {
-      const batch = scienceGents.slice(i, i + batchSize);
-      
-      // Process batch in parallel
-      await Promise.all(batch.map(async (sg) => {
-        try {
-          await syncScienceGent(sg.address);
-          successCount++;
-        } catch (err) {
-          console.error(`Failed to sync ${sg.address}:`, err);
-          errorCount++;
-          // Continue with other tokens
-        }
-      }));
-      
-      // Report progress
-      console.log(`Synced ${Math.min(i + batchSize, totalTokens)} of ${totalTokens} ScienceGents`);
-    }
-    
-    toast({
-      title: "Sync Complete",
-      description: `Successfully synced ${successCount} of ${totalTokens} ScienceGents`
-    });
-    
-    return { syncCount: successCount, errorCount };
-  } catch (error) {
-    console.error("Error syncing all ScienceGents:", error);
-    toast({
-      title: "Sync Failed",
-      description: error.message || "Failed to sync ScienceGents",
-      variant: "destructive"
-    });
-    return { syncCount: 0, errorCount: 1 };
-  }
-};
-
-/**
- * Syncs a specific token by address
- * @param address Token address
- * @returns Promise that resolves when sync is complete
- */
-export const syncSpecificToken = async (address: string): Promise<boolean> => {
-  try {
-    await syncScienceGent(address);
-    return true;
-  } catch (error) {
-    console.error(`Error syncing token ${address}:`, error);
-    return false;
-  }
-};
-
-/**
- * Syncs a single ScienceGent from blockchain to Supabase
- * @param address ScienceGent address
- * @returns Promise that resolves with sync success status
- */
-export const syncSingleScienceGent = async (address: string): Promise<boolean> => {
-  try {
-    console.log("Syncing single ScienceGent:", address);
-    await syncScienceGent(address);
-    return true;
-  } catch (error) {
-    console.error(`Error syncing ScienceGent ${address}:`, error);
-    return false;
-  }
-};
-
-/**
- * Syncs creation timestamps for all ScienceGents from blockchain
- * @returns Promise that resolves with sync stats
- */
-export const syncAllCreationTimestamps = async (): Promise<{ syncCount: number; errorCount: number }> => {
-  try {
-    console.log("Starting sync of all creation timestamps");
-    const result = await syncAllCreationTimestampsFromBlockchain();
-    
-    toast({
-      title: "Timestamp Sync Complete",
-      description: `Successfully synced ${result.syncCount} timestamps with ${result.errorCount} errors`
-    });
-    
+    const result = await syncAllScienceGentsFromBlockchain();
     return result;
   } catch (error) {
-    console.error("Error syncing timestamps:", error);
-    toast({
-      title: "Timestamp Sync Failed",
-      description: error.message || "Failed to sync creation timestamps",
-      variant: "destructive"
-    });
-    return { syncCount: 0, errorCount: 1 };
+    console.error("Error in syncAllScienceGents:", error);
+    throw error;
+  }
+};
+
+/**
+ * Syncs all creation timestamps for ScienceGents
+ * @returns Object with sync counts and errors
+ */
+export const syncAllCreationTimestamps = async () => {
+  try {
+    const result = await syncAllCreationTimestampsFromBlockchain();
+    return result;
+  } catch (error) {
+    console.error("Error in syncAllCreationTimestamps:", error);
+    throw error;
+  }
+};
+
+/**
+ * Syncs a specific ScienceGent token from blockchain to Supabase
+ * Includes price data and market cap calculations
+ * @param address Token address
+ * @returns The updated token data or null if error
+ */
+export const syncScienceGent = async (address: string) => {
+  try {
+    console.log("Syncing token:", address);
+    
+    // Fetch token data from blockchain
+    const tokenData = await fetchScienceGentFromBlockchain(address);
+    if (!tokenData) {
+      console.error("Token not found on blockchain");
+      return null;
+    }
+    
+    // Fetch token stats from blockchain
+    const tokenStats = await fetchTokenStatsFromBlockchain(address);
+    if (!tokenStats) {
+      console.error("Token stats not found on blockchain");
+      return null;
+    }
+    
+    // Get current ETH price in USD for USD price calculation
+    let ethPriceUsd = 0;
+    try {
+      ethPriceUsd = await fetchCurrentEthPrice();
+    } catch (error) {
+      console.error("Error fetching ETH price, using default value:", error);
+      ethPriceUsd = 1800; // Default fallback value
+    }
+    
+    // Calculate USD price and market cap
+    let tokenPriceEth = 0;
+    if (tokenStats.currentPrice) {
+      // Convert from wei to ETH
+      tokenPriceEth = parseFloat(ethers.utils.formatEther(tokenStats.currentPrice));
+    }
+    const priceUsd = tokenPriceEth * ethPriceUsd;
+    
+    // Calculate market cap (total supply * price in USD)
+    let totalSupply = 0;
+    if (tokenData.totalSupply) {
+      totalSupply = parseFloat(ethers.utils.formatEther(tokenData.totalSupply));
+    }
+    const marketCap = priceUsd * totalSupply;
+    
+    // Save to Supabase with additional calculated fields
+    const enrichedTokenData = {
+      ...tokenData,
+      price_usd: priceUsd,
+      market_cap: marketCap
+    };
+    
+    // Save to Supabase
+    const savedData = await saveScienceGentToSupabase(enrichedTokenData, tokenStats);
+    
+    // After saving, fetch the latest data to return to client
+    const { data, error } = await supabase
+      .from('sciencegents')
+      .select('*')
+      .eq('address', address)
+      .single();
+      
+    if (error) {
+      console.error("Error fetching updated token data:", error);
+      return savedData;
+    }
+    
+    return data;
+  } catch (error) {
+    console.error("Error syncing token:", error);
+    throw error;
+  }
+};
+
+/**
+ * Schedules recurring token price updates
+ * @param tokenAddress Token address to update
+ * @param intervalSeconds Seconds between updates (default: 30)
+ * @returns Interval ID that can be used to clear the interval
+ */
+export const scheduleTokenPriceUpdates = (tokenAddress: string, intervalSeconds = 30) => {
+  if (!tokenAddress) return null;
+  
+  console.log(`Scheduling price updates for ${tokenAddress} every ${intervalSeconds} seconds`);
+  
+  const intervalId = setInterval(async () => {
+    try {
+      await syncScienceGent(tokenAddress);
+      console.log(`Updated price data for ${tokenAddress}`);
+    } catch (error) {
+      console.error(`Error updating price for ${tokenAddress}:`, error);
+    }
+  }, intervalSeconds * 1000);
+  
+  return intervalId;
+};
+
+/**
+ * Stops recurring token price updates
+ * @param intervalId Interval ID returned from scheduleTokenPriceUpdates
+ */
+export const stopTokenPriceUpdates = (intervalId: number | null) => {
+  if (intervalId) {
+    clearInterval(intervalId);
+    console.log("Stopped token price updates");
   }
 };
