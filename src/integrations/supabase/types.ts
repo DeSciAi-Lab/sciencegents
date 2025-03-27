@@ -221,6 +221,7 @@ export type Database = {
           bio: string | null
           collected_fees: number | null
           created_at: string | null
+          created_on_chain_at: string | null
           creator_address: string | null
           description: string | null
           developer_email: string | null
@@ -232,7 +233,6 @@ export type Database = {
           domain: string | null
           id: string
           is_migrated: boolean | null
-          last_price_update: string | null
           last_synced_at: string | null
           market_cap: number | null
           maturity_deadline: number | null
@@ -241,7 +241,6 @@ export type Database = {
           name: string
           persona: string | null
           price_change_24h: number | null
-          price_usd: number | null
           profile_pic: string | null
           remaining_maturity_time: number | null
           socials: Json | null
@@ -259,6 +258,7 @@ export type Database = {
           bio?: string | null
           collected_fees?: number | null
           created_at?: string | null
+          created_on_chain_at?: string | null
           creator_address?: string | null
           description?: string | null
           developer_email?: string | null
@@ -270,7 +270,6 @@ export type Database = {
           domain?: string | null
           id?: string
           is_migrated?: boolean | null
-          last_price_update?: string | null
           last_synced_at?: string | null
           market_cap?: number | null
           maturity_deadline?: number | null
@@ -279,7 +278,6 @@ export type Database = {
           name: string
           persona?: string | null
           price_change_24h?: number | null
-          price_usd?: number | null
           profile_pic?: string | null
           remaining_maturity_time?: number | null
           socials?: Json | null
@@ -297,6 +295,7 @@ export type Database = {
           bio?: string | null
           collected_fees?: number | null
           created_at?: string | null
+          created_on_chain_at?: string | null
           creator_address?: string | null
           description?: string | null
           developer_email?: string | null
@@ -308,7 +307,6 @@ export type Database = {
           domain?: string | null
           id?: string
           is_migrated?: boolean | null
-          last_price_update?: string | null
           last_synced_at?: string | null
           market_cap?: number | null
           maturity_deadline?: number | null
@@ -317,7 +315,6 @@ export type Database = {
           name?: string
           persona?: string | null
           price_change_24h?: number | null
-          price_usd?: number | null
           profile_pic?: string | null
           remaining_maturity_time?: number | null
           socials?: Json | null

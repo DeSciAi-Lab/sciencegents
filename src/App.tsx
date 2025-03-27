@@ -1,28 +1,39 @@
+import React from 'react';
+import { Routes, Route } from 'react-router-dom';
+import './App.css';
 
-import { Outlet } from 'react-router-dom';
-import { useEffect } from 'react';
-import { Providers } from './providers';
-import { initBackgroundPriceSync } from './services/scienceGent/backgroundSync';
+// Pages
+import Index from './pages/Index';
+import Dashboard from './pages/Dashboard';
+import Explore from './pages/Explore';
+import CreateScienceGent from './pages/CreateScienceGent';
+import ScienceGentDetails from './pages/ScienceGentDetails';
+import CreateCapability from './pages/CreateCapability';
+import ExploreCapabilities from './pages/ExploreCapabilities';
+import CapabilityDetails from './pages/CapabilityDetails';
+import Admin from './pages/Admin';
+import NotFound from './pages/NotFound';
 
-export default function App() {
-  // Initialize background price syncing
-  useEffect(() => {
-    try {
-      // Update 5 tokens every 5 minutes
-      const cleanup = initBackgroundPriceSync(5, 5);
-      
-      // Clean up on unmount
-      return cleanup;
-    } catch (error) {
-      console.error("Error initializing background price sync:", error);
-      // Return empty cleanup function to avoid errors
-      return () => {};
-    }
-  }, []);
-  
+import { EthPriceProvider } from './context/EthPriceContext';
+
+function App() {
   return (
-    <Providers>
-      <Outlet />
-    </Providers>
+    <EthPriceProvider>
+      <Routes>
+        <Route path="/" element={<Index />} />
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/dashboard/:tab" element={<Dashboard />} />
+        <Route path="/sciencegents" element={<Explore />} />
+        <Route path="/sciencegent/:address" element={<ScienceGentDetails />} />
+        <Route path="/create-sciencegent" element={<CreateScienceGent />} />
+        <Route path="/capabilities" element={<ExploreCapabilities />} />
+        <Route path="/capability/:id" element={<CapabilityDetails />} />
+        <Route path="/create-capability" element={<CreateCapability />} />
+        <Route path="/admin" element={<Admin />} />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </EthPriceProvider>
   );
 }
+
+export default App;

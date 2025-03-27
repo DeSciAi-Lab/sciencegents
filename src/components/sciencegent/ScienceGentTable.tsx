@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -31,7 +30,6 @@ const ScienceGentTable: React.FC<ScienceGentTableProps> = ({
   isLoading = false
 }) => {
   const navigate = useNavigate();
-  const { ethPrice, formatEthToUsd } = useEthPriceContext();
 
   // Render star rating (1-5)
   const renderRating = (rating: number) => {
@@ -96,7 +94,7 @@ const ScienceGentTable: React.FC<ScienceGentTableProps> = ({
   // Loading row placeholder
   const renderLoadingRow = () => (
     <TableRow>
-      <TableCell colSpan={13} className="h-24 text-center">
+      <TableCell colSpan={11} className="h-24 text-center">
         <div className="flex flex-col items-center justify-center">
           <svg className="animate-spin h-6 w-6 text-gray-500 mb-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
@@ -121,15 +119,14 @@ const ScienceGentTable: React.FC<ScienceGentTableProps> = ({
               {renderSortableHeader('NAME', 'name')}
             </TableHead>
             <TableHead>{renderSortableHeader('Age', 'age')}</TableHead>
-            <TableHead>{renderSortableHeader('Revenue', 'revenue')}</TableHead>
-            <TableHead>Rating</TableHead>
-            <TableHead>Maturity</TableHead>
-            <TableHead>Domain</TableHead>
             <TableHead>{renderSortableHeader('Market cap', 'marketCap')}</TableHead>
             <TableHead>24h Chg</TableHead>
             <TableHead>24h vol</TableHead>
-            <TableHead>Price (ETH)</TableHead>
-            <TableHead>Price (USD)</TableHead>
+            <TableHead>{renderSortableHeader('Revenue', 'revenue')}</TableHead>
+            <TableHead>Price</TableHead>
+            <TableHead>Rating</TableHead>
+            <TableHead>Maturity</TableHead>
+            <TableHead>Domain</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -137,7 +134,7 @@ const ScienceGentTable: React.FC<ScienceGentTableProps> = ({
             renderLoadingRow()
           ) : scienceGents.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={13} className="h-24 text-center">
+              <TableCell colSpan={12} className="h-24 text-center">
                 <p className="text-gray-500">No ScienceGents found</p>
               </TableCell>
             </TableRow>
@@ -195,7 +192,13 @@ const ScienceGentTable: React.FC<ScienceGentTableProps> = ({
                   </div>
                 </TableCell>
                 <TableCell>{gent.age}</TableCell>
+                <TableCell>{gent.marketCap > 1000 ? `${(gent.marketCap/1000).toFixed(0)}k` : gent.marketCap}</TableCell>
+                <TableCell className={`${gent.priceChange24h >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {gent.priceChange24h >= 0 ? '+' : ''}{gent.priceChange24h}%
+                </TableCell>
+                <TableCell>{gent.volume24h > 1000 ? `${(gent.volume24h/1000).toFixed(0)}k` : gent.volume24h}</TableCell>
                 <TableCell>{gent.revenue} DSI</TableCell>
+                <TableCell>{gent.tokenPrice.toFixed(3)}</TableCell>
                 <TableCell>{renderRating(gent.rating)}</TableCell>
                 <TableCell>{renderMaturityProgress(gent.maturityProgress)}</TableCell>
                 <TableCell>
@@ -203,13 +206,6 @@ const ScienceGentTable: React.FC<ScienceGentTableProps> = ({
                     {gent.domain.toLowerCase()}
                   </Badge>
                 </TableCell>
-                <TableCell>{gent.marketCap > 1000 ? `${(gent.marketCap/1000).toFixed(0)}k` : gent.marketCap}</TableCell>
-                <TableCell className={`${gent.priceChange24h >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {gent.priceChange24h >= 0 ? '+' : ''}{gent.priceChange24h}%
-                </TableCell>
-                <TableCell>{gent.volume24h > 1000 ? `${(gent.volume24h/1000).toFixed(0)}k` : gent.volume24h}</TableCell>
-                <TableCell>{gent.tokenPrice.toFixed(6)}</TableCell>
-                <TableCell>{formatEthToUsd(gent.tokenPrice)}</TableCell>
               </TableRow>
             ))
           )}

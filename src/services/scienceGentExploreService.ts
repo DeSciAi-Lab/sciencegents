@@ -1,299 +1,329 @@
-import { supabase } from '@/integrations/supabase/client';
-import { formatDistanceToNow } from 'date-fns';
-import { ethers } from 'ethers';
-import { contractConfig } from '@/utils/contractConfig';
-import { updateTokenPrice, shouldUpdateTokenPrice, updateAllTokenPrices } from './priceUpdateService';
 
+import { supabase } from "@/integrations/supabase/client";
+import { formatDistanceToNow } from "date-fns";
+import { ethers } from "ethers";
+import { getProvider } from "@/services/walletService";
+import { contractConfig } from "@/utils/contractConfig";
+
+// Mock ABIs for development until we have the real ones
+// These will be replaced with actual ABIs from the contract config once available
+const mockScienceGentsSwapABI = [
+  "function getTokenStats(address token) view returns (uint256, uint256, uint256, uint256, bool, address, uint256, uint256, bool, uint256, uint256, uint256, bool)"
+];
+
+const mockScienceGentsFactoryABI = [
+  "function getTokenDetails(address token) view returns (string, string, uint256, address, bool, bool, uint256, uint256, uint256, bool)",
+  "function getTokenCapabilitiesPage(address token, uint256 offset, uint256 limit) view returns (string[])"
+];
+
+// Interface for ScienceGent data structure
 export interface ScienceGentListItem {
   id: string;
-  address: string;
   name: string;
-  symbol: string;
+  address: string;
   profilePic?: string;
-  description?: string;
-  tokenPrice: number;
-  tokenPriceUsd?: number;
-  priceChange24h: number;
   marketCap: number;
-  volume24h: number;
+  tokenPrice: number;
   age: string;
-  revenue: number;
-  rating: number;
+  roi: number;
   domain: string;
-  isCurated: boolean;
-  maturityProgress: number;
+  featured?: boolean;
   isMigrated?: boolean;
   migrationEligible?: boolean;
-  roi: number;
-}
-
-interface ScienceGentFilter {
-  domain?: string[];
-  maturityStatus?: ('Immature' | 'Near Maturity' | 'Ready for Migration' | 'Migrated')[];
-  isCurated?: boolean;
-  searchTerm?: string;
-}
-
-export interface FilterOption {
-  label: string;
-  value: string;
-  count: number;
-}
-
-// Type for database row
-interface ScienceGentDbRow {
-  id: string;
-  address: string;
-  name: string;
   symbol: string;
-  profile_pic?: string;
-  description?: string;
-  token_price: number;
-  price_usd?: number;
-  price_change_24h: number;
-  market_cap: number;
-  domain: string;
-  is_curated: boolean;
-  maturity_progress: number;
-  is_migrated: boolean;
-  migration_eligible: boolean;
-  total_supply?: string;
-  created_at?: string;
-  last_price_update?: string;
-  sciencegent_stats?: { volume_24h: number; holders: number; transactions: number }[];
+  volume24h: number;
+  revenue: number;
+  priceChange24h: number;
+  rating: number;
+  maturityStatus: string;
+  isCurated?: boolean;
+  capabilities?: string[];
+  creationTimestamp?: string;
+  maturityProgress?: number; // Added as part of the interface
 }
 
-export async function getScienceGentsList(
-  sort: keyof ScienceGentListItem = 'marketCap',
-  order: 'asc' | 'desc' = 'desc',
-  page: number = 1,
-  pageSize: number = 10,
-  filters: ScienceGentFilter = {}
-): Promise<{ data: ScienceGentListItem[], totalCount: number }> {
+/**
+ * Fetches ScienceGent data from Supabase for the explore page
+ */
+export const fetchScienceGents = async (): Promise<ScienceGentListItem[]> => {
   try {
-    console.info('Fetching ScienceGents from Supabase');
-    
-    // Use any type to bypass TypeScript's deep type analysis
-    let query: any = supabase
-      .from('sciencegents')
-      .select(`
-        *,
-        sciencegent_stats (
-          volume_24h,
-          holders,
-          transactions
-        )
-      `, { count: 'exact' });
-    
-    // Apply filters one by one
-    if (filters.domain && filters.domain.length > 0) {
-      query = query.in('domain', filters.domain);
-    }
-    
-    if (filters.isCurated !== undefined) {
-      // Use the database column name is_curated
-      query = query.eq('is_curated', filters.isCurated);
-    }
-    
-    if (filters.searchTerm) {
-      query = query.or(`name.ilike.%${filters.searchTerm}%,symbol.ilike.%${filters.searchTerm}%,description.ilike.%${filters.searchTerm}%,address.ilike.%${filters.searchTerm}%`);
-    }
-    
-    // Map frontend sort fields to database fields
-    const sortMapping: Record<string, string> = {
-      'marketCap': 'market_cap',
-      'tokenPrice': 'token_price',
-      'age': 'created_at',
-      'name': 'name',
-      'priceChange24h': 'price_change_24h'
-    };
-    
-    const dbSortField = sortMapping[sort as string] || sort;
-    
-    // Pagination
-    const from = (page - 1) * pageSize;
-    const to = from + pageSize - 1;
-    
-    // Execute query
-    const { data: scienceGents, count, error } = await query
-      .order(dbSortField as string, { ascending: order === 'asc' })
-      .range(from, to);
-    
-    if (error) {
-      console.error('Error fetching ScienceGents:', error);
-      throw error;
-    }
-    
-    console.info('Found', scienceGents?.length, 'ScienceGents');
+    console.log("Fetching ScienceGents from Supabase");
 
-    // Start a background update of prices for tokens that need it
-    void updateAllTokenPrices(5); // Update up to 5 tokens in background
-    
-    // Transform data and calculate additional metrics
-    const transformedData: ScienceGentListItem[] = [];
-    
-    if (scienceGents) {
-      for (const sg of scienceGents as ScienceGentDbRow[]) {
-        try {
-          // Use cached data from Supabase
-          transformedData.push({
-            id: sg.id,
-            address: sg.address,
-            name: sg.name,
-            symbol: sg.symbol,
-            profilePic: sg.profile_pic,
-            description: sg.description,
-            tokenPrice: sg.token_price || 0,
-            tokenPriceUsd: sg.price_usd || 0,
-            priceChange24h: sg.price_change_24h || 0,
-            marketCap: sg.market_cap || 0,
-            volume24h: sg.sciencegent_stats?.[0]?.volume_24h || 0,
-            age: sg.created_at ? formatDistanceToNow(new Date(sg.created_at), { addSuffix: false }) : 'Unknown',
-            revenue: Math.floor(Math.random() * 10000), // Placeholder
-            rating: Math.floor(Math.random() * 5) + 1, // Placeholder
-            domain: sg.domain || 'General',
-            isCurated: sg.is_curated || false,
-            maturityProgress: sg.maturity_progress || 0,
-            isMigrated: sg.is_migrated || false,
-            migrationEligible: sg.migration_eligible || false,
-            roi: Math.floor(Math.random() * 100) - 20 // Random ROI between -20 and 80
-          });
-          
-          // Check if this token needs price update - if yes, do it in the background
-          if (sg.last_price_update) {
-            const lastUpdate = new Date(sg.last_price_update);
-            const now = new Date();
-            const diffMs = now.getTime() - lastUpdate.getTime();
-            const diffMinutes = diffMs / (1000 * 60);
-            
-            // If price is older than 10 minutes, update in background
-            if (diffMinutes > 10) {
-              void updateTokenPrice(sg.address);
-            }
-          }
-        } catch (err) {
-          console.error(`Error processing ScienceGent ${sg.address}:`, err);
-          
-          // Still add the token with default values if token stats fetching fails
-          transformedData.push({
-            id: sg.id,
-            address: sg.address,
-            name: sg.name,
-            symbol: sg.symbol,
-            profilePic: sg.profile_pic,
-            description: sg.description,
-            tokenPrice: sg.token_price || 0,
-            tokenPriceUsd: sg.price_usd || 0,
-            priceChange24h: sg.price_change_24h || 0,
-            marketCap: sg.market_cap || 0,
-            volume24h: sg.sciencegent_stats?.[0]?.volume_24h || 0,
-            age: sg.created_at ? formatDistanceToNow(new Date(sg.created_at), { addSuffix: false }) : 'Unknown',
-            revenue: Math.floor(Math.random() * 10000), // Placeholder
-            rating: Math.floor(Math.random() * 5) + 1, // Placeholder
-            domain: sg.domain || 'General',
-            isCurated: sg.is_curated || false,
-            maturityProgress: sg.maturity_progress || 0,
-            isMigrated: sg.is_migrated || false,
-            migrationEligible: sg.migration_eligible || false,
-            roi: Math.floor(Math.random() * 100) - 20 // Random ROI between -20 and 80
-          });
-        }
-      }
-    }
-    
-    return { 
-      data: transformedData,
-      totalCount: count || 0
-    };
-  } catch (error) {
-    console.error('Error in getScienceGentsList:', error);
-    throw error;
-  }
-}
-
-export async function fetchScienceGents(): Promise<ScienceGentListItem[]> {
-  try {
-    const { data } = await getScienceGentsList('marketCap', 'desc', 1, 50);
-    return data;
-  } catch (error) {
-    console.error('Error fetching ScienceGents:', error);
-    return [];
-  }
-}
-
-export function sortScienceGents(
-  gents: ScienceGentListItem[],
-  sortBy: keyof ScienceGentListItem,
-  sortOrder: 'asc' | 'desc'
-): ScienceGentListItem[] {
-  return [...gents].sort((a, b) => {
-    let comparison = 0;
-    if (a[sortBy] < b[sortBy]) {
-      comparison = -1;
-    } else if (a[sortBy] > b[sortBy]) {
-      comparison = 1;
-    }
-    return sortOrder === 'asc' ? comparison : -comparison;
-  });
-}
-
-export function filterScienceGents(
-  gents: ScienceGentListItem[],
-  filters: ScienceGentFilter
-): ScienceGentListItem[] {
-  return gents.filter(gent => {
-    // Apply domain filter
-    if (filters.domain && filters.domain.length > 0 && !filters.domain.includes(gent.domain.toLowerCase())) {
-      return false;
-    }
-    
-    // Apply curation filter
-    if (filters.isCurated !== undefined && gent.isCurated !== filters.isCurated) {
-      return false;
-    }
-    
-    // Apply search filter
-    if (filters.searchTerm) {
-      const query = filters.searchTerm.toLowerCase();
-      return (
-        gent.name.toLowerCase().includes(query) ||
-        gent.symbol.toLowerCase().includes(query) ||
-        gent.address.toLowerCase().includes(query) ||
-        (gent.description && gent.description.toLowerCase().includes(query))
-      );
-    }
-    
-    return true;
-  });
-}
-
-export async function getDomainOptions(): Promise<FilterOption[]> {
-  try {
+    // Get ScienceGents with their stats
     const { data, error } = await supabase
       .from('sciencegents')
-      .select('domain')
-      .not('domain', 'is', null);
-    
+      .select(`
+        id, 
+        name, 
+        address, 
+        profile_pic, 
+        market_cap, 
+        token_price, 
+        created_at,
+        domain, 
+        virtual_eth,
+        symbol,
+        price_change_24h,
+        is_migrated,
+        migration_eligible,
+        maturity_progress,
+        agent_fee,
+        total_supply,
+        stats:sciencegent_stats(volume_24h, transactions, holders, trade_volume_eth)
+      `)
+      .order('market_cap', { ascending: false });
+
     if (error) {
-      console.error('Error fetching domain options:', error);
+      console.error("Error fetching ScienceGents:", error);
       throw error;
     }
-    
-    // Count occurrences of each domain
-    const domainCounts: Record<string, number> = {};
-    data.forEach(item => {
-      const domain = item.domain || 'General';
-      domainCounts[domain] = (domainCounts[domain] || 0) + 1;
+
+    if (!data || data.length === 0) {
+      console.log("No ScienceGents found");
+      return [];
+    }
+
+    console.log(`Found ${data.length} ScienceGents`);
+
+    // Format the data for the UI
+    const formattedData = data.map(item => {
+      // Calculate ROI (simplified calculation for now)
+      const virtualEth = item.virtual_eth || 0;
+      const volume = item.stats?.[0]?.volume_24h || 0;
+      
+      // Simple ROI formula: (volume / virtual_eth * 10) limited to reasonable range
+      const roi = virtualEth > 0 
+        ? Math.min(Math.max((volume / virtualEth * 10) - 5, -50), 100) 
+        : 0;
+      
+      // Calculate age from created_at
+      let age = "unknown";
+      if (item.created_at) {
+        try {
+          // Parse the timestamp and format it as a relative time
+          const creationDate = new Date(item.created_at);
+          age = formatDistanceToNow(creationDate, { addSuffix: false });
+        } catch (e) {
+          console.error("Error parsing creation date:", e, item.created_at);
+        }
+      }
+
+      // Featured status based on market cap or other criteria
+      const featured = item.market_cap > 500000;
+      
+      // Determine maturity status
+      let maturityStatus = "Immature";
+      if (item.is_migrated) {
+        maturityStatus = "Migrated";
+      } else if (item.migration_eligible) {
+        maturityStatus = "Ready";
+      } else if (item.maturity_progress && item.maturity_progress >= 50) {
+        maturityStatus = "Near";
+      }
+
+      // Calculate revenue for demo purposes based on market cap and agent fee
+      const agentFee = item.agent_fee || 2;
+      const revenue = Math.floor(item.market_cap * 0.1 * agentFee);
+      
+      // Rating based on transaction volume and maturity
+      const volumeScore = Math.min(5, Math.max(3, 3 + (item.stats?.[0]?.volume_24h || 0) / 1000));
+      const maturityScore = item.is_migrated ? 5 : (item.migration_eligible ? 4 : 3);
+      const rating = Math.round((volumeScore + maturityScore) / 2);
+
+      return {
+        id: item.id,
+        name: item.name,
+        address: item.address,
+        profilePic: item.profile_pic,
+        marketCap: item.market_cap || 0,
+        tokenPrice: item.token_price || 0,
+        age,
+        roi,
+        domain: item.domain || "General",
+        featured,
+        isMigrated: item.is_migrated || false,
+        migrationEligible: item.migration_eligible || false,
+        symbol: item.symbol || `${item.name.substring(0, 3).toUpperCase()}`,
+        volume24h: item.stats?.[0]?.volume_24h || 0,
+        revenue: revenue,
+        priceChange24h: item.price_change_24h || 0,
+        rating,
+        maturityStatus,
+        isCurated: Math.random() > 0.7, // Random for demo, will update with real data
+        creationTimestamp: item.created_at,
+        maturityProgress: item.maturity_progress
+      };
     });
-    
-    // Convert to array of FilterOptions
-    return Object.entries(domainCounts).map(([domain, count]) => ({
-      label: domain,
-      value: domain.toLowerCase(),
-      count
-    }));
+
+    return formattedData;
   } catch (error) {
-    console.error('Error in getDomainOptions:', error);
+    console.error("Error in fetchScienceGents:", error);
     return [];
   }
-}
+};
+
+/**
+ * Fetch blockchain details for a specific token
+ */
+export const fetchTokenBlockchainDetails = async (tokenAddress: string) => {
+  try {
+    const provider = await getProvider();
+    
+    // Create contract instances with mock ABIs for now
+    const swapContract = new ethers.Contract(
+      contractConfig.addresses.ScienceGentsSwap, 
+      mockScienceGentsSwapABI, 
+      provider
+    );
+    
+    const factoryContract = new ethers.Contract(
+      contractConfig.addresses.ScienceGentsFactory,
+      mockScienceGentsFactoryABI,
+      provider
+    );
+    
+    // Get token details
+    const tokenStats = await swapContract.getTokenStats(tokenAddress);
+    const tokenDetails = await factoryContract.getTokenDetails(tokenAddress);
+    
+    // Return formatted data
+    return {
+      tokenReserve: tokenStats.tokenReserve,
+      ethReserve: tokenStats.ethReserve,
+      virtualETH: tokenStats.virtualETH,
+      collectedFees: tokenStats.collectedFees,
+      tradingEnabled: tokenStats.tradingEnabled,
+      creator: tokenStats.creator,
+      creationTimestamp: tokenStats.creationTimestamp,
+      maturityDeadline: tokenStats.maturityDeadline,
+      isMigrated: tokenStats.migrated,
+      lpUnlockTime: tokenStats.lpUnlockTime,
+      lockedLPAmount: tokenStats.lockedLPAmount,
+      currentPrice: tokenStats.currentPrice,
+      migrationEligible: tokenStats.migrationEligible,
+      name: tokenDetails.name,
+      symbol: tokenDetails.symbol,
+      totalSupply: tokenDetails.totalSupply,
+      capabilities: await factoryContract.getTokenCapabilitiesPage(tokenAddress, 0, 100)
+    };
+  } catch (error) {
+    console.error("Error fetching blockchain details:", error);
+    return null;
+  }
+};
+
+/**
+ * Filters ScienceGents based on search query and domain
+ */
+export const filterScienceGents = (
+  scienceGents: ScienceGentListItem[],
+  searchQuery: string,
+  activeFilter: string
+): ScienceGentListItem[] => {
+  let result = [...scienceGents];
+  
+  // Apply domain filter if it's a domain
+  if (activeFilter !== 'all' && ['chemistry', 'genomics', 'physics', 'materials science', 'protein analysis', 'drug discovery', 'general'].includes(activeFilter)) {
+    result = result.filter(gent => 
+      gent.domain.toLowerCase() === activeFilter.toLowerCase()
+    );
+  }
+  
+  // Apply curation filter
+  if (activeFilter === 'curated') {
+    result = result.filter(gent => gent.isCurated);
+  } else if (activeFilter === 'uncurated') {
+    result = result.filter(gent => !gent.isCurated);
+  }
+  
+  // Apply maturity filter
+  if (activeFilter === 'migrated') {
+    result = result.filter(gent => gent.maturityStatus === 'Migrated');
+  } else if (activeFilter === 'ready') {
+    result = result.filter(gent => gent.maturityStatus === 'Ready');
+  } else if (activeFilter === 'immature') {
+    result = result.filter(gent => gent.maturityStatus === 'Immature' || gent.maturityStatus === 'Near');
+  }
+  
+  // Apply role filter (simplified for demo)
+  if (activeFilter === 'researcher' || activeFilter === 'reviewer' || activeFilter === 'assistant') {
+    // In a real app, this would filter based on actual role data
+    result = result.filter(() => Math.random() > 0.5);
+  }
+  
+  // Apply search query
+  if (searchQuery) {
+    const query = searchQuery.toLowerCase();
+    result = result.filter(gent => 
+      gent.name.toLowerCase().includes(query) || 
+      gent.address.toLowerCase().includes(query) ||
+      gent.symbol.toLowerCase().includes(query)
+    );
+  }
+  
+  return result;
+};
+
+/**
+ * Sorts ScienceGents based on sort criteria
+ */
+export const sortScienceGents = (
+  scienceGents: ScienceGentListItem[],
+  sortBy: keyof ScienceGentListItem,
+  sortOrder: 'asc' | 'desc'
+): ScienceGentListItem[] => {
+  return [...scienceGents].sort((a, b) => {
+    const valueA = a[sortBy];
+    const valueB = b[sortBy];
+    
+    // Handle string comparison differently
+    if (typeof valueA === 'string' && typeof valueB === 'string') {
+      return sortOrder === 'asc' 
+        ? valueA.localeCompare(valueB) 
+        : valueB.localeCompare(valueA);
+    }
+    
+    // Handle number comparison
+    if (sortOrder === 'asc') {
+      return valueA > valueB ? 1 : -1;
+    } else {
+      return valueA < valueB ? 1 : -1;
+    }
+  });
+};
+
+/**
+ * Get platform statistics from ScienceGents data
+ */
+export const getPlatformStats = (scienceGents: ScienceGentListItem[]) => {
+  // Calculate total stats
+  const totalScienceGents = scienceGents.length;
+  
+  // Sum up volumes across all tokens for "transactions"
+  const totalTransactions = scienceGents.reduce((sum, gent) => sum + Math.floor(gent.volume24h / 0.01), 0);
+  
+  // Sum up market caps for "total liquidity"
+  const totalLiquidity = scienceGents.reduce((sum, gent) => sum + gent.marketCap, 0);
+  
+  // Sum up revenues for "total revenue"
+  const totalRevenue = scienceGents.reduce((sum, gent) => sum + gent.revenue, 0);
+  
+  return {
+    totalScienceGents: formatStatValue(totalScienceGents),
+    totalTransactions: formatStatValue(totalTransactions),
+    totalLiquidity: formatStatValue(totalLiquidity),
+    totalRevenue: formatStatValue(totalRevenue)
+  };
+};
+
+/**
+ * Format stat values for display
+ */
+const formatStatValue = (value: number): string => {
+  if (value >= 1_000_000) {
+    return `${Math.round(value / 1_000_000)}M`;
+  } else if (value >= 1_000) {
+    return `${Math.round(value / 1_000)}k`;
+  }
+  return value.toString();
+};

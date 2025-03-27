@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, RefreshCcw } from 'lucide-react';
@@ -71,6 +72,7 @@ const Featured: React.FC<FeaturedProps> = ({
     }
   };
 
+  // Generate skeleton cards for loading state
   const renderSkeletons = () => {
     return Array(3).fill(0).map((_, index) => (
       <div key={`skeleton-${index}`} className="p-6 border rounded-lg bg-white shadow-sm">
@@ -160,10 +162,7 @@ const Featured: React.FC<FeaturedProps> = ({
             featuredGents.map((gent, index) => (
               <Reveal key={gent.id} delay={300 + (index * 100)} direction="up">
                 <div className="transition-all duration-300 hover:shadow-lg hover:translate-y-[-5px]">
-                  <ScienceGentCard 
-                    {...gent} 
-                    roi={gent.roi} 
-                  />
+                  <ScienceGentCard {...gent} />
                 </div>
               </Reveal>
             ))
