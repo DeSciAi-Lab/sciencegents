@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -48,13 +47,14 @@ const ScienceGentTable: React.FC<ScienceGentTableProps> = ({
   };
 
   // Render maturity progress
-  const renderMaturityProgress = (progress: number) => {
+  const renderMaturityProgress = (progress: number | undefined) => {
+    const displayProgress = progress ?? 0;
     return (
       <div className="w-full max-w-[150px]">
         <div className="h-2 bg-gray-200 rounded-full">
           <div 
             className="h-full rounded-full bg-blue-500" 
-            style={{ width: `${progress}%` }}
+            style={{ width: `${displayProgress}%` }}
           />
         </div>
       </div>
@@ -200,7 +200,7 @@ const ScienceGentTable: React.FC<ScienceGentTableProps> = ({
                 <TableCell>{gent.revenue} DSI</TableCell>
                 <TableCell>{gent.tokenPrice.toFixed(3)}</TableCell>
                 <TableCell>{renderRating(gent.rating)}</TableCell>
-                <TableCell>{renderMaturityProgress(gent.maturityProgress || 60)}</TableCell>
+                <TableCell>{renderMaturityProgress(gent.maturityProgress)}</TableCell>
                 <TableCell>
                   <Badge variant="outline" className="bg-gray-50">
                     {gent.domain.toLowerCase()}

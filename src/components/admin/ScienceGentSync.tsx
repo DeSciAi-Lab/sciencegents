@@ -7,11 +7,16 @@ import { syncAllScienceGents, syncAllCreationTimestamps } from '@/services/scien
 import { toast } from '@/components/ui/use-toast';
 import { Separator } from '@/components/ui/separator';
 
+interface SyncResult {
+  syncCount: number;
+  errorCount: number;
+}
+
 const ScienceGentSync = () => {
   const [isSyncing, setIsSyncing] = useState(false);
   const [isSyncingTimestamps, setIsSyncingTimestamps] = useState(false);
-  const [lastSyncResult, setLastSyncResult] = useState<{ syncCount: number; errorCount: number } | null>(null);
-  const [lastTimestampSyncResult, setLastTimestampSyncResult] = useState<{ syncCount: number; errorCount: number } | null>(null);
+  const [lastSyncResult, setLastSyncResult] = useState<SyncResult | null>(null);
+  const [lastTimestampSyncResult, setLastTimestampSyncResult] = useState<SyncResult | null>(null);
   const [lastSyncTime, setLastSyncTime] = useState<string | null>(null);
   const [lastTimestampSyncTime, setLastTimestampSyncTime] = useState<string | null>(null);
   const [syncMessage, setSyncMessage] = useState<string | null>(null);

@@ -9,9 +9,9 @@ import { supabase } from '@/integrations/supabase/client';
 
 /**
  * Syncs all ScienceGents from blockchain to Supabase
- * @returns Promise that resolves when sync is complete
+ * @returns Promise that resolves with sync stats
  */
-export const syncAllScienceGents = async (): Promise<boolean> => {
+export const syncAllScienceGents = async (): Promise<{ syncCount: number; errorCount: number }> => {
   try {
     console.log("Starting sync of all ScienceGents");
     
@@ -30,15 +30,16 @@ export const syncAllScienceGents = async (): Promise<boolean> => {
         title: "No ScienceGents Found",
         description: "There are no ScienceGents to sync"
       });
-      return false;
+      return { syncCount: 0, errorCount: 0 };
     }
     
     // First sync all creation timestamps
-    await syncAllCreationTimestampsFromBlockchain();
+    await syncAllCreationTimestamps();
     
     // Then sync full token details
     const totalTokens = scienceGents.length;
     let successCount = 0;
+    let errorCount = 0;
     
     // Process tokens in batches to avoid rate limits
     const batchSize = 5;
@@ -52,6 +53,7 @@ export const syncAllScienceGents = async (): Promise<boolean> => {
           successCount++;
         } catch (err) {
           console.error(`Failed to sync ${sg.address}:`, err);
+          errorCount++;
           // Continue with other tokens
         }
       }));
@@ -65,7 +67,7 @@ export const syncAllScienceGents = async (): Promise<boolean> => {
       description: `Successfully synced ${successCount} of ${totalTokens} ScienceGents`
     });
     
-    return true;
+    return { syncCount: successCount, errorCount };
   } catch (error) {
     console.error("Error syncing all ScienceGents:", error);
     toast({
@@ -73,7 +75,7 @@ export const syncAllScienceGents = async (): Promise<boolean> => {
       description: error.message || "Failed to sync ScienceGents",
       variant: "destructive"
     });
-    return false;
+    return { syncCount: 0, errorCount: 1 };
   }
 };
 
@@ -89,5 +91,47 @@ export const syncSpecificToken = async (address: string): Promise<boolean> => {
   } catch (error) {
     console.error(`Error syncing token ${address}:`, error);
     return false;
+  }
+};
+
+/**
+ * Syncs a single ScienceGent from blockchain to Supabase
+ * @param address ScienceGent address
+ * @returns Promise that resolves with sync success status
+ */
+export const syncSingleScienceGent = async (address: string): Promise<boolean> => {
+  try {
+    console.log("Syncing single ScienceGent:", address);
+    await syncScienceGent(address);
+    return true;
+  } catch (error) {
+    console.error(`Error syncing ScienceGent ${address}:`, error);
+    return false;
+  }
+};
+
+/**
+ * Syncs creation timestamps for all ScienceGents from blockchain
+ * @returns Promise that resolves with sync stats
+ */
+export const syncAllCreationTimestamps = async (): Promise<{ syncCount: number; errorCount: number }> => {
+  try {
+    console.log("Starting sync of all creation timestamps");
+    const result = await syncAllCreationTimestampsFromBlockchain();
+    
+    toast({
+      title: "Timestamp Sync Complete",
+      description: `Successfully synced ${result.syncCount} timestamps with ${result.errorCount} errors`
+    });
+    
+    return result;
+  } catch (error) {
+    console.error("Error syncing timestamps:", error);
+    toast({
+      title: "Timestamp Sync Failed",
+      description: error.message || "Failed to sync creation timestamps",
+      variant: "destructive"
+    });
+    return { syncCount: 0, errorCount: 1 };
   }
 };

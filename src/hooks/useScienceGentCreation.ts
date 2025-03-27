@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { ScienceGentFormData } from "@/types/sciencegent";
 import { 
@@ -8,9 +7,9 @@ import {
   createScienceGent,
   extractTokenAddressFromReceipt
 } from "@/services/scienceGentService";
+import { syncSingleScienceGent } from "@/services/scienceGentDataService";
 import { checkIfWalletIsConnected, connectWallet } from "@/utils/walletUtils";
 import { toast } from "@/components/ui/use-toast";
-import { syncSingleScienceGent } from "@/services/scienceGentDataService";
 import { useWallet } from "@/hooks/useWallet";
 
 export enum CreationStatus {
@@ -35,7 +34,6 @@ export const useScienceGentCreation = () => {
   const [isDSIApproved, setIsDSIApproved] = useState<boolean>(false);
   const isProcessingRef = useRef<boolean>(false);
 
-  // Fetch the launch fee on mount
   useEffect(() => {
     const fetchLaunchFee = async () => {
       try {
@@ -50,7 +48,6 @@ export const useScienceGentCreation = () => {
     fetchLaunchFee();
   }, []);
 
-  // Check DSI allowance when component mounts
   useEffect(() => {
     const checkAllowance = async () => {
       if (isConnected) {
@@ -67,7 +64,6 @@ export const useScienceGentCreation = () => {
     checkAllowance();
   }, [isConnected, launchFee]);
 
-  // Poll for token address if we have transaction hash but no token address
   useEffect(() => {
     let pollingInterval: NodeJS.Timeout | null = null;
     
@@ -82,25 +78,21 @@ export const useScienceGentCreation = () => {
             setTokenAddress(extractedAddress);
             setStatus(CreationStatus.Success);
             
-            // Automatically sync the new ScienceGent data
             syncNewScienceGent(extractedAddress);
           }
         } catch (err) {
           console.error("Error polling for token address:", err);
         }
       } else if (tokenAddress || status !== CreationStatus.WaitingConfirmation) {
-        // We have a token address or we're not waiting for confirmation, stop polling
         if (pollingInterval) clearInterval(pollingInterval);
       }
     };
     
-    // Start polling if needed
     if (transactionHash && !tokenAddress && status === CreationStatus.WaitingConfirmation) {
-      pollForTokenAddress(); // Initial check
-      pollingInterval = setInterval(pollForTokenAddress, 3000); // Then every 3 seconds
+      pollForTokenAddress();
+      pollingInterval = setInterval(pollForTokenAddress, 3000);
     }
     
-    // Clean up
     return () => {
       if (pollingInterval) clearInterval(pollingInterval);
     };
@@ -111,12 +103,16 @@ export const useScienceGentCreation = () => {
     
     try {
       console.log("Syncing new ScienceGent data for address:", address);
-      await syncSingleScienceGent(address);
+      const success = await syncSingleScienceGent(address);
       
-      toast({
-        title: "ScienceGent Ready",
-        description: "Your ScienceGent data has been loaded and is ready to view",
-      });
+      if (success) {
+        toast({
+          title: "ScienceGent Ready",
+          description: "Your ScienceGent data has been loaded and is ready to view",
+        });
+      } else {
+        throw new Error("Sync operation did not complete successfully");
+      }
     } catch (error) {
       console.error("Failed to sync new ScienceGent:", error);
       toast({
@@ -129,9 +125,7 @@ export const useScienceGentCreation = () => {
     }
   };
 
-  // Separate approve DSI function
   const approveDSI = async (): Promise<boolean> => {
-    // Check if already processing
     if (isProcessingRef.current || status !== CreationStatus.Idle) {
       console.log("Already processing a transaction, skipping duplicate call");
       return false;
@@ -142,7 +136,6 @@ export const useScienceGentCreation = () => {
     setError(null);
     
     try {
-      // Check if wallet is connected
       const isWalletConnected = await checkIfWalletIsConnected();
       if (!isWalletConnected) {
         await connect();
@@ -151,14 +144,11 @@ export const useScienceGentCreation = () => {
         }
       }
       
-      // Request approval
       setStatus(CreationStatus.ApprovingDSI);
       await approveDSIForFactory(launchFee);
       
-      // Set DSI as approved after successful approval
       setIsDSIApproved(true);
       
-      // Reset status
       setStatus(CreationStatus.Idle);
       isProcessingRef.current = false;
       
@@ -185,20 +175,17 @@ export const useScienceGentCreation = () => {
   };
 
   const createToken = async (formData: ScienceGentFormData) => {
-    // Check if already processing a transaction to prevent duplicate calls
     if (isProcessingRef.current || status !== CreationStatus.Idle) {
       console.log("Already processing a transaction, skipping duplicate call");
       return null;
     }
     
-    // Set processing flag to true
     isProcessingRef.current = true;
     
     setStatus(CreationStatus.CheckingWallet);
     setError(null);
     
     try {
-      // Check if wallet is connected
       const isWalletConnected = await checkIfWalletIsConnected();
       if (!isWalletConnected) {
         await connect();
@@ -207,7 +194,6 @@ export const useScienceGentCreation = () => {
         }
       }
       
-      // Double-check DSI approval status before proceeding
       if (!isDSIApproved) {
         const hasAllowance = await checkDSIAllowance(launchFee);
         if (!hasAllowance) {
@@ -216,22 +202,18 @@ export const useScienceGentCreation = () => {
         setIsDSIApproved(true);
       }
       
-      // Create the token
       setStatus(CreationStatus.Creating);
       const result = await createScienceGent(formData);
       
       setTransactionHash(result.transactionHash);
       
-      // If we have a transaction hash, we're waiting for confirmation
       if (result.transactionHash) {
         setStatus(CreationStatus.WaitingConfirmation);
         
-        // If we also have a token address, we can move to success
         if (result.tokenAddress) {
           setTokenAddress(result.tokenAddress);
           setStatus(CreationStatus.Success);
           
-          // Sync the newly created ScienceGent
           await syncNewScienceGent(result.tokenAddress);
         }
       }
@@ -250,12 +232,10 @@ export const useScienceGentCreation = () => {
       
       return null;
     } finally {
-      // Clear processing flag regardless of outcome
       isProcessingRef.current = false;
     }
   };
 
-  // Reset the creation process
   const resetCreation = () => {
     setStatus(CreationStatus.Idle);
     setTransactionHash(null);

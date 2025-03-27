@@ -216,17 +216,12 @@ export const syncAllScienceGentsFromBlockchain = async (): Promise<{ syncCount: 
       // Process each token
       for (const address of tokenAddresses) {
         try {
-          // Import locally to avoid circular dependencies
-          const { syncSingleScienceGent } = await import("@/services/scienceGentDataService");
+          // Import syncScienceGent directly to avoid circular dependencies
+          const { syncScienceGent } = await import("@/services/scienceGent");
           
           // Sync the token
-          const success = await syncSingleScienceGent(address);
-          
-          if (success) {
-            syncCount++;
-          } else {
-            errorCount++;
-          }
+          await syncScienceGent(address);
+          syncCount++;
         } catch (error) {
           console.error(`Error syncing token ${address}:`, error);
           errorCount++;
