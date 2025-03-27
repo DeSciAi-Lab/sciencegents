@@ -56,6 +56,7 @@ interface ScienceGentDbRow {
   is_migrated: boolean;
   migration_eligible: boolean;
   total_supply?: string;
+  created_at?: string; // Added the missing created_at property
   sciencegent_stats?: { volume_24h: number; holders: number; transactions: number }[];
 }
 
