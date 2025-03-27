@@ -8,6 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import MaturityTracker from './MaturityTracker';
 import { useEthPriceContext } from '@/context/EthPriceContext';
 import { calculateMaturityProgress } from '@/utils/scienceGentCalculations';
+import { ethers } from 'ethers';
 
 interface TokenStatisticsProps {
   scienceGent: any;
@@ -72,6 +73,25 @@ const TokenStatistics: React.FC<TokenStatisticsProps> = ({
 
   const migrationStatus = getMigrationStatus();
   
+  // Calculate market cap from total supply and token price
+  const calculateMarketCap = () => {
+    if (!totalSupply || !tokenPrice) return 0;
+    
+    try {
+      // Convert supply to a number if it's not already
+      const formattedSupply = typeof totalSupply === 'string' 
+        ? parseFloat(ethers.utils.formatUnits(totalSupply, 18))
+        : totalSupply;
+        
+      return formattedSupply * tokenPrice;
+    } catch (error) {
+      console.error("Error calculating market cap:", error);
+      return marketCap; // Fall back to stored value
+    }
+  };
+  
+  const calculatedMarketCap = calculateMarketCap();
+  
   // Get Uniswap link for the token
   const getUniswapLink = () => {
     if (!scienceGent.address) return "#";
@@ -101,8 +121,8 @@ const TokenStatistics: React.FC<TokenStatisticsProps> = ({
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
           <div>
             <p className="text-sm text-muted-foreground mb-1">Market Cap</p>
-            <p className="text-xl font-medium">{marketCap.toFixed(4)} ETH</p>
-            <p className="text-xs text-muted-foreground">{formatEthToUsd(marketCap)}</p>
+            <p className="text-xl font-medium">{calculatedMarketCap.toFixed(4)} ETH</p>
+            <p className="text-xs text-muted-foreground">{formatEthToUsd(calculatedMarketCap)}</p>
           </div>
           <div>
             <p className="text-sm text-muted-foreground mb-1">Total Supply</p>

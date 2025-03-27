@@ -31,7 +31,7 @@ const ScienceGentTable: React.FC<ScienceGentTableProps> = ({
   isLoading = false
 }) => {
   const navigate = useNavigate();
-  const { ethPrice } = useEthPriceContext();
+  const { ethPrice, formatEthToUsd } = useEthPriceContext();
 
   // Render star rating (1-5)
   const renderRating = (rating: number) => {
@@ -91,12 +91,6 @@ const ScienceGentTable: React.FC<ScienceGentTableProps> = ({
   const copyToClipboard = (e: React.MouseEvent, text: string) => {
     e.stopPropagation();
     navigator.clipboard.writeText(text);
-  };
-
-  // Convert ETH price to USD
-  const ethToUsd = (ethValue: number): string => {
-    if (!ethPrice) return (ethValue * 1500).toFixed(3); // Fallback conversion
-    return (ethValue * ethPrice).toFixed(3);
   };
 
   // Loading row placeholder
@@ -214,8 +208,8 @@ const ScienceGentTable: React.FC<ScienceGentTableProps> = ({
                   {gent.priceChange24h >= 0 ? '+' : ''}{gent.priceChange24h}%
                 </TableCell>
                 <TableCell>{gent.volume24h > 1000 ? `${(gent.volume24h/1000).toFixed(0)}k` : gent.volume24h}</TableCell>
-                <TableCell>{gent.tokenPrice.toFixed(3)}</TableCell>
-                <TableCell>{ethToUsd(gent.tokenPrice)}</TableCell>
+                <TableCell>{gent.tokenPrice.toFixed(6)}</TableCell>
+                <TableCell>{formatEthToUsd(gent.tokenPrice)}</TableCell>
               </TableRow>
             ))
           )}
