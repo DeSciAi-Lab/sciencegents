@@ -1,13 +1,12 @@
-
 import { toast } from "@/components/ui/use-toast";
 import { syncScienceGent } from "./scienceGent";
 
 /**
  * Sync a single ScienceGent from blockchain to Supabase
  * @param address ScienceGent address
- * @returns Promise that resolves when sync is complete
+ * @returns Promise that resolves with boolean indicating success
  */
-export const syncSingleScienceGent = async (address: string): Promise<void> => {
+export const syncSingleScienceGent = async (address: string): Promise<boolean> => {
   try {
     console.log("Syncing single ScienceGent:", address);
     
@@ -17,10 +16,10 @@ export const syncSingleScienceGent = async (address: string): Promise<void> => {
       throw new Error("Failed to sync ScienceGent");
     }
     
-    return;
+    return true;
   } catch (error) {
     console.error("Error syncing ScienceGent:", error);
-    throw error;
+    return false;
   }
 };
 
