@@ -103,9 +103,18 @@ export const syncSingleScienceGent = async (address: string): Promise<boolean> =
   try {
     console.log("Syncing single ScienceGent:", address);
     await syncScienceGent(address);
+    toast({
+      title: "Sync Complete",
+      description: `Successfully synced token ${address.substring(0, 6)}...${address.slice(-4)}`
+    });
     return true;
   } catch (error) {
     console.error(`Error syncing ScienceGent ${address}:`, error);
+    toast({
+      title: "Sync Failed",
+      description: `Failed to sync token ${address.substring(0, 6)}...${address.slice(-4)}`,
+      variant: "destructive"
+    });
     return false;
   }
 };

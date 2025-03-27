@@ -3,6 +3,21 @@ import { ethers } from 'ethers';
 import { TokenStats } from '@/services/scienceGent/types';
 
 /**
+ * Fetches current ETH price in USD from CoinGecko API
+ * @returns Promise that resolves with ETH price in USD
+ */
+export const fetchCurrentEthPrice = async (): Promise<number> => {
+  try {
+    const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd');
+    const data = await response.json();
+    return data.ethereum?.usd || 0;
+  } catch (error) {
+    console.error("Error fetching ETH price:", error);
+    return 0;
+  }
+};
+
+/**
  * Calculates the maturity progress percentage
  * @param virtualETH Virtual ETH amount as string or number
  * @param collectedFees Collected fees as string or number
@@ -74,19 +89,60 @@ export const calculateMarketCap = (
 };
 
 /**
+ * Calculate token price in USD
+ * @param ethPrice ETH price in USD
+ * @param tokenPrice Token price in ETH
+ * @returns Token price in USD
+ */
+export const calculateTokenPriceUSD = (ethPrice: number, tokenPrice: number): number => {
+  return ethPrice * tokenPrice;
+};
+
+/**
+ * Calculate market cap in USD
+ * @param priceUSD Token price in USD
+ * @param totalSupply Total supply
+ * @returns Market cap in USD
+ */
+export const calculateMarketCapUSD = (priceUSD: number, totalSupply: number): number => {
+  return priceUSD * totalSupply;
+};
+
+/**
+ * Calculate total liquidity in USD
+ * @param ethReserve ETH reserve from blockchain
+ * @param ethPrice ETH price in USD
+ * @returns Total liquidity in USD
+ */
+export const calculateTotalLiquidity = (ethReserve: string | number, ethPrice: number): number => {
+  const reserve = typeof ethReserve === 'string' 
+    ? parseFloat(ethers.utils.formatEther(ethReserve))
+    : ethReserve;
+    
+  return reserve * ethPrice;
+};
+
+/**
  * Get all token metrics in one function
  * @param tokenStats Token statistics from blockchain
  * @param totalSupply Total token supply
  * @param capabilityFees Optional capability fees
  * @returns Object with calculated metrics
  */
-export const getTokenMetrics = (
+export const getTokenMetrics = async (
   tokenStats: TokenStats,
   totalSupply: string,
   capabilityFees: number = 0
 ) => {
   const tokenPrice = calculateTokenPrice(tokenStats.currentPrice);
+  
+  // Fetch current ETH price
+  const ethPrice = await fetchCurrentEthPrice();
+  
+  // Calculate USD values
+  const tokenPriceUSD = calculateTokenPriceUSD(ethPrice, tokenPrice);
   const marketCap = calculateMarketCap(tokenPrice, totalSupply);
+  const marketCapUSD = calculateMarketCapUSD(tokenPriceUSD, parseFloat(ethers.utils.formatEther(totalSupply)));
   
   const virtualETH = tokenStats.virtualETH
     ? parseFloat(ethers.utils.formatEther(tokenStats.virtualETH))
@@ -96,6 +152,16 @@ export const getTokenMetrics = (
     ? parseFloat(ethers.utils.formatEther(tokenStats.collectedFees))
     : 0;
     
+  const ethReserve = tokenStats.ethReserve
+    ? parseFloat(ethers.utils.formatEther(tokenStats.ethReserve))
+    : 0;
+    
+  const totalLiquidity = calculateTotalLiquidity(ethReserve, ethPrice);
+  
+  // Migration condition calculation
+  const migrationCondition = (2 * virtualETH) + capabilityFees;
+  
+  // Calculate maturity progress using the utility function
   const maturityProgress = calculateMaturityProgress(
     virtualETH,
     collectedFees,
@@ -104,9 +170,14 @@ export const getTokenMetrics = (
   
   return {
     tokenPrice,
+    tokenPriceUSD,
     marketCap,
+    marketCapUSD,
     virtualETH,
     collectedFees,
+    ethReserve,
+    totalLiquidity,
+    migrationCondition,
     maturityProgress,
     isMigrationEligible: maturityProgress >= 100,
   };
