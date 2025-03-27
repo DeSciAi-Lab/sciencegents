@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, ChevronDown, X, Filter, ArrowDown, RefreshCw, CheckIcon } from 'lucide-react';
@@ -30,12 +29,10 @@ import {
 const Explore = () => {
   const navigate = useNavigate();
   
-  // State for data
   const [searchQuery, setSearchQuery] = useState('');
   const [scienceGents, setScienceGents] = useState<ScienceGentListItem[]>([]);
   const [filteredGents, setFilteredGents] = useState<ScienceGentListItem[]>([]);
   
-  // State for UI
   const [activeFilter, setActiveFilter] = useState('all');
   const [sortBy, setSortBy] = useState<keyof ScienceGentListItem>('marketCap');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
@@ -45,7 +42,6 @@ const Explore = () => {
   const [itemsPerPage] = useState(20);
   const [totalResults, setTotalResults] = useState(0);
   
-  // Define filter options
   const filterCategories = {
     domain: [
       { label: 'All Domains', value: 'all' },
@@ -82,30 +78,25 @@ const Explore = () => {
     roles: 'all'
   });
 
-  // Fetch science gents on initial load
   useEffect(() => {
     fetchData();
   }, []);
 
-  // Apply filters and sorting when data, filter, or sort options change
   useEffect(() => {
     let filtered = scienceGents;
     
-    // Apply domain filter
     if (activeFilters.domain !== 'all') {
       filtered = filtered.filter(gent => 
         gent.domain.toLowerCase() === activeFilters.domain.toLowerCase()
       );
     }
     
-    // Apply curation filter
     if (activeFilters.curation === 'curated') {
       filtered = filtered.filter(gent => gent.isCurated);
     } else if (activeFilters.curation === 'uncurated') {
       filtered = filtered.filter(gent => !gent.isCurated);
     }
     
-    // Apply maturity filter
     if (activeFilters.maturity === 'migrated') {
       filtered = filtered.filter(gent => gent.isMigrated);
     } else if (activeFilters.maturity === 'ready') {
@@ -114,13 +105,10 @@ const Explore = () => {
       filtered = filtered.filter(gent => !gent.migrationEligible && !gent.isMigrated);
     }
     
-    // Apply roles filter (simplified for demo)
     if (activeFilters.roles !== 'all') {
-      // In a real app, this would filter based on actual role data
       filtered = filtered.filter(() => Math.random() > 0.3);
     }
     
-    // Apply search query
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(gent => 
@@ -130,24 +118,20 @@ const Explore = () => {
       );
     }
     
-    // Apply sorting
     const sorted = sortScienceGents(filtered, sortBy, sortOrder);
     
     setFilteredGents(sorted);
     setTotalResults(sorted.length);
     
-    // Reset to first page when filters change
     setPage(1);
   }, [scienceGents, searchQuery, sortBy, sortOrder, activeFilters]);
 
-  // Fetch data from Supabase
   const fetchData = async () => {
     try {
       setIsLoading(true);
       const data = await fetchScienceGents();
       setScienceGents(data);
       
-      // Show success toast
       toast({
         title: "Data Loaded",
         description: `Loaded ${data.length} ScienceGents`,
@@ -164,12 +148,11 @@ const Explore = () => {
     }
   };
 
-  // Trigger a sync with blockchain
   const handleSync = async () => {
     try {
       setIsSyncing(true);
       await syncAllScienceGents();
-      await fetchData(); // Refresh data after sync
+      await fetchData();
       toast({
         title: "Sync Complete",
         description: "ScienceGents have been synced from the blockchain"
@@ -186,7 +169,6 @@ const Explore = () => {
     }
   };
 
-  // Toggle sort order and column
   const handleSortChange = (column: keyof ScienceGentListItem) => {
     if (sortBy === column) {
       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
@@ -196,7 +178,6 @@ const Explore = () => {
     }
   };
 
-  // Handle clearing all filters
   const clearFilters = () => {
     setSearchQuery('');
     setActiveFilters({
@@ -207,22 +188,18 @@ const Explore = () => {
     });
   };
 
-  // Get current page items
   const getCurrentPageItems = () => {
     const startIndex = (page - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
     return filteredGents.slice(startIndex, endIndex);
   };
 
-  // Calculate total pages
   const totalPages = Math.ceil(totalResults / itemsPerPage);
   
-  // Check if any filters are active
   const hasActiveFilters = () => {
     return Object.values(activeFilters).some(value => value !== 'all') || searchQuery !== '';
   };
   
-  // Update a specific filter
   const updateFilter = (category: keyof typeof activeFilters, value: string) => {
     setActiveFilters(prev => ({
       ...prev,
@@ -230,7 +207,6 @@ const Explore = () => {
     }));
   };
 
-  // Render filter button
   const renderFilterButton = (
     label: string, 
     category: keyof typeof activeFilters,
@@ -383,7 +359,7 @@ const Explore = () => {
                     {totalPages > 5 && (
                       <>
                         <PaginationItem>
-                          <PaginationLink disabled>...</PaginationLink>
+                          <span className="flex h-10 w-10 items-center justify-center">...</span>
                         </PaginationItem>
                         <PaginationItem>
                           <PaginationLink 

@@ -39,6 +39,7 @@ export interface ScienceGentListItem {
   isCurated?: boolean;
   capabilities?: string[];
   creationTimestamp?: string;
+  maturityProgress?: number; // Add the missing maturityProgress property
 }
 
 /**
