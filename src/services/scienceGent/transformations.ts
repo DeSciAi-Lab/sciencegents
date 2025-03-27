@@ -124,7 +124,19 @@ export const transformBlockchainToSupabaseFormat = (
     maturity_progress: maturityProgress,
     domain: 'General', // Default domain if not provided
     socials: socialsData,
-    last_synced_at: new Date().toISOString()
+    last_synced_at: new Date().toISOString(),
+    // Add these fields if present in the data
+    profile_pic: data.profile_pic,
+    website: data.website,
+    agent_fee: data.agent_fee,
+    persona: data.persona,
+    developer_name: data.developer_name,
+    developer_email: data.developer_email,
+    bio: data.bio,
+    developer_twitter: data.developer_twitter,
+    developer_telegram: data.developer_telegram,
+    developer_github: data.developer_github,
+    developer_website: data.developer_website
   };
   
   // Stats object for sciencegent_stats table

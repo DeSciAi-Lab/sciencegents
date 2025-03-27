@@ -14,6 +14,17 @@ export interface ScienceGentData {
   description?: string;
   createdAt?: string;
   createdOnChainAt?: string;
+  profile_pic?: string;
+  website?: string;
+  developer_name?: string;
+  developer_email?: string;
+  bio?: string;
+  developer_twitter?: string;
+  developer_telegram?: string;
+  developer_github?: string;
+  developer_website?: string;
+  persona?: string;
+  agent_fee?: number;
 }
 
 // Token statistics from blockchain
@@ -36,13 +47,21 @@ export interface TokenStats {
   holders?: number;
 }
 
-// Capability Details
+// Capability Details - Enhanced with more properties for UI
 export interface CapabilityDetail {
   id: string;
+  name?: string; // Added for UI display
   description: string;
   feeInETH: string;
   creator: string;
   domain?: string;
+  price?: number; // Added for UI display (formatted ETH value)
+  stats?: {
+    usageCount?: number;
+    rating?: number;
+    revenue?: number;
+  };
+  features?: string[]; // Added for UI display
 }
 
 // Formatted ScienceGent Data for UI

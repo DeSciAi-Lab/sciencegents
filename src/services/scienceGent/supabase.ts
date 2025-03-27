@@ -1,3 +1,4 @@
+
 import { ScienceGentData, TokenStats, CapabilityDetail } from './types';
 import { supabase } from '@/integrations/supabase/client';
 import { transformBlockchainToSupabaseFormat, formatAge } from './transformations';
@@ -93,19 +94,23 @@ export const saveScienceGentToSupabase = async (
     // Transform the data to Supabase format
     const { scienceGent, scienceGentStats } = transformBlockchainToSupabaseFormat(scienceGentData, tokenStats);
     
+    // Parse total_supply to a number, as Supabase expects a number
+    const totalSupply = parseFloat(scienceGent.total_supply);
+    
     // Prepare data for upsert, ensuring all value types match the database schema
     const supabaseData = {
       address: scienceGent.address,
       name: scienceGent.name,
       symbol: scienceGent.symbol,
-      total_supply: scienceGent.total_supply,
+      total_supply: totalSupply, // Convert to number for Supabase
       creator_address: scienceGent.creator_address,
-      description: scienceGent.description,
-      profile_pic: scienceGent.profile_pic,
-      website: scienceGent.website,
-      socials: scienceGent.socials,
-      is_migrated: scienceGent.is_migrated,
-      migration_eligible: scienceGent.migration_eligible,
+      description: scienceGent.description || '',
+      // Only include these fields if they are defined in scienceGent
+      ...(scienceGent.profile_pic ? { profile_pic: scienceGent.profile_pic } : {}),
+      ...(scienceGent.website ? { website: scienceGent.website } : {}),
+      socials: scienceGent.socials || {},
+      is_migrated: scienceGent.is_migrated || false,
+      migration_eligible: scienceGent.migration_eligible || false,
       created_on_chain_at: scienceGent.created_on_chain_at,
       // Ensure maturity_deadline is properly typed as a number or null
       maturity_deadline: typeof scienceGent.maturity_deadline === 'number' 
@@ -115,22 +120,23 @@ export const saveScienceGentToSupabase = async (
       remaining_maturity_time: typeof scienceGent.remaining_maturity_time === 'number'
         ? scienceGent.remaining_maturity_time
         : null,
-      maturity_progress: scienceGent.maturity_progress,
-      token_price: scienceGent.token_price,
-      market_cap: scienceGent.market_cap,
-      virtual_eth: scienceGent.virtual_eth,
-      collected_fees: scienceGent.collected_fees,
-      last_synced_at: scienceGent.last_synced_at,
-      domain: scienceGent.domain,
-      agent_fee: scienceGent.agent_fee,
-      persona: scienceGent.persona,
-      developer_name: scienceGent.developer_name,
-      developer_email: scienceGent.developer_email,
-      bio: scienceGent.bio,
-      developer_twitter: scienceGent.developer_twitter,
-      developer_telegram: scienceGent.developer_telegram,
-      developer_github: scienceGent.developer_github,
-      developer_website: scienceGent.developer_website
+      maturity_progress: scienceGent.maturity_progress || 0,
+      token_price: scienceGent.token_price || 0,
+      market_cap: scienceGent.market_cap || 0,
+      virtual_eth: scienceGent.virtual_eth || 0,
+      collected_fees: scienceGent.collected_fees || 0,
+      last_synced_at: scienceGent.last_synced_at || new Date().toISOString(),
+      domain: scienceGent.domain || 'General',
+      // Include optional fields only if they exist in scienceGent
+      ...(scienceGent.agent_fee !== undefined ? { agent_fee: scienceGent.agent_fee } : {}),
+      ...(scienceGent.persona ? { persona: scienceGent.persona } : {}),
+      ...(scienceGent.developer_name ? { developer_name: scienceGent.developer_name } : {}),
+      ...(scienceGent.developer_email ? { developer_email: scienceGent.developer_email } : {}),
+      ...(scienceGent.bio ? { bio: scienceGent.bio } : {}),
+      ...(scienceGent.developer_twitter ? { developer_twitter: scienceGent.developer_twitter } : {}),
+      ...(scienceGent.developer_telegram ? { developer_telegram: scienceGent.developer_telegram } : {}),
+      ...(scienceGent.developer_github ? { developer_github: scienceGent.developer_github } : {}),
+      ...(scienceGent.developer_website ? { developer_website: scienceGent.developer_website } : {})
     };
     
     // Insert or update the ScienceGent
@@ -228,12 +234,24 @@ export const syncCapabilityDetailsToSupabase = async (capabilityDetail: Capabili
     
     console.log(`Syncing capability details for ${capabilityDetail.id}`);
     
+    // Parse fee to ensure it's a number
+    let price = 0;
+    if (capabilityDetail.feeInETH) {
+      try {
+        price = parseFloat(ethers.utils.formatEther(capabilityDetail.feeInETH));
+      } catch (e) {
+        console.error("Error parsing feeInETH:", e);
+        // If capabilityDetail.price exists, use that
+        price = capabilityDetail.price || 0;
+      }
+    }
+    
     // Prepare data for upsert
     const capabilityData = {
       id: capabilityDetail.id,
-      name: capabilityDetail.id, // Default name to ID
+      name: capabilityDetail.name || capabilityDetail.id, // Default name to ID
       description: capabilityDetail.description || '',
-      price: capabilityDetail.feeInETH ? parseFloat(ethers.utils.formatEther(capabilityDetail.feeInETH)) : 0,
+      price: price,
       creator: capabilityDetail.creator || '',
       domain: capabilityDetail.domain || 'General', // Use domain if available
       last_synced_at: new Date().toISOString()
