@@ -1,21 +1,25 @@
 
-// Token data types for ScienceGent
+/**
+ * ScienceGent token data from blockchain
+ */
 export interface ScienceGentData {
   address: string;
   name: string;
   symbol: string;
-  totalSupply: string;
+  totalSupply: string; // Stored as string to handle large numbers
   creator: string;
+  isMigrated: boolean;
   creationTimestamp: number;
   maturityDeadline: number;
-  isMigrated?: boolean;
   capabilities: string[];
-  socials?: any;
   description?: string;
   createdAt?: string;
   createdOnChainAt?: string;
   profile_pic?: string;
   website?: string;
+  agent_fee?: string | number;
+  socials?: Record<string, string>;
+  persona?: string;
   developer_name?: string;
   developer_email?: string;
   bio?: string;
@@ -23,48 +27,45 @@ export interface ScienceGentData {
   developer_telegram?: string;
   developer_github?: string;
   developer_website?: string;
-  persona?: string;
-  agent_fee?: number;
 }
 
-// Token statistics from blockchain
+/**
+ * Token statistics from blockchain
+ */
 export interface TokenStats {
-  tokenReserve: string;
-  ethReserve: string;
-  virtualETH: string;
-  collectedFees: string;
+  tokenReserve: string; // Stored as string to handle large numbers
+  ethReserve: string; // Stored as string to handle large numbers
+  virtualETH: string; // Stored as string to handle large numbers
+  collectedFees: string; // Stored as string to handle large numbers
   tradingEnabled: boolean;
   creator: string;
   creationTimestamp: number;
   maturityDeadline: number;
   migrated: boolean;
   lpUnlockTime: number;
-  lockedLPAmount: string;
-  currentPrice: string;
+  lockedLPAmount: string; // Stored as string to handle large numbers
+  currentPrice: string; // Stored as string to handle large numbers
   migrationEligible: boolean;
-  volume24h?: string;
+  volume24h?: string; // Stored as string to handle large numbers
   transactions?: number;
   holders?: number;
 }
 
-// Capability Details - Enhanced with more properties for UI
+/**
+ * Capability details from blockchain
+ */
 export interface CapabilityDetail {
   id: string;
   name: string;
   description: string;
-  feeInETH: string;
+  feeInETH: string; // Stored as string to handle large numbers
   creator: string;
   domain?: string;
-  price: number;
-  stats?: {
-    usageCount?: number;
-    rating?: number;
-    revenue?: number;
-  };
-  features?: string[];
 }
 
-// Formatted ScienceGent Data for UI
+/**
+ * Formatted ScienceGent for UI
+ */
 export interface FormattedScienceGent {
   id: string;
   address: string;
@@ -80,8 +81,8 @@ export interface FormattedScienceGent {
   capabilities?: string[];
   isMigrated?: boolean;
   migrationEligible?: boolean;
-  maturityProgress?: number;
   virtualETH?: number;
   collectedFees?: number;
+  maturityProgress?: number;
   remainingMaturityTime?: number;
 }

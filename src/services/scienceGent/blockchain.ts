@@ -1,8 +1,10 @@
+
 import { ethers } from "ethers";
 import { getProvider } from "@/services/walletService";
 import { contractConfig } from "@/utils/contractConfig";
 import { ScienceGentData, TokenStats } from "./types";
 import { supabase } from "@/integrations/supabase/client";
+import { safeBigNumberToString } from "@/utils/ethersUtils";
 
 /**
  * Fetches ScienceGent data from the blockchain
@@ -106,7 +108,7 @@ export const fetchTokenStatsFromBlockchain = async (
       creator: tokenStats[5],
       creationTimestamp: tokenStats[6].toNumber(),
       maturityDeadline: tokenStats[7].toNumber(),
-      migrated: tokenStats[8], // Changed from isMigrated to migrated
+      migrated: tokenStats[8], 
       lpUnlockTime: tokenStats[9].toNumber(),
       lockedLPAmount: tokenStats[10].toString(),
       currentPrice: tokenStats[11].toString(),

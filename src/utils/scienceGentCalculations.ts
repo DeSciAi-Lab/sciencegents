@@ -72,10 +72,17 @@ export const calculateMarketCap = (
     
     if (typeof totalSupply === 'string') {
       try {
-        supply = safeFormatEtherAsNumber(totalSupply);
+        // Handle very large numbers which might cause overflow
+        if (totalSupply.length > 15) {
+          console.warn("Total supply too large for precise calculation:", totalSupply);
+          supply = Number.MAX_SAFE_INTEGER / (tokenPrice || 1);
+        } else {
+          supply = safeFormatEtherAsNumber(totalSupply);
+        }
       } catch (e) {
         // Fallback if formatEther fails
-        supply = parseFloat(totalSupply);
+        console.warn("Using fallback calculation for large supply:", e);
+        supply = 1000000; // Use a reasonable default
       }
     } else {
       supply = totalSupply;

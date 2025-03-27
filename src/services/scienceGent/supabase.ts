@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { ScienceGentData, TokenStats } from "./types";
 import { transformBlockchainToSupabaseFormat } from "./transformations";
@@ -64,14 +65,22 @@ export const saveScienceGentToSupabase = async (
       console.log("Updating existing ScienceGent record");
       saveOperation = supabase
         .from('sciencegents')
-        .update(scienceGent)
+        .update({
+          ...scienceGent,
+          // Ensure total_supply is properly formatted as string
+          total_supply: data.totalSupply
+        })
         .eq('address', data.address);
     } else {
       // Insert new record
       console.log("Inserting new ScienceGent record");
       saveOperation = supabase
         .from('sciencegents')
-        .insert(scienceGent);
+        .insert({
+          ...scienceGent,
+          // Ensure total_supply is properly formatted as string
+          total_supply: data.totalSupply
+        });
     }
     
     // Execute the save operation

@@ -1,6 +1,7 @@
 import { ethers } from "ethers";
 import { ScienceGentData, TokenStats, FormattedScienceGent } from "./types";
 import { formatDistanceToNow } from "date-fns";
+import { safeFormatEther, safeFormatEtherAsNumber } from "@/utils/ethersUtils";
 
 /**
  * Calculates maturity progress percentage
@@ -34,15 +35,8 @@ export const calculateMaturityProgress = (
  * @param value BigNumber string
  * @returns Formatted ETH value as number or 0 if conversion fails
  */
-export const safeFormatEther = (value: string): number => {
-  try {
-    if (!value) return 0;
-    const formatted = ethers.utils.formatEther(value);
-    return parseFloat(formatted);
-  } catch (error) {
-    console.error("Error formatting ETH value:", error, "Value:", value);
-    return 0;
-  }
+export const safeFormatEtherValue = (value: string): number => {
+  return safeFormatEtherAsNumber(value);
 };
 
 /**
@@ -98,18 +92,21 @@ export const transformBlockchainToSupabaseFormat = (
     const socialsData = data.socials || {};
     
     // Safely convert values to prevent overflow errors
-    const tokenPrice = safeFormatEther(stats.currentPrice);
-    const virtualETH = safeFormatEther(stats.virtualETH);
-    const collectedFees = safeFormatEther(stats.collectedFees);
+    const tokenPrice = safeFormatEtherAsNumber(stats.currentPrice);
+    const virtualETH = safeFormatEtherAsNumber(stats.virtualETH);
+    const collectedFees = safeFormatEtherAsNumber(stats.collectedFees);
     
     // Ensure consistency between migrated and isMigrated properties
     const isMigrated = data.isMigrated !== undefined ? data.isMigrated : stats.migrated;
     
-    // Calculate market cap - handle big number safely
+    // Calculate market cap - handle large numbers
     let marketCap = 0;
     try {
-      const totalSupplyFormatted = ethers.utils.formatEther(data.totalSupply);
-      marketCap = tokenPrice * parseFloat(totalSupplyFormatted);
+      if (data.totalSupply) {
+        // Keep total_supply as a string in the database
+        const totalSupplyFormatted = ethers.utils.formatEther(data.totalSupply);
+        marketCap = tokenPrice * parseFloat(totalSupplyFormatted);
+      }
     } catch (error) {
       console.error("Error calculating market cap:", error);
     }
@@ -130,7 +127,7 @@ export const transformBlockchainToSupabaseFormat = (
       name: data.name,
       symbol: data.symbol,
       description: data.description || '',
-      total_supply: data.totalSupply, // Keep as string to avoid overflow
+      total_supply: data.totalSupply, // Keep as string
       creator_address: data.creator,
       is_migrated: isMigrated,
       migration_eligible: stats.migrationEligible,
