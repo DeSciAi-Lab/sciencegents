@@ -1,3 +1,4 @@
+
 import { ScienceGentData, TokenStats, FormattedScienceGent } from './types';
 import { ethers } from 'ethers';
 import { fetchCurrentEthPrice, calculateTokenPrice, calculateMarketCap } from '@/utils/scienceGentCalculations';
@@ -61,11 +62,19 @@ export const transformBlockchainToSupabaseFormat = async (
       description: scienceGentData.description || '',
       profile_pic: scienceGentData.profilePic || '',
       website: scienceGentData.website || '',
-      socials: scienceGentData.socials || {},
-      is_migrated: tokenStats.isMigrated || false,
+      socials: scienceGentData.socialLinks || scienceGentData.socials || {}, // Use either property
+      is_migrated: tokenStats.migrated || tokenStats.isMigrated || false, // Handle both property names
       migration_eligible: tokenStats.migrationEligible || false,
-      created_at: scienceGentData.createdAt ? new Date(scienceGentData.createdAt).toISOString() : new Date().toISOString(),
-      created_on_chain_at: scienceGentData.createdOnChainAt ? new Date(scienceGentData.createdOnChainAt).toISOString() : null,
+      created_at: scienceGentData.createdAt ? 
+        (typeof scienceGentData.createdAt === 'number' ? 
+          new Date(scienceGentData.createdAt).toISOString() : 
+          scienceGentData.createdAt) : 
+        new Date().toISOString(),
+      created_on_chain_at: scienceGentData.createdOnChainAt ? 
+        (typeof scienceGentData.createdOnChainAt === 'number' ? 
+          new Date(scienceGentData.createdOnChainAt).toISOString() : 
+          scienceGentData.createdOnChainAt) : 
+        null,
       maturity_deadline: tokenStats.maturityDeadline ? Number(tokenStats.maturityDeadline) : null,
       remaining_maturity_time: tokenStats.remainingMaturityTime ? Number(tokenStats.remainingMaturityTime) : null,
       maturity_progress: maturityProgress,
@@ -91,9 +100,9 @@ export const transformBlockchainToSupabaseFormat = async (
     // Format statistics data
     const scienceGentStats = {
       sciencegent_address: scienceGentData.address,
-      volume_24h: tokenStats.volume24h || 0,
-      transactions: tokenStats.transactions || 0,
-      holders: tokenStats.holders || 0,
+      volume_24h: tokenStats.volume24h || 0, // Handle missing property
+      transactions: tokenStats.transactions || 0, // Handle missing property
+      holders: tokenStats.holders || 0, // Handle missing property
       updated_at: new Date().toISOString()
     };
 

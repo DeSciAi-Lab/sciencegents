@@ -1,4 +1,3 @@
-
 // Import ethers for BigNumber type compatibility
 import { BigNumber } from "ethers";
 
@@ -13,6 +12,7 @@ export interface ScienceGentData {
   profilePic?: string;
   website?: string;
   socialLinks?: Record<string, string>;
+  socials?: Record<string, string>; // Added to fix type error
   tradingEnabled?: boolean;
   isMigrated: boolean;
   creationTimestamp?: number;
@@ -33,6 +33,9 @@ export interface ScienceGentData {
   developerTelegram?: string;
   developerGithub?: string;
   developerWebsite?: string;
+  // Added to fix type errors
+  createdAt?: string | number;
+  createdOnChainAt?: string | number;
 }
 
 // Token statistics from blockchain
@@ -46,6 +49,7 @@ export interface TokenStats {
   creationTimestamp: number; // Changed from string to number
   maturityDeadline: number; // Changed from string to number
   migrated: boolean; // Changed from isMigrated to migrated to match contract response
+  isMigrated?: boolean; // Added to fix type error
   lpUnlockTime: number; // Changed from string to number
   lockedLPAmount: string;
   currentPrice: string;
@@ -54,6 +58,10 @@ export interface TokenStats {
   tokenAge?: number;
   remainingMaturityTime?: number;
   maturityProgress?: number;
+  // Added to fix type errors
+  volume24h?: number;
+  transactions?: number;
+  holders?: number;
 }
 
 // Capability details as retrieved from blockchain

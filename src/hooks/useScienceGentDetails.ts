@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { 
   fetchScienceGentFromSupabase, 
@@ -120,7 +121,11 @@ export const useScienceGentDetails = (address: string | undefined) => {
         if (updatedData) {
           const enrichedData = {
             ...updatedData,
-            formattedAge: formatAge(updatedData.created_at), // Use created_at instead of created_on_chain_at
+            // Fix the error by making sure we're passing a number to formatAge
+            // If created_at is a string, convert it to a timestamp number
+            formattedAge: typeof updatedData.created_at === 'string' 
+              ? formatAge(new Date(updatedData.created_at).getTime())
+              : formatAge(updatedData.created_at),
             maturityStatus: getMaturityStatus(updatedData)
           };
           
