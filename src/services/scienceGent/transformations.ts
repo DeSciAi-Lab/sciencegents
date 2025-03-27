@@ -103,7 +103,7 @@ export const transformBlockchainToSupabaseFormat = (
     let marketCap = 0;
     try {
       if (data.totalSupply) {
-        // Keep total_supply as a string in the database
+        // Calculate market cap using formatted totalSupply
         const totalSupplyFormatted = ethers.utils.formatEther(data.totalSupply);
         marketCap = tokenPrice * parseFloat(totalSupplyFormatted);
       }
@@ -122,12 +122,22 @@ export const transformBlockchainToSupabaseFormat = (
     const currentTime = Math.floor(Date.now() / 1000);
     const remainingMaturityTime = Math.max(0, stats.maturityDeadline - currentTime);
     
+    // Ensure agent_fee is a number
+    let agentFee: number | null = null;
+    if (data.agent_fee !== undefined) {
+      if (typeof data.agent_fee === 'string') {
+        agentFee = parseFloat(data.agent_fee);
+        if (isNaN(agentFee)) agentFee = null;
+      } else if (typeof data.agent_fee === 'number') {
+        agentFee = data.agent_fee;
+      }
+    }
+    
     const scienceGent = {
       address: data.address,
       name: data.name,
       symbol: data.symbol,
       description: data.description || '',
-      total_supply: data.totalSupply, // Keep as string
       creator_address: data.creator,
       is_migrated: isMigrated,
       migration_eligible: stats.migrationEligible,
@@ -142,10 +152,11 @@ export const transformBlockchainToSupabaseFormat = (
       domain: 'General', // Default domain if not provided
       socials: socialsData,
       last_synced_at: new Date().toISOString(),
+      // Ensure agent_fee is a number
+      agent_fee: agentFee,
       // Add these fields if present in the data
       profile_pic: data.profile_pic,
       website: data.website,
-      agent_fee: data.agent_fee,
       persona: data.persona,
       developer_name: data.developer_name,
       developer_email: data.developer_email,

@@ -64,17 +64,22 @@ export const saveScienceGentToSupabase = async (
       // Update existing record
       console.log("Updating existing ScienceGent record");
       
-      // Make sure total_supply is handled properly
-      const scienceGentRecord = {
-        ...scienceGent
-      };
+      // Create a record to update with proper types
+      const scienceGentRecord: any = { ...scienceGent };
       
       // Remove total_supply from the update operation as it's handled separately
       delete scienceGentRecord.total_supply;
       
-      // If we have a numeric total supply, use it
+      // Handle agent_fee conversion to ensure it's a number
+      if (scienceGentRecord.agent_fee !== undefined) {
+        if (typeof scienceGentRecord.agent_fee === 'string') {
+          const parsedFee = parseFloat(scienceGentRecord.agent_fee);
+          scienceGentRecord.agent_fee = !isNaN(parsedFee) ? parsedFee : null;
+        }
+      }
+      
+      // If we have a total supply, add it as a number
       if (data.totalSupply) {
-        // Parse total supply as a number if possible
         try {
           const totalSupplyNumber = parseFloat(data.totalSupply);
           if (!isNaN(totalSupplyNumber) && isFinite(totalSupplyNumber)) {
@@ -93,14 +98,19 @@ export const saveScienceGentToSupabase = async (
       // Insert new record
       console.log("Inserting new ScienceGent record");
       
-      // Make sure total_supply is handled properly
-      const scienceGentRecord = {
-        ...scienceGent
-      };
+      // Create a record to insert with proper types
+      const scienceGentRecord: any = { ...scienceGent };
       
-      // Handle total_supply for new records
+      // Handle agent_fee conversion to ensure it's a number
+      if (scienceGentRecord.agent_fee !== undefined) {
+        if (typeof scienceGentRecord.agent_fee === 'string') {
+          const parsedFee = parseFloat(scienceGentRecord.agent_fee);
+          scienceGentRecord.agent_fee = !isNaN(parsedFee) ? parsedFee : null;
+        }
+      }
+      
+      // If we have a total supply, add it as a number
       if (data.totalSupply) {
-        // Parse total supply as a number if possible
         try {
           const totalSupplyNumber = parseFloat(data.totalSupply);
           if (!isNaN(totalSupplyNumber) && isFinite(totalSupplyNumber)) {
