@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { 
   fetchScienceGentFromSupabase, 
@@ -121,7 +120,7 @@ export const useScienceGentDetails = (address: string | undefined) => {
         if (updatedData) {
           const enrichedData = {
             ...updatedData,
-            formattedAge: formatAge(updatedData.created_at), // Fix: use created_at instead of created_on_chain_at
+            formattedAge: formatAge(updatedData.created_at), // Use created_at instead of created_on_chain_at
             maturityStatus: getMaturityStatus(updatedData)
           };
           

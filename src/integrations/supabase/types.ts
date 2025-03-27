@@ -221,6 +221,7 @@ export type Database = {
           bio: string | null
           collected_fees: number | null
           created_at: string | null
+          created_on_chain_at: string | null
           creator_address: string | null
           description: string | null
           developer_email: string | null
@@ -259,6 +260,7 @@ export type Database = {
           bio?: string | null
           collected_fees?: number | null
           created_at?: string | null
+          created_on_chain_at?: string | null
           creator_address?: string | null
           description?: string | null
           developer_email?: string | null
@@ -297,6 +299,7 @@ export type Database = {
           bio?: string | null
           collected_fees?: number | null
           created_at?: string | null
+          created_on_chain_at?: string | null
           creator_address?: string | null
           description?: string | null
           developer_email?: string | null

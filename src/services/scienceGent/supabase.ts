@@ -110,6 +110,7 @@ export const saveScienceGentToSupabase = async (
       is_migrated: scienceGent.is_migrated,
       migration_eligible: scienceGent.migration_eligible,
       created_at: scienceGent.created_at,
+      created_on_chain_at: scienceGent.created_on_chain_at,
       // Ensure maturity_deadline is properly typed as a number or null
       maturity_deadline: typeof scienceGent.maturity_deadline === 'number' 
         ? scienceGent.maturity_deadline 

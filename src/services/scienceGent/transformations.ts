@@ -117,6 +117,11 @@ export const transformBlockchainToSupabaseFormat = async (
   // Calculate migration condition
   const migrationCondition = (2 * virtualETH) + (blockchainData.capabilityFees || 0);
   
+  // Convert creation timestamp to ISO string if available
+  const createdAt = blockchainData.creationTimestamp
+    ? new Date(blockchainData.creationTimestamp * 1000).toISOString()
+    : null;
+  
   // Main ScienceGent data for the sciencegents table
   const scienceGent = {
     address: blockchainData.address,
@@ -130,9 +135,8 @@ export const transformBlockchainToSupabaseFormat = async (
     socials: blockchainData.socialLinks ? JSON.stringify(blockchainData.socialLinks) : null,
     is_migrated: tokenStats.migrated, // Changed from isMigrated to migrated
     migration_eligible: tokenStats.migrationEligible,
-    created_at: blockchainData.creationTimestamp 
-      ? new Date(blockchainData.creationTimestamp * 1000).toISOString() 
-      : null,
+    created_at: createdAt,
+    created_on_chain_at: createdAt, // Also populate the new created_on_chain_at field
     maturity_deadline: blockchainData.maturityDeadline || null,
     remaining_maturity_time: remainingMaturityTime,
     maturity_progress: maturityProgress,
@@ -197,13 +201,16 @@ export const transformSupabaseToFormattedScienceGent = (
     console.error("Error parsing social links:", e);
   }
   
+  // Use created_on_chain_at first, then fallback to created_at for timestamps
+  const timestampField = supabaseData.created_on_chain_at || supabaseData.created_at;
+  
   // Calculate token age from creation timestamp
-  const creationTimestamp = supabaseData.created_at 
-    ? new Date(supabaseData.created_at).getTime() / 1000
+  const creationTimestamp = timestampField 
+    ? new Date(timestampField).getTime() / 1000
     : undefined;
     
   // Calculate formatted token age
-  const formattedAge = formatAge(supabaseData.created_at);
+  const formattedAge = formatAge(timestampField);
   
   // Create a formatted ScienceGent object for UI
   return {
