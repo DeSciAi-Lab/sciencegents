@@ -1,4 +1,3 @@
-
 import { ScienceGentData, TokenStats, CapabilityDetail } from './types';
 import { supabase } from '@/integrations/supabase/client';
 import { transformBlockchainToSupabaseFormat, formatAge } from './transformations';
@@ -43,8 +42,8 @@ export const fetchScienceGentFromSupabase = async (address: string) => {
         data.collected_fees || 0
       ),
       // Calculate token age if it's not available in the database
-      tokenAge: data.created_at 
-        ? Math.floor(Date.now() / 1000) - new Date(data.created_at).getTime() / 1000
+      tokenAge: data.created_on_chain_at 
+        ? Math.floor(Date.now() / 1000) - new Date(data.created_on_chain_at).getTime() / 1000
         : 0,
       // Use remaining_maturity_time from database if available
       remainingMaturityTime: data.remaining_maturity_time || 0
@@ -89,19 +88,10 @@ export const saveScienceGentToSupabase = async (
   tokenStats: TokenStats
 ) => {
   try {
-    console.log("Starting save to Supabase for:", scienceGentData.address);
+    console.log("Saving ScienceGent to Supabase:", scienceGentData.address);
     
     // Transform the data to Supabase format
-    const transformedData = await transformBlockchainToSupabaseFormat(scienceGentData, tokenStats);
-    const scienceGent = transformedData.scienceGent;
-    const scienceGentStats = transformedData.scienceGentStats;
-    
-    console.log("Data transformed for Supabase, key fields:", {
-      name: scienceGent.name,
-      market_cap: scienceGent.market_cap,
-      price_usd: scienceGent.price_usd,
-      token_price: scienceGent.token_price
-    });
+    const { scienceGent, scienceGentStats } = transformBlockchainToSupabaseFormat(scienceGentData, tokenStats);
     
     // Prepare data for upsert, ensuring all value types match the database schema
     const supabaseData = {
@@ -116,21 +106,20 @@ export const saveScienceGentToSupabase = async (
       socials: scienceGent.socials,
       is_migrated: scienceGent.is_migrated,
       migration_eligible: scienceGent.migration_eligible,
-      created_at: scienceGent.created_at,
       created_on_chain_at: scienceGent.created_on_chain_at,
+      // Ensure maturity_deadline is properly typed as a number or null
       maturity_deadline: typeof scienceGent.maturity_deadline === 'number' 
         ? scienceGent.maturity_deadline 
         : null,
+      // Ensure remaining_maturity_time is a number or null, not a string
       remaining_maturity_time: typeof scienceGent.remaining_maturity_time === 'number'
         ? scienceGent.remaining_maturity_time
         : null,
       maturity_progress: scienceGent.maturity_progress,
       token_price: scienceGent.token_price,
-      price_usd: scienceGent.price_usd,
       market_cap: scienceGent.market_cap,
       virtual_eth: scienceGent.virtual_eth,
       collected_fees: scienceGent.collected_fees,
-      total_liquidity: scienceGent.total_liquidity,
       last_synced_at: scienceGent.last_synced_at,
       domain: scienceGent.domain,
       agent_fee: scienceGent.agent_fee,
@@ -143,12 +132,6 @@ export const saveScienceGentToSupabase = async (
       developer_github: scienceGent.developer_github,
       developer_website: scienceGent.developer_website
     };
-    
-    console.log("Final data prepared for upsert:", {
-      address: supabaseData.address,
-      market_cap: supabaseData.market_cap,
-      price_usd: supabaseData.price_usd,
-    });
     
     // Insert or update the ScienceGent
     const { data, error } = await supabase

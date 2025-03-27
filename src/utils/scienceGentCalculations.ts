@@ -1,52 +1,6 @@
+
 import { ethers } from 'ethers';
 import { TokenStats } from '@/services/scienceGent/types';
-
-/**
- * Fetches current ETH price in USD from CoinGecko API
- * @returns Promise that resolves with ETH price in USD
- */
-export const fetchCurrentEthPrice = async (): Promise<number> => {
-  try {
-    const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd');
-    const data = await response.json();
-    return data.ethereum?.usd || 0;
-  } catch (error) {
-    console.error("Error fetching ETH price:", error);
-    return 0;
-  }
-};
-
-/**
- * Safely converts any number-like value to a number
- * @param value The value to convert
- * @param defaultValue Default value if conversion fails
- * @returns A safe number
- */
-const safeNumberConversion = (value: any, defaultValue: number = 0): number => {
-  if (value === undefined || value === null) return defaultValue;
-  
-  try {
-    // If it's already a number
-    if (typeof value === 'number') return value;
-    
-    // If it's a BigNumber with toNumber method
-    if (value.toNumber && typeof value.toNumber === 'function') {
-      try {
-        return value.toNumber();
-      } catch (e) {
-        // If toNumber() overflows, use string conversion (with potential loss of precision)
-        console.warn("BigNumber overflow, using string conversion", e);
-        return parseFloat(value.toString()) || defaultValue;
-      }
-    }
-    
-    // If it's a string or can be converted to string
-    return parseFloat(value.toString()) || defaultValue;
-  } catch (error) {
-    console.warn("Error converting to number:", error);
-    return defaultValue;
-  }
-};
 
 /**
  * Calculates the maturity progress percentage
@@ -61,10 +15,10 @@ export const calculateMaturityProgress = (
   capabilityFees: string | number = '0'
 ): number => {
   try {
-    // Convert inputs to numbers if they're strings using safe conversion
-    const vETH = safeNumberConversion(virtualETH);
-    const fees = safeNumberConversion(collectedFees);
-    const capFees = safeNumberConversion(capabilityFees);
+    // Convert inputs to numbers if they're strings
+    const vETH = typeof virtualETH === 'string' ? parseFloat(virtualETH) : virtualETH;
+    const fees = typeof collectedFees === 'string' ? parseFloat(collectedFees) : collectedFees;
+    const capFees = typeof capabilityFees === 'string' ? parseFloat(capabilityFees) : capabilityFees;
     
     if (vETH === 0) return 0;
     
@@ -89,15 +43,7 @@ export const calculateMaturityProgress = (
 export const calculateTokenPrice = (currentPrice: string): number => {
   try {
     if (!currentPrice) return 0;
-    
-    // First try parsing as Wei
-    try {
-      return parseFloat(ethers.utils.formatEther(currentPrice));
-    } catch (error) {
-      console.warn("Failed to format as ETH, attempting direct parse:", error);
-      // If that fails, try direct parsing
-      return parseFloat(currentPrice) || 0;
-    }
+    return parseFloat(ethers.utils.formatEther(currentPrice));
   } catch (error) {
     console.error("Error calculating token price:", error);
     return 0;
@@ -128,60 +74,19 @@ export const calculateMarketCap = (
 };
 
 /**
- * Calculate token price in USD
- * @param ethPrice ETH price in USD
- * @param tokenPrice Token price in ETH
- * @returns Token price in USD
- */
-export const calculateTokenPriceUSD = (ethPrice: number, tokenPrice: number): number => {
-  return ethPrice * tokenPrice;
-};
-
-/**
- * Calculate market cap in USD
- * @param priceUSD Token price in USD
- * @param totalSupply Total supply
- * @returns Market cap in USD
- */
-export const calculateMarketCapUSD = (priceUSD: number, totalSupply: number): number => {
-  return priceUSD * totalSupply;
-};
-
-/**
- * Calculate total liquidity in USD
- * @param ethReserve ETH reserve from blockchain
- * @param ethPrice ETH price in USD
- * @returns Total liquidity in USD
- */
-export const calculateTotalLiquidity = (ethReserve: string | number, ethPrice: number): number => {
-  const reserve = typeof ethReserve === 'string' 
-    ? parseFloat(ethers.utils.formatEther(ethReserve))
-    : ethReserve;
-    
-  return reserve * ethPrice;
-};
-
-/**
  * Get all token metrics in one function
  * @param tokenStats Token statistics from blockchain
  * @param totalSupply Total token supply
  * @param capabilityFees Optional capability fees
  * @returns Object with calculated metrics
  */
-export const getTokenMetrics = async (
+export const getTokenMetrics = (
   tokenStats: TokenStats,
   totalSupply: string,
   capabilityFees: number = 0
 ) => {
   const tokenPrice = calculateTokenPrice(tokenStats.currentPrice);
-  
-  // Fetch current ETH price
-  const ethPrice = await fetchCurrentEthPrice();
-  
-  // Calculate USD values
-  const tokenPriceUSD = calculateTokenPriceUSD(ethPrice, tokenPrice);
   const marketCap = calculateMarketCap(tokenPrice, totalSupply);
-  const marketCapUSD = calculateMarketCapUSD(tokenPriceUSD, parseFloat(ethers.utils.formatEther(totalSupply)));
   
   const virtualETH = tokenStats.virtualETH
     ? parseFloat(ethers.utils.formatEther(tokenStats.virtualETH))
@@ -191,16 +96,6 @@ export const getTokenMetrics = async (
     ? parseFloat(ethers.utils.formatEther(tokenStats.collectedFees))
     : 0;
     
-  const ethReserve = tokenStats.ethReserve
-    ? parseFloat(ethers.utils.formatEther(tokenStats.ethReserve))
-    : 0;
-    
-  const totalLiquidity = calculateTotalLiquidity(ethReserve, ethPrice);
-  
-  // Migration condition calculation
-  const migrationCondition = (2 * virtualETH) + capabilityFees;
-  
-  // Calculate maturity progress using the utility function
   const maturityProgress = calculateMaturityProgress(
     virtualETH,
     collectedFees,
@@ -209,14 +104,9 @@ export const getTokenMetrics = async (
   
   return {
     tokenPrice,
-    tokenPriceUSD,
     marketCap,
-    marketCapUSD,
     virtualETH,
     collectedFees,
-    ethReserve,
-    totalLiquidity,
-    migrationCondition,
     maturityProgress,
     isMigrationEligible: maturityProgress >= 100,
   };

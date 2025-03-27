@@ -36,28 +36,12 @@ export const fetchScienceGentFromBlockchain = async (
     // Fetch token capabilities
     const capabilities = await factoryContract.getTokenCapabilitiesPage(address, 0, 100);
     
-    // Process timestamp - safely handle BigNumber conversion
+    // Process timestamp
     let creationTimestamp = 0;
-    if (tokenDetails[6]) {
-      try {
-        // Handle the BigNumber object safely
-        creationTimestamp = tokenDetails[6].toNumber ? tokenDetails[6].toNumber() : Number(tokenDetails[6]);
-      } catch (error) {
-        console.warn("Could not parse creationTimestamp as number:", error);
-        // If toNumber() overflows, convert to string and then parse as float (with loss of precision but prevents crash)
-        creationTimestamp = parseFloat(tokenDetails[6].toString()) || 0;
-      }
-    }
-    
-    // Safe conversion for maturityDeadline
-    let maturityDeadline = 0;
-    if (tokenDetails[7]) {
-      try {
-        maturityDeadline = tokenDetails[7].toNumber ? tokenDetails[7].toNumber() : Number(tokenDetails[7]);
-      } catch (error) {
-        console.warn("Could not parse maturityDeadline as number:", error);
-        maturityDeadline = parseFloat(tokenDetails[7].toString()) || 0;
-      }
+    if (tokenDetails[6] && typeof tokenDetails[6] === 'object' && tokenDetails[6]._isBigNumber) {
+      creationTimestamp = tokenDetails[6].toNumber();
+    } else if (tokenDetails[6]) {
+      creationTimestamp = Number(tokenDetails[6]);
     }
     
     // Create ScienceGent data object
@@ -69,7 +53,7 @@ export const fetchScienceGentFromBlockchain = async (
       creator: tokenDetails[3],
       isMigrated: tokenDetails[5],
       creationTimestamp: creationTimestamp,
-      maturityDeadline: maturityDeadline,
+      maturityDeadline: tokenDetails[7]?.toNumber() || 0,
       capabilities: capabilities || []
     };
     
@@ -109,34 +93,6 @@ export const fetchTokenStatsFromBlockchain = async (
     // Fetch token stats from swap
     const tokenStats = await swapContract.getTokenStats(address);
     
-    // Log token stats for debugging
-    console.log("Token stats:", {
-      tokenReserve: tokenStats[0].toString(),
-      ethReserve: tokenStats[1].toString(),
-      virtualETH: tokenStats[2].toString(),
-      collectedFees: tokenStats[3].toString(),
-      tradingEnabled: tokenStats[4],
-      creator: tokenStats[5],
-      creationTimestamp: tokenStats[6].toString(),
-      maturityDeadline: tokenStats[7].toString(),
-      migrated: tokenStats[8],
-      lpUnlockTime: tokenStats[9].toString(),
-      lockedLPAmount: tokenStats[10].toString(),
-      currentPrice: tokenStats[11].toString(),
-      migrationEligible: tokenStats[12]
-    });
-    
-    // Safely convert numeric values
-    const safeToNumber = (bn: ethers.BigNumber): number => {
-      try {
-        return bn.toNumber();
-      } catch (error) {
-        console.warn("BigNumber overflow, using string conversion:", error);
-        // For display purposes, we can use a large but safe number
-        return parseFloat(bn.toString()) || 0;
-      }
-    };
-    
     // Create TokenStats object - Fix the property name from 'isMigrated' to 'migrated'
     const stats: TokenStats = {
       tokenReserve: tokenStats[0].toString(),
@@ -145,15 +101,16 @@ export const fetchTokenStatsFromBlockchain = async (
       collectedFees: tokenStats[3].toString(),
       tradingEnabled: tokenStats[4],
       creator: tokenStats[5],
-      creationTimestamp: safeToNumber(tokenStats[6]),
-      maturityDeadline: safeToNumber(tokenStats[7]),
+      creationTimestamp: tokenStats[6].toNumber(),
+      maturityDeadline: tokenStats[7].toNumber(),
       migrated: tokenStats[8], // Changed from isMigrated to migrated
-      lpUnlockTime: safeToNumber(tokenStats[9]),
+      lpUnlockTime: tokenStats[9].toNumber(),
       lockedLPAmount: tokenStats[10].toString(),
       currentPrice: tokenStats[11].toString(),
       migrationEligible: tokenStats[12]
     };
     
+    console.log("Token stats:", stats);
     return stats;
   } catch (error) {
     console.error("Error fetching token stats from blockchain:", error);
@@ -310,15 +267,10 @@ export const fetchCreationTimestampFromBlockchain = async (
     
     // Extract creation timestamp from the return value (index 6 is creationTimestamp)
     let creationTimestamp = 0;
-    if (tokenDetails[6]) {
-      try {
-        // Handle the BigNumber object safely
-        creationTimestamp = tokenDetails[6].toNumber ? tokenDetails[6].toNumber() : Number(tokenDetails[6]);
-      } catch (error) {
-        console.warn("Could not parse creationTimestamp as number:", error);
-        // If toNumber() overflows, convert to string and then parse as float (with loss of precision but prevents crash)
-        creationTimestamp = parseFloat(tokenDetails[6].toString()) || 0;
-      }
+    if (tokenDetails[6] && typeof tokenDetails[6] === 'object' && tokenDetails[6]._isBigNumber) {
+      creationTimestamp = tokenDetails[6].toNumber();
+    } else if (tokenDetails[6]) {
+      creationTimestamp = Number(tokenDetails[6]);
     }
     
     console.log("Blockchain creation timestamp:", creationTimestamp);
