@@ -61,21 +61,18 @@ export async function getScienceGentsList(
         )
       `, { count: 'exact' });
     
-    // Apply filters
+    // Apply filters - replacing potentially recursive complex filter builder
     if (filters.domain && filters.domain.length > 0) {
       query = query.in('domain', filters.domain);
     }
     
     if (filters.isCurated !== undefined) {
-      query = query.eq('is_curated', filters.isCurated);
+      query = query.eq('isCurated', filters.isCurated);
     }
     
     if (filters.searchTerm) {
       query = query.or(`name.ilike.%${filters.searchTerm}%,symbol.ilike.%${filters.searchTerm}%,description.ilike.%${filters.searchTerm}%,address.ilike.%${filters.searchTerm}%`);
     }
-    
-    // Apply sorting
-    let sortField = sort;
     
     // Map frontend sort fields to database fields if needed
     const sortMapping: Record<string, string> = {
@@ -84,10 +81,9 @@ export async function getScienceGentsList(
       'age': 'created_at',
       'name': 'name',
       'priceChange24h': 'price_change_24h'
-      // Add more mappings as needed
     };
     
-    const dbSortField = sortMapping[sortField as string] || sortField;
+    const dbSortField = sortMapping[sort as string] || sort;
     
     // Pagination
     const from = (page - 1) * pageSize;
@@ -144,7 +140,7 @@ export async function getScienceGentsList(
             revenue: Math.floor(Math.random() * 10000), // Placeholder
             rating: Math.floor(Math.random() * 5) + 1, // Placeholder
             domain: sg.domain || 'General',
-            isCurated: sg.is_curated || false,
+            isCurated: sg.isCurated || false, // Changed from is_curated to isCurated
             maturityProgress: sg.maturity_progress || 0,
             isMigrated: sg.is_migrated || false,
             migrationEligible: sg.migration_eligible || false,
@@ -169,7 +165,7 @@ export async function getScienceGentsList(
             revenue: Math.floor(Math.random() * 10000), // Placeholder
             rating: Math.floor(Math.random() * 5) + 1, // Placeholder
             domain: sg.domain || 'General',
-            isCurated: sg.is_curated || false,
+            isCurated: sg.isCurated || false, // Changed from is_curated to isCurated
             maturityProgress: sg.maturity_progress || 0,
             isMigrated: sg.is_migrated || false,
             migrationEligible: sg.migration_eligible || false,
