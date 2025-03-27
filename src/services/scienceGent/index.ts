@@ -29,9 +29,9 @@ export {
   formatAge
 } from './transformations';
 
-// Export utility functions
+// Import utility functions for calculations
 import { 
-  fetchCurrentEthPrice, 
+  fetchCurrentEthPrice,
   calculateTokenPrice,
   calculateMarketCap
 } from '@/utils/scienceGentCalculations';
@@ -47,7 +47,10 @@ export {
   fetchCreationTimestampFromBlockchain,
   syncAllCreationTimestampsFromBlockchain,
   saveScienceGentToSupabase,
-  fetchScienceGentFromSupabase
+  fetchScienceGentFromSupabase,
+  fetchCurrentEthPrice,
+  calculateTokenPrice,
+  calculateMarketCap
 };
 
 /**
@@ -64,22 +67,22 @@ export const syncScienceGent = async (address: string): Promise<boolean> => {
     console.log("Fetched ScienceGent data:", {
       name: scienceGentData?.name,
       symbol: scienceGentData?.symbol,
-      totalSupply: scienceGentData?.totalSupply
+      totalSupply: scienceGentData?.totalSupply?.toString()
     });
     
     const tokenStats = await fetchTokenStatsFromBlockchain(address);
     console.log("Fetched token stats:", {
-      currentPrice: tokenStats?.currentPrice,
-      ethReserve: tokenStats?.ethReserve,
-      virtualETH: tokenStats?.virtualETH,
-      collectedFees: tokenStats?.collectedFees
+      currentPrice: tokenStats?.currentPrice?.toString(),
+      ethReserve: tokenStats?.ethReserve?.toString(),
+      virtualETH: tokenStats?.virtualETH?.toString(),
+      collectedFees: tokenStats?.collectedFees?.toString()
     });
     
     if (!scienceGentData || !tokenStats) {
       throw new Error("Failed to fetch ScienceGent data from blockchain");
     }
     
-    // Calculate market cap
+    // Calculate market cap - ensuring we have proper conversions
     const tokenPrice = calculateTokenPrice(tokenStats.currentPrice);
     console.log("Calculated token price in ETH:", tokenPrice);
     
@@ -93,6 +96,14 @@ export const syncScienceGent = async (address: string): Promise<boolean> => {
       console.log("Total supply formatted:", totalSupplyFormatted);
     } catch (error) {
       console.error("Error formatting total supply:", error);
+      // If we can't format using ethers, try a manual conversion
+      try {
+        // Assuming 18 decimals
+        totalSupplyFormatted = Number(scienceGentData.totalSupply) / 10**18;
+        console.log("Total supply manually formatted:", totalSupplyFormatted);
+      } catch (secondError) {
+        console.error("Failed manual formatting too:", secondError);
+      }
     }
     
     // Calculate market cap in ETH

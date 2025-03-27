@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -42,12 +41,10 @@ const ScienceGentSync = () => {
   const [selectedToken, setSelectedToken] = useState<ScienceGentToken | null>(null);
   const [syncLog, setSyncLog] = useState<string[]>([]);
 
-  // Fetch tokens on mount
   useEffect(() => {
     fetchScienceGentTokens();
   }, []);
 
-  // Filter tokens when search query changes
   useEffect(() => {
     if (!searchQuery) {
       setFilteredTokens(scienceGentTokens);
@@ -98,7 +95,6 @@ const ScienceGentSync = () => {
       setLastSyncTime(new Date().toISOString());
       setSyncMessage("Sync completed successfully!");
       
-      // Refresh the token list
       await fetchScienceGentTokens();
       
       toast({
@@ -129,7 +125,6 @@ const ScienceGentSync = () => {
       setLastTimestampSyncTime(new Date().toISOString());
       setTimestampSyncMessage("Creation timestamp sync completed successfully!");
       
-      // Refresh the token list
       await fetchScienceGentTokens();
       
       toast({
@@ -169,39 +164,42 @@ const ScienceGentSync = () => {
         description: `Syncing ${selectedToken.name} (${selectedToken.symbol})...`,
       });
       
-      // Use our enhanced syncScienceGent function
-      const consoleSpy = (message: string) => {
-        if (typeof message === 'object') {
-          try {
-            addToSyncLog(JSON.stringify(message));
-          } catch {
-            addToSyncLog(String(message));
-          }
-        } else {
-          addToSyncLog(message);
-        }
-      };
-      
-      // Original console.log 
       const originalLog = console.log;
+      const originalError = console.error;
+      const originalWarn = console.warn;
+      
       console.log = function() {
         originalLog.apply(console, arguments);
-        // Convert arguments to string and add to sync log
         const args = Array.from(arguments).map(arg => 
-          typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
+          typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
         ).join(' ');
         addToSyncLog(args);
       };
       
+      console.error = function() {
+        originalError.apply(console, arguments);
+        const args = Array.from(arguments).map(arg => 
+          typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+        ).join(' ');
+        addToSyncLog(`ERROR: ${args}`);
+      };
+      
+      console.warn = function() {
+        originalWarn.apply(console, arguments);
+        const args = Array.from(arguments).map(arg => 
+          typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+        ).join(' ');
+        addToSyncLog(`WARNING: ${args}`);
+      };
+      
       await syncScienceGent(selectedToken.address);
       
-      // Restore original console.log
       console.log = originalLog;
+      console.error = originalError;
+      console.warn = originalWarn;
       
-      // Refresh the token list
       await fetchScienceGentTokens();
       
-      // Get updated token to show sync results
       const { data } = await supabase
         .from('sciencegents')
         .select('token_price, price_usd, market_cap, total_supply')
@@ -254,7 +252,6 @@ const ScienceGentSync = () => {
   const formatNumber = (num: number | undefined) => {
     if (num === undefined) return "N/A";
     
-    // Format large numbers with commas and small numbers with proper decimals
     return typeof num === 'number' 
       ? num > 0.01 
         ? num.toLocaleString('en-US', { maximumFractionDigits: 2 })
@@ -363,7 +360,7 @@ const ScienceGentSync = () => {
                 <h4 className="text-sm font-medium mb-1">Sync Log:</h4>
                 <div className="bg-gray-50 border rounded-md p-2 max-h-60 overflow-y-auto text-xs font-mono">
                   {syncLog.map((line, i) => (
-                    <div key={i} className={line.includes('ERROR') ? 'text-red-600' : ''}>
+                    <div key={i} className={`${line.includes('ERROR') ? 'text-red-600' : line.includes('WARNING') ? 'text-amber-600' : line.includes('market_cap') || line.includes('Market cap') ? 'text-green-600 font-bold' : ''}`}>
                       {line}
                     </div>
                   ))}
