@@ -18,7 +18,9 @@ export const contractConfig = {
     },
     rpcUrls: ["https://sepolia.infura.io/v3/"],
     blockExplorerUrls: ["https://sepolia.etherscan.io"]
-  }
+  },
+  // Added direct rpcUrl property for easier access
+  rpcUrl: "https://sepolia.infura.io/v3/"
 };
 
 // ScienceGentsFactory ABI (only the functions we need)

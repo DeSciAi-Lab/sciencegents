@@ -7,8 +7,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 import NavbarLayout from '@/components/layout/NavbarLayout';
 import ScienceGentTable from '@/components/sciencegent/ScienceGentTable';
 import { 
-  fetchScienceGents, 
-  filterScienceGents, 
+  getScienceGentsList,
+  fetchScienceGents,
+  filterScienceGents,
   sortScienceGents,
   type ScienceGentListItem
 } from '@/services/scienceGentExploreService';

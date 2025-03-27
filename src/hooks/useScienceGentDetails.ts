@@ -30,7 +30,7 @@ export const useScienceGentDetails = (address: string | undefined) => {
   // Helper function to get current price from blockchain
   const getCurrentPriceFromBlockchain = async (tokenAddress: string) => {
     try {
-      const provider = new ethers.providers.JsonRpcProvider(contractConfig.rpcUrl);
+      const provider = new ethers.providers.JsonRpcProvider(contractConfig.network.rpcUrls[0]);
       const swapContract = new ethers.Contract(
         contractConfig.addresses.ScienceGentsSwap,
         [
@@ -88,7 +88,7 @@ export const useScienceGentDetails = (address: string | undefined) => {
         const maturityProgress = calculateMaturityProgress(
           dbData.virtual_eth || 0,
           dbData.collected_fees || 0,
-          dbData.capability_fees || 0
+          0 // Capability fees - using 0 as fallback since it's not in the data
         );
         
         // Calculate additional properties if needed
@@ -189,7 +189,7 @@ export const useScienceGentDetails = (address: string | undefined) => {
           const maturityProgress = calculateMaturityProgress(
             updatedData.virtual_eth || 0,
             updatedData.collected_fees || 0,
-            updatedData.capability_fees || 0
+            0 // Capability fees - using 0 as fallback
           );
           
           const enrichedData = {
