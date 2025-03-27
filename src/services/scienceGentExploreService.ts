@@ -23,7 +23,7 @@ export interface ScienceGentListItem {
   maturityProgress: number;
   isMigrated?: boolean;
   migrationEligible?: boolean;
-  roi: number; // Added roi property that's required in ScienceGentCard
+  roi: number;
 }
 
 interface ScienceGentFilter {
@@ -39,6 +39,26 @@ export interface FilterOption {
   count: number;
 }
 
+// Type for database row
+interface ScienceGentDbRow {
+  id: string;
+  address: string;
+  name: string;
+  symbol: string;
+  profile_pic?: string;
+  description?: string;
+  token_price: number;
+  price_change_24h: number;
+  market_cap: number;
+  domain: string;
+  is_curated: boolean;
+  maturity_progress: number;
+  is_migrated: boolean;
+  migration_eligible: boolean;
+  total_supply?: string;
+  sciencegent_stats?: { volume_24h: number; holders: number; transactions: number }[];
+}
+
 export async function getScienceGentsList(
   sort: keyof ScienceGentListItem = 'marketCap',
   order: 'asc' | 'desc' = 'desc',
@@ -49,8 +69,8 @@ export async function getScienceGentsList(
   try {
     console.info('Fetching ScienceGents from Supabase');
     
-    // Start building the query - using a simpler approach to avoid deep type instantiation
-    let query = supabase
+    // Use any type to bypass TypeScript's deep type analysis
+    let query: any = supabase
       .from('sciencegents')
       .select(`
         *,
@@ -61,13 +81,13 @@ export async function getScienceGentsList(
         )
       `, { count: 'exact' });
     
-    // Apply filters one by one to avoid complex nested type instantiation
+    // Apply filters one by one
     if (filters.domain && filters.domain.length > 0) {
       query = query.in('domain', filters.domain);
     }
     
     if (filters.isCurated !== undefined) {
-      // Use the database column name is_curated instead of isCurated
+      // Use the database column name is_curated
       query = query.eq('is_curated', filters.isCurated);
     }
     
@@ -116,7 +136,7 @@ export async function getScienceGentsList(
     const transformedData: ScienceGentListItem[] = [];
     
     if (scienceGents) {
-      for (const sg of scienceGents) {
+      for (const sg of scienceGents as ScienceGentDbRow[]) {
         try {
           // Fetch token stats from blockchain for current price
           const stats = await swapContract.getTokenStats(sg.address);
@@ -141,7 +161,7 @@ export async function getScienceGentsList(
             revenue: Math.floor(Math.random() * 10000), // Placeholder
             rating: Math.floor(Math.random() * 5) + 1, // Placeholder
             domain: sg.domain || 'General',
-            isCurated: sg.is_curated || false, // Use is_curated from database
+            isCurated: sg.is_curated || false,
             maturityProgress: sg.maturity_progress || 0,
             isMigrated: sg.is_migrated || false,
             migrationEligible: sg.migration_eligible || false,
@@ -166,7 +186,7 @@ export async function getScienceGentsList(
             revenue: Math.floor(Math.random() * 10000), // Placeholder
             rating: Math.floor(Math.random() * 5) + 1, // Placeholder
             domain: sg.domain || 'General',
-            isCurated: sg.is_curated || false, // Use is_curated from database
+            isCurated: sg.is_curated || false,
             maturityProgress: sg.maturity_progress || 0,
             isMigrated: sg.is_migrated || false,
             migrationEligible: sg.migration_eligible || false,
