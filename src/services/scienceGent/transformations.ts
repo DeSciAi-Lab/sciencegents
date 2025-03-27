@@ -1,4 +1,3 @@
-
 import { ethers } from "ethers";
 import { ScienceGentData, TokenStats, FormattedScienceGent } from "./types";
 import { formatDistanceToNow } from "date-fns";
@@ -26,6 +25,22 @@ export const calculateMaturityProgress = (
     return isNaN(progress) ? 0 : progress;
   } catch (error) {
     console.error("Error calculating maturity progress:", error);
+    return 0;
+  }
+};
+
+/**
+ * Safely format ETH value from BigNumber string
+ * @param value BigNumber string
+ * @returns Formatted ETH value as number or 0 if conversion fails
+ */
+export const safeFormatEther = (value: string): number => {
+  try {
+    if (!value) return 0;
+    const formatted = ethers.utils.formatEther(value);
+    return parseFloat(formatted);
+  } catch (error) {
+    console.error("Error formatting ETH value:", error, "Value:", value);
     return 0;
   }
 };
@@ -78,80 +93,89 @@ export const transformBlockchainToSupabaseFormat = (
   data: ScienceGentData,
   stats: TokenStats
 ) => {
-  // Handle socials data - ensure compatibility with both naming conventions
-  const socialsData = data.socials || {};
-  
-  // Format token price to a number
-  const tokenPrice = stats.currentPrice ? 
-    parseFloat(ethers.utils.formatEther(stats.currentPrice)) : 0;
-  
-  // Ensure consistency between migrated and isMigrated properties
-  const isMigrated = data.isMigrated !== undefined ? data.isMigrated : stats.migrated;
-  
-  // Calculate market cap based on token price and total supply
-  const totalSupplyBN = ethers.BigNumber.from(data.totalSupply);
-  const marketCap = tokenPrice * parseFloat(ethers.utils.formatEther(totalSupplyBN));
+  try {
+    // Handle socials data
+    const socialsData = data.socials || {};
+    
+    // Safely convert values to prevent overflow errors
+    const tokenPrice = safeFormatEther(stats.currentPrice);
+    const virtualETH = safeFormatEther(stats.virtualETH);
+    const collectedFees = safeFormatEther(stats.collectedFees);
+    
+    // Ensure consistency between migrated and isMigrated properties
+    const isMigrated = data.isMigrated !== undefined ? data.isMigrated : stats.migrated;
+    
+    // Calculate market cap - handle big number safely
+    let marketCap = 0;
+    try {
+      const totalSupplyFormatted = ethers.utils.formatEther(data.totalSupply);
+      marketCap = tokenPrice * parseFloat(totalSupplyFormatted);
+    } catch (error) {
+      console.error("Error calculating market cap:", error);
+    }
 
-  // Format timestamps
-  const createdAt = data.createdAt || new Date(data.creationTimestamp * 1000).toISOString();
-  const createdOnChainAt = data.createdOnChainAt || new Date(data.creationTimestamp * 1000).toISOString();
-  
-  // Calculate maturity progress
-  const virtualETH = parseFloat(ethers.utils.formatEther(stats.virtualETH));
-  const collectedFees = parseFloat(ethers.utils.formatEther(stats.collectedFees));
-  const maturityProgress = calculateMaturityProgress(virtualETH, collectedFees);
-  
-  // Calculate remaining maturity time
-  const currentTime = Math.floor(Date.now() / 1000);
-  const remainingMaturityTime = Math.max(0, stats.maturityDeadline - currentTime);
-  
-  const scienceGent = {
-    address: data.address,
-    name: data.name,
-    symbol: data.symbol,
-    description: data.description || '',
-    total_supply: ethers.utils.formatEther(data.totalSupply),
-    creator_address: data.creator,
-    is_migrated: isMigrated,
-    migration_eligible: stats.migrationEligible,
-    created_on_chain_at: createdOnChainAt,
-    maturity_deadline: stats.maturityDeadline,
-    remaining_maturity_time: remainingMaturityTime,
-    token_price: tokenPrice,
-    market_cap: marketCap,
-    virtual_eth: virtualETH,
-    collected_fees: collectedFees,
-    maturity_progress: maturityProgress,
-    domain: 'General', // Default domain if not provided
-    socials: socialsData,
-    last_synced_at: new Date().toISOString(),
-    // Add these fields if present in the data
-    profile_pic: data.profile_pic,
-    website: data.website,
-    agent_fee: data.agent_fee,
-    persona: data.persona,
-    developer_name: data.developer_name,
-    developer_email: data.developer_email,
-    bio: data.bio,
-    developer_twitter: data.developer_twitter,
-    developer_telegram: data.developer_telegram,
-    developer_github: data.developer_github,
-    developer_website: data.developer_website
-  };
-  
-  // Stats object for sciencegent_stats table
-  const scienceGentStats = {
-    sciencegent_address: data.address,
-    volume_24h: stats.volume24h ? parseFloat(stats.volume24h) : 0,
-    transactions: stats.transactions || 0,
-    holders: stats.holders || 0,
-    updated_at: new Date().toISOString()
-  };
-  
-  return {
-    scienceGent,
-    scienceGentStats
-  };
+    // Format timestamps
+    const createdAt = data.createdAt || new Date(data.creationTimestamp * 1000).toISOString();
+    const createdOnChainAt = data.createdOnChainAt || new Date(data.creationTimestamp * 1000).toISOString();
+    
+    // Calculate maturity progress
+    const maturityProgress = calculateMaturityProgress(virtualETH, collectedFees);
+    
+    // Calculate remaining maturity time
+    const currentTime = Math.floor(Date.now() / 1000);
+    const remainingMaturityTime = Math.max(0, stats.maturityDeadline - currentTime);
+    
+    const scienceGent = {
+      address: data.address,
+      name: data.name,
+      symbol: data.symbol,
+      description: data.description || '',
+      total_supply: data.totalSupply, // Keep as string to avoid overflow
+      creator_address: data.creator,
+      is_migrated: isMigrated,
+      migration_eligible: stats.migrationEligible,
+      created_on_chain_at: createdOnChainAt,
+      maturity_deadline: stats.maturityDeadline,
+      remaining_maturity_time: remainingMaturityTime,
+      token_price: tokenPrice,
+      market_cap: marketCap,
+      virtual_eth: virtualETH,
+      collected_fees: collectedFees,
+      maturity_progress: maturityProgress,
+      domain: 'General', // Default domain if not provided
+      socials: socialsData,
+      last_synced_at: new Date().toISOString(),
+      // Add these fields if present in the data
+      profile_pic: data.profile_pic,
+      website: data.website,
+      agent_fee: data.agent_fee,
+      persona: data.persona,
+      developer_name: data.developer_name,
+      developer_email: data.developer_email,
+      bio: data.bio,
+      developer_twitter: data.developer_twitter,
+      developer_telegram: data.developer_telegram,
+      developer_github: data.developer_github,
+      developer_website: data.developer_website
+    };
+    
+    // Stats object for sciencegent_stats table
+    const scienceGentStats = {
+      sciencegent_address: data.address,
+      volume_24h: stats.volume24h ? parseFloat(stats.volume24h) : 0,
+      transactions: stats.transactions || 0,
+      holders: stats.holders || 0,
+      updated_at: new Date().toISOString()
+    };
+    
+    return {
+      scienceGent,
+      scienceGentStats
+    };
+  } catch (error) {
+    console.error("Error transforming blockchain data to Supabase format:", error);
+    throw error;
+  }
 };
 
 /**

@@ -1,6 +1,7 @@
 
 import { ethers } from 'ethers';
 import { TokenStats } from '@/services/scienceGent/types';
+import { safeFormatEtherAsNumber } from './ethersUtils';
 
 /**
  * Calculates the maturity progress percentage
@@ -16,9 +17,14 @@ export const calculateMaturityProgress = (
 ): number => {
   try {
     // Convert inputs to numbers if they're strings
-    const vETH = typeof virtualETH === 'string' ? parseFloat(virtualETH) : virtualETH;
-    const fees = typeof collectedFees === 'string' ? parseFloat(collectedFees) : collectedFees;
-    const capFees = typeof capabilityFees === 'string' ? parseFloat(capabilityFees) : capabilityFees;
+    const vETH = typeof virtualETH === 'string' ? 
+      safeFormatEtherAsNumber(virtualETH) : virtualETH;
+    
+    const fees = typeof collectedFees === 'string' ? 
+      safeFormatEtherAsNumber(collectedFees) : collectedFees;
+    
+    const capFees = typeof capabilityFees === 'string' ? 
+      parseFloat(capabilityFees) : capabilityFees;
     
     if (vETH === 0) return 0;
     
@@ -43,7 +49,7 @@ export const calculateMaturityProgress = (
 export const calculateTokenPrice = (currentPrice: string): number => {
   try {
     if (!currentPrice) return 0;
-    return parseFloat(ethers.utils.formatEther(currentPrice));
+    return safeFormatEtherAsNumber(currentPrice);
   } catch (error) {
     console.error("Error calculating token price:", error);
     return 0;
@@ -62,9 +68,18 @@ export const calculateMarketCap = (
 ): number => {
   try {
     // Convert totalSupply to number if it's a string
-    const supply = typeof totalSupply === 'string' 
-      ? parseFloat(ethers.utils.formatEther(totalSupply))
-      : totalSupply;
+    let supply: number;
+    
+    if (typeof totalSupply === 'string') {
+      try {
+        supply = safeFormatEtherAsNumber(totalSupply);
+      } catch (e) {
+        // Fallback if formatEther fails
+        supply = parseFloat(totalSupply);
+      }
+    } else {
+      supply = totalSupply;
+    }
     
     return tokenPrice * supply;
   } catch (error) {
@@ -89,11 +104,11 @@ export const getTokenMetrics = (
   const marketCap = calculateMarketCap(tokenPrice, totalSupply);
   
   const virtualETH = tokenStats.virtualETH
-    ? parseFloat(ethers.utils.formatEther(tokenStats.virtualETH))
+    ? safeFormatEtherAsNumber(tokenStats.virtualETH)
     : 0;
     
   const collectedFees = tokenStats.collectedFees
-    ? parseFloat(ethers.utils.formatEther(tokenStats.collectedFees))
+    ? safeFormatEtherAsNumber(tokenStats.collectedFees)
     : 0;
     
   const maturityProgress = calculateMaturityProgress(

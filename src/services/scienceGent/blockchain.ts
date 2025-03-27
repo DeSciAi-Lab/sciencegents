@@ -44,12 +44,15 @@ export const fetchScienceGentFromBlockchain = async (
       creationTimestamp = Number(tokenDetails[6]);
     }
     
+    // Handle big numbers more safely by keeping them as strings
+    const totalSupplyString = tokenDetails[2].toString();
+    
     // Create ScienceGent data object
     const scienceGentData: ScienceGentData = {
       address: address,
       name: tokenDetails[0],
       symbol: tokenDetails[1],
-      totalSupply: tokenDetails[2].toString(),
+      totalSupply: totalSupplyString,
       creator: tokenDetails[3],
       isMigrated: tokenDetails[5],
       creationTimestamp: creationTimestamp,
@@ -93,7 +96,7 @@ export const fetchTokenStatsFromBlockchain = async (
     // Fetch token stats from swap
     const tokenStats = await swapContract.getTokenStats(address);
     
-    // Create TokenStats object - Fix the property name from 'isMigrated' to 'migrated'
+    // Always convert BigNumbers to strings to avoid overflow issues
     const stats: TokenStats = {
       tokenReserve: tokenStats[0].toString(),
       ethReserve: tokenStats[1].toString(),
@@ -356,5 +359,19 @@ export const syncAllCreationTimestampsFromBlockchain = async (): Promise<{ syncC
   } catch (error) {
     console.error("Error in syncAllCreationTimestampsFromBlockchain:", error);
     return { syncCount: 0, errorCount: 1 };
+  }
+};
+
+/**
+ * Safely formats a big number string to ETH
+ * @param value BigNumber string
+ * @returns Formatted ETH value or 0 if conversion fails
+ */
+export const safeFormatEther = (value: string): string => {
+  try {
+    return ethers.utils.formatEther(value);
+  } catch (error) {
+    console.error("Error formatting big number:", error);
+    return "0";
   }
 };
