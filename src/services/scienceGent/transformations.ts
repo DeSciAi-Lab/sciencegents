@@ -15,41 +15,127 @@ export const transformBlockchainToSupabaseFormat = async (
 ) => {
   try {
     console.log("Transforming data for Supabase...");
+    console.log("Input ScienceGentData:", JSON.stringify(scienceGentData, null, 2));
+    console.log("Input TokenStats:", JSON.stringify(tokenStats, null, 2));
     
     // Format total supply
     let totalSupplyFormatted = 0;
     try {
-      totalSupplyFormatted = parseFloat(ethers.utils.formatEther(scienceGentData.totalSupply));
+      // Try to parse the total supply using ethers.js
+      if (typeof scienceGentData.totalSupply === 'string') {
+        totalSupplyFormatted = parseFloat(ethers.utils.formatEther(scienceGentData.totalSupply));
+      } else if (typeof scienceGentData.totalSupply === 'object' && scienceGentData.totalSupply._hex) {
+        // Handle BigNumber objects
+        totalSupplyFormatted = parseFloat(ethers.utils.formatEther(scienceGentData.totalSupply));
+      } else {
+        // Fallback to manual calculation for number values
+        totalSupplyFormatted = Number(scienceGentData.totalSupply) / 10**18;
+      }
       console.log("Total supply formatted:", totalSupplyFormatted);
     } catch (error) {
       console.error("Error formatting total supply in transformation:", error);
       // Fallback to manual calculation
-      totalSupplyFormatted = Number(scienceGentData.totalSupply) / 10**18;
+      try {
+        totalSupplyFormatted = Number(scienceGentData.totalSupply) / 10**18;
+        console.log("Manually calculated total supply:", totalSupplyFormatted);
+      } catch (secondError) {
+        console.error("Failed to calculate total supply manually:", secondError);
+      }
     }
     
     // Get current ETH price
-    const ethPrice = await fetchCurrentEthPrice();
-    console.log("ETH price in transformation:", ethPrice);
+    let ethPrice = 0;
+    try {
+      ethPrice = await fetchCurrentEthPrice();
+      console.log("ETH price in transformation:", ethPrice);
+    } catch (error) {
+      console.error("Error fetching ETH price:", error);
+      ethPrice = 2000; // Default fallback price
+    }
     
     // Calculate token price in ETH
-    const tokenPrice = calculateTokenPrice(tokenStats.currentPrice);
-    console.log("Token price in ETH in transformation:", tokenPrice);
+    let tokenPrice = 0;
+    try {
+      tokenPrice = calculateTokenPrice(tokenStats.currentPrice);
+      console.log("Token price in ETH in transformation:", tokenPrice);
+    } catch (error) {
+      console.error("Error calculating token price:", error);
+    }
     
     // Calculate token price in USD
     const priceUsd = tokenPrice * ethPrice;
     console.log("Token price in USD in transformation:", priceUsd);
     
     // Calculate market cap
-    const marketCap = priceUsd * totalSupplyFormatted;
-    console.log("Calculated market cap in USD in transformation:", marketCap);
+    let marketCap = 0;
+    try {
+      marketCap = priceUsd * totalSupplyFormatted;
+      console.log("Calculated market cap in USD in transformation:", marketCap);
+      
+      // Check for NaN or infinity
+      if (!isFinite(marketCap)) {
+        console.warn("Market cap calculation resulted in non-finite value, using fallback");
+        // Fallback calculation
+        marketCap = tokenPrice * totalSupplyFormatted;
+      }
+    } catch (error) {
+      console.error("Error calculating market cap:", error);
+    }
     
     // Calculate maturity progress
     let maturityProgress = 0;
-    if (tokenStats.virtualETH && parseFloat(ethers.utils.formatEther(tokenStats.virtualETH)) > 0) {
-      const virtualEth = parseFloat(ethers.utils.formatEther(tokenStats.virtualETH));
-      const collectedFees = parseFloat(ethers.utils.formatEther(tokenStats.collectedFees || '0'));
-      const targetFees = 2 * virtualEth; // 2x virtual ETH for migration
-      maturityProgress = Math.min(Math.round((collectedFees / targetFees) * 100), 100);
+    try {
+      if (tokenStats.virtualETH && parseFloat(ethers.utils.formatEther(tokenStats.virtualETH)) > 0) {
+        const virtualEth = parseFloat(ethers.utils.formatEther(tokenStats.virtualETH));
+        const collectedFees = parseFloat(ethers.utils.formatEther(tokenStats.collectedFees || '0'));
+        const targetFees = 2 * virtualEth; // 2x virtual ETH for migration
+        maturityProgress = Math.min(Math.round((collectedFees / targetFees) * 100), 100);
+        console.log("Calculated maturity progress:", maturityProgress);
+      }
+    } catch (error) {
+      console.error("Error calculating maturity progress:", error);
+    }
+    
+    // Handle social links - they might come in different formats
+    let socials = {};
+    try {
+      socials = scienceGentData.socialLinks || scienceGentData.socials || {};
+    } catch (error) {
+      console.error("Error processing social links:", error);
+    }
+    
+    // Handle migration status
+    const isMigrated = tokenStats.migrated || tokenStats.isMigrated || false;
+    
+    // Handle creation timestamps
+    let createdAt = new Date().toISOString();
+    try {
+      if (scienceGentData.createdAt) {
+        if (typeof scienceGentData.createdAt === 'number') {
+          createdAt = new Date(scienceGentData.createdAt).toISOString();
+        } else {
+          createdAt = scienceGentData.createdAt;
+        }
+      } else if (tokenStats.creationTimestamp) {
+        createdAt = new Date(tokenStats.creationTimestamp * 1000).toISOString();
+      }
+    } catch (error) {
+      console.error("Error processing creation timestamp:", error);
+    }
+    
+    let createdOnChainAt = null;
+    try {
+      if (scienceGentData.createdOnChainAt) {
+        if (typeof scienceGentData.createdOnChainAt === 'number') {
+          createdOnChainAt = new Date(scienceGentData.createdOnChainAt).toISOString();
+        } else {
+          createdOnChainAt = scienceGentData.createdOnChainAt;
+        }
+      } else if (tokenStats.creationTimestamp) {
+        createdOnChainAt = new Date(tokenStats.creationTimestamp * 1000).toISOString();
+      }
+    } catch (error) {
+      console.error("Error processing on-chain creation timestamp:", error);
     }
     
     // Format basic token data
@@ -62,19 +148,11 @@ export const transformBlockchainToSupabaseFormat = async (
       description: scienceGentData.description || '',
       profile_pic: scienceGentData.profilePic || '',
       website: scienceGentData.website || '',
-      socials: scienceGentData.socialLinks || scienceGentData.socials || {}, // Use either property
-      is_migrated: tokenStats.migrated || tokenStats.isMigrated || false, // Handle both property names
+      socials: socials,
+      is_migrated: isMigrated,
       migration_eligible: tokenStats.migrationEligible || false,
-      created_at: scienceGentData.createdAt ? 
-        (typeof scienceGentData.createdAt === 'number' ? 
-          new Date(scienceGentData.createdAt).toISOString() : 
-          scienceGentData.createdAt) : 
-        new Date().toISOString(),
-      created_on_chain_at: scienceGentData.createdOnChainAt ? 
-        (typeof scienceGentData.createdOnChainAt === 'number' ? 
-          new Date(scienceGentData.createdOnChainAt).toISOString() : 
-          scienceGentData.createdOnChainAt) : 
-        null,
+      created_at: createdAt,
+      created_on_chain_at: createdOnChainAt,
       maturity_deadline: tokenStats.maturityDeadline ? Number(tokenStats.maturityDeadline) : null,
       remaining_maturity_time: tokenStats.remainingMaturityTime ? Number(tokenStats.remainingMaturityTime) : null,
       maturity_progress: maturityProgress,
@@ -97,19 +175,21 @@ export const transformBlockchainToSupabaseFormat = async (
       developer_website: scienceGentData.developerWebsite || ''
     };
     
-    // Format statistics data
+    // Format statistics data with defaults for missing properties
     const scienceGentStats = {
       sciencegent_address: scienceGentData.address,
-      volume_24h: tokenStats.volume24h || 0, // Handle missing property
-      transactions: tokenStats.transactions || 0, // Handle missing property
-      holders: tokenStats.holders || 0, // Handle missing property
+      volume_24h: tokenStats.volume24h || 0,
+      transactions: tokenStats.transactions || 0,
+      holders: tokenStats.holders || 0,
       updated_at: new Date().toISOString()
     };
 
     console.log("Transformation complete. Key values:", {
       token_price: scienceGent.token_price,
       price_usd: scienceGent.price_usd,
-      market_cap: scienceGent.market_cap
+      market_cap: scienceGent.market_cap,
+      is_migrated: scienceGent.is_migrated,
+      maturity_progress: scienceGent.maturity_progress
     });
     
     return { scienceGent, scienceGentStats };
@@ -126,6 +206,9 @@ export const transformBlockchainToSupabaseFormat = async (
  */
 export const transformSupabaseToFormattedScienceGent = (data: any): FormattedScienceGent => {
   if (!data) return null;
+
+  console.log("Transforming Supabase data to formatted ScienceGent:", 
+    data ? `Data for ${data.name} (${data.address})` : "No data");
 
   // Extract capabilities from the supabase data if available
   const capabilities = data.capabilities
@@ -187,38 +270,43 @@ export const transformSupabaseToFormattedScienceGent = (data: any): FormattedSci
 
 /**
  * Formats time difference into an age string
- * @param timestamp Unix timestamp
+ * @param timestamp Unix timestamp or date string
  * @returns Formatted age string
  */
-export const formatAge = (timestamp: number): string => {
+export const formatAge = (timestamp: string | number): string => {
   if (!timestamp) return 'Unknown';
   
-  // Convert timestamp to Date object
-  let creationDate: Date;
-  if (typeof timestamp === 'number') {
-    creationDate = new Date(timestamp * 1000);
-  } else if (typeof timestamp === 'string') {
-    creationDate = new Date(timestamp);
-  } else {
+  try {
+    // Convert timestamp to Date object
+    let creationDate: Date;
+    if (typeof timestamp === 'number') {
+      creationDate = new Date(timestamp * 1000);
+    } else if (typeof timestamp === 'string') {
+      creationDate = new Date(timestamp);
+    } else {
+      return 'Unknown';
+    }
+    
+    const now = new Date();
+    const diffInMs = now.getTime() - creationDate.getTime();
+    
+    // Calculate days, hours, etc.
+    const days = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+    
+    if (days > 365) {
+      const years = Math.floor(days / 365);
+      return `${years} year${years !== 1 ? 's' : ''}`;
+    } else if (days > 30) {
+      const months = Math.floor(days / 30);
+      return `${months} month${months !== 1 ? 's' : ''}`;
+    } else if (days > 0) {
+      return `${days} day${days !== 1 ? 's' : ''}`;
+    } else {
+      const hours = Math.floor(diffInMs / (1000 * 60 * 60));
+      return `${hours || 1} hour${hours !== 1 ? 's' : ''}`;
+    }
+  } catch (error) {
+    console.error("Error formatting age:", error, "for timestamp:", timestamp);
     return 'Unknown';
-  }
-  
-  const now = new Date();
-  const diffInMs = now.getTime() - creationDate.getTime();
-  
-  // Calculate days, hours, etc.
-  const days = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
-  
-  if (days > 365) {
-    const years = Math.floor(days / 365);
-    return `${years} year${years !== 1 ? 's' : ''}`;
-  } else if (days > 30) {
-    const months = Math.floor(days / 30);
-    return `${months} month${months !== 1 ? 's' : ''}`;
-  } else if (days > 0) {
-    return `${days} day${days !== 1 ? 's' : ''}`;
-  } else {
-    const hours = Math.floor(diffInMs / (1000 * 60 * 60));
-    return `${hours || 1} hour${hours !== 1 ? 's' : ''}`;
   }
 };

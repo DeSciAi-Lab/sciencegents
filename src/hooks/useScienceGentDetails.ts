@@ -32,9 +32,11 @@ export const useScienceGentDetails = (address: string | undefined) => {
 
     try {
       setStatus(LoadingStatus.Loading);
+      console.log(`Fetching data for ScienceGent address: ${address}`);
       
       // First try to fetch from Supabase
       const dbData = await fetchScienceGentFromSupabase(address);
+      console.log("Data from Supabase:", dbData ? "Found" : "Not found");
       
       if (dbData) {
         // Calculate additional properties if needed
@@ -52,30 +54,47 @@ export const useScienceGentDetails = (address: string | undefined) => {
         setStatus(LoadingStatus.Loaded);
       } else {
         // If not found in Supabase, fetch from blockchain and save
-        const blockchainData = await fetchScienceGentFromBlockchain(address);
-        const tokenStats = await fetchTokenStatsFromBlockchain(address);
-        
-        if (blockchainData && tokenStats) {
-          await saveScienceGentToSupabase(blockchainData, tokenStats);
+        console.log("Fetching from blockchain instead");
+        try {
+          const blockchainData = await fetchScienceGentFromBlockchain(address);
+          console.log("Blockchain data fetched:", blockchainData ? "Success" : "Failed");
           
-          // Fetch the saved data from Supabase
-          const savedData = await fetchScienceGentFromSupabase(address);
-          if (savedData) {
-            const enrichedData = {
-              ...savedData,
-              formattedAge: savedData.created_at 
-                ? formatDistanceToNow(new Date(savedData.created_at), { addSuffix: false })
-                : 'Unknown',
-              maturityStatus: getMaturityStatus(savedData)
-            };
+          const tokenStats = await fetchTokenStatsFromBlockchain(address);
+          console.log("Token stats fetched:", tokenStats ? "Success" : "Failed");
+          
+          if (blockchainData && tokenStats) {
+            console.log("Saving to Supabase");
+            await saveScienceGentToSupabase(blockchainData, tokenStats);
             
-            setScienceGent(enrichedData);
-            setStatus(LoadingStatus.Loaded);
+            // Fetch the saved data from Supabase
+            const savedData = await fetchScienceGentFromSupabase(address);
+            if (savedData) {
+              const enrichedData = {
+                ...savedData,
+                formattedAge: savedData.created_at 
+                  ? formatDistanceToNow(new Date(savedData.created_at), { addSuffix: false })
+                  : 'Unknown',
+                maturityStatus: getMaturityStatus(savedData)
+              };
+              
+              setScienceGent(enrichedData);
+              setStatus(LoadingStatus.Loaded);
+            } else {
+              console.error("Failed to retrieve saved data from Supabase");
+              setStatus(LoadingStatus.Error);
+            }
           } else {
-            setStatus(LoadingStatus.Error);
+            console.error("Blockchain data or token stats not available");
+            setStatus(LoadingStatus.NotFound);
           }
-        } else {
-          setStatus(LoadingStatus.NotFound);
+        } catch (blockchainError) {
+          console.error("Error fetching from blockchain:", blockchainError);
+          setStatus(LoadingStatus.Error);
+          toast({
+            title: "Blockchain Error",
+            description: "Could not fetch data from the blockchain",
+            variant: "destructive",
+          });
         }
       }
     } catch (error) {
@@ -91,6 +110,8 @@ export const useScienceGentDetails = (address: string | undefined) => {
 
   // Helper function to determine maturity status
   const getMaturityStatus = (data: any): string => {
+    if (!data) return 'Unknown';
+    
     if (data.is_migrated) {
       return 'Migrated';
     } else if (data.migration_eligible) {
@@ -108,12 +129,14 @@ export const useScienceGentDetails = (address: string | undefined) => {
     
     try {
       setIsRefreshing(true);
+      console.log(`Refreshing data for ScienceGent address: ${address}`);
       
       // Fetch from blockchain and save to Supabase
       const blockchainData = await fetchScienceGentFromBlockchain(address);
       const tokenStats = await fetchTokenStatsFromBlockchain(address);
       
       if (blockchainData && tokenStats) {
+        console.log("Saving refreshed data to Supabase");
         await saveScienceGentToSupabase(blockchainData, tokenStats);
         
         // Fetch the updated data from Supabase
@@ -121,11 +144,12 @@ export const useScienceGentDetails = (address: string | undefined) => {
         if (updatedData) {
           const enrichedData = {
             ...updatedData,
-            // Fix the error by making sure we're passing a number to formatAge
-            // If created_at is a string, convert it to a timestamp number
+            // Make sure we're passing a number or properly formatted timestamp to formatAge
             formattedAge: typeof updatedData.created_at === 'string' 
-              ? formatAge(new Date(updatedData.created_at).getTime())
-              : formatAge(updatedData.created_at),
+              ? formatDistanceToNow(new Date(updatedData.created_at), { addSuffix: false })
+              : (updatedData.created_at 
+                ? formatDistanceToNow(new Date(updatedData.created_at), { addSuffix: false })
+                : 'Unknown'),
             maturityStatus: getMaturityStatus(updatedData)
           };
           
@@ -134,7 +158,11 @@ export const useScienceGentDetails = (address: string | undefined) => {
             title: "Refresh Successful",
             description: "ScienceGent data has been updated",
           });
+        } else {
+          throw new Error("Failed to fetch updated data after refresh");
         }
+      } else {
+        throw new Error("Failed to fetch blockchain data during refresh");
       }
     } catch (error) {
       console.error("Error refreshing ScienceGent details:", error);
@@ -163,6 +191,7 @@ export const useScienceGentDetails = (address: string | undefined) => {
           filter: `address=eq.${address}`
         },
         (payload) => {
+          console.log("Received real-time update from Supabase:", payload);
           // Refresh data when updates occur
           fetchData();
         }
@@ -170,6 +199,7 @@ export const useScienceGentDetails = (address: string | undefined) => {
       .subscribe();
 
     return () => {
+      console.log("Cleaning up Supabase subscription");
       supabase.removeChannel(subscription);
     };
   }, [address]);
