@@ -113,7 +113,9 @@ export const fetchScienceGentFromSupabase = async (address: string): Promise<For
       profilePic: data.profile_pic,
       website: data.website || '',
       // Handle JSON data safely
-      socialLinks: typeof data.socials === 'object' ? data.socials as Record<string, string> : {},
+      socialLinks: (typeof data.socials === 'object' && data.socials !== null) 
+        ? data.socials as Record<string, string> 
+        : {},
       domain: data.domain || 'General',
       agentFee: data.agent_fee || 0,
       remainingMaturityTime: data.remaining_maturity_time || 0,
