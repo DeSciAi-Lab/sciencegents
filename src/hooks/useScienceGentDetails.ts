@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { 
   fetchScienceGentFromSupabase, 
@@ -38,8 +39,10 @@ export const useScienceGentDetails = (address: string | undefined) => {
         // Calculate additional properties if needed
         const enrichedData = {
           ...dbData,
-          // Format token age using our utility function
-          formattedAge: formatAge(dbData.created_on_chain_at),
+          // Format token age using date-fns
+          formattedAge: dbData.created_at 
+            ? formatDistanceToNow(new Date(dbData.created_at), { addSuffix: false })
+            : 'Unknown',
           // Format maturity status
           maturityStatus: getMaturityStatus(dbData)
         };
@@ -59,7 +62,9 @@ export const useScienceGentDetails = (address: string | undefined) => {
           if (savedData) {
             const enrichedData = {
               ...savedData,
-              formattedAge: formatAge(savedData.created_on_chain_at),
+              formattedAge: savedData.created_at 
+                ? formatDistanceToNow(new Date(savedData.created_at), { addSuffix: false })
+                : 'Unknown',
               maturityStatus: getMaturityStatus(savedData)
             };
             

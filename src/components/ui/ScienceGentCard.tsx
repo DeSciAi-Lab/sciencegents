@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -53,22 +52,18 @@ const ScienceGentCard: React.FC<ScienceGentCardProps> = ({
 }) => {
   const navigate = useNavigate();
   
-  // Calculate maturity progress if not provided but we have the necessary inputs
   const calculatedProgress = maturityProgress !== undefined 
     ? maturityProgress 
     : (virtualEth > 0 
       ? calculateMaturityProgress(virtualEth, collectedFees, capabilityFees)
       : 0);
   
-  // Determine migration eligibility from the calculated progress if not explicitly provided
   const isEligibleForMigration = migrationEligible || calculatedProgress >= 100;
   
-  // Format address for display
   const formatAddress = (address: string) => {
     return `${address.substring(0, 6)}...${address.slice(-4)}`;
   };
 
-  // Format market cap for display
   const formatMarketCap = (value: number) => {
     if (value >= 1000000) {
       return `${(value / 1000000).toFixed(2)}M ETH`;
@@ -78,12 +73,10 @@ const ScienceGentCard: React.FC<ScienceGentCardProps> = ({
     return `${value.toFixed(4)} ETH`;
   };
 
-  // Format token price for display
   const formatTokenPrice = (value: number) => {
     return `${value.toFixed(4)} ETH`;
   };
 
-  // Format ROI for display with + or - sign
   const formatROI = (value: number) => {
     const sign = value >= 0 ? '+' : '';
     return `${sign}${value.toFixed(2)}%`;
@@ -99,7 +92,6 @@ const ScienceGentCard: React.FC<ScienceGentCardProps> = ({
       className={`relative overflow-hidden transition-all duration-300 hover:shadow-glass cursor-pointer ${featured ? 'glass-card border-science-200' : ''}`}
     >
       <div className="p-6">
-        {/* Header */}
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-center gap-3">
             <div className="relative">
@@ -157,7 +149,6 @@ const ScienceGentCard: React.FC<ScienceGentCardProps> = ({
           </div>
         </div>
         
-        {/* Stats */}
         <div className="grid grid-cols-2 gap-4 mb-4">
           <div>
             <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
@@ -191,7 +182,6 @@ const ScienceGentCard: React.FC<ScienceGentCardProps> = ({
           </div>
         </div>
         
-        {/* Action */}
         <div className="flex justify-end">
           <button className="text-sm font-medium text-science-600 hover:text-science-700 flex items-center gap-1 transition-colors">
             <span>View Details</span>
@@ -200,17 +190,14 @@ const ScienceGentCard: React.FC<ScienceGentCardProps> = ({
         </div>
       </div>
       
-      {/* Status indicator for migrated tokens */}
       {isMigrated && (
         <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-green-400 to-green-600" />
       )}
       
-      {/* Status indicator for migration-eligible tokens */}
       {!isMigrated && isEligibleForMigration && (
         <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-400 to-blue-600" />
       )}
       
-      {/* Progress indicator for immature tokens */}
       {!isMigrated && !isEligibleForMigration && (
         <div className="absolute bottom-0 left-0 right-0 h-1 bg-gray-200">
           <div 
@@ -220,7 +207,6 @@ const ScienceGentCard: React.FC<ScienceGentCardProps> = ({
         </div>
       )}
       
-      {/* Gradient border indicator for featured cards */}
       {featured && !isMigrated && !isEligibleForMigration && (
         <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-science-400 to-science-600" />
       )}

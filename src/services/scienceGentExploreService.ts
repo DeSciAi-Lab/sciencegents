@@ -39,7 +39,7 @@ export interface ScienceGentListItem {
   isCurated?: boolean;
   capabilities?: string[];
   creationTimestamp?: string;
-  maturityProgress?: number; // Add the missing maturityProgress property
+  maturityProgress?: number; // Added as part of the interface
 }
 
 /**
@@ -59,7 +59,7 @@ export const fetchScienceGents = async (): Promise<ScienceGentListItem[]> => {
         profile_pic, 
         market_cap, 
         token_price, 
-        created_on_chain_at, 
+        created_at,
         domain, 
         virtual_eth,
         symbol,
@@ -96,15 +96,15 @@ export const fetchScienceGents = async (): Promise<ScienceGentListItem[]> => {
         ? Math.min(Math.max((volume / virtualEth * 10) - 5, -50), 100) 
         : 0;
       
-      // Calculate age from created_on_chain_at
+      // Calculate age from created_at
       let age = "unknown";
-      if (item.created_on_chain_at) {
+      if (item.created_at) {
         try {
           // Parse the timestamp and format it as a relative time
-          const creationDate = new Date(item.created_on_chain_at);
+          const creationDate = new Date(item.created_at);
           age = formatDistanceToNow(creationDate, { addSuffix: false });
         } catch (e) {
-          console.error("Error parsing creation date:", e, item.created_on_chain_at);
+          console.error("Error parsing creation date:", e, item.created_at);
         }
       }
 
@@ -150,7 +150,8 @@ export const fetchScienceGents = async (): Promise<ScienceGentListItem[]> => {
         rating,
         maturityStatus,
         isCurated: Math.random() > 0.7, // Random for demo, will update with real data
-        creationTimestamp: item.created_on_chain_at
+        creationTimestamp: item.created_at,
+        maturityProgress: item.maturity_progress
       };
     });
 
