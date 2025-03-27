@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { RefreshCcw, Check, AlertTriangle, Info, Calendar, Search } from 'lucide-react';
 import { syncAllScienceGents, syncAllCreationTimestamps, syncSingleScienceGent } from '@/services/scienceGentDataService';
+import { syncScienceGent } from '@/services/scienceGent';
 import { toast } from '@/components/ui/use-toast';
 import { Separator } from '@/components/ui/separator';
 import { Input } from '@/components/ui/input';
@@ -19,6 +20,10 @@ interface ScienceGentToken {
   name: string;
   symbol: string;
   last_synced_at?: string;
+  token_price?: number;
+  price_usd?: number;
+  market_cap?: number;
+  total_supply?: number;
 }
 
 const ScienceGentSync = () => {
@@ -35,6 +40,7 @@ const ScienceGentSync = () => {
   const [scienceGentTokens, setScienceGentTokens] = useState<ScienceGentToken[]>([]);
   const [filteredTokens, setFilteredTokens] = useState<ScienceGentToken[]>([]);
   const [selectedToken, setSelectedToken] = useState<ScienceGentToken | null>(null);
+  const [syncLog, setSyncLog] = useState<string[]>([]);
 
   // Fetch tokens on mount
   useEffect(() => {
@@ -62,7 +68,7 @@ const ScienceGentSync = () => {
     try {
       const { data, error } = await supabase
         .from('sciencegents')
-        .select('address, name, symbol, last_synced_at')
+        .select('address, name, symbol, last_synced_at, token_price, price_usd, market_cap, total_supply')
         .order('name', { ascending: true });
         
       if (error) {
@@ -155,15 +161,60 @@ const ScienceGentSync = () => {
     
     try {
       setIsSyncingToken(true);
+      setSyncLog([]);
+      addToSyncLog(`Starting sync for ${selectedToken.name} (${selectedToken.symbol})...`);
+      
       toast({
         title: "Syncing Token",
         description: `Syncing ${selectedToken.name} (${selectedToken.symbol})...`,
       });
       
-      await syncSingleScienceGent(selectedToken.address);
+      // Use our enhanced syncScienceGent function
+      const consoleSpy = (message: string) => {
+        if (typeof message === 'object') {
+          try {
+            addToSyncLog(JSON.stringify(message));
+          } catch {
+            addToSyncLog(String(message));
+          }
+        } else {
+          addToSyncLog(message);
+        }
+      };
+      
+      // Original console.log 
+      const originalLog = console.log;
+      console.log = function() {
+        originalLog.apply(console, arguments);
+        // Convert arguments to string and add to sync log
+        const args = Array.from(arguments).map(arg => 
+          typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
+        ).join(' ');
+        addToSyncLog(args);
+      };
+      
+      await syncScienceGent(selectedToken.address);
+      
+      // Restore original console.log
+      console.log = originalLog;
       
       // Refresh the token list
       await fetchScienceGentTokens();
+      
+      // Get updated token to show sync results
+      const { data } = await supabase
+        .from('sciencegents')
+        .select('token_price, price_usd, market_cap, total_supply')
+        .eq('address', selectedToken.address)
+        .single();
+        
+      if (data) {
+        addToSyncLog(`Sync completed. Updated values:`);
+        addToSyncLog(`- Token price: ${data.token_price} ETH`);
+        addToSyncLog(`- USD price: $${data.price_usd}`);
+        addToSyncLog(`- Market cap: $${data.market_cap}`);
+        addToSyncLog(`- Total supply: ${data.total_supply}`);
+      }
       
       toast({
         title: "Token Sync Completed",
@@ -171,6 +222,7 @@ const ScienceGentSync = () => {
       });
     } catch (error) {
       console.error("Token sync failed:", error);
+      addToSyncLog(`ERROR: ${error.message || "Unknown error"}`);
       toast({
         title: "Token Sync Failed",
         description: error.message || "An error occurred during token sync. Check console for details.",
@@ -179,6 +231,10 @@ const ScienceGentSync = () => {
     } finally {
       setIsSyncingToken(false);
     }
+  };
+
+  const addToSyncLog = (message: string) => {
+    setSyncLog(prev => [...prev, message]);
   };
 
   const formatDateTime = (isoString: string) => {
@@ -193,6 +249,17 @@ const ScienceGentSync = () => {
       minute: '2-digit',
       second: '2-digit'
     }).format(date);
+  };
+
+  const formatNumber = (num: number | undefined) => {
+    if (num === undefined) return "N/A";
+    
+    // Format large numbers with commas and small numbers with proper decimals
+    return typeof num === 'number' 
+      ? num > 0.01 
+        ? num.toLocaleString('en-US', { maximumFractionDigits: 2 })
+        : num.toExponential(6)
+      : "N/A";
   };
 
   return (
@@ -244,8 +311,9 @@ const ScienceGentSync = () => {
                             </span>
                           )}
                         </div>
-                        <div className="text-xs text-gray-500 mt-1">
-                          {token.address.substring(0, 10)}...{token.address.slice(-8)}
+                        <div className="text-xs text-gray-500 mt-1 flex justify-between">
+                          <span>{token.address.substring(0, 10)}...{token.address.slice(-8)}</span>
+                          <span>Market Cap: ${formatNumber(token.market_cap)}</span>
                         </div>
                       </div>
                     ))}
@@ -262,6 +330,12 @@ const ScienceGentSync = () => {
                   <div className="font-medium">Selected Token:</div>
                   <div>{selectedToken.name} ({selectedToken.symbol})</div>
                   <div className="text-sm text-gray-600">{selectedToken.address}</div>
+                  <div className="text-sm mt-1 grid grid-cols-2 gap-2">
+                    <div><span className="font-medium">Price (ETH):</span> {formatNumber(selectedToken.token_price)}</div>
+                    <div><span className="font-medium">Price (USD):</span> ${formatNumber(selectedToken.price_usd)}</div>
+                    <div><span className="font-medium">Market Cap:</span> ${formatNumber(selectedToken.market_cap)}</div>
+                    <div><span className="font-medium">Total Supply:</span> {formatNumber(selectedToken.total_supply)}</div>
+                  </div>
                 </div>
               )}
             </div>
@@ -283,6 +357,19 @@ const ScienceGentSync = () => {
                 </>
               )}
             </Button>
+            
+            {syncLog.length > 0 && (
+              <div className="mt-3">
+                <h4 className="text-sm font-medium mb-1">Sync Log:</h4>
+                <div className="bg-gray-50 border rounded-md p-2 max-h-60 overflow-y-auto text-xs font-mono">
+                  {syncLog.map((line, i) => (
+                    <div key={i} className={line.includes('ERROR') ? 'text-red-600' : ''}>
+                      {line}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
           
           <Separator className="my-4" />

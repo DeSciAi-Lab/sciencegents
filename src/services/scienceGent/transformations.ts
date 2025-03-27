@@ -1,3 +1,4 @@
+
 import { ScienceGentData, TokenStats, FormattedScienceGent } from './types';
 import { ethers } from 'ethers';
 import { 
@@ -84,6 +85,8 @@ export const transformBlockchainToSupabaseFormat = async (
   blockchainData: ScienceGentData,
   tokenStats: TokenStats
 ) => {
+  console.log("Starting transformation to Supabase format for:", blockchainData.name);
+  
   // Calculate current timestamp in seconds
   const currentTimestamp = Math.floor(Date.now() / 1000);
   
@@ -99,18 +102,37 @@ export const transformBlockchainToSupabaseFormat = async (
   
   // Calculate token price in ETH - safely parse large numbers
   const tokenPrice = calculateTokenPrice(tokenStats.currentPrice);
+  console.log("Calculated token price in ETH:", tokenPrice);
   
   // Fetch current ETH price
   const ethPrice = await fetchCurrentEthPrice();
+  console.log("Current ETH price in USD:", ethPrice);
   
   // Calculate price in USD
   const priceUSD = calculateTokenPriceUSD(ethPrice, tokenPrice);
+  console.log("Token price in USD:", priceUSD);
   
-  // Calculate market cap
-  const marketCap = calculateMarketCap(
+  // Format total supply safely
+  let totalSupplyNumber = 0;
+  try {
+    if (blockchainData.totalSupply) {
+      totalSupplyNumber = parseFloat(ethers.utils.formatEther(blockchainData.totalSupply));
+      console.log("Total supply formatted (ETH):", totalSupplyNumber);
+    }
+  } catch (error) {
+    console.warn("Error formatting total supply:", error);
+  }
+  
+  // Calculate market cap in ETH
+  const marketCapETH = calculateMarketCap(
     tokenPrice,
     blockchainData.totalSupply || '0'
   );
+  console.log("Market cap in ETH:", marketCapETH);
+  
+  // Calculate market cap in USD (using USD price * formatted total supply)
+  const marketCapUSD = priceUSD * totalSupplyNumber;
+  console.log("Market cap in USD:", marketCapUSD, "= Price USD", priceUSD, "* Total Supply", totalSupplyNumber);
   
   // Calculate virtual ETH and collected fees - safely parse large numbers
   let virtualETH = 0;
@@ -120,6 +142,7 @@ export const transformBlockchainToSupabaseFormat = async (
   if (tokenStats.virtualETH) {
     try {
       virtualETH = parseFloat(ethers.utils.formatEther(tokenStats.virtualETH));
+      console.log("Virtual ETH formatted:", virtualETH);
     } catch (error) {
       console.warn("Error parsing virtualETH:", error);
     }
@@ -128,6 +151,7 @@ export const transformBlockchainToSupabaseFormat = async (
   if (tokenStats.collectedFees) {
     try {
       collectedFees = parseFloat(ethers.utils.formatEther(tokenStats.collectedFees));
+      console.log("Collected fees formatted:", collectedFees);
     } catch (error) {
       console.warn("Error parsing collectedFees:", error);
     }
@@ -136,6 +160,7 @@ export const transformBlockchainToSupabaseFormat = async (
   if (tokenStats.ethReserve) {
     try {
       ethReserve = parseFloat(ethers.utils.formatEther(tokenStats.ethReserve));
+      console.log("ETH reserve formatted:", ethReserve);
     } catch (error) {
       console.warn("Error parsing ethReserve:", error);
     }
@@ -143,6 +168,7 @@ export const transformBlockchainToSupabaseFormat = async (
   
   // Calculate total liquidity
   const totalLiquidity = calculateTotalLiquidity(ethReserve, ethPrice);
+  console.log("Total liquidity calculated:", totalLiquidity);
   
   // Calculate maturity progress using the utility function
   const maturityProgress = calculateMaturityProgress(
@@ -150,9 +176,11 @@ export const transformBlockchainToSupabaseFormat = async (
     collectedFees,
     blockchainData.capabilityFees || 0
   );
+  console.log("Maturity progress calculated:", maturityProgress);
   
   // Calculate migration condition
   const migrationCondition = (2 * virtualETH) + (blockchainData.capabilityFees || 0);
+  console.log("Migration condition calculated:", migrationCondition);
   
   // Convert creation timestamp to ISO string if available
   const createdAt = creationTimestamp
@@ -164,22 +192,22 @@ export const transformBlockchainToSupabaseFormat = async (
     address: blockchainData.address,
     name: blockchainData.name,
     symbol: blockchainData.symbol,
-    total_supply: blockchainData.totalSupply ? parseFloat(ethers.utils.formatEther(blockchainData.totalSupply)) : null,
+    total_supply: totalSupplyNumber,
     creator_address: blockchainData.creator,
     description: blockchainData.description || null,
     profile_pic: blockchainData.profilePic || null,
     website: blockchainData.website || null,
     socials: blockchainData.socialLinks ? JSON.stringify(blockchainData.socialLinks) : null,
-    is_migrated: tokenStats.migrated, // Changed from isMigrated to migrated
+    is_migrated: tokenStats.migrated,
     migration_eligible: tokenStats.migrationEligible,
     created_at: createdAt,
-    created_on_chain_at: createdAt, // Also populate the new created_on_chain_at field
+    created_on_chain_at: createdAt,
     maturity_deadline: maturityDeadline || null,
     remaining_maturity_time: remainingMaturityTime,
     maturity_progress: maturityProgress,
     token_price: tokenPrice,
     price_usd: priceUSD,
-    market_cap: marketCap,
+    market_cap: marketCapUSD, // Store USD market cap value
     virtual_eth: virtualETH,
     collected_fees: collectedFees,
     total_liquidity: totalLiquidity,
@@ -195,6 +223,15 @@ export const transformBlockchainToSupabaseFormat = async (
     developer_github: blockchainData.developerGithub || null,
     developer_website: blockchainData.developerWebsite || null
   };
+  
+  console.log("Final scienceGent object prepared:", {
+    address: scienceGent.address,
+    name: scienceGent.name,
+    symbol: scienceGent.symbol,
+    token_price: scienceGent.token_price,
+    price_usd: scienceGent.price_usd,
+    market_cap: scienceGent.market_cap,
+  });
   
   // Stats data for the sciencegent_stats table
   const scienceGentStats = {

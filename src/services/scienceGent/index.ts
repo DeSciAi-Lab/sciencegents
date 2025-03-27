@@ -29,6 +29,16 @@ export {
   formatAge
 } from './transformations';
 
+// Export utility functions
+import { 
+  fetchCurrentEthPrice, 
+  calculateTokenPrice,
+  calculateMarketCap
+} from '@/utils/scienceGentCalculations';
+
+// Import ethers for formatting
+import { ethers } from 'ethers';
+
 // Export the imported functions
 export {
   fetchScienceGentFromBlockchain,
@@ -51,14 +61,68 @@ export const syncScienceGent = async (address: string): Promise<boolean> => {
     
     // Fetch token details and stats
     const scienceGentData = await fetchScienceGentFromBlockchain(address);
+    console.log("Fetched ScienceGent data:", {
+      name: scienceGentData?.name,
+      symbol: scienceGentData?.symbol,
+      totalSupply: scienceGentData?.totalSupply
+    });
+    
     const tokenStats = await fetchTokenStatsFromBlockchain(address);
+    console.log("Fetched token stats:", {
+      currentPrice: tokenStats?.currentPrice,
+      ethReserve: tokenStats?.ethReserve,
+      virtualETH: tokenStats?.virtualETH,
+      collectedFees: tokenStats?.collectedFees
+    });
     
     if (!scienceGentData || !tokenStats) {
       throw new Error("Failed to fetch ScienceGent data from blockchain");
     }
     
+    // Calculate market cap
+    const tokenPrice = calculateTokenPrice(tokenStats.currentPrice);
+    console.log("Calculated token price in ETH:", tokenPrice);
+    
+    const ethPrice = await fetchCurrentEthPrice();
+    console.log("Current ETH price in USD:", ethPrice);
+    
+    // Format total supply from wei to ether
+    let totalSupplyFormatted = 0;
+    try {
+      totalSupplyFormatted = parseFloat(ethers.utils.formatEther(scienceGentData.totalSupply));
+      console.log("Total supply formatted:", totalSupplyFormatted);
+    } catch (error) {
+      console.error("Error formatting total supply:", error);
+    }
+    
+    // Calculate market cap in ETH
+    const marketCapEth = calculateMarketCap(tokenPrice, scienceGentData.totalSupply);
+    console.log("Market cap in ETH:", marketCapEth);
+    
+    // Calculate market cap in USD
+    const tokenPriceUsd = tokenPrice * ethPrice;
+    console.log("Token price in USD:", tokenPriceUsd);
+    
+    const marketCapUsd = tokenPriceUsd * totalSupplyFormatted;
+    console.log("Market cap in USD:", marketCapUsd);
+    
+    // Log final data to be saved
+    console.log("Final data for Supabase:", {
+      tokenPrice,
+      tokenPriceUsd,
+      marketCapEth,
+      marketCapUsd,
+      totalSupplyFormatted
+    });
+    
     // Save to Supabase
-    await saveScienceGentToSupabase(scienceGentData, tokenStats);
+    const savedData = await saveScienceGentToSupabase(scienceGentData, tokenStats);
+    
+    if (!savedData) {
+      throw new Error("Failed to save ScienceGent data to Supabase");
+    }
+    
+    console.log("Successfully synced ScienceGent to Supabase:", scienceGentData.name);
     
     const { toast } = await import('@/components/ui/use-toast');
     toast({
