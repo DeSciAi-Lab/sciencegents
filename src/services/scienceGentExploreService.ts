@@ -1,8 +1,8 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { formatDistanceToNow } from 'date-fns';
 import { ethers } from 'ethers';
 import { contractConfig } from '@/utils/contractConfig';
+import { updateTokenPrice, shouldUpdateTokenPrice, updateAllTokenPrices } from './priceUpdateService';
 
 export interface ScienceGentListItem {
   id: string;
@@ -12,6 +12,7 @@ export interface ScienceGentListItem {
   profilePic?: string;
   description?: string;
   tokenPrice: number;
+  tokenPriceUsd?: number;
   priceChange24h: number;
   marketCap: number;
   volume24h: number;
@@ -48,6 +49,7 @@ interface ScienceGentDbRow {
   profile_pic?: string;
   description?: string;
   token_price: number;
+  price_usd?: number;
   price_change_24h: number;
   market_cap: number;
   domain: string;
@@ -56,7 +58,8 @@ interface ScienceGentDbRow {
   is_migrated: boolean;
   migration_eligible: boolean;
   total_supply?: string;
-  created_at?: string; // Added the missing created_at property
+  created_at?: string;
+  last_price_update?: string;
   sciencegent_stats?: { volume_24h: number; holders: number; transactions: number }[];
 }
 
@@ -122,16 +125,9 @@ export async function getScienceGentsList(
     }
     
     console.info('Found', scienceGents?.length, 'ScienceGents');
-    
-    // Fetch ETH price using getTokenStats for more accurate price and market cap
-    const provider = new ethers.providers.JsonRpcProvider(contractConfig.network.rpcUrls[0]);
-    const swapContract = new ethers.Contract(
-      contractConfig.addresses.ScienceGentsSwap,
-      [
-        'function getTokenStats(address) view returns (uint256,uint256,uint256,uint256,bool,address,uint256,uint256,bool,uint256,uint256,uint256,bool)'
-      ],
-      provider
-    );
+
+    // Start a background update of prices for tokens that need it
+    void updateAllTokenPrices(5); // Update up to 5 tokens in background
     
     // Transform data and calculate additional metrics
     const transformedData: ScienceGentListItem[] = [];
@@ -139,14 +135,7 @@ export async function getScienceGentsList(
     if (scienceGents) {
       for (const sg of scienceGents as ScienceGentDbRow[]) {
         try {
-          // Fetch token stats from blockchain for current price
-          const stats = await swapContract.getTokenStats(sg.address);
-          const currentPrice = stats[11] ? parseFloat(ethers.utils.formatEther(stats[11])) : 0;
-          
-          // Calculate market cap based on token price and total supply
-          const totalSupply = sg.total_supply ? parseFloat(ethers.utils.formatUnits(sg.total_supply, 18)) : 0;
-          const marketCap = currentPrice * totalSupply;
-          
+          // Use cached data from Supabase
           transformedData.push({
             id: sg.id,
             address: sg.address,
@@ -154,9 +143,10 @@ export async function getScienceGentsList(
             symbol: sg.symbol,
             profilePic: sg.profile_pic,
             description: sg.description,
-            tokenPrice: currentPrice,
+            tokenPrice: sg.token_price || 0,
+            tokenPriceUsd: sg.price_usd || 0,
             priceChange24h: sg.price_change_24h || 0,
-            marketCap: marketCap || 0,
+            marketCap: sg.market_cap || 0,
             volume24h: sg.sciencegent_stats?.[0]?.volume_24h || 0,
             age: sg.created_at ? formatDistanceToNow(new Date(sg.created_at), { addSuffix: false }) : 'Unknown',
             revenue: Math.floor(Math.random() * 10000), // Placeholder
@@ -168,6 +158,19 @@ export async function getScienceGentsList(
             migrationEligible: sg.migration_eligible || false,
             roi: Math.floor(Math.random() * 100) - 20 // Random ROI between -20 and 80
           });
+          
+          // Check if this token needs price update - if yes, do it in the background
+          if (sg.last_price_update) {
+            const lastUpdate = new Date(sg.last_price_update);
+            const now = new Date();
+            const diffMs = now.getTime() - lastUpdate.getTime();
+            const diffMinutes = diffMs / (1000 * 60);
+            
+            // If price is older than 10 minutes, update in background
+            if (diffMinutes > 10) {
+              void updateTokenPrice(sg.address);
+            }
+          }
         } catch (err) {
           console.error(`Error processing ScienceGent ${sg.address}:`, err);
           
@@ -180,6 +183,7 @@ export async function getScienceGentsList(
             profilePic: sg.profile_pic,
             description: sg.description,
             tokenPrice: sg.token_price || 0,
+            tokenPriceUsd: sg.price_usd || 0,
             priceChange24h: sg.price_change_24h || 0,
             marketCap: sg.market_cap || 0,
             volume24h: sg.sciencegent_stats?.[0]?.volume_24h || 0,
@@ -207,7 +211,6 @@ export async function getScienceGentsList(
   }
 }
 
-// Add the missing functions that are imported in other files
 export async function fetchScienceGents(): Promise<ScienceGentListItem[]> {
   try {
     const { data } = await getScienceGentsList('marketCap', 'desc', 1, 50);

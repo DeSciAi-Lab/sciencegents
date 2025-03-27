@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -12,6 +13,7 @@ import {
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { calculateMaturityProgress } from '@/utils/scienceGentCalculations';
+import { useEthPriceContext } from '@/context/EthPriceContext';
 
 interface ScienceGentCardProps {
   id: string;
@@ -20,6 +22,7 @@ interface ScienceGentCardProps {
   address: string;
   marketCap: number;
   tokenPrice: number;
+  tokenPriceUsd?: number;
   age: string;
   roi: number;
   domain: string;
@@ -39,6 +42,7 @@ const ScienceGentCard: React.FC<ScienceGentCardProps> = ({
   address,
   marketCap,
   tokenPrice,
+  tokenPriceUsd,
   age,
   roi,
   domain,
@@ -51,6 +55,7 @@ const ScienceGentCard: React.FC<ScienceGentCardProps> = ({
   maturityProgress
 }) => {
   const navigate = useNavigate();
+  const { formatEthToUsd, formatEthPrice } = useEthPriceContext();
   
   const calculatedProgress = maturityProgress !== undefined 
     ? maturityProgress 
@@ -70,10 +75,6 @@ const ScienceGentCard: React.FC<ScienceGentCardProps> = ({
     } else if (value >= 1000) {
       return `${(value / 1000).toFixed(2)}K ETH`;
     }
-    return `${value.toFixed(4)} ETH`;
-  };
-
-  const formatTokenPrice = (value: number) => {
     return `${value.toFixed(4)} ETH`;
   };
 
@@ -156,13 +157,17 @@ const ScienceGentCard: React.FC<ScienceGentCardProps> = ({
               Market Cap
             </p>
             <p className="font-medium">{formatMarketCap(marketCap)}</p>
+            <p className="text-xs text-gray-500">{formatEthToUsd(marketCap)}</p>
           </div>
           <div>
             <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
               <DollarSign size={12} />
               Token Price
             </p>
-            <p className="font-medium">{formatTokenPrice(tokenPrice)}</p>
+            <p className="font-medium">{formatEthPrice(tokenPrice)}</p>
+            <p className="text-xs text-gray-500">
+              {tokenPriceUsd ? `$${tokenPriceUsd.toFixed(6)}` : formatEthToUsd(tokenPrice)}
+            </p>
           </div>
           <div>
             <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1">

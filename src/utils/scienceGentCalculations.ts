@@ -1,32 +1,24 @@
 
 import { ethers } from 'ethers';
-import { TokenStats } from '@/services/scienceGent/types';
 
 /**
- * Calculates the maturity progress percentage
- * @param virtualETH Virtual ETH amount as string or number
- * @param collectedFees Collected fees as string or number
- * @param capabilityFees Optional capability fees as string or number
+ * Calculate maturity progress percentage
+ * @param virtualETH Virtual ETH amount
+ * @param collectedFees Collected fees
+ * @param capabilityFees Capability fees
  * @returns Progress percentage (0-100)
  */
 export const calculateMaturityProgress = (
-  virtualETH: string | number,
-  collectedFees: string | number,
-  capabilityFees: string | number = '0'
+  virtualETH: number, 
+  collectedFees: number, 
+  capabilityFees: number = 0
 ): number => {
   try {
-    // Convert inputs to numbers if they're strings
-    const vETH = typeof virtualETH === 'string' ? parseFloat(virtualETH) : virtualETH;
-    const fees = typeof collectedFees === 'string' ? parseFloat(collectedFees) : collectedFees;
-    const capFees = typeof capabilityFees === 'string' ? parseFloat(capabilityFees) : capabilityFees;
+    if (virtualETH === 0) return 0;
     
-    if (vETH === 0) return 0;
-    
-    // Migration threshold is 2x virtualETH + capability fees
-    const targetFees = (2 * vETH) + capFees;
-    
-    // Calculate progress percentage, capped at 100%
-    const progress = Math.min(Math.round((fees / targetFees) * 100), 100);
+    // Migration threshold is 2x virtualETH + capabilityFees
+    const targetFees = (2 * virtualETH) + capabilityFees;
+    const progress = Math.min(Math.round((collectedFees / targetFees) * 100), 100);
     
     return progress;
   } catch (error) {
@@ -36,78 +28,64 @@ export const calculateMaturityProgress = (
 };
 
 /**
- * Calculates the token price in ETH
- * @param currentPrice Price from blockchain as BigNumber string
- * @returns Formatted price as a number
+ * Convert ETH price to USD
+ * @param ethPrice ETH price
+ * @param ethToUsdRate Current ETH to USD rate
+ * @returns USD price as string with $ prefix
  */
-export const calculateTokenPrice = (currentPrice: string): number => {
-  try {
-    if (!currentPrice) return 0;
-    return parseFloat(ethers.utils.formatEther(currentPrice));
-  } catch (error) {
-    console.error("Error calculating token price:", error);
-    return 0;
+export const convertEthToUsd = (ethPrice: number, ethToUsdRate: number = 3000): string => {
+  if (!ethPrice || isNaN(ethPrice)) return '$0.00';
+  const usdPrice = ethPrice * ethToUsdRate;
+  
+  if (usdPrice < 0.01) {
+    return `$${usdPrice.toFixed(6)}`;
+  } else if (usdPrice < 1) {
+    return `$${usdPrice.toFixed(4)}`;
+  } else if (usdPrice < 1000) {
+    return `$${usdPrice.toFixed(2)}`;
+  } else if (usdPrice < 1000000) {
+    return `$${(usdPrice / 1000).toFixed(2)}K`;
+  } else {
+    return `$${(usdPrice / 1000000).toFixed(2)}M`;
   }
 };
 
 /**
- * Calculates the market cap in ETH
- * @param tokenPrice Token price in ETH
- * @param totalSupply Total supply as string or number
- * @returns Market cap in ETH as a number
+ * Format ETH value for display
+ * @param ethValue ETH value
+ * @returns Formatted ETH string
  */
-export const calculateMarketCap = (
-  tokenPrice: number,
-  totalSupply: string | number
-): number => {
-  try {
-    // Convert totalSupply to number if it's a string
-    const supply = typeof totalSupply === 'string' 
-      ? parseFloat(ethers.utils.formatEther(totalSupply))
-      : totalSupply;
-    
-    return tokenPrice * supply;
-  } catch (error) {
-    console.error("Error calculating market cap:", error);
-    return 0;
+export const formatEthValue = (ethValue: number): string => {
+  if (!ethValue || isNaN(ethValue)) return '0 ETH';
+  
+  if (ethValue < 0.001) {
+    return `${ethValue.toFixed(6)} ETH`;
+  } else if (ethValue < 0.01) {
+    return `${ethValue.toFixed(5)} ETH`;
+  } else if (ethValue < 0.1) {
+    return `${ethValue.toFixed(4)} ETH`;
+  } else if (ethValue < 1) {
+    return `${ethValue.toFixed(3)} ETH`;
+  } else if (ethValue < 1000) {
+    return `${ethValue.toFixed(2)} ETH`;
+  } else if (ethValue < 1000000) {
+    return `${(ethValue / 1000).toFixed(2)}K ETH`;
+  } else {
+    return `${(ethValue / 1000000).toFixed(2)}M ETH`;
   }
 };
 
 /**
- * Get all token metrics in one function
- * @param tokenStats Token statistics from blockchain
- * @param totalSupply Total token supply
- * @param capabilityFees Optional capability fees
- * @returns Object with calculated metrics
+ * Get current ETH price in USD from API
+ * @returns Promise resolving to current ETH price in USD
  */
-export const getTokenMetrics = (
-  tokenStats: TokenStats,
-  totalSupply: string,
-  capabilityFees: number = 0
-) => {
-  const tokenPrice = calculateTokenPrice(tokenStats.currentPrice);
-  const marketCap = calculateMarketCap(tokenPrice, totalSupply);
-  
-  const virtualETH = tokenStats.virtualETH
-    ? parseFloat(ethers.utils.formatEther(tokenStats.virtualETH))
-    : 0;
-    
-  const collectedFees = tokenStats.collectedFees
-    ? parseFloat(ethers.utils.formatEther(tokenStats.collectedFees))
-    : 0;
-    
-  const maturityProgress = calculateMaturityProgress(
-    virtualETH,
-    collectedFees,
-    capabilityFees
-  );
-  
-  return {
-    tokenPrice,
-    marketCap,
-    virtualETH,
-    collectedFees,
-    maturityProgress,
-    isMigrationEligible: maturityProgress >= 100,
-  };
+export const fetchCurrentEthPrice = async (): Promise<number> => {
+  try {
+    const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd');
+    const data = await response.json();
+    return data.ethereum?.usd || 3000; // Default to 3000 if API fails
+  } catch (error) {
+    console.error("Error fetching ETH price:", error);
+    return 3000; // Default fallback price
+  }
 };

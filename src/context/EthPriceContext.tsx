@@ -1,109 +1,72 @@
 
-import React, { createContext, useContext, ReactNode, useState, useEffect } from 'react';
-import { useEthPrice } from '@/hooks/useEthPrice';
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { fetchCurrentEthPrice, convertEthToUsd, formatEthValue } from '@/utils/scienceGentCalculations';
 
 interface EthPriceContextType {
   ethPrice: number;
   isLoading: boolean;
-  error: string | null;
-  refreshEthPrice: () => Promise<number>;
   formatEthToUsd: (ethValue: number) => string;
-  formatEthPrice: (value: number) => string;
+  formatEthPrice: (ethValue: number) => string;
+  refreshEthPrice: () => Promise<void>;
 }
 
-const EthPriceContext = createContext<EthPriceContextType | undefined>(undefined);
+const EthPriceContext = createContext<EthPriceContextType>({
+  ethPrice: 3000, // Default value
+  isLoading: true,
+  formatEthToUsd: () => '$0.00',
+  formatEthPrice: () => '0 ETH',
+  refreshEthPrice: async () => {}
+});
 
-export const EthPriceProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const { ethPrice, isLoading, error, refreshEthPrice } = useEthPrice();
+export const useEthPriceContext = () => useContext(EthPriceContext);
 
-  /**
-   * Formats ETH value to USD with appropriate scaling (k, M)
-   * @param ethValue The amount in ETH
-   * @returns Formatted USD string (e.g. $1.23k, $4.56M)
-   */
-  const formatEthToUsd = (ethValue: number): string => {
-    if (!ethValue || isNaN(ethValue)) return '$0.00';
-    
-    const usdValue = ethValue * ethPrice;
-    
-    // Format based on value size
-    if (usdValue >= 1000000) {
-      return `$${(usdValue / 1000000).toFixed(2)}M`;
-    } else if (usdValue >= 1000) {
-      return `$${(usdValue / 1000).toFixed(2)}k`;
-    } else {
-      return `$${usdValue.toFixed(2)}`;
+export const EthPriceProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [ethPrice, setEthPrice] = useState<number>(3000);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  
+  const refreshEthPrice = async () => {
+    try {
+      setIsLoading(true);
+      const price = await fetchCurrentEthPrice();
+      setEthPrice(price);
+    } catch (error) {
+      console.error("Error refreshing ETH price:", error);
+    } finally {
+      setIsLoading(false);
     }
-  };
-
-  /**
-   * Formats ETH value with appropriate scaling (k, M)
-   * @param value The amount in ETH
-   * @returns Formatted ETH string (e.g. 1.23k ETH, 4.56M ETH)
-   */
-  const formatEthPrice = (value: number): string => {
-    if (!value || isNaN(value)) return '0 ETH';
-    
-    if (value >= 1000000) {
-      return `${(value / 1000000).toFixed(2)}M ETH`;
-    } else if (value >= 1000) {
-      return `${(value / 1000).toFixed(2)}K ETH`;
-    } else if (value < 0.0001) {
-      return `${value.toExponential(2)} ETH`;
-    }
-    return `${value.toFixed(4)} ETH`;
   };
   
-  const contextValue = {
-    ethPrice,
-    isLoading,
-    error,
-    refreshEthPrice,
-    formatEthToUsd,
-    formatEthPrice
+  // Format ETH to USD with the current exchange rate
+  const formatEthToUsd = (ethValue: number): string => {
+    return convertEthToUsd(ethValue, ethPrice);
   };
+  
+  // Format ETH value
+  const formatEthPrice = (ethValue: number): string => {
+    return formatEthValue(ethValue);
+  };
+  
+  // Initial fetch
+  useEffect(() => {
+    refreshEthPrice();
+    
+    // Set up auto-refresh every 5 minutes
+    const interval = setInterval(refreshEthPrice, 5 * 60 * 1000);
+    
+    return () => clearInterval(interval);
+  }, []);
   
   return (
-    <EthPriceContext.Provider value={contextValue}>
+    <EthPriceContext.Provider 
+      value={{ 
+        ethPrice, 
+        isLoading, 
+        formatEthToUsd,
+        formatEthPrice,
+        refreshEthPrice 
+      }}
+    >
       {children}
     </EthPriceContext.Provider>
   );
-};
-
-export const useEthPriceContext = (): EthPriceContextType => {
-  const context = useContext(EthPriceContext);
-  if (context === undefined) {
-    throw new Error('useEthPriceContext must be used within an EthPriceProvider');
-  }
-  return context;
-};
-
-// For backward compatibility
-export const formatEthToUsd = (ethValue: number, ethPrice: number): string => {
-  if (!ethValue || isNaN(ethValue) || !ethPrice || isNaN(ethPrice)) return '$0.00';
-  
-  const usdValue = ethValue * ethPrice;
-  
-  // Format based on value size
-  if (usdValue >= 1000000) {
-    return `$${(usdValue / 1000000).toFixed(2)}M`;
-  } else if (usdValue >= 1000) {
-    return `$${(usdValue / 1000).toFixed(2)}k`;
-  } else {
-    return `$${usdValue.toFixed(2)}`;
-  }
-};
-
-// For backward compatibility
-export const formatEthPrice = (value: number): string => {
-  if (!value || isNaN(value)) return '0 ETH';
-  
-  if (value >= 1000000) {
-    return `${(value / 1000000).toFixed(2)}M ETH`;
-  } else if (value >= 1000) {
-    return `${(value / 1000).toFixed(2)}K ETH`;
-  } else if (value < 0.0001) {
-    return `${value.toExponential(2)} ETH`;
-  }
-  return `${value.toFixed(4)} ETH`;
 };
