@@ -103,14 +103,35 @@ export const transformBlockchainToSupabaseFormat = async (
   // Fetch current ETH price
   const ethPrice = await fetchCurrentEthPrice();
   
+  // Ensure totalSupply is properly formatted
+  let formattedTotalSupply: number;
+  try {
+    formattedTotalSupply = parseFloat(ethers.utils.formatEther(blockchainData.totalSupply || '0'));
+  } catch (e) {
+    console.warn("Failed to format totalSupply as ETH in transformations, using direct parse");
+    formattedTotalSupply = parseFloat(blockchainData.totalSupply || '0');
+  }
+  
   // Calculate price in USD
   const priceUSD = calculateTokenPriceUSD(ethPrice, tokenPrice);
   
-  // Calculate market cap
+  // Calculate market cap in ETH
   const marketCap = calculateMarketCap(
     tokenPrice,
-    blockchainData.totalSupply || '0'
+    formattedTotalSupply
   );
+  
+  // Calculate market cap in USD directly
+  const marketCapUSD = priceUSD * formattedTotalSupply;
+  
+  console.log("Transformation calculations:", {
+    tokenPrice,
+    ethPrice,
+    priceUSD,
+    formattedTotalSupply,
+    marketCap,
+    marketCapUSD
+  });
   
   // Calculate virtual ETH and collected fees - safely parse large numbers
   let virtualETH = 0;
@@ -164,13 +185,13 @@ export const transformBlockchainToSupabaseFormat = async (
     address: blockchainData.address,
     name: blockchainData.name,
     symbol: blockchainData.symbol,
-    total_supply: blockchainData.totalSupply ? parseFloat(ethers.utils.formatEther(blockchainData.totalSupply)) : null,
+    total_supply: formattedTotalSupply,
     creator_address: blockchainData.creator,
     description: blockchainData.description || null,
     profile_pic: blockchainData.profilePic || null,
     website: blockchainData.website || null,
     socials: blockchainData.socialLinks ? JSON.stringify(blockchainData.socialLinks) : null,
-    is_migrated: tokenStats.migrated, // Changed from isMigrated to migrated
+    is_migrated: tokenStats.migrated,
     migration_eligible: tokenStats.migrationEligible,
     created_at: createdAt,
     created_on_chain_at: createdAt, // Also populate the new created_on_chain_at field
