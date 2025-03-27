@@ -1,4 +1,3 @@
-
 import { ethers } from 'ethers';
 import { TokenStats } from '@/services/scienceGent/types';
 
@@ -160,7 +159,10 @@ export const calculateMarketCap = (
  * @returns Token price in USD
  */
 export const calculateTokenPriceUSD = (ethPrice: number, tokenPrice: number): number => {
-  return ethPrice * tokenPrice;
+  // Log the calculation for debugging
+  const result = ethPrice * tokenPrice;
+  console.log("Token price USD calculation:", { ethPrice, tokenPrice, result });
+  return result;
 };
 
 /**
@@ -276,4 +278,3 @@ export const getTokenMetrics = async (
     isMigrationEligible: maturityProgress >= 100,
   };
 };
-

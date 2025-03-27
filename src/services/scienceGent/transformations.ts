@@ -106,31 +106,35 @@ export const transformBlockchainToSupabaseFormat = async (
   // Ensure totalSupply is properly formatted
   let formattedTotalSupply: number;
   try {
-    formattedTotalSupply = parseFloat(ethers.utils.formatEther(blockchainData.totalSupply || '0'));
+    // First try to format as Wei if it's a large number
+    if (typeof blockchainData.totalSupply === 'string' && 
+        blockchainData.totalSupply.length > 18) {
+      formattedTotalSupply = parseFloat(ethers.utils.formatEther(blockchainData.totalSupply));
+    } else {
+      // Otherwise use direct parsing
+      formattedTotalSupply = parseFloat(String(blockchainData.totalSupply || '0'));
+    }
   } catch (e) {
     console.warn("Failed to format totalSupply as ETH in transformations, using direct parse");
-    formattedTotalSupply = parseFloat(blockchainData.totalSupply || '0');
+    formattedTotalSupply = parseFloat(String(blockchainData.totalSupply || '0'));
   }
+  
+  console.log("Total supply parsed:", formattedTotalSupply);
   
   // Calculate price in USD
   const priceUSD = calculateTokenPriceUSD(ethPrice, tokenPrice);
   
-  // Calculate market cap in ETH
-  const marketCap = calculateMarketCap(
-    tokenPrice,
-    formattedTotalSupply
-  );
-  
-  // Calculate market cap in USD directly
+  // Market cap should be price in USD * total supply
   const marketCapUSD = priceUSD * formattedTotalSupply;
   
-  console.log("Transformation calculations:", {
+  // Log all values for debugging
+  console.log("Market cap calculation details:", {
     tokenPrice,
     ethPrice,
     priceUSD,
     formattedTotalSupply,
-    marketCap,
-    marketCapUSD
+    marketCapUSD,
+    calculation: `${priceUSD} * ${formattedTotalSupply} = ${marketCapUSD}`
   });
   
   // Calculate virtual ETH and collected fees - safely parse large numbers
@@ -200,7 +204,7 @@ export const transformBlockchainToSupabaseFormat = async (
     maturity_progress: maturityProgress,
     token_price: tokenPrice,
     price_usd: priceUSD,
-    market_cap: marketCap,
+    market_cap: marketCapUSD, // Use the USD market cap here
     virtual_eth: virtualETH,
     collected_fees: collectedFees,
     total_liquidity: totalLiquidity,

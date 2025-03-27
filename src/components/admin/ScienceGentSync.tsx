@@ -165,6 +165,18 @@ const ScienceGentSync = () => {
       // Refresh the token list
       await fetchScienceGentTokens();
       
+      // Get the newly synced data to display
+      const { data } = await supabase
+        .from('sciencegents')
+        .select('token_price, price_usd, total_supply, market_cap')
+        .eq('address', selectedToken.address)
+        .single();
+        
+      if (data) {
+        console.log("Synced data:", data);
+        console.log(`Market cap calculation check: ${data.price_usd} * ${data.total_supply} = ${data.price_usd * data.total_supply}`);
+      }
+      
       toast({
         title: "Token Sync Completed",
         description: `Successfully synced ${selectedToken.name} (${selectedToken.symbol})`,
