@@ -1,10 +1,7 @@
-
 import { ScienceGentData, TokenStats, CapabilityDetail } from './types';
 import { supabase } from '@/integrations/supabase/client';
-import { transformBlockchainToSupabaseFormat } from './transformations';
+import { transformBlockchainToSupabaseFormat, formatAge } from './transformations';
 import { ethers } from 'ethers';
-// Remove duplicate import that conflicts with local declaration
-// import { calculateMaturityProgress } from '@/utils/scienceGentCalculations';
 
 /**
  * Fetches a ScienceGent from Supabase by address
@@ -40,10 +37,9 @@ export const fetchScienceGentFromSupabase = async (address: string) => {
       // Convert prices to numbers for easier handling
       token_price: data.token_price ? parseFloat(String(data.token_price)) : 0,
       // Add maturity progress calculation if not available
-      maturity_progress: data.maturity_progress || (
-        data.virtual_eth && data.virtual_eth > 0 
-          ? calculateMaturityProgress(String(data.virtual_eth), String(data.collected_fees || 0)) 
-          : 0
+      maturity_progress: data.maturity_progress || calculateMaturityProgress(
+        data.virtual_eth || 0, 
+        data.collected_fees || 0
       ),
       // Calculate token age if it's not available in the database
       tokenAge: data.created_on_chain_at 
@@ -66,16 +62,13 @@ export const fetchScienceGentFromSupabase = async (address: string) => {
  * @param collectedFees Collected fees
  * @returns Progress percentage (0-100)
  */
-const calculateMaturityProgress = (virtualETH: string, collectedFees: string): number => {
+const calculateMaturityProgress = (virtualETH: number, collectedFees: number): number => {
   try {
-    const vETH = parseFloat(virtualETH || '0');
-    const fees = parseFloat(collectedFees || '0');
-    
-    if (vETH === 0) return 0;
+    if (virtualETH === 0) return 0;
     
     // Migration threshold is 2x virtualETH
-    const targetFees = 2 * vETH;
-    const progress = Math.min(Math.round((fees / targetFees) * 100), 100);
+    const targetFees = 2 * virtualETH;
+    const progress = Math.min(Math.round((collectedFees / targetFees) * 100), 100);
     
     return progress;
   } catch (error) {
@@ -115,13 +108,13 @@ export const saveScienceGentToSupabase = async (
       migration_eligible: scienceGent.migration_eligible,
       created_on_chain_at: scienceGent.created_on_chain_at,
       // Ensure maturity_deadline is properly typed as a number or null
-      maturity_deadline: typeof scienceGent.maturity_deadline === 'string' 
-        ? Number(scienceGent.maturity_deadline) 
-        : scienceGent.maturity_deadline,
+      maturity_deadline: typeof scienceGent.maturity_deadline === 'number' 
+        ? scienceGent.maturity_deadline 
+        : null,
       // Ensure remaining_maturity_time is a number or null, not a string
-      remaining_maturity_time: typeof scienceGent.remaining_maturity_time === 'string'
-        ? Number(scienceGent.remaining_maturity_time)
-        : scienceGent.remaining_maturity_time,
+      remaining_maturity_time: typeof scienceGent.remaining_maturity_time === 'number'
+        ? scienceGent.remaining_maturity_time
+        : null,
       maturity_progress: scienceGent.maturity_progress,
       token_price: scienceGent.token_price,
       market_cap: scienceGent.market_cap,

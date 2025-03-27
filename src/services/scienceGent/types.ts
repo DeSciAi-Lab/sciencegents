@@ -1,3 +1,4 @@
+
 // Import ethers for BigNumber type compatibility
 import { BigNumber } from "ethers";
 
@@ -97,4 +98,5 @@ export interface FormattedScienceGent {
   persona?: string;
   domain?: string;
   agentFee?: number;
+  formattedAge?: string; // Add this property to the interface
 }

@@ -2,6 +2,7 @@ import { ethers } from "ethers";
 import { getProvider } from "@/services/walletService";
 import { contractConfig } from "@/utils/contractConfig";
 import { ScienceGentData, TokenStats } from "./types";
+import { supabase } from "@/integrations/supabase/client";
 
 /**
  * Fetches ScienceGent data from the blockchain

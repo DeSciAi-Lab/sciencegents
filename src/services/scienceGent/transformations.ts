@@ -1,3 +1,4 @@
+
 import { ScienceGentData, TokenStats, FormattedScienceGent } from './types';
 import { ethers } from 'ethers';
 import { 
@@ -112,12 +113,15 @@ export const transformBlockchainToSupabaseFormat = (
       ? new Date(blockchainData.creationTimestamp * 1000).toISOString() 
       : null,
     maturity_deadline: blockchainData.maturityDeadline || null,
-    remaining_maturity_time: remainingMaturityTime > 0 ? Number(remainingMaturityTime) : null,
-    maturity_progress: maturityProgress,
-    token_price: tokenPrice,
-    market_cap: marketCap,
-    virtual_eth: virtualETH,
-    collected_fees: collectedFees,
+    remaining_maturity_time: tokenStats.remainingMaturityTime || null,
+    maturity_progress: tokenStats.maturityProgress || 0,
+    token_price: tokenStats.currentPrice ? parseFloat(ethers.utils.formatEther(tokenStats.currentPrice)) : 0,
+    market_cap: calculateMarketCap(
+      parseFloat(ethers.utils.formatEther(tokenStats.currentPrice || '0')),
+      blockchainData.totalSupply || '0'
+    ),
+    virtual_eth: parseFloat(ethers.utils.formatEther(tokenStats.virtualETH || '0')),
+    collected_fees: parseFloat(ethers.utils.formatEther(tokenStats.collectedFees || '0')),
     last_synced_at: new Date().toISOString(),
     domain: blockchainData.domain || "General Science",
     agent_fee: blockchainData.agentFee || 2,
@@ -208,6 +212,3 @@ export const transformSupabaseToFormattedScienceGent = (
     persona: supabaseData.persona
   };
 };
-
-// Export the formatAge function so it can be used elsewhere
-export { formatAge };
