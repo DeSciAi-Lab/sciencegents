@@ -155,17 +155,25 @@ const ScienceGentSync = () => {
     
     try {
       setIsSyncingToken(true);
+      toast({
+        title: "Syncing Token",
+        description: `Syncing ${selectedToken.name} (${selectedToken.symbol})...`,
+      });
       
       await syncSingleScienceGent(selectedToken.address);
       
       // Refresh the token list
       await fetchScienceGentTokens();
       
+      toast({
+        title: "Token Sync Completed",
+        description: `Successfully synced ${selectedToken.name} (${selectedToken.symbol})`,
+      });
     } catch (error) {
       console.error("Token sync failed:", error);
       toast({
         title: "Token Sync Failed",
-        description: error.message || "An error occurred during token sync",
+        description: error.message || "An error occurred during token sync. Check console for details.",
         variant: "destructive"
       });
     } finally {

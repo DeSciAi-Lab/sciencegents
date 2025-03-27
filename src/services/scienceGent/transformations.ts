@@ -1,4 +1,3 @@
-
 import { ScienceGentData, TokenStats, FormattedScienceGent } from './types';
 import { ethers } from 'ethers';
 import { 
@@ -50,6 +49,32 @@ export const formatAge = (creationTimestamp: number | string | undefined): strin
 };
 
 /**
+ * Safe conversion of BigNumber-like values to numbers
+ * @param value Value to convert (string, BigNumber, or number)
+ * @param defaultValue Default value if conversion fails
+ * @returns Converted number
+ */
+const safeToNumber = (value: any, defaultValue: number = 0): number => {
+  if (!value) return defaultValue;
+  
+  try {
+    // If it's already a number
+    if (typeof value === 'number') return value;
+    
+    // If it's a BigNumber with toNumber method
+    if (value.toNumber && typeof value.toNumber === 'function') {
+      return value.toNumber();
+    }
+    
+    // If it's a string or can be converted to string
+    return parseFloat(value.toString()) || defaultValue;
+  } catch (error) {
+    console.warn("Error converting to number:", error);
+    return defaultValue;
+  }
+};
+
+/**
  * Transforms blockchain data to Supabase format
  * @param blockchainData ScienceGent data from blockchain
  * @param tokenStats Token statistics from blockchain
@@ -62,17 +87,17 @@ export const transformBlockchainToSupabaseFormat = async (
   // Calculate current timestamp in seconds
   const currentTimestamp = Math.floor(Date.now() / 1000);
   
-  // Calculate token age in seconds
-  const tokenAge = blockchainData.creationTimestamp 
-    ? currentTimestamp - blockchainData.creationTimestamp 
+  // Calculate token age in seconds - safely handle potentially large numbers
+  const creationTimestamp = safeToNumber(blockchainData.creationTimestamp);
+  const tokenAge = creationTimestamp ? currentTimestamp - creationTimestamp : 0;
+  
+  // Calculate remaining maturity time - safely handle potentially large numbers
+  const maturityDeadline = safeToNumber(blockchainData.maturityDeadline);
+  const remainingMaturityTime = maturityDeadline 
+    ? Math.max(0, maturityDeadline - currentTimestamp)
     : 0;
   
-  // Calculate remaining maturity time
-  const remainingMaturityTime = blockchainData.maturityDeadline 
-    ? Math.max(0, blockchainData.maturityDeadline - currentTimestamp)
-    : 0;
-  
-  // Calculate token price in ETH
+  // Calculate token price in ETH - safely parse large numbers
   const tokenPrice = calculateTokenPrice(tokenStats.currentPrice);
   
   // Fetch current ETH price
@@ -87,21 +112,33 @@ export const transformBlockchainToSupabaseFormat = async (
     blockchainData.totalSupply || '0'
   );
   
-  // Calculate virtual ETH and collected fees
+  // Calculate virtual ETH and collected fees - safely parse large numbers
   let virtualETH = 0;
   let collectedFees = 0;
   let ethReserve = 0;
   
   if (tokenStats.virtualETH) {
-    virtualETH = parseFloat(ethers.utils.formatEther(tokenStats.virtualETH));
+    try {
+      virtualETH = parseFloat(ethers.utils.formatEther(tokenStats.virtualETH));
+    } catch (error) {
+      console.warn("Error parsing virtualETH:", error);
+    }
   }
   
   if (tokenStats.collectedFees) {
-    collectedFees = parseFloat(ethers.utils.formatEther(tokenStats.collectedFees));
+    try {
+      collectedFees = parseFloat(ethers.utils.formatEther(tokenStats.collectedFees));
+    } catch (error) {
+      console.warn("Error parsing collectedFees:", error);
+    }
   }
   
   if (tokenStats.ethReserve) {
-    ethReserve = parseFloat(ethers.utils.formatEther(tokenStats.ethReserve));
+    try {
+      ethReserve = parseFloat(ethers.utils.formatEther(tokenStats.ethReserve));
+    } catch (error) {
+      console.warn("Error parsing ethReserve:", error);
+    }
   }
   
   // Calculate total liquidity
@@ -118,8 +155,8 @@ export const transformBlockchainToSupabaseFormat = async (
   const migrationCondition = (2 * virtualETH) + (blockchainData.capabilityFees || 0);
   
   // Convert creation timestamp to ISO string if available
-  const createdAt = blockchainData.creationTimestamp
-    ? new Date(blockchainData.creationTimestamp * 1000).toISOString()
+  const createdAt = creationTimestamp
+    ? new Date(creationTimestamp * 1000).toISOString()
     : null;
   
   // Main ScienceGent data for the sciencegents table
@@ -137,7 +174,7 @@ export const transformBlockchainToSupabaseFormat = async (
     migration_eligible: tokenStats.migrationEligible,
     created_at: createdAt,
     created_on_chain_at: createdAt, // Also populate the new created_on_chain_at field
-    maturity_deadline: blockchainData.maturityDeadline || null,
+    maturity_deadline: maturityDeadline || null,
     remaining_maturity_time: remainingMaturityTime,
     maturity_progress: maturityProgress,
     token_price: tokenPrice,

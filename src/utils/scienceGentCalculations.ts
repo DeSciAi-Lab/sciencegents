@@ -1,4 +1,3 @@
-
 import { ethers } from 'ethers';
 import { TokenStats } from '@/services/scienceGent/types';
 
@@ -18,6 +17,38 @@ export const fetchCurrentEthPrice = async (): Promise<number> => {
 };
 
 /**
+ * Safely converts any number-like value to a number
+ * @param value The value to convert
+ * @param defaultValue Default value if conversion fails
+ * @returns A safe number
+ */
+const safeNumberConversion = (value: any, defaultValue: number = 0): number => {
+  if (value === undefined || value === null) return defaultValue;
+  
+  try {
+    // If it's already a number
+    if (typeof value === 'number') return value;
+    
+    // If it's a BigNumber with toNumber method
+    if (value.toNumber && typeof value.toNumber === 'function') {
+      try {
+        return value.toNumber();
+      } catch (e) {
+        // If toNumber() overflows, use string conversion (with potential loss of precision)
+        console.warn("BigNumber overflow, using string conversion", e);
+        return parseFloat(value.toString()) || defaultValue;
+      }
+    }
+    
+    // If it's a string or can be converted to string
+    return parseFloat(value.toString()) || defaultValue;
+  } catch (error) {
+    console.warn("Error converting to number:", error);
+    return defaultValue;
+  }
+};
+
+/**
  * Calculates the maturity progress percentage
  * @param virtualETH Virtual ETH amount as string or number
  * @param collectedFees Collected fees as string or number
@@ -30,10 +61,10 @@ export const calculateMaturityProgress = (
   capabilityFees: string | number = '0'
 ): number => {
   try {
-    // Convert inputs to numbers if they're strings
-    const vETH = typeof virtualETH === 'string' ? parseFloat(virtualETH) : virtualETH;
-    const fees = typeof collectedFees === 'string' ? parseFloat(collectedFees) : collectedFees;
-    const capFees = typeof capabilityFees === 'string' ? parseFloat(capabilityFees) : capabilityFees;
+    // Convert inputs to numbers if they're strings using safe conversion
+    const vETH = safeNumberConversion(virtualETH);
+    const fees = safeNumberConversion(collectedFees);
+    const capFees = safeNumberConversion(capabilityFees);
     
     if (vETH === 0) return 0;
     
@@ -58,7 +89,15 @@ export const calculateMaturityProgress = (
 export const calculateTokenPrice = (currentPrice: string): number => {
   try {
     if (!currentPrice) return 0;
-    return parseFloat(ethers.utils.formatEther(currentPrice));
+    
+    // First try parsing as Wei
+    try {
+      return parseFloat(ethers.utils.formatEther(currentPrice));
+    } catch (error) {
+      console.warn("Failed to format as ETH, attempting direct parse:", error);
+      // If that fails, try direct parsing
+      return parseFloat(currentPrice) || 0;
+    }
   } catch (error) {
     console.error("Error calculating token price:", error);
     return 0;
