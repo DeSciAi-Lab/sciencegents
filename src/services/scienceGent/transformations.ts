@@ -198,12 +198,12 @@ export const transformSupabaseToFormattedScienceGent = (
   }
   
   // Calculate token age from creation timestamp
-  const creationTimestamp = supabaseData.created_on_chain_at 
-    ? new Date(supabaseData.created_on_chain_at).getTime() / 1000
+  const creationTimestamp = supabaseData.created_at 
+    ? new Date(supabaseData.created_at).getTime() / 1000
     : undefined;
     
   // Calculate formatted token age
-  const formattedAge = formatAge(supabaseData.created_on_chain_at);
+  const formattedAge = formatAge(supabaseData.created_at);
   
   // Create a formatted ScienceGent object for UI
   return {

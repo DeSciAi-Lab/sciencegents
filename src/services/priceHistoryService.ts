@@ -107,15 +107,15 @@ export const syncTradeEventsFromBlockchain = async (tokenAddress: string): Promi
     // Get token creation block (approximate by getting block timestamp close to token creation)
     const { data: tokenData } = await supabase
       .from('sciencegents')
-      .select('created_on_chain_at')
+      .select('created_at')
       .eq('address', tokenAddress)
       .single();
       
     let fromBlock = 0;
     
-    if (tokenData?.created_on_chain_at) {
+    if (tokenData?.created_at) {
       // Get approximate block number from timestamp
-      const creationDate = new Date(tokenData.created_on_chain_at);
+      const creationDate = new Date(tokenData.created_at);
       const currentBlock = await provider.getBlockNumber();
       const currentBlockData = await provider.getBlock(currentBlock);
       

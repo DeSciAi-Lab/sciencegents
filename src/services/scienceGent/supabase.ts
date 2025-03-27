@@ -1,3 +1,4 @@
+
 import { ScienceGentData, TokenStats, CapabilityDetail } from './types';
 import { supabase } from '@/integrations/supabase/client';
 import { transformBlockchainToSupabaseFormat, formatAge } from './transformations';
@@ -42,8 +43,8 @@ export const fetchScienceGentFromSupabase = async (address: string) => {
         data.collected_fees || 0
       ),
       // Calculate token age if it's not available in the database
-      tokenAge: data.created_on_chain_at 
-        ? Math.floor(Date.now() / 1000) - new Date(data.created_on_chain_at).getTime() / 1000
+      tokenAge: data.created_at 
+        ? Math.floor(Date.now() / 1000) - new Date(data.created_at).getTime() / 1000
         : 0,
       // Use remaining_maturity_time from database if available
       remainingMaturityTime: data.remaining_maturity_time || 0
@@ -91,7 +92,9 @@ export const saveScienceGentToSupabase = async (
     console.log("Saving ScienceGent to Supabase:", scienceGentData.address);
     
     // Transform the data to Supabase format
-    const { scienceGent, scienceGentStats } = transformBlockchainToSupabaseFormat(scienceGentData, tokenStats);
+    const transformedData = await transformBlockchainToSupabaseFormat(scienceGentData, tokenStats);
+    const scienceGent = transformedData.scienceGent;
+    const scienceGentStats = transformedData.scienceGentStats;
     
     // Prepare data for upsert, ensuring all value types match the database schema
     const supabaseData = {
@@ -106,7 +109,7 @@ export const saveScienceGentToSupabase = async (
       socials: scienceGent.socials,
       is_migrated: scienceGent.is_migrated,
       migration_eligible: scienceGent.migration_eligible,
-      created_on_chain_at: scienceGent.created_on_chain_at,
+      created_at: scienceGent.created_at,
       // Ensure maturity_deadline is properly typed as a number or null
       maturity_deadline: typeof scienceGent.maturity_deadline === 'number' 
         ? scienceGent.maturity_deadline 
