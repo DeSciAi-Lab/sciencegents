@@ -41,12 +41,12 @@ export const fetchCapabilityDetailsFromBlockchain = async (id: string): Promise<
     const [description, feeInETH, creator] = await factory.getCapabilityDetails(id);
     console.log(`Capability ${id} details retrieved from blockchain`);
     
-    // Return data in CapabilityDetail format with additional fields
+    // Return data in CapabilityDetail format
     return {
       id,
       name: id, // Using the ID as the name since blockchain doesn't store a separate name
       description,
-      feeInETH, // Keep the raw value for conversion later
+      feeInETH,
       price: parseFloat(ethers.utils.formatEther(feeInETH)), // Add price for UI display
       creator,
       domain: "Unknown", // Default domain

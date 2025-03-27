@@ -50,18 +50,18 @@ export interface TokenStats {
 // Capability Details - Enhanced with more properties for UI
 export interface CapabilityDetail {
   id: string;
-  name: string; // Now required property
+  name: string;
   description: string;
   feeInETH: string;
   creator: string;
   domain?: string;
-  price: number; // Now required property
+  price: number;
   stats?: {
     usageCount?: number;
     rating?: number;
     revenue?: number;
   };
-  features?: string[]; // Added for UI display
+  features?: string[];
 }
 
 // Formatted ScienceGent Data for UI

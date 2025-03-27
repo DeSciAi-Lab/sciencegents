@@ -5,6 +5,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { fetchCapabilitiesFromSupabase } from '@/services/capability/supabase';
 import { CapabilityDetail } from '@/services/scienceGent/types';
+import { Capability } from '@/types/capability';
 
 interface CapabilitySelectionProps {
   formData: ScienceGentFormData;
@@ -15,7 +16,7 @@ const CapabilitySelection: React.FC<CapabilitySelectionProps> = ({
   formData, 
   handleCapabilityToggle 
 }) => {
-  const [capabilities, setCapabilities] = useState<CapabilityDetail[]>([]);
+  const [capabilities, setCapabilities] = useState<Capability[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
@@ -37,7 +38,7 @@ const CapabilitySelection: React.FC<CapabilitySelectionProps> = ({
   }, []);
   
   const isSelected = (id: string) => {
-    return formData.capabilities.includes(id);
+    return formData.selectedCapabilities.includes(id);
   };
 
   return (

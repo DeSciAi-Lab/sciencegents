@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useWizard } from './WizardContext';
 import { CreationStatus } from '@/hooks/useScienceGentCreation';
