@@ -39,7 +39,7 @@ export interface ScienceGentListItem {
   isCurated?: boolean;
   capabilities?: string[];
   creationTimestamp?: string;
-  maturityProgress?: number; // Added as part of the interface
+  maturityProgress: number; // Making sure this is required, not optional
 }
 
 /**
@@ -151,7 +151,7 @@ export const fetchScienceGents = async (): Promise<ScienceGentListItem[]> => {
         maturityStatus,
         isCurated: Math.random() > 0.7, // Random for demo, will update with real data
         creationTimestamp: item.created_at,
-        maturityProgress: item.maturity_progress
+        maturityProgress: item.maturity_progress || 0
       };
     });
 
