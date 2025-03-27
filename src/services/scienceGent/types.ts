@@ -50,12 +50,12 @@ export interface TokenStats {
 // Capability Details - Enhanced with more properties for UI
 export interface CapabilityDetail {
   id: string;
-  name?: string; // Added for UI display
+  name: string; // Now required property
   description: string;
   feeInETH: string;
   creator: string;
   domain?: string;
-  price?: number; // Added for UI display (formatted ETH value)
+  price: number; // Now required property
   stats?: {
     usageCount?: number;
     rating?: number;

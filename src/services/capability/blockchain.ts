@@ -27,7 +27,7 @@ export const fetchCapabilityIdsFromBlockchain = async (): Promise<string[]> => {
 };
 
 // Function to get capability details from the blockchain
-export const fetchCapabilityDetailsFromBlockchain = async (id: string): Promise<CapabilityDetail & { stats?: any, features?: string[] }> => {
+export const fetchCapabilityDetailsFromBlockchain = async (id: string): Promise<CapabilityDetail> => {
   try {
     console.log(`Fetching details for capability ${id} from blockchain...`);
     const provider = await getProvider();
