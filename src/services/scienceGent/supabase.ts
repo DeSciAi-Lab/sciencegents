@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { FormattedScienceGent } from './types';
 
@@ -28,11 +29,11 @@ export const saveScienceGentToSupabase = async (scienceGentData: any, tokenStats
     const { error } = await supabase
       .from('sciencegents')
       .upsert({
-        address: scienceGentData.contractAddress,
+        address: scienceGentData.contractAddress || scienceGentData.address,
         name,
         symbol,
         total_supply: totalSupply,
-        creator,
+        creator_address: creator, // Updated to match DB schema
         trading_enabled: tradingEnabled,
         is_migrated: isMigrated,
         capability_count: capabilityCount,
@@ -81,27 +82,35 @@ export const fetchScienceGentFromSupabase = async (address: string): Promise<For
       return null;
     }
 
-    // Transform to formatted ScienceGent
+    // Transform to formatted ScienceGent with correct property names
     const formattedScienceGent: FormattedScienceGent = {
       address: data.address,
       name: data.name,
       symbol: data.symbol,
       totalSupply: data.total_supply,
-      creator: data.creator,
+      creator: data.creator_address, // Mapping from creator_address
       tradingEnabled: data.trading_enabled,
       isMigrated: data.is_migrated,
-      capabilityCount: data.capability_count,
-      adminLockAmount: data.admin_lock_amount,
-      adminLockRemainingTime: data.admin_lock_remaining_time,
-      adminLockIsUnlocked: data.admin_lock_is_unlocked,
+      maturityProgress: data.maturity_progress,
+      virtualEth: data.virtual_eth,
+      collectedFees: data.collected_fees,
       tokenPrice: data.token_price,
       marketCap: data.market_cap,
-      totalLiquidity: data.total_liquidity,
-      totalVolume: data.total_volume,
-      holders: data.holders,
+      liquidity: data.total_liquidity,
+      holdersCount: data.holders,
       transactions: data.transactions,
       capabilities: data.capabilities || [],
       created_at: data.created_at,
+      description: data.description,
+      profilePic: data.profile_pic,
+      website: data.website,
+      socialLinks: data.socials,
+      domain: data.domain,
+      agentFee: data.agent_fee,
+      remainingMaturityTime: data.remaining_maturity_time,
+      migrationEligible: data.migration_eligible,
+      uniswapPair: data.uniswap_pair,
+      capabilityFees: data.capability_fees
     };
 
     return formattedScienceGent;

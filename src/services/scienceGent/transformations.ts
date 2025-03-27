@@ -1,10 +1,11 @@
+
 import { ScienceGentData, TokenStats, FormattedScienceGent } from './types';
 import { formatDistance } from 'date-fns';
 import { formatEthValue, convertEthToUsd } from '@/utils/scienceGentCalculations';
 import { supabase } from '@/integrations/supabase/client';
 import { ethers } from 'ethers';
 
-// Add implementation for the missing functions
+// Add implementation for the calculation functions
 const calculateTokenPrice = (priceInWei: string | undefined): number => {
   if (!priceInWei) return 0;
   try {
@@ -38,36 +39,48 @@ export const transformBlockchainToSupabaseFormat = (
     name: scienceGentData.name,
     symbol: scienceGentData.symbol,
     description: scienceGentData.description || '',
-    creator: scienceGentData.creator,
+    creator_address: scienceGentData.creator,
     total_supply: scienceGentData.totalSupply,
-    virtual_eth: scienceGentData.virtualETH,
+    virtual_eth: tokenStats.virtualETH,
     collected_fees: tokenStats.collectedFees,
-    capability_fees: tokenStats.capabilityFees,
+    capability_fees: tokenStats.capabilityFees || 0,
     current_price: tokenStats.currentPrice,
     market_cap: marketCap,
-    total_liquidity: tokenStats.totalLiquidity,
-    holders_count: tokenStats.holdersCount,
-    transactions: tokenStats.transactions,
+    total_liquidity: tokenStats.totalLiquidity || 0,
+    holders: tokenStats.holdersCount || 0,
+    transactions: tokenStats.transactions || 0,
     is_migrated: scienceGentData.isMigrated,
     trading_enabled: scienceGentData.tradingEnabled,
     uniswap_pair: tokenStats.uniswapPair || null,
-    capabilities: scienceGentData.capabilities.map(cap => ({
-      capability_id: cap.id,
-      capability_name: cap.name,
-      capability_fee: cap.fee,
-      capability_creator: cap.creator
-    }))
+    capabilities: Array.isArray(scienceGentData.capabilities) ? 
+      scienceGentData.capabilities.map((cap: any) => {
+        if (typeof cap === 'string') {
+          return {
+            capability_id: cap,
+            capability_name: cap,
+            capability_fee: 0,
+            capability_creator: ''
+          };
+        } else {
+          return {
+            capability_id: cap.id || '',
+            capability_name: cap.name || '',
+            capability_fee: cap.fee || 0,
+            capability_creator: cap.creator || ''
+          };
+        }
+      }) : []
   };
 };
 
 export const transformSupabaseToFormattedScienceGent = (data: any): FormattedScienceGent => {
   // Calculate maturity progress
-  const virtualETH = parseFloat(ethers.utils.formatEther(data.virtual_eth || '0'));
+  const virtualEth = parseFloat(ethers.utils.formatEther(data.virtual_eth || '0'));
   const collectedFees = parseFloat(ethers.utils.formatEther(data.collected_fees || '0'));
   const capabilityFees = parseFloat(ethers.utils.formatEther(data.capability_fees || '0'));
   
   // Calculate maturity progress (0-100%)
-  const targetFees = (2 * virtualETH) + capabilityFees;
+  const targetFees = (2 * virtualEth) + capabilityFees;
   const maturityProgress = targetFees > 0 
     ? Math.min(Math.round((collectedFees / targetFees) * 100), 100) 
     : 0;
@@ -100,14 +113,13 @@ export const transformSupabaseToFormattedScienceGent = (data: any): FormattedSci
   const age = formatAge(createdAt);
   
   return {
-    id: data.id,
     address: data.address,
     name: data.name,
     symbol: data.symbol,
     description: data.description || '',
-    creator: data.creator,
+    creator: data.creator_address,
     totalSupply: data.total_supply,
-    virtualETH,
+    virtualEth,
     collectedFees,
     capabilityFees,
     tokenPrice,
@@ -119,14 +131,14 @@ export const transformSupabaseToFormattedScienceGent = (data: any): FormattedSci
     liquidity,
     formattedLiquidity,
     formattedLiquidityUsd,
-    holdersCount: data.holders_count || 0,
+    holdersCount: data.holders || 0,
     transactions: data.transactions || 0,
     isMigrated: data.is_migrated || false,
     tradingEnabled: data.trading_enabled || false,
     uniswapPair: data.uniswap_pair || null,
     capabilities,
     maturityProgress,
-    created_at: createdAt,
+    created_at: data.created_at,
     age
   };
 };

@@ -18,13 +18,14 @@ export interface ScienceGentData {
   creationTimestamp?: number;
   maturityDeadline?: number;
   capabilities: string[];
-  capabilityFees?: number; // Optional field for total capability fees in ETH
+  capabilityFees?: number; // Added for capability fees
   adminLockAmount?: string;
   adminLockRemainingTime?: string;
   isAdminTokensUnlocked?: boolean;
   persona?: string;
   domain?: string;
   agentFee?: number;
+  virtualETH?: string; // Added virtual ETH
   // New developer information fields
   developerName?: string;
   developerEmail?: string;
@@ -43,10 +44,10 @@ export interface TokenStats {
   collectedFees: string;
   tradingEnabled: boolean;
   creator: string;
-  creationTimestamp: number; // Changed from string to number
-  maturityDeadline: number; // Changed from string to number
-  migrated: boolean; // Changed from isMigrated to migrated to match contract response
-  lpUnlockTime: number; // Changed from string to number
+  creationTimestamp: number;
+  maturityDeadline: number; 
+  migrated: boolean;
+  lpUnlockTime: number;
   lockedLPAmount: string;
   currentPrice: string;
   migrationEligible: boolean;
@@ -54,6 +55,12 @@ export interface TokenStats {
   tokenAge?: number;
   remainingMaturityTime?: number;
   maturityProgress?: number;
+  // Additional properties
+  capabilityFees?: number;
+  totalLiquidity?: number;
+  holdersCount?: number;
+  transactions?: number;
+  uniswapPair?: string;
 }
 
 // Capability details as retrieved from blockchain
@@ -72,6 +79,7 @@ export interface CapabilityDetail {
     revenue: number;
   };
   features?: string[];
+  fee?: number;
 }
 
 // Formatted ScienceGent data for UI display
@@ -93,10 +101,29 @@ export interface FormattedScienceGent {
   remainingMaturityTime?: number;
   creationTimestamp?: number;
   migrationEligible?: boolean;
-  capabilities?: string[];
+  capabilities?: any[]; // Changed from string[] to any[] to support complex capability objects
   tokenAge?: number;
   persona?: string;
   domain?: string;
   agentFee?: number;
-  formattedAge?: string; // Add this property to the interface
+  formattedAge?: string;
+  created_at?: string; // Adding this to match existing code
+  creator?: string; // Added creator
+  tradingEnabled?: boolean; // Added trading enabled
+  adminLockAmount?: string;
+  adminLockRemainingTime?: string;
+  adminLockIsUnlocked?: boolean;
+  liquidity?: number;
+  formattedPrice?: string;
+  formattedPriceUsd?: string;
+  formattedMarketCap?: string;
+  formattedMarketCapUsd?: string;
+  formattedLiquidity?: string;
+  formattedLiquidityUsd?: string;
+  holdersCount?: number;
+  transactions?: number;
+  uniswapPair?: string;
+  capabilityFees?: number;
+  // Additional fields
+  age?: string;
 }

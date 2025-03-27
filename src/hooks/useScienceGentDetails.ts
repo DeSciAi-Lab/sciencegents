@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { 
   fetchScienceGentFromSupabase, 
@@ -81,13 +82,13 @@ export const useScienceGentDetails = (address: string | undefined) => {
         const currentPrice = await getCurrentPriceFromBlockchain(address);
         
         // Calculate market cap using current price and total supply
-        const marketCap = calculateMarketCap(currentPrice, dbData.total_supply);
+        const marketCap = calculateMarketCap(currentPrice, dbData.totalSupply || '0');
         
         // Calculate maturity progress
         const maturityProgress = calculateMaturityProgress(
-          dbData.virtual_eth || 0,
-          dbData.collected_fees || 0,
-          0 // Capability fees - using 0 as fallback since it's not in the data
+          dbData.virtualEth || 0,
+          dbData.collectedFees || 0,
+          dbData.capabilityFees || 0
         );
         
         // Calculate additional properties if needed
@@ -100,11 +101,11 @@ export const useScienceGentDetails = (address: string | undefined) => {
           // Format maturity status
           maturityStatus: getMaturityStatus(dbData),
           // Add current price from blockchain
-          token_price: currentPrice || dbData.token_price,
+          tokenPrice: currentPrice || dbData.tokenPrice,
           // Add calculated market cap
-          market_cap: marketCap || dbData.market_cap,
+          marketCap: marketCap || dbData.marketCap,
           // Add calculated maturity progress
-          maturity_progress: maturityProgress || dbData.maturity_progress
+          maturityProgress: maturityProgress || dbData.maturityProgress
         };
         
         setScienceGent(enrichedData);
@@ -150,11 +151,11 @@ export const useScienceGentDetails = (address: string | undefined) => {
 
   // Helper function to determine maturity status
   const getMaturityStatus = (data: any): string => {
-    if (data.is_migrated) {
+    if (data.isMigrated) {
       return 'Migrated';
-    } else if (data.migration_eligible) {
+    } else if (data.migrationEligible) {
       return 'Ready for Migration';
-    } else if (data.maturity_progress >= 50) {
+    } else if (data.maturityProgress >= 50) {
       return 'Near Maturity';
     } else {
       return 'Immature';
@@ -182,25 +183,25 @@ export const useScienceGentDetails = (address: string | undefined) => {
         const updatedData = await fetchScienceGentFromSupabase(address);
         if (updatedData) {
           // Calculate market cap using current price and total supply
-          const marketCap = calculateMarketCap(currentPrice, updatedData.total_supply);
+          const marketCap = calculateMarketCap(currentPrice, updatedData.totalSupply || '0');
           
           // Calculate maturity progress
           const maturityProgress = calculateMaturityProgress(
-            updatedData.virtual_eth || 0,
-            updatedData.collected_fees || 0,
-            0 // Capability fees - using 0 as fallback
+            updatedData.virtualEth || 0,
+            updatedData.collectedFees || 0,
+            updatedData.capabilityFees || 0
           );
           
           const enrichedData = {
             ...updatedData,
-            formattedAge: formatAge(updatedData.created_at),
+            formattedAge: formatAge(updatedData.created_at || new Date()),
             maturityStatus: getMaturityStatus(updatedData),
             // Add current price from blockchain
-            token_price: currentPrice || updatedData.token_price,
+            tokenPrice: currentPrice || updatedData.tokenPrice,
             // Add calculated market cap
-            market_cap: marketCap || updatedData.market_cap,
+            marketCap: marketCap || updatedData.marketCap,
             // Add calculated maturity progress
-            maturity_progress: maturityProgress || updatedData.maturity_progress
+            maturityProgress: maturityProgress || updatedData.maturityProgress
           };
           
           setScienceGent(enrichedData);
