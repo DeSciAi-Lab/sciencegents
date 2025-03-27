@@ -9,6 +9,7 @@ import {
 } from '@/services/scienceGent';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
+import { formatDistanceToNow } from 'date-fns';
 
 export enum LoadingStatus {
   Idle = 'idle',
