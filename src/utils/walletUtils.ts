@@ -10,8 +10,11 @@ import {
 } from 'wagmi';
 import { useState, useEffect } from 'react';
 
-// Admin wallet address 
-const ADMIN_WALLET_ADDRESS = '0x86A683C6B0e8d7A962B7A040Ed0e6d993F1d9F83'.toLowerCase();
+// Admin wallet addresses 
+const ADMIN_WALLET_ADDRESSES = [
+  '0x86A683C6B0e8d7A962B7A040Ed0e6d993F1d9F83',
+  '0x2c4354bc7a2e57Ae7331749ae7b68219476A9775'
+].map(addr => addr.toLowerCase());
 
 // Format an address for display
 export const formatAddress = (address: string): string => {
@@ -56,10 +59,10 @@ export function useWallet() {
   const { disconnect } = useDisconnect();
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
 
-  // Check if the connected wallet is the admin wallet
+  // Check if the connected wallet is an admin wallet
   useEffect(() => {
     if (address) {
-      setIsAdmin(address.toLowerCase() === ADMIN_WALLET_ADDRESS);
+      setIsAdmin(ADMIN_WALLET_ADDRESSES.includes(address.toLowerCase()));
     } else {
       setIsAdmin(false);
     }

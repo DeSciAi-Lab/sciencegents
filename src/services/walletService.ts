@@ -3,8 +3,11 @@ import { ethers } from "ethers";
 import { toast } from "@/components/ui/use-toast";
 import { contractConfig } from "@/utils/contractConfig";
 
-// Admin wallet address 
-const ADMIN_WALLET_ADDRESS = '0x86A683C6B0e8d7A962B7A040Ed0e6d993F1d9F83'.toLowerCase();
+// Admin wallet addresses 
+const ADMIN_WALLET_ADDRESSES = [
+  '0x86A683C6B0e8d7A962B7A040Ed0e6d993F1d9F83',
+  '0x2c4354bc7a2e57Ae7331749ae7b68219476A9775'
+].map(addr => addr.toLowerCase());
 
 // Function to get ethers provider
 export const getProvider = async (): Promise<ethers.providers.Web3Provider> => {
@@ -69,7 +72,7 @@ export const checkIfWalletIsConnected = async (): Promise<boolean> => {
   }
 };
 
-// Function to check if the connected wallet is the admin wallet
+// Function to check if the connected wallet is an admin wallet
 export const isAdminWallet = async (): Promise<boolean> => {
   if (!window.ethereum) {
     console.log("No Ethereum provider found");
@@ -86,7 +89,7 @@ export const isAdminWallet = async (): Promise<boolean> => {
     }
     
     const connectedAccount = accounts[0].toLowerCase();
-    const isAdmin = connectedAccount === ADMIN_WALLET_ADDRESS;
+    const isAdmin = ADMIN_WALLET_ADDRESSES.includes(connectedAccount);
     console.log(`Connected account: ${connectedAccount}, Is admin: ${isAdmin}`);
     return isAdmin;
   } catch (error) {

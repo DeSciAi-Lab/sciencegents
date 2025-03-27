@@ -3,13 +3,17 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '@/components/ui/use-toast';
 
-// Hardcoded admin wallet address - in a real app, this would come from an environment variable
-const ADMIN_WALLET_ADDRESS = '0x86A683C6B0e8d7A962B7A040Ed0e6d993F1d9F83';
+// Admin wallet addresses - in a real app, these would come from an environment variable
+const ADMIN_WALLET_ADDRESSES = [
+  '0x86A683C6B0e8d7A962B7A040Ed0e6d993F1d9F83',
+  '0x2c4354bc7a2e57Ae7331749ae7b68219476A9775'
+].map(addr => addr.toLowerCase());
 
 const useAdminAuth = () => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [accessDenied, setAccessDenied] = useState(false);
+  const [adminWalletAddress, setAdminWalletAddress] = useState(ADMIN_WALLET_ADDRESSES[0]);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -51,10 +55,10 @@ const useAdminAuth = () => {
         
         const currentWallet = accounts[0].toLowerCase();
         console.log('Connected wallet:', currentWallet);
-        console.log('Admin wallet:', ADMIN_WALLET_ADDRESS.toLowerCase());
+        console.log('Admin wallets:', ADMIN_WALLET_ADDRESSES);
         
-        // Strict equality check against admin wallet address
-        if (currentWallet !== ADMIN_WALLET_ADDRESS.toLowerCase()) {
+        // Check if the connected wallet is in the list of admin wallets
+        if (!ADMIN_WALLET_ADDRESSES.includes(currentWallet)) {
           console.error('Connected wallet is not admin wallet');
           setAccessDenied(true);
           setIsAdmin(false);
@@ -104,8 +108,8 @@ const useAdminAuth = () => {
         
         const currentWallet = accounts[0].toLowerCase();
         
-        // Check if new account is admin
-        if (currentWallet !== ADMIN_WALLET_ADDRESS.toLowerCase()) {
+        // Check if new account is in the list of admin wallets
+        if (!ADMIN_WALLET_ADDRESSES.includes(currentWallet)) {
           setIsAdmin(false);
           setAccessDenied(true);
           toast({
@@ -131,7 +135,7 @@ const useAdminAuth = () => {
     }
   }, [navigate]);
 
-  return { isAdmin, isLoading, accessDenied, adminWalletAddress: ADMIN_WALLET_ADDRESS };
+  return { isAdmin, isLoading, accessDenied, adminWalletAddress };
 };
 
 export { useAdminAuth };
