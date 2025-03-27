@@ -49,7 +49,7 @@ export async function getScienceGentsList(
   try {
     console.info('Fetching ScienceGents from Supabase');
     
-    // Start building the query
+    // Start building the query - using a simpler approach to avoid deep type instantiation
     let query = supabase
       .from('sciencegents')
       .select(`
@@ -61,20 +61,21 @@ export async function getScienceGentsList(
         )
       `, { count: 'exact' });
     
-    // Apply filters - replacing potentially recursive complex filter builder
+    // Apply filters one by one to avoid complex nested type instantiation
     if (filters.domain && filters.domain.length > 0) {
       query = query.in('domain', filters.domain);
     }
     
     if (filters.isCurated !== undefined) {
-      query = query.eq('isCurated', filters.isCurated);
+      // Use the database column name is_curated instead of isCurated
+      query = query.eq('is_curated', filters.isCurated);
     }
     
     if (filters.searchTerm) {
       query = query.or(`name.ilike.%${filters.searchTerm}%,symbol.ilike.%${filters.searchTerm}%,description.ilike.%${filters.searchTerm}%,address.ilike.%${filters.searchTerm}%`);
     }
     
-    // Map frontend sort fields to database fields if needed
+    // Map frontend sort fields to database fields
     const sortMapping: Record<string, string> = {
       'marketCap': 'market_cap',
       'tokenPrice': 'token_price',
@@ -140,7 +141,7 @@ export async function getScienceGentsList(
             revenue: Math.floor(Math.random() * 10000), // Placeholder
             rating: Math.floor(Math.random() * 5) + 1, // Placeholder
             domain: sg.domain || 'General',
-            isCurated: sg.isCurated || false, // Changed from is_curated to isCurated
+            isCurated: sg.is_curated || false, // Use is_curated from database
             maturityProgress: sg.maturity_progress || 0,
             isMigrated: sg.is_migrated || false,
             migrationEligible: sg.migration_eligible || false,
@@ -165,7 +166,7 @@ export async function getScienceGentsList(
             revenue: Math.floor(Math.random() * 10000), // Placeholder
             rating: Math.floor(Math.random() * 5) + 1, // Placeholder
             domain: sg.domain || 'General',
-            isCurated: sg.isCurated || false, // Changed from is_curated to isCurated
+            isCurated: sg.is_curated || false, // Use is_curated from database
             maturityProgress: sg.maturity_progress || 0,
             isMigrated: sg.is_migrated || false,
             migrationEligible: sg.migration_eligible || false,
