@@ -1,3 +1,4 @@
+
 // Export blockchain-related functions
 import { 
   fetchScienceGentFromBlockchain,
@@ -12,6 +13,15 @@ import {
   saveScienceGentToSupabase,
   fetchScienceGentFromSupabase
 } from './supabase';
+
+// Import calculation utilities
+import { 
+  fetchCurrentEthPrice, 
+  calculateTokenPrice 
+} from '@/utils/scienceGentCalculations';
+
+// Import ethers library
+import { ethers } from 'ethers';
 
 // Export types
 export type {
