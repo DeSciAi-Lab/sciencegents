@@ -20,6 +20,11 @@ const EthPriceContext = createContext<EthPriceContextType>({
 
 export const useEthPriceContext = () => useContext(EthPriceContext);
 
+// Export the formatEthToUsd function directly to match imports
+export const formatEthToUsd = (ethValue: number, ethToUsdRate: number = 3000): string => {
+  return convertEthToUsd(ethValue, ethToUsdRate);
+};
+
 export const EthPriceProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [ethPrice, setEthPrice] = useState<number>(3000);
   const [isLoading, setIsLoading] = useState<boolean>(true);

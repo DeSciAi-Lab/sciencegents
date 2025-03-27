@@ -89,3 +89,36 @@ export const fetchCurrentEthPrice = async (): Promise<number> => {
     return 3000; // Default fallback price
   }
 };
+
+/**
+ * Calculate token price from blockchain data
+ * @param priceInWei Price in wei as string (from blockchain)
+ * @returns Price in ETH as number
+ */
+export const calculateTokenPrice = (priceInWei: string | undefined): number => {
+  if (!priceInWei) return 0;
+  try {
+    return parseFloat(ethers.utils.formatEther(priceInWei));
+  } catch (error) {
+    console.error("Error calculating token price:", error);
+    return 0;
+  }
+};
+
+/**
+ * Calculate market cap based on token price and total supply
+ * @param tokenPrice Token price in ETH
+ * @param totalSupplyInWei Total supply in wei as string (from blockchain)
+ * @returns Market cap in ETH
+ */
+export const calculateMarketCap = (tokenPrice: number, totalSupplyInWei: string): number => {
+  if (!tokenPrice || !totalSupplyInWei) return 0;
+  try {
+    const totalSupply = parseFloat(ethers.utils.formatEther(totalSupplyInWei));
+    return tokenPrice * totalSupply;
+  } catch (error) {
+    console.error("Error calculating market cap:", error);
+    return 0;
+  }
+};
+

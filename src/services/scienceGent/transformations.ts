@@ -1,10 +1,8 @@
-
 import { ScienceGentData, TokenStats, FormattedScienceGent } from './types';
 import { ethers } from 'ethers';
 import { 
   calculateMaturityProgress,
-  calculateTokenPrice,
-  calculateMarketCap
+  formatEthValue
 } from '@/utils/scienceGentCalculations';
 
 /**
@@ -69,13 +67,19 @@ export const transformBlockchainToSupabaseFormat = (
     : 0;
   
   // Calculate token price
-  const tokenPrice = calculateTokenPrice(tokenStats.currentPrice);
+  const tokenPrice = parseFloat(ethers.utils.formatEther(tokenStats.currentPrice || '0'));
   
   // Calculate market cap
-  const marketCap = calculateMarketCap(
-    tokenPrice,
-    blockchainData.totalSupply || '0'
-  );
+  const marketCap = (() => {
+    if (!tokenPrice || !blockchainData.totalSupply) return 0;
+    try {
+      const totalSupply = parseFloat(ethers.utils.formatEther(blockchainData.totalSupply));
+      return tokenPrice * totalSupply;
+    } catch (error) {
+      console.error("Error calculating market cap:", error);
+      return 0;
+    }
+  })();
   
   // Calculate maturity progress
   let virtualETH = 0;
@@ -115,11 +119,8 @@ export const transformBlockchainToSupabaseFormat = (
     maturity_deadline: blockchainData.maturityDeadline || null,
     remaining_maturity_time: tokenStats.remainingMaturityTime || null,
     maturity_progress: tokenStats.maturityProgress || 0,
-    token_price: tokenStats.currentPrice ? parseFloat(ethers.utils.formatEther(tokenStats.currentPrice)) : 0,
-    market_cap: calculateMarketCap(
-      parseFloat(ethers.utils.formatEther(tokenStats.currentPrice || '0')),
-      blockchainData.totalSupply || '0'
-    ),
+    token_price: tokenPrice,
+    market_cap: marketCap,
     virtual_eth: parseFloat(ethers.utils.formatEther(tokenStats.virtualETH || '0')),
     collected_fees: parseFloat(ethers.utils.formatEther(tokenStats.collectedFees || '0')),
     last_synced_at: new Date().toISOString(),

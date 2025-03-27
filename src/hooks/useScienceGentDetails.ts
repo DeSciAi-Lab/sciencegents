@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { 
   fetchScienceGentFromSupabase, 
@@ -194,7 +193,7 @@ export const useScienceGentDetails = (address: string | undefined) => {
           
           const enrichedData = {
             ...updatedData,
-            formattedAge: formatAge(updatedData.created_on_chain_at),
+            formattedAge: formatAge(updatedData.created_at),
             maturityStatus: getMaturityStatus(updatedData),
             // Add current price from blockchain
             token_price: currentPrice || updatedData.token_price,

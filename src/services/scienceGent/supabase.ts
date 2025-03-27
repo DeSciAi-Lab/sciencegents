@@ -42,8 +42,8 @@ export const fetchScienceGentFromSupabase = async (address: string) => {
         data.collected_fees || 0
       ),
       // Calculate token age if it's not available in the database
-      tokenAge: data.created_on_chain_at 
-        ? Math.floor(Date.now() / 1000) - new Date(data.created_on_chain_at).getTime() / 1000
+      tokenAge: data.created_at 
+        ? Math.floor(Date.now() / 1000) - new Date(data.created_at).getTime() / 1000
         : 0,
       // Use remaining_maturity_time from database if available
       remainingMaturityTime: data.remaining_maturity_time || 0
