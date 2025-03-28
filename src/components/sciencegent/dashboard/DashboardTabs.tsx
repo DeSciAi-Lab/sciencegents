@@ -7,7 +7,6 @@ import TradeTab from './TradeTab';
 import ChatTab from './ChatTab';
 import InfoTab from './InfoTab';
 import { Skeleton } from '@/components/ui/skeleton';
-import { BarChart3, MessageCircle, FileText } from 'lucide-react';
 
 interface DashboardTabsProps {
   address: string;
@@ -29,7 +28,6 @@ const DashboardTabs: React.FC<DashboardTabsProps> = ({
   
   // Inner tab states - each main tab has its own inner tab state
   const [activeOverviewTab, setActiveOverviewTab] = useState('detailed-description');
-  const [activeTradingTab, setActiveTradingTab] = useState('tradebook');
   
   // Handle main tab change
   const handleMainTabChange = (value: string) => {
@@ -40,40 +38,33 @@ const DashboardTabs: React.FC<DashboardTabsProps> = ({
   const handleOverviewTabChange = (value: string) => {
     setActiveOverviewTab(value);
   };
-  
-  const handleTradingTabChange = (value: string) => {
-    setActiveTradingTab(value);
-  };
 
   // Determine if content is loading
   const isLoading = status === LoadingStatus.Loading || isRefreshing;
 
   return (
-    <div className="flex flex-col md:flex-row gap-6 p-6">
-      {/* Main content - now it takes full width */}
+    <div className="flex flex-col md:flex-row gap-6">
+      {/* Main content */}
       <div className="flex-1">
         <Tabs value={activeMainTab} onValueChange={handleMainTabChange} className="w-full">
           <div className="border-b">
-            <TabsList className="w-full justify-start bg-white rounded-none p-0">
+            <TabsList className="w-full justify-start bg-white rounded-none p-0 border-b">
               <TabsTrigger 
                 value="overview"
-                className="rounded-none px-6 py-3 text-gray-700 data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:text-blue-600 flex items-center gap-2"
+                className="rounded-none px-6 py-2.5 text-gray-700 data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:text-blue-600"
               >
-                <FileText className="h-4 w-4" />
                 Overview
               </TabsTrigger>
               <TabsTrigger 
                 value="trades"
-                className="rounded-none px-6 py-3 text-gray-700 data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:text-blue-600 flex items-center gap-2"
+                className="rounded-none px-6 py-2.5 text-gray-700 data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:text-blue-600"
               >
-                <BarChart3 className="h-4 w-4" />
                 Trades
               </TabsTrigger>
               <TabsTrigger 
                 value="agent"
-                className="rounded-none px-6 py-3 text-gray-700 data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:text-blue-600 flex items-center gap-2"
+                className="rounded-none px-6 py-2.5 text-gray-700 data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:text-blue-600"
               >
-                <MessageCircle className="h-4 w-4" />
                 Agent Interface
               </TabsTrigger>
             </TabsList>
@@ -124,50 +115,24 @@ const DashboardTabs: React.FC<DashboardTabsProps> = ({
 
           {/* Trades Tab Content */}
           <TabsContent value="trades">
-            <Tabs value={activeTradingTab} onValueChange={handleTradingTabChange}>
-              <div className="border-b">
-                <TabsList className="w-full bg-white justify-start rounded-none p-0">
-                  <TabsTrigger 
-                    value="tradebook"
-                    className="rounded-none px-6 py-2 text-sm data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:bg-white"
-                  >
-                    Tradebook
-                  </TabsTrigger>
-                  <TabsTrigger 
-                    value="holders"
-                    className="rounded-none px-6 py-2 text-sm data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:bg-white"
-                  >
-                    Holders
-                  </TabsTrigger>
-                  <TabsTrigger 
-                    value="transactions"
-                    className="rounded-none px-6 py-2 text-sm data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:bg-white"
-                  >
-                    Transactions
-                  </TabsTrigger>
-                </TabsList>
-              </div>
-            
-              <div className="p-6">
-                {isLoading ? (
-                  <div className="space-y-4">
-                    <Skeleton className="h-8 w-32" />
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <Skeleton className="h-32 w-full" />
-                      <Skeleton className="h-32 w-full" />
-                      <Skeleton className="h-32 w-full" />
-                    </div>
-                    <Skeleton className="h-64 w-full" />
+            <div className="p-6">
+              {isLoading ? (
+                <div className="space-y-4">
+                  <Skeleton className="h-8 w-32" />
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <Skeleton className="h-32 w-full" />
+                    <Skeleton className="h-32 w-full" />
+                    <Skeleton className="h-32 w-full" />
                   </div>
-                ) : (
-                  <TradeTab 
-                    address={address} 
-                    scienceGentData={scienceGentData}
-                    activeTab={activeTradingTab}
-                  />
-                )}
-              </div>
-            </Tabs>
+                  <Skeleton className="h-64 w-full" />
+                </div>
+              ) : (
+                <TradeTab 
+                  address={address} 
+                  scienceGentData={scienceGentData}
+                />
+              )}
+            </div>
           </TabsContent>
 
           {/* Agent Interface Tab */}

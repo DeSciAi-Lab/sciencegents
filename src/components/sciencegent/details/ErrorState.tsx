@@ -1,25 +1,44 @@
 
 import React from 'react';
-import Navbar from '@/components/layout/Navbar';
-import Footer from '@/components/layout/Footer';
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from '@/components/ui/button';
+import { AlertTriangle } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import NavbarLayout from '@/components/layout/NavbarLayout';
 
 interface ErrorStateProps {
-  address: string | undefined;
+  address?: string;
 }
 
 const ErrorState: React.FC<ErrorStateProps> = ({ address }) => {
+  const navigate = useNavigate();
+  
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
-      <Navbar />
-      <main className="flex-grow container mx-auto px-4 pt-6 pb-10">
-        <div className="p-6 bg-destructive/10 rounded-lg text-center">
-          <h2 className="text-2xl font-bold mb-2">Error Loading ScienceGent</h2>
-          <p>Unable to load details for this ScienceGent. Please try again later.</p>
-          <p className="text-sm text-gray-500 mt-2">Address: {address}</p>
+    <NavbarLayout>
+      <div className="container mx-auto px-4 py-12">
+        <div className="max-w-xl mx-auto">
+          <Alert variant="destructive" className="mb-8">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>Error Loading ScienceGent</AlertTitle>
+            <AlertDescription>
+              {address ? 
+                `We couldn't find a ScienceGent with the address ${address}. It might not exist or there was an error loading it.` :
+                "An error occurred while loading the ScienceGent details."
+              }
+            </AlertDescription>
+          </Alert>
+          
+          <div className="flex gap-4">
+            <Button onClick={() => navigate('/sciencegents')}>
+              Browse ScienceGents
+            </Button>
+            <Button variant="outline" onClick={() => navigate('/')}>
+              Go to Homepage
+            </Button>
+          </div>
         </div>
-      </main>
-      <Footer />
-    </div>
+      </div>
+    </NavbarLayout>
   );
 };
 
