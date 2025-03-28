@@ -16,6 +16,7 @@ const FetchTokenStats: React.FC = () => {
   const [tokenStats, setTokenStats] = useState<TokenStats | null>(null);
   const [success, setSuccess] = useState(false);
   const [totalSupply, setTotalSupply] = useState<string | null>(null);
+  const [formattedTokenReserve, setFormattedTokenReserve] = useState<string | null>(null);
 
   // Function to fetch token stats from the blockchain
   const fetchTokenStats = async () => {
@@ -25,6 +26,7 @@ const FetchTokenStats: React.FC = () => {
     setSuccess(false);
     setIsLoading(true);
     setTotalSupply(null);
+    setFormattedTokenReserve(null);
 
     try {
       // Validate token address
@@ -90,7 +92,7 @@ const FetchTokenStats: React.FC = () => {
       
       setTokenStats(formattedStats);
       
-      // Fetch total supply from token contract
+      // Fetch total supply and decimals from token contract
       try {
         // ERC20 token ABI for totalSupply function
         const tokenAbi = [
@@ -117,9 +119,14 @@ const FetchTokenStats: React.FC = () => {
         // Format total supply with appropriate decimals
         const formattedSupply = ethers.utils.formatUnits(supply, decimals);
         setTotalSupply(formattedSupply);
+        
+        // Format token reserve with the same decimal precision
+        const formattedReserve = ethers.utils.formatUnits(formattedStats.tokenReserve, decimals);
+        setFormattedTokenReserve(formattedReserve);
       } catch (error) {
         console.error('Error fetching total supply:', error);
         setTotalSupply('Error fetching total supply');
+        setFormattedTokenReserve('Error formatting token reserve');
       }
       
       setSuccess(true);
@@ -198,7 +205,9 @@ const FetchTokenStats: React.FC = () => {
                 
                 <div className="bg-gray-50 p-3 rounded-md">
                   <h3 className="font-medium text-gray-800">Token Reserves</h3>
-                  <p className="text-gray-600">{tokenStats.tokenReserve} tokens</p>
+                  <p className="text-gray-600">
+                    {formattedTokenReserve !== null ? `${formattedTokenReserve} tokens` : `${tokenStats.tokenReserve} wei`}
+                  </p>
                 </div>
                 
                 <div className="bg-gray-50 p-3 rounded-md">
