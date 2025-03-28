@@ -17,6 +17,7 @@ const FetchTokenStats: React.FC = () => {
   const [success, setSuccess] = useState(false);
   const [totalSupply, setTotalSupply] = useState<string | null>(null);
   const [formattedTokenReserve, setFormattedTokenReserve] = useState<string | null>(null);
+  const [decimals, setDecimals] = useState<number>(18);
 
   // Function to fetch token stats from the blockchain
   const fetchTokenStats = async () => {
@@ -27,6 +28,7 @@ const FetchTokenStats: React.FC = () => {
     setIsLoading(true);
     setTotalSupply(null);
     setFormattedTokenReserve(null);
+    setDecimals(18);
 
     try {
       // Validate token address
@@ -108,21 +110,24 @@ const FetchTokenStats: React.FC = () => {
         
         // Get total supply and decimals
         const supply = await tokenContract.totalSupply();
-        let decimals = 18; // default to 18 decimals
+        let tokenDecimals = 18; // default to 18 decimals
         
         try {
-          decimals = await tokenContract.decimals();
+          tokenDecimals = await tokenContract.decimals();
+          setDecimals(tokenDecimals);
         } catch (error) {
           console.warn('Could not fetch decimals, using default of 18:', error);
         }
         
         // Format total supply with appropriate decimals
-        const formattedSupply = ethers.utils.formatUnits(supply, decimals);
-        setTotalSupply(formattedSupply);
+        const formattedSupply = ethers.utils.formatUnits(supply, tokenDecimals);
+        // Display formatted supply with 4 decimal places
+        setTotalSupply(parseFloat(formattedSupply).toFixed(4));
         
         // Format token reserve with the same decimal precision
-        const formattedReserve = ethers.utils.formatUnits(formattedStats.tokenReserve, decimals);
-        setFormattedTokenReserve(formattedReserve);
+        const formattedReserve = ethers.utils.formatUnits(formattedStats.tokenReserve, tokenDecimals);
+        // Display formatted reserve with 4 decimal places
+        setFormattedTokenReserve(parseFloat(formattedReserve).toFixed(4));
       } catch (error) {
         console.error('Error fetching total supply:', error);
         setTotalSupply('Error fetching total supply');
@@ -144,10 +149,19 @@ const FetchTokenStats: React.FC = () => {
     return new Date(timestamp * 1000).toLocaleString();
   };
   
-  // Format ETH values
+  // Format ETH values with 8 decimal places
   const formatEthValue = (value: string) => {
     try {
-      return `${parseFloat(ethers.utils.formatEther(value)).toFixed(6)} ETH`;
+      return `${parseFloat(ethers.utils.formatEther(value)).toFixed(8)} ETH`;
+    } catch (e) {
+      return `${value} wei`;
+    }
+  };
+
+  // Format current price with full precision (18 decimal places)
+  const formatCurrentPrice = (value: string) => {
+    try {
+      return `${ethers.utils.formatEther(value)} ETH`;
     } catch (e) {
       return `${value} wei`;
     }
@@ -262,7 +276,7 @@ const FetchTokenStats: React.FC = () => {
                 
                 <div className="bg-gray-50 p-3 rounded-md">
                   <h3 className="font-medium text-gray-800">Current Price</h3>
-                  <p className="text-gray-600">{formatEthValue(tokenStats.currentPrice)}</p>
+                  <p className="text-gray-600">{formatCurrentPrice(tokenStats.currentPrice)}</p>
                 </div>
                 
                 {!tokenStats.migrated ? (
