@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -8,6 +8,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { contractConfig } from '@/utils/contractConfig';
 import { TokenStats } from '@/services/scienceGent/types';
 import { AlertCircle, CheckCircle2, RefreshCw } from 'lucide-react';
+import { useEthPriceContext } from '@/context/EthPriceContext';
+import { calculateMaturityProgress } from '@/utils/scienceGentCalculations';
 
 const FetchTokenStats: React.FC = () => {
   const [tokenAddress, setTokenAddress] = useState('');
@@ -18,6 +20,29 @@ const FetchTokenStats: React.FC = () => {
   const [totalSupply, setTotalSupply] = useState<string | null>(null);
   const [formattedTokenReserve, setFormattedTokenReserve] = useState<string | null>(null);
   const [decimals, setDecimals] = useState<number>(18);
+  const [capabilityFee, setCapabilityFee] = useState<number>(0);
+  const { ethPrice } = useEthPriceContext();
+
+  // Function to fetch total capability fee
+  const fetchCapabilityFee = async (provider: ethers.providers.Web3Provider, tokenAddress: string) => {
+    try {
+      const factoryAbi = [
+        "function calculateTotalCapabilityFeeOfToken(address token) view returns (uint256)"
+      ];
+      
+      const factoryContract = new ethers.Contract(
+        contractConfig.addresses.ScienceGentsFactory,
+        factoryAbi,
+        provider
+      );
+      
+      const fee = await factoryContract.calculateTotalCapabilityFeeOfToken(tokenAddress);
+      return parseFloat(ethers.utils.formatEther(fee));
+    } catch (error) {
+      console.error('Error fetching capability fee:', error);
+      return 0;
+    }
+  };
 
   // Function to fetch token stats from the blockchain
   const fetchTokenStats = async () => {
@@ -29,6 +54,7 @@ const FetchTokenStats: React.FC = () => {
     setTotalSupply(null);
     setFormattedTokenReserve(null);
     setDecimals(18);
+    setCapabilityFee(0);
 
     try {
       // Validate token address
@@ -75,21 +101,31 @@ const FetchTokenStats: React.FC = () => {
         migrationEligible: stats[12]
       };
       
+      // Get capability fee
+      const fee = await fetchCapabilityFee(provider, tokenAddress);
+      setCapabilityFee(fee);
+      
+      // Calculate the correct maturity progress based on collected fees, virtual ETH and capability fee
+      const virtualEthAmount = parseFloat(ethers.utils.formatEther(formattedStats.virtualETH));
+      const collectedFeesAmount = parseFloat(ethers.utils.formatEther(formattedStats.collectedFees));
+      
+      // Migration condition: 2 * virtualETH + capabilityFee
+      const migrationCondition = 2 * virtualEthAmount + fee;
+      
+      // Maturity progress = (collectedFees / migrationCondition) * 100
+      formattedStats.maturityProgress = Math.min(
+        100,
+        Math.round((collectedFeesAmount / (migrationCondition || 1)) * 100)
+      );
+      
       // Add derived properties
       const now = Math.floor(Date.now() / 1000);
       formattedStats.tokenAge = now - formattedStats.creationTimestamp;
       
       if (now < formattedStats.maturityDeadline) {
         formattedStats.remainingMaturityTime = formattedStats.maturityDeadline - now;
-        // Calculate progress as a percentage
-        const totalMaturityTime = 730 * 24 * 60 * 60; // 730 days in seconds
-        formattedStats.maturityProgress = Math.min(
-          100,
-          Math.round(((now - formattedStats.creationTimestamp) / totalMaturityTime) * 100)
-        );
       } else {
         formattedStats.remainingMaturityTime = 0;
-        formattedStats.maturityProgress = 100;
       }
       
       setTokenStats(formattedStats);
@@ -166,6 +202,39 @@ const FetchTokenStats: React.FC = () => {
       return `${value} wei`;
     }
   };
+  
+  // Calculate USD values
+  const calculateUsdValue = (ethValue: string) => {
+    try {
+      const ethAmount = parseFloat(ethers.utils.formatEther(ethValue));
+      return `$${(ethAmount * ethPrice).toFixed(2)}`;
+    } catch (e) {
+      return 'N/A';
+    }
+  };
+  
+  // Calculate total liquidity in USD
+  const calculateTotalLiquidity = () => {
+    if (!tokenStats) return 'N/A';
+    try {
+      const ethAmount = parseFloat(ethers.utils.formatEther(tokenStats.ethReserve));
+      return `$${(ethAmount * ethPrice).toFixed(2)}`;
+    } catch (e) {
+      return 'N/A';
+    }
+  };
+  
+  // Calculate market cap in USD
+  const calculateMarketCap = () => {
+    if (!tokenStats || !totalSupply) return 'N/A';
+    try {
+      const tokenPriceEth = parseFloat(ethers.utils.formatEther(tokenStats.currentPrice));
+      const totalSupplyNum = parseFloat(totalSupply);
+      return `$${(tokenPriceEth * totalSupplyNum * ethPrice).toFixed(2)}`;
+    } catch (e) {
+      return 'N/A';
+    }
+  };
 
   return (
     <Card className="w-full">
@@ -227,16 +296,25 @@ const FetchTokenStats: React.FC = () => {
                 <div className="bg-gray-50 p-3 rounded-md">
                   <h3 className="font-medium text-gray-800">ETH Reserves</h3>
                   <p className="text-gray-600">{formatEthValue(tokenStats.ethReserve)}</p>
+                  <p className="text-xs text-gray-500">{calculateUsdValue(tokenStats.ethReserve)}</p>
                 </div>
                 
                 <div className="bg-gray-50 p-3 rounded-md">
                   <h3 className="font-medium text-gray-800">Virtual ETH</h3>
                   <p className="text-gray-600">{formatEthValue(tokenStats.virtualETH)}</p>
+                  <p className="text-xs text-gray-500">{calculateUsdValue(tokenStats.virtualETH)}</p>
                 </div>
                 
                 <div className="bg-gray-50 p-3 rounded-md">
                   <h3 className="font-medium text-gray-800">Collected Fees</h3>
                   <p className="text-gray-600">{formatEthValue(tokenStats.collectedFees)}</p>
+                  <p className="text-xs text-gray-500">{calculateUsdValue(tokenStats.collectedFees)}</p>
+                </div>
+                
+                <div className="bg-gray-50 p-3 rounded-md">
+                  <h3 className="font-medium text-gray-800">Capability Fee</h3>
+                  <p className="text-gray-600">{capabilityFee.toFixed(8)} ETH</p>
+                  <p className="text-xs text-gray-500">${(capabilityFee * ethPrice).toFixed(2)}</p>
                 </div>
                 
                 <div className="bg-gray-50 p-3 rounded-md">
@@ -270,13 +348,30 @@ const FetchTokenStats: React.FC = () => {
                 </div>
                 
                 <div className="bg-gray-50 p-3 rounded-md">
-                  <h3 className="font-medium text-gray-800">Maturity Progress</h3>
-                  <p className="text-gray-600">{tokenStats.maturityProgress}%</p>
+                  <h3 className="font-medium text-gray-800">Current Price</h3>
+                  <p className="text-gray-600">{formatCurrentPrice(tokenStats.currentPrice)}</p>
+                  <p className="text-xs text-gray-500">{calculateUsdValue(tokenStats.currentPrice)}</p>
                 </div>
                 
                 <div className="bg-gray-50 p-3 rounded-md">
-                  <h3 className="font-medium text-gray-800">Current Price</h3>
-                  <p className="text-gray-600">{formatCurrentPrice(tokenStats.currentPrice)}</p>
+                  <h3 className="font-medium text-gray-800">Market Cap</h3>
+                  <p className="text-gray-600">{calculateMarketCap()}</p>
+                </div>
+                
+                <div className="bg-gray-50 p-3 rounded-md">
+                  <h3 className="font-medium text-gray-800">Total Liquidity</h3>
+                  <p className="text-gray-600">{calculateTotalLiquidity()}</p>
+                </div>
+                
+                <div className="bg-gray-50 p-3 rounded-md">
+                  <h3 className="font-medium text-gray-800">Maturity Progress</h3>
+                  <div className="w-full bg-gray-200 rounded-full h-2.5 mt-2">
+                    <div 
+                      className="bg-blue-600 h-2.5 rounded-full" 
+                      style={{ width: `${tokenStats.maturityProgress}%` }}
+                    ></div>
+                  </div>
+                  <p className="text-gray-600 mt-1">{tokenStats.maturityProgress}%</p>
                 </div>
                 
                 {!tokenStats.migrated ? (
@@ -301,13 +396,20 @@ const FetchTokenStats: React.FC = () => {
                     </div>
                   </>
                 )}
+                
+                <div className="bg-gray-50 p-3 rounded-md">
+                  <h3 className="font-medium text-gray-800">Migration Condition</h3>
+                  <p className="text-gray-600">{(2 * parseFloat(ethers.utils.formatEther(tokenStats.virtualETH)) + capabilityFee).toFixed(8)} ETH</p>
+                  <p className="text-xs text-gray-500">2 × virtualETH + capabilityFee</p>
+                </div>
               </div>
             </div>
           )}
         </div>
       </CardContent>
-      <CardFooter className="text-xs text-gray-500">
-        Data fetched directly from ScienceGentsSwap contract and token contract
+      <CardFooter className="text-xs text-gray-500 flex flex-col items-start">
+        <p>Data fetched directly from ScienceGentsSwap contract and token contract</p>
+        <p className="mt-1">Current ETH price: ${ethPrice.toFixed(2)}</p>
       </CardFooter>
     </Card>
   );
