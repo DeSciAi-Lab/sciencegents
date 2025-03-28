@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -98,6 +99,7 @@ const FetchTokenStats: React.FC = () => {
       
       const virtualEthAmount = parseFloat(ethers.utils.formatEther(formattedStats.virtualETH));
       const collectedFeesAmount = parseFloat(ethers.utils.formatEther(formattedStats.collectedFees));
+      const ethReserveAmount = parseFloat(ethers.utils.formatEther(formattedStats.ethReserve));
       
       const migrationCondition = 2 * virtualEthAmount + fee;
       
@@ -157,7 +159,9 @@ const FetchTokenStats: React.FC = () => {
         tokenAddress, 
         formattedStats, 
         totalSupply, 
-        capabilityFee
+        fee,
+        formattedTokenReserve,
+        ethReserveAmount
       );
     } catch (error) {
       console.error('Error fetching token stats:', error);
@@ -171,7 +175,9 @@ const FetchTokenStats: React.FC = () => {
     tokenAddress: string, 
     tokenStats: TokenStats, 
     totalSupply: string | null, 
-    capabilityFee: number
+    capabilityFee: number,
+    formattedTokenReserve: string | null,
+    ethReserveAmount: number
   ) => {
     try {
       const virtualEthAmount = parseFloat(ethers.utils.formatEther(tokenStats.virtualETH));
@@ -180,10 +186,17 @@ const FetchTokenStats: React.FC = () => {
       const tokenPriceUsd = tokenPriceEth * ethPrice;
       const migrationCondition = 2 * virtualEthAmount + capabilityFee;
       
-      const maturityProgress = Math.min(
-        100,
-        (collectedFeesAmount / (migrationCondition || 1)) * 100
-      );
+      const maturityProgress = (collectedFeesAmount / (migrationCondition || 1)) * 100;
+      const remainingTime = tokenStats.remainingMaturityTime || 0;
+
+      // Calculate market cap
+      let marketCap = 0;
+      if (totalSupply) {
+        marketCap = tokenPriceEth * parseFloat(totalSupply);
+      }
+
+      // Get the total liquidity (ETH reserves)
+      const totalLiquidity = ethReserveAmount;
 
       const updateData = {
         token_price_usd: tokenPriceUsd,
@@ -193,16 +206,73 @@ const FetchTokenStats: React.FC = () => {
         migration_condition: migrationCondition,
         capability_fees: capabilityFee,
         maturity_progress: maturityProgress,
+        market_cap: marketCap,
+        total_supply: totalSupply ? parseFloat(totalSupply) : null,
+        total_liquidity: totalLiquidity,
+        is_migrated: tokenStats.migrated,
+        migration_eligible: tokenStats.migrationEligible,
+        remaining_maturity_time: remainingTime,
+        creator_address: tokenStats.creator,
+        created_on_chain_at: tokenStats.creationTimestamp ? new Date(tokenStats.creationTimestamp * 1000).toISOString() : null,
+        maturity_deadline: tokenStats.maturityDeadline ? tokenStats.maturityDeadline : null,
         last_synced_at: new Date().toISOString()
       };
 
-      const { error } = await supabase
-        .from('sciencegents')
-        .update(updateData)
-        .eq('address', tokenAddress);
+      // If the token is migrated, add LP token details
+      if (tokenStats.migrated) {
+        try {
+          // Get the Uniswap pair address (if possible)
+          const provider = new ethers.providers.Web3Provider(window.ethereum);
+          const factoryAbi = ["function getPair(address, address) view returns (address)"];
+          const factoryContract = new ethers.Contract(
+            contractConfig.addresses.UniswapV2Factory,
+            factoryAbi,
+            provider
+          );
+          const wethAddress = "0x7b79995e5f793A07Bc00c21412e50Ecae098E7f9"; // Sepolia WETH
+          
+          const pairAddress = await factoryContract.getPair(tokenAddress, wethAddress);
+          
+          if (pairAddress && pairAddress !== ethers.constants.AddressZero) {
+            updateData['uniswap_pair'] = pairAddress;
+            
+            // Add LP unlock time if available
+            if (tokenStats.lpUnlockTime) {
+              updateData['lp_unlock_time'] = new Date(tokenStats.lpUnlockTime * 1000).toISOString();
+            }
+          }
+        } catch (error) {
+          console.warn('Error fetching Uniswap pair details:', error);
+        }
+      }
 
-      if (error) {
-        console.error('Error updating token stats:', error);
+      // Check if the token exists in the database
+      const { data: existingToken } = await supabase
+        .from('sciencegents')
+        .select('address')
+        .eq('address', tokenAddress)
+        .single();
+
+      let result;
+      if (existingToken) {
+        // Update existing token
+        result = await supabase
+          .from('sciencegents')
+          .update(updateData)
+          .eq('address', tokenAddress);
+      } else {
+        // Insert new token if it doesn't exist
+        updateData['address'] = tokenAddress;
+        updateData['name'] = 'Unknown Token';
+        updateData['symbol'] = 'UNKNOWN';
+        
+        result = await supabase
+          .from('sciencegents')
+          .insert(updateData);
+      }
+
+      if (result.error) {
+        console.error('Error updating token stats:', result.error);
         toast({
           title: 'Update Failed',
           description: 'Could not save token statistics to database',
@@ -211,14 +281,14 @@ const FetchTokenStats: React.FC = () => {
       } else {
         toast({
           title: 'Stats Updated',
-          description: 'Token statistics successfully saved'
+          description: 'Token statistics successfully saved to database'
         });
       }
     } catch (error) {
       console.error('Error in saveTokenStatsToSupabase:', error);
       toast({
         title: 'Error',
-        description: 'An unexpected error occurred',
+        description: 'An unexpected error occurred while saving to database',
         variant: 'destructive'
       });
     }
