@@ -203,11 +203,22 @@ const FetchTokenStats: React.FC = () => {
     }
   };
   
-  // Calculate USD values
+  // Calculate USD values with 18 decimal places for token price
   const calculateUsdValue = (ethValue: string) => {
     try {
       const ethAmount = parseFloat(ethers.utils.formatEther(ethValue));
       return `$${(ethAmount * ethPrice).toFixed(2)}`;
+    } catch (e) {
+      return 'N/A';
+    }
+  };
+  
+  // Calculate token price in USD with full 18 decimal precision
+  const calculateTokenPriceUsd = (ethValue: string) => {
+    try {
+      const ethAmount = parseFloat(ethers.utils.formatEther(ethValue));
+      const usdPrice = ethAmount * ethPrice;
+      return `$${usdPrice.toFixed(18)}`;
     } catch (e) {
       return 'N/A';
     }
@@ -354,6 +365,11 @@ const FetchTokenStats: React.FC = () => {
                 </div>
                 
                 <div className="bg-gray-50 p-3 rounded-md">
+                  <h3 className="font-medium text-gray-800">Current Price (USD)</h3>
+                  <p className="text-gray-600">{calculateTokenPriceUsd(tokenStats.currentPrice)}</p>
+                </div>
+                
+                <div className="bg-gray-50 p-3 rounded-md">
                   <h3 className="font-medium text-gray-800">Market Cap</h3>
                   <p className="text-gray-600">{calculateMarketCap()}</p>
                 </div>
@@ -371,7 +387,7 @@ const FetchTokenStats: React.FC = () => {
                       style={{ width: `${tokenStats.maturityProgress}%` }}
                     ></div>
                   </div>
-                  <p className="text-gray-600 mt-1">{tokenStats.maturityProgress}%</p>
+                  <p className="text-gray-600 mt-1">{tokenStats.maturityProgress?.toFixed(4)}%</p>
                 </div>
                 
                 {!tokenStats.migrated ? (
