@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -201,8 +200,8 @@ const FetchTokenStats: React.FC = () => {
         : 0;
 
       const updateData = {
-        token_price_usd: tokenPriceUsd,
         token_price: tokenPriceEth,
+        token_price_usd: tokenPriceUsd,
         collected_fees: collectedFeesAmount,
         virtual_eth: virtualEthAmount,
         migration_condition: migrationCondition,
@@ -224,6 +223,8 @@ const FetchTokenStats: React.FC = () => {
         created_on_chain_at: new Date(tokenStats.creationTimestamp * 1000).toISOString(),
         last_synced_at: new Date().toISOString()
       };
+
+      console.log('Saving token data to Supabase:', updateData);
 
       // First check if the token exists in the database
       const { data, error: checkError } = await supabase
@@ -298,6 +299,22 @@ const FetchTokenStats: React.FC = () => {
         }
         
         result = { status: 'updated' };
+      }
+
+      // Record the latest price point in the token's price history
+      if (tokenPriceEth > 0) {
+        try {
+          const { error: priceRecordError } = await supabase.rpc('add_price_point', {
+            token_address: tokenAddress,
+            price: tokenPriceEth
+          });
+          
+          if (priceRecordError) {
+            console.error('Error recording price point:', priceRecordError);
+          }
+        } catch (priceError) {
+          console.error('Error calling add_price_point RPC:', priceError);
+        }
       }
 
       toast({
