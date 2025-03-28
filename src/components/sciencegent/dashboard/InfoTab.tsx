@@ -3,7 +3,7 @@ import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Copy, ExternalLink, Twitter, GitHub } from 'lucide-react';
+import { Copy, ExternalLink, Twitter, Github } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
 
