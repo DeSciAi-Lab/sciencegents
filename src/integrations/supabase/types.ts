@@ -219,6 +219,7 @@ export type Database = {
           address: string
           agent_fee: number | null
           bio: string | null
+          capability_fees: number | null
           collected_fees: number | null
           created_at: string | null
           created_on_chain_at: string | null
@@ -238,6 +239,7 @@ export type Database = {
           market_cap: number | null
           maturity_deadline: number | null
           maturity_progress: number | null
+          migration_condition: number | null
           migration_eligible: boolean | null
           name: string
           persona: string | null
@@ -248,6 +250,7 @@ export type Database = {
           socials: Json | null
           symbol: string
           token_price: number | null
+          token_price_usd: number | null
           total_liquidity: number | null
           total_supply: number | null
           updated_at: string | null
@@ -258,6 +261,7 @@ export type Database = {
           address: string
           agent_fee?: number | null
           bio?: string | null
+          capability_fees?: number | null
           collected_fees?: number | null
           created_at?: string | null
           created_on_chain_at?: string | null
@@ -277,6 +281,7 @@ export type Database = {
           market_cap?: number | null
           maturity_deadline?: number | null
           maturity_progress?: number | null
+          migration_condition?: number | null
           migration_eligible?: boolean | null
           name: string
           persona?: string | null
@@ -287,6 +292,7 @@ export type Database = {
           socials?: Json | null
           symbol: string
           token_price?: number | null
+          token_price_usd?: number | null
           total_liquidity?: number | null
           total_supply?: number | null
           updated_at?: string | null
@@ -297,6 +303,7 @@ export type Database = {
           address?: string
           agent_fee?: number | null
           bio?: string | null
+          capability_fees?: number | null
           collected_fees?: number | null
           created_at?: string | null
           created_on_chain_at?: string | null
@@ -316,6 +323,7 @@ export type Database = {
           market_cap?: number | null
           maturity_deadline?: number | null
           maturity_progress?: number | null
+          migration_condition?: number | null
           migration_eligible?: boolean | null
           name?: string
           persona?: string | null
@@ -326,6 +334,7 @@ export type Database = {
           socials?: Json | null
           symbol?: string
           token_price?: number | null
+          token_price_usd?: number | null
           total_liquidity?: number | null
           total_supply?: number | null
           updated_at?: string | null

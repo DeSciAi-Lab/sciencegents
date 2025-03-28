@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,6 +9,8 @@ import { TokenStats } from '@/services/scienceGent/types';
 import { AlertCircle, CheckCircle2, RefreshCw } from 'lucide-react';
 import { useEthPriceContext } from '@/context/EthPriceContext';
 import { calculateMaturityProgress } from '@/utils/scienceGentCalculations';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/components/ui/use-toast';
 
 const FetchTokenStats: React.FC = () => {
   const [tokenAddress, setTokenAddress] = useState('');
@@ -23,7 +24,6 @@ const FetchTokenStats: React.FC = () => {
   const [capabilityFee, setCapabilityFee] = useState<number>(0);
   const { ethPrice } = useEthPriceContext();
 
-  // Function to fetch total capability fee
   const fetchCapabilityFee = async (provider: ethers.providers.Web3Provider, tokenAddress: string) => {
     try {
       const factoryAbi = [
@@ -44,9 +44,7 @@ const FetchTokenStats: React.FC = () => {
     }
   };
 
-  // Function to fetch token stats from the blockchain
   const fetchTokenStats = async () => {
-    // Reset states
     setError(null);
     setTokenStats(null);
     setSuccess(false);
@@ -57,34 +55,28 @@ const FetchTokenStats: React.FC = () => {
     setCapabilityFee(0);
 
     try {
-      // Validate token address
       if (!ethers.utils.isAddress(tokenAddress)) {
         throw new Error('Invalid Ethereum address');
       }
 
-      // Connect to provider
       if (!window.ethereum) {
         throw new Error('No Ethereum provider detected. Please install MetaMask.');
       }
 
       const provider = new ethers.providers.Web3Provider(window.ethereum);
       
-      // ABI for the getTokenStats function
       const swapAbi = [
         "function getTokenStats(address token) view returns (uint256, uint256, uint256, uint256, bool, address, uint256, uint256, bool, uint256, uint256, uint256, bool)"
       ];
       
-      // Initialize swap contract interface
       const swapContract = new ethers.Contract(
         contractConfig.addresses.ScienceGentsSwap,
         swapAbi,
         provider
       );
       
-      // Call the getTokenStats function
       const stats = await swapContract.getTokenStats(tokenAddress);
       
-      // Process the returned data into our TokenStats type
       const formattedStats: TokenStats = {
         tokenReserve: stats[0].toString(),
         ethReserve: stats[1].toString(),
@@ -94,32 +86,26 @@ const FetchTokenStats: React.FC = () => {
         creator: stats[5],
         creationTimestamp: stats[6].toNumber(),
         maturityDeadline: stats[7].toNumber(),
-        migrated: stats[8], // matches the contract's response
+        migrated: stats[8],
         lpUnlockTime: stats[9].toNumber(),
         lockedLPAmount: stats[10].toString(),
         currentPrice: stats[11].toString(),
         migrationEligible: stats[12]
       };
       
-      // Get capability fee
       const fee = await fetchCapabilityFee(provider, tokenAddress);
       setCapabilityFee(fee);
       
-      // Calculate the correct maturity progress based on collected fees, virtual ETH and capability fee
       const virtualEthAmount = parseFloat(ethers.utils.formatEther(formattedStats.virtualETH));
       const collectedFeesAmount = parseFloat(ethers.utils.formatEther(formattedStats.collectedFees));
       
-      // Migration condition: 2 * virtualETH + capabilityFee
       const migrationCondition = 2 * virtualEthAmount + fee;
       
-      // Maturity progress = (collectedFees / migrationCondition) * 100
-      // Use max precision here but cap at 100%
       formattedStats.maturityProgress = Math.min(
         100,
         (collectedFeesAmount / (migrationCondition || 1)) * 100
       );
       
-      // Add derived properties
       const now = Math.floor(Date.now() / 1000);
       formattedStats.tokenAge = now - formattedStats.creationTimestamp;
       
@@ -131,9 +117,7 @@ const FetchTokenStats: React.FC = () => {
       
       setTokenStats(formattedStats);
       
-      // Fetch total supply and decimals from token contract
       try {
-        // ERC20 token ABI for totalSupply function
         const tokenAbi = [
           "function totalSupply() view returns (uint256)",
           "function decimals() view returns (uint8)"
@@ -145,9 +129,8 @@ const FetchTokenStats: React.FC = () => {
           provider
         );
         
-        // Get total supply and decimals
         const supply = await tokenContract.totalSupply();
-        let tokenDecimals = 18; // default to 18 decimals
+        let tokenDecimals = 18;
         
         try {
           tokenDecimals = await tokenContract.decimals();
@@ -156,14 +139,10 @@ const FetchTokenStats: React.FC = () => {
           console.warn('Could not fetch decimals, using default of 18:', error);
         }
         
-        // Format total supply with appropriate decimals
         const formattedSupply = ethers.utils.formatUnits(supply, tokenDecimals);
-        // Display formatted supply with 4 decimal places
         setTotalSupply(parseFloat(formattedSupply).toFixed(4));
         
-        // Format token reserve with the same decimal precision
         const formattedReserve = ethers.utils.formatUnits(formattedStats.tokenReserve, tokenDecimals);
-        // Display formatted reserve with 4 decimal places
         setFormattedTokenReserve(parseFloat(formattedReserve).toFixed(4));
       } catch (error) {
         console.error('Error fetching total supply:', error);
@@ -173,6 +152,13 @@ const FetchTokenStats: React.FC = () => {
       
       setSuccess(true);
       console.log('Token stats:', formattedStats);
+      
+      await saveTokenStatsToSupabase(
+        tokenAddress, 
+        formattedStats, 
+        totalSupply, 
+        capabilityFee
+      );
     } catch (error) {
       console.error('Error fetching token stats:', error);
       setError(error.message || 'Failed to fetch token statistics');
@@ -181,12 +167,67 @@ const FetchTokenStats: React.FC = () => {
     }
   };
 
-  // Format timestamp to human-readable date
+  const saveTokenStatsToSupabase = async (
+    tokenAddress: string, 
+    tokenStats: TokenStats, 
+    totalSupply: string | null, 
+    capabilityFee: number
+  ) => {
+    try {
+      const virtualEthAmount = parseFloat(ethers.utils.formatEther(tokenStats.virtualETH));
+      const collectedFeesAmount = parseFloat(ethers.utils.formatEther(tokenStats.collectedFees));
+      const tokenPriceEth = parseFloat(ethers.utils.formatEther(tokenStats.currentPrice));
+      const tokenPriceUsd = tokenPriceEth * ethPrice;
+      const migrationCondition = 2 * virtualEthAmount + capabilityFee;
+      
+      const maturityProgress = Math.min(
+        100,
+        (collectedFeesAmount / (migrationCondition || 1)) * 100
+      );
+
+      const updateData = {
+        token_price_usd: tokenPriceUsd,
+        token_price: tokenPriceEth,
+        collected_fees: collectedFeesAmount,
+        virtual_eth: virtualEthAmount,
+        migration_condition: migrationCondition,
+        capability_fees: capabilityFee,
+        maturity_progress: maturityProgress,
+        last_synced_at: new Date().toISOString()
+      };
+
+      const { error } = await supabase
+        .from('sciencegents')
+        .update(updateData)
+        .eq('address', tokenAddress);
+
+      if (error) {
+        console.error('Error updating token stats:', error);
+        toast({
+          title: 'Update Failed',
+          description: 'Could not save token statistics to database',
+          variant: 'destructive'
+        });
+      } else {
+        toast({
+          title: 'Stats Updated',
+          description: 'Token statistics successfully saved'
+        });
+      }
+    } catch (error) {
+      console.error('Error in saveTokenStatsToSupabase:', error);
+      toast({
+        title: 'Error',
+        description: 'An unexpected error occurred',
+        variant: 'destructive'
+      });
+    }
+  };
+
   const formatTimestamp = (timestamp: number) => {
     return new Date(timestamp * 1000).toLocaleString();
   };
-  
-  // Format ETH values with 8 decimal places
+
   const formatEthValue = (value: string) => {
     try {
       return `${parseFloat(ethers.utils.formatEther(value)).toFixed(8)} ETH`;
@@ -195,7 +236,6 @@ const FetchTokenStats: React.FC = () => {
     }
   };
 
-  // Format current price with full precision (18 decimal places)
   const formatCurrentPrice = (value: string) => {
     try {
       return `${ethers.utils.formatEther(value)} ETH`;
@@ -203,8 +243,7 @@ const FetchTokenStats: React.FC = () => {
       return `${value} wei`;
     }
   };
-  
-  // Calculate USD values with 2 decimal places
+
   const calculateUsdValue = (ethValue: string) => {
     try {
       const ethAmount = parseFloat(ethers.utils.formatEther(ethValue));
@@ -213,8 +252,7 @@ const FetchTokenStats: React.FC = () => {
       return 'N/A';
     }
   };
-  
-  // Calculate token price in USD with full 18 decimal precision
+
   const calculateTokenPriceUsd = (ethValue: string) => {
     try {
       const ethAmount = parseFloat(ethers.utils.formatEther(ethValue));
@@ -224,8 +262,7 @@ const FetchTokenStats: React.FC = () => {
       return 'N/A';
     }
   };
-  
-  // Calculate total liquidity in USD
+
   const calculateTotalLiquidity = () => {
     if (!tokenStats) return 'N/A';
     try {
@@ -235,8 +272,7 @@ const FetchTokenStats: React.FC = () => {
       return 'N/A';
     }
   };
-  
-  // Calculate market cap in USD
+
   const calculateMarketCap = () => {
     if (!tokenStats || !totalSupply) return 'N/A';
     try {
