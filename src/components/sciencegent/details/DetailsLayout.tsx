@@ -6,7 +6,7 @@ import ScienceGentHeader from './ScienceGentHeader';
 import PriceOverview from './PriceOverview';
 import TokenSwapInterface from '../TokenSwapInterface';
 import ScienceGentDetailsDashboard from '../ScienceGentDetailsDashboard';
-import ScienceGentStatsCards from '../ScienceGentStatsCards';
+import ScienceGentStatsCards from './ScienceGentStatsCards';
 
 interface DetailsLayoutProps {
   scienceGent: any;
@@ -42,8 +42,8 @@ const DetailsLayout: React.FC<DetailsLayoutProps> = ({
                 {/* Price graph and overview */}
                 <div className="mt-6">
                   <div className="flex items-center mb-2">
-                    <div className="text-lg font-bold flex items-center gap-2">
-                      <span>{symbol}/ETH</span>
+                    <div className="text-xl font-bold flex items-center gap-2">
+                      <span>TICKER/ETH</span>
                       <span className="text-sm text-gray-500">▼</span>
                     </div>
                   </div>

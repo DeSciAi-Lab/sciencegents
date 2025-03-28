@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Copy, Check, Twitter, Facebook, Share2, Save } from 'lucide-react';
+import { Copy, Check, Twitter, Facebook, Share2, ExternalLink } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 
 interface ScienceGentHeaderProps {
@@ -46,8 +46,8 @@ const ScienceGentHeader: React.FC<ScienceGentHeaderProps> = ({ scienceGent, addr
   const description = scienceGent?.description || "Description ----- ---- ----- ------ ----- ------ ---";
 
   return (
-    <div className="flex items-start gap-4">
-      <div className="w-20 h-20 rounded-full overflow-hidden bg-blue-500 flex items-center justify-center">
+    <div className="flex flex-col md:flex-row items-start gap-4">
+      <div className="w-20 h-20 rounded-full overflow-hidden bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center">
         {scienceGent?.profile_pic ? (
           <img 
             src={scienceGent.profile_pic} 
@@ -55,7 +55,7 @@ const ScienceGentHeader: React.FC<ScienceGentHeaderProps> = ({ scienceGent, addr
             className="w-full h-full object-cover"
             onError={(e) => {
               e.currentTarget.style.display = 'none';
-              e.currentTarget.parentElement!.innerHTML = `<div class="w-20 h-20 bg-blue-500 rounded-full flex items-center justify-center text-white text-4xl font-bold">${name?.charAt(0) || '?'}</div>`;
+              e.currentTarget.parentElement!.innerHTML = `<div class="w-20 h-20 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center text-white text-4xl font-bold">${name?.charAt(0) || '?'}</div>`;
             }}
           />
         ) : (
@@ -68,6 +68,7 @@ const ScienceGentHeader: React.FC<ScienceGentHeaderProps> = ({ scienceGent, addr
       <div className="flex-1">
         <div className="flex flex-wrap items-center gap-2 mb-2">
           <h1 className="text-2xl font-bold">{name}</h1>
+          <Badge className="ml-1 bg-gray-100 text-gray-800 font-medium border-0 rounded">${symbol}</Badge>
           <div className="text-xs font-bold text-gray-500 ml-1 uppercase">STICKER</div>
         </div>
 
@@ -87,21 +88,27 @@ const ScienceGentHeader: React.FC<ScienceGentHeaderProps> = ({ scienceGent, addr
           </Button>
           
           <div className="flex items-center gap-1">
-            <Button 
-              size="sm"
-              variant="outline" 
-              className="rounded-full bg-[#1DA1F2] text-white h-7 w-7 p-0 flex items-center justify-center"
-            >
-              <Twitter className="h-3.5 w-3.5" />
-            </Button>
+            {scienceGent?.twitter && (
+              <Button 
+                size="sm"
+                variant="outline" 
+                className="rounded-full bg-[#1DA1F2] text-white h-7 w-7 p-0 flex items-center justify-center"
+                onClick={() => window.open(scienceGent.twitter, '_blank')}
+              >
+                <Twitter className="h-3.5 w-3.5" />
+              </Button>
+            )}
             
-            <Button 
-              size="sm"
-              variant="outline" 
-              className="rounded-full bg-[#4267B2] text-white h-7 w-7 p-0 flex items-center justify-center"
-            >
-              <Facebook className="h-3.5 w-3.5" />
-            </Button>
+            {scienceGent?.facebook && (
+              <Button 
+                size="sm"
+                variant="outline" 
+                className="rounded-full bg-[#4267B2] text-white h-7 w-7 p-0 flex items-center justify-center"
+                onClick={() => window.open(scienceGent.facebook, '_blank')}
+              >
+                <Facebook className="h-3.5 w-3.5" />
+              </Button>
+            )}
           </div>
           
           <div className="flex items-center gap-1">
@@ -111,13 +118,13 @@ const ScienceGentHeader: React.FC<ScienceGentHeaderProps> = ({ scienceGent, addr
             </Button>
 
             <Button variant="outline" size="sm" className="h-7 rounded-md px-3 flex items-center gap-1">
-              <Save className="h-3.5 w-3.5" />
+              <ExternalLink className="h-3.5 w-3.5" />
               <span>Save</span>
             </Button>
           </div>
         </div>
 
-        <div className="bg-gray-50 border rounded-full px-4 py-1.5 text-sm text-gray-600 max-w-3xl">
+        <div className="bg-white border rounded-full px-4 py-1.5 text-sm text-gray-600 max-w-3xl">
           {description}
           <button className="text-blue-500 ml-1 text-xs">see more</button>
         </div>
