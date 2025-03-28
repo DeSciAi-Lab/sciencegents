@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -94,7 +93,13 @@ const ScienceGentTable: React.FC<ScienceGentTableProps> = ({
   };
 
   // Convert ETH price to USD
-  const ethToUsd = (ethValue: number): string => {
+  const ethToUsd = (ethValue: number, usdValue?: number): string => {
+    // If we have a direct USD value from the database, use that
+    if (usdValue !== undefined) {
+      return usdValue.toFixed(3);
+    }
+    
+    // Otherwise, calculate it using the current ETH price
     if (!ethPrice) return (ethValue * 1500).toFixed(3); // Fallback conversion
     return (ethValue * ethPrice).toFixed(3);
   };
@@ -131,7 +136,7 @@ const ScienceGentTable: React.FC<ScienceGentTableProps> = ({
             <TableHead>Rating</TableHead>
             <TableHead>Maturity</TableHead>
             <TableHead>Domain</TableHead>
-            <TableHead>{renderSortableHeader('Market cap', 'marketCap')}</TableHead>
+            <TableHead>{renderSortableHeader('Market cap (USD)', 'marketCapUsd')}</TableHead>
             <TableHead>24h Chg</TableHead>
             <TableHead>24h vol</TableHead>
             <TableHead>Price (ETH)</TableHead>
@@ -209,13 +214,18 @@ const ScienceGentTable: React.FC<ScienceGentTableProps> = ({
                     {gent.domain.toLowerCase()}
                   </Badge>
                 </TableCell>
-                <TableCell>{gent.marketCap > 1000 ? `${(gent.marketCap/1000).toFixed(0)}k` : gent.marketCap}</TableCell>
+                <TableCell>
+                  {gent.marketCapUsd 
+                    ? `$${gent.marketCapUsd > 1000 ? `${(gent.marketCapUsd/1000).toFixed(0)}k` : gent.marketCapUsd.toFixed(2)}`
+                    : `${gent.marketCap > 1000 ? `${(gent.marketCap/1000).toFixed(0)}k` : gent.marketCap.toFixed(2)} ETH`
+                  }
+                </TableCell>
                 <TableCell className={`${gent.priceChange24h >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                   {gent.priceChange24h >= 0 ? '+' : ''}{gent.priceChange24h}%
                 </TableCell>
                 <TableCell>{gent.volume24h > 1000 ? `${(gent.volume24h/1000).toFixed(0)}k` : gent.volume24h}</TableCell>
-                <TableCell>{gent.tokenPrice.toFixed(3)}</TableCell>
-                <TableCell>{ethToUsd(gent.tokenPrice)}</TableCell>
+                <TableCell>{gent.tokenPrice.toFixed(3)} ETH</TableCell>
+                <TableCell>${ethToUsd(gent.tokenPrice, gent.tokenPriceUsd)}</TableCell>
               </TableRow>
             ))
           )}

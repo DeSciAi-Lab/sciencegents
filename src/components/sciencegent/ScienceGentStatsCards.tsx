@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useEthPriceContext } from '@/context/EthPriceContext';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -17,10 +16,18 @@ const ScienceGentStatsCards: React.FC<ScienceGentStatsCardsProps> = ({
   
   // Get values from scienceGent object or use fallbacks
   const marketCap = scienceGent?.marketCap || scienceGent?.market_cap || 0;
+  const marketCapUsd = scienceGent?.marketCapUsd || scienceGent?.market_cap_usd || 0;
   const liquidity = scienceGent?.liquidity || scienceGent?.total_liquidity || 0;
   const volume24h = scienceGent?.volume24h || scienceGent?.volume_24h || 0;
   const holders = scienceGent?.holders || 0;
   const maturityProgress = scienceGent?.maturityProgress || scienceGent?.maturity_progress || 0;
+  const age = scienceGent?.age || 0;
+  const createdOnChainAt = scienceGent?.createdOnChainAt || scienceGent?.created_on_chain_at;
+  
+  // Calculate age if not directly available
+  const ageDisplay = age ? `${age} days` : createdOnChainAt ? 
+    `${Math.floor((Date.now() - new Date(createdOnChainAt).getTime()) / (1000 * 60 * 60 * 24))} days` : 
+    'Unknown';
   
   // Check if token is migrated or migration eligible
   const isMigrated = scienceGent?.isMigrated || scienceGent?.is_migrated || false;
@@ -85,12 +92,20 @@ const ScienceGentStatsCards: React.FC<ScienceGentStatsCardsProps> = ({
 
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-      <CardWithBorder 
-        title="Market Cap" 
-        ethValue={marketCap} 
-        dollarValue={formatEthToUsd(marketCap)} 
-        isLoading={isLoading}
-      />
+      {/* Market Cap */}
+      <div className="bg-white border border-gray-100 shadow-sm rounded-md p-3 hover:shadow-md transition">
+        <h3 className="font-medium text-sm text-gray-600 mb-1">Market Cap</h3>
+        {isLoading ? (
+          <Skeleton className="h-6 w-24" />
+        ) : (
+          <div className="flex flex-col">
+            <p className="text-lg font-semibold text-gray-900">
+              {marketCapUsd ? `$${marketCapUsd.toLocaleString()}` : formatEthToUsd(marketCap)}
+            </p>
+            <p className="text-xs text-gray-500">{marketCap.toFixed(4)} ETH</p>
+          </div>
+        )}
+      </div>
       
       <CardWithBorder 
         title="Liquidity" 
@@ -118,6 +133,16 @@ const ScienceGentStatsCards: React.FC<ScienceGentStatsCardsProps> = ({
         progress={maturityProgress}
         isLoading={isLoading}
       />
+
+      {/* Age */}
+      <div className="bg-white border border-gray-100 shadow-sm rounded-md p-3 hover:shadow-md transition">
+        <h3 className="font-medium text-sm text-gray-600 mb-1">Token Age</h3>
+        {isLoading ? (
+          <Skeleton className="h-6 w-24" />
+        ) : (
+          <p className="text-lg font-semibold text-gray-900">{ageDisplay}</p>
+        )}
+      </div>
     </div>
   );
 };

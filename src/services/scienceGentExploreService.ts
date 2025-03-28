@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { formatDistanceToNow } from "date-fns";
 import { ethers } from "ethers";
@@ -24,6 +23,8 @@ export interface ScienceGentListItem {
   profilePic?: string;
   marketCap: number;
   tokenPrice: number;
+  marketCapUsd?: number;
+  tokenPriceUsd?: number;
   age: string;
   roi: number;
   domain: string;
@@ -58,8 +59,11 @@ export const fetchScienceGents = async (): Promise<ScienceGentListItem[]> => {
         address, 
         profile_pic, 
         market_cap, 
+        market_cap_usd,
         token_price, 
+        token_price_usd,
         created_at,
+        created_on_chain_at,
         domain, 
         virtual_eth,
         symbol,
@@ -69,6 +73,7 @@ export const fetchScienceGents = async (): Promise<ScienceGentListItem[]> => {
         maturity_progress,
         agent_fee,
         total_supply,
+        age,
         stats:sciencegent_stats(volume_24h, transactions, holders, trade_volume_eth)
       `)
       .order('market_cap', { ascending: false });
@@ -96,13 +101,26 @@ export const fetchScienceGents = async (): Promise<ScienceGentListItem[]> => {
         ? Math.min(Math.max((volume / virtualEth * 10) - 5, -50), 100) 
         : 0;
       
-      // Calculate age from created_at
-      let age = "unknown";
-      if (item.created_at) {
+      // Calculate age from created_on_chain_at or age field if available
+      let ageDisplay = "unknown";
+      if (item.age) {
+        ageDisplay = `${item.age} days`;
+      } else if (item.created_on_chain_at) {
+        try {
+          // Calculate age in days from creation timestamp
+          const creationDate = new Date(item.created_on_chain_at);
+          const now = new Date();
+          const diffTime = Math.abs(now.getTime() - creationDate.getTime());
+          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+          ageDisplay = `${diffDays} days`;
+        } catch (e) {
+          console.error("Error calculating age from creation date:", e, item.created_on_chain_at);
+        }
+      } else if (item.created_at) {
         try {
           // Parse the timestamp and format it as a relative time
           const creationDate = new Date(item.created_at);
-          age = formatDistanceToNow(creationDate, { addSuffix: false });
+          ageDisplay = formatDistanceToNow(creationDate, { addSuffix: false });
         } catch (e) {
           console.error("Error parsing creation date:", e, item.created_at);
         }
@@ -137,7 +155,9 @@ export const fetchScienceGents = async (): Promise<ScienceGentListItem[]> => {
         profilePic: item.profile_pic,
         marketCap: item.market_cap || 0,
         tokenPrice: item.token_price || 0,
-        age,
+        marketCapUsd: item.market_cap_usd || item.market_cap * (ethers.utils.parseEther("1") / 1e18 || 0),
+        tokenPriceUsd: item.token_price_usd || item.token_price * (ethers.utils.parseEther("1") / 1e18 || 0),
+        age: ageDisplay,
         roi,
         domain: item.domain || "General",
         featured,
