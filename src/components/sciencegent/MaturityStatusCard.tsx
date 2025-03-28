@@ -26,7 +26,7 @@ const MaturityStatusCard: React.FC<MaturityStatusCardProps> = ({
   const { formatEthToUsd } = useEthPriceContext();
   
   // Calculate progress if not provided
-  const maturityProgress = progress !== undefined ? progress : calculateMaturityProgress(
+  const maturityProgress = progress || calculateMaturityProgress(
     virtualEth,
     collectedFees,
     capabilityFees
@@ -46,8 +46,7 @@ const MaturityStatusCard: React.FC<MaturityStatusCardProps> = ({
   // Determine status text
   const getStatusText = () => {
     if (maturityProgress >= 100) return 'Ready for migration';
-    if (maturityProgress < 0.01) return 'Just started'; // For very small values
-    return `${maturityProgress.toFixed(4)}% complete`;
+    return `${Math.floor(maturityProgress)}% complete`;
   };
 
   return (
@@ -94,19 +93,19 @@ const MaturityStatusCard: React.FC<MaturityStatusCardProps> = ({
             <div className="grid grid-cols-2 gap-2 mt-2 text-xs">
               <div className="bg-gray-50 p-2 rounded">
                 <div className="text-gray-500">Virtual ETH</div>
-                <div className="font-medium">{virtualEth.toFixed(6)} ETH</div>
+                <div className="font-medium">{virtualEth.toFixed(4)} ETH</div>
               </div>
               <div className="bg-gray-50 p-2 rounded">
                 <div className="text-gray-500">Capability Fees</div>
-                <div className="font-medium">{capabilityFees.toFixed(6)} ETH</div>
+                <div className="font-medium">{capabilityFees.toFixed(4)} ETH</div>
               </div>
               <div className="bg-gray-50 p-2 rounded">
                 <div className="text-gray-500">Collected Fees</div>
-                <div className="font-medium">{collectedFees.toFixed(6)} ETH</div>
+                <div className="font-medium">{collectedFees.toFixed(4)} ETH</div>
               </div>
               <div className="bg-gray-50 p-2 rounded">
                 <div className="text-gray-500">Threshold</div>
-                <div className="font-medium">{migrationThreshold.toFixed(6)} ETH</div>
+                <div className="font-medium">{migrationThreshold.toFixed(4)} ETH</div>
               </div>
             </div>
           )}

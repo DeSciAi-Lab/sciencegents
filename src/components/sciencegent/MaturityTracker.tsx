@@ -27,7 +27,7 @@ const MaturityTracker: React.FC<MaturityTrackerProps> = ({
   const requiredFees = virtualETH * 2 + capabilityFees;
   
   // Use the provided maturity progress or calculate it if not provided
-  const progress = maturityProgress !== undefined ? maturityProgress : calculateMaturityProgress(
+  const progress = maturityProgress || calculateMaturityProgress(
     virtualETH,
     collectedFees,
     capabilityFees
@@ -68,36 +68,17 @@ const MaturityTracker: React.FC<MaturityTrackerProps> = ({
   
   const status = getStatusInfo();
   
-  // Format the remaining time until maturity
-  const formatRemainingTime = () => {
-    if (!remainingMaturityTime || remainingMaturityTime <= 0) return "Matured";
-    
-    const days = Math.floor(remainingMaturityTime / 86400);
-    const hours = Math.floor((remainingMaturityTime % 86400) / 3600);
-    
-    if (days > 0) {
-      return `${days} days ${hours} hours remaining`;
-    }
-    return `${hours} hours remaining`;
-  };
-  
   return (
     <div className="border rounded-xl p-4">
       <div className="text-center mb-2">
         <div className="text-xl font-medium">Maturity Status</div>
-        <div className="text-2xl font-bold">{progress.toFixed(4)}%</div>
+        <div className="text-2xl font-bold">{status.progress.toFixed(4)}%</div>
       </div>
       <Progress value={status.progress} className="h-2 bg-gray-200" />
       <p className="mt-3 text-sm">
-        The ScienceGent will become eligible to migrate to Uniswap on generating {requiredFees.toFixed(4)} ETH in trading fee 
-        (2× virtualETH = {(virtualETH * 2).toFixed(4)} + capability fees = {capabilityFees.toFixed(4)})
+        The ScienceGent will become eligible to migrate to Uniswap on generating {requiredFees.toFixed(4)} ETH in trading fee (
+        2× virtualETH = {(virtualETH * 2).toFixed(4)} + capability fees = {capabilityFees.toFixed(4)})
       </p>
-      
-      {remainingMaturityTime !== undefined && (
-        <div className="mt-2 text-xs text-muted-foreground">
-          Maturity deadline: {formatRemainingTime()}
-        </div>
-      )}
     </div>
   );
 };

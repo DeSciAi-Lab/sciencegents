@@ -1,96 +1,114 @@
 
+import { ethers } from 'ethers';
+import { TokenStats } from '@/services/scienceGent/types';
+
 /**
- * Calculates the maturity progress percentage for a ScienceGent token
- * 
- * @param virtualETH The virtual ETH amount from token creation
- * @param collectedFees The amount of trading fees collected
- * @param capabilityFees The total capability fees for the token
- * @returns The maturity progress as a percentage (0-100)
+ * Calculates the maturity progress percentage
+ * @param virtualETH Virtual ETH amount as string or number
+ * @param collectedFees Collected fees as string or number
+ * @param capabilityFees Optional capability fees as string or number
+ * @returns Progress percentage (0-100)
  */
 export const calculateMaturityProgress = (
-  virtualETH: number, 
-  collectedFees: number, 
-  capabilityFees: number
+  virtualETH: string | number,
+  collectedFees: string | number,
+  capabilityFees: string | number = '0'
 ): number => {
-  // Calculate the migration condition: 2 * virtualETH + capabilityFees
-  const migrationCondition = (2 * virtualETH) + capabilityFees;
-  
-  // Calculate the progress percentage
-  if (migrationCondition === 0) return 0;
-  
-  const progress = (collectedFees / migrationCondition) * 100;
-  
-  // Ensure the progress doesn't exceed 100%
-  return Math.min(100, progress);
+  try {
+    // Convert inputs to numbers if they're strings
+    const vETH = typeof virtualETH === 'string' ? parseFloat(virtualETH) : virtualETH;
+    const fees = typeof collectedFees === 'string' ? parseFloat(collectedFees) : collectedFees;
+    const capFees = typeof capabilityFees === 'string' ? parseFloat(capabilityFees) : capabilityFees;
+    
+    if (vETH === 0) return 0;
+    
+    // Migration threshold is 2x virtualETH + capability fees
+    const targetFees = (2 * vETH) + capFees;
+    
+    // Calculate progress percentage with full precision (don't round to integer)
+    // Cap at 100% maximum
+    const progress = Math.min((fees / targetFees) * 100, 100);
+    
+    return progress;
+  } catch (error) {
+    console.error("Error calculating maturity progress:", error);
+    return 0;
+  }
 };
 
 /**
- * Format token age in a human-readable format
+ * Calculates the token price in ETH
+ * @param currentPrice Price from blockchain as BigNumber string
+ * @returns Formatted price as a number
  */
-export const formatAge = (timestamp: string | number | Date): string => {
-  if (!timestamp) return 'Unknown';
-  
-  const date = new Date(timestamp);
-  const now = new Date();
-  
-  const diffInMs = now.getTime() - date.getTime();
-  const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
-  
-  if (diffInDays < 1) {
-    const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
-    return diffInHours < 1 ? 'Less than an hour' : `${diffInHours} hours`;
+export const calculateTokenPrice = (currentPrice: string): number => {
+  try {
+    if (!currentPrice) return 0;
+    return parseFloat(ethers.utils.formatEther(currentPrice));
+  } catch (error) {
+    console.error("Error calculating token price:", error);
+    return 0;
   }
-  
-  if (diffInDays < 30) {
-    return `${diffInDays} days`;
-  }
-  
-  const diffInMonths = Math.floor(diffInDays / 30);
-  if (diffInMonths < 12) {
-    return `${diffInMonths} months`;
-  }
-  
-  const diffInYears = Math.floor(diffInMonths / 12);
-  const remainingMonths = diffInMonths % 12;
-  
-  if (remainingMonths === 0) {
-    return `${diffInYears} year${diffInYears > 1 ? 's' : ''}`;
-  }
-  
-  return `${diffInYears} year${diffInYears > 1 ? 's' : ''} ${remainingMonths} month${remainingMonths > 1 ? 's' : ''}`;
 };
 
 /**
- * Calculates token price in USD based on ETH price
- * 
- * @param tokenPriceInETH The token price in ETH
- * @param ethPriceInUSD The current ETH price in USD (optional, default: 3000)
- * @returns The token price in USD
- */
-export const calculateTokenPrice = (
-  tokenPriceInETH: number,
-  ethPriceInUSD: number = 3000
-): number => {
-  if (!tokenPriceInETH || tokenPriceInETH <= 0) return 0;
-  return tokenPriceInETH * ethPriceInUSD;
-};
-
-/**
- * Calculates market cap based on token price and total supply
- * 
- * @param tokenPrice The token price in ETH
- * @param totalSupply The total supply of tokens (as string or number)
- * @returns The market cap value
+ * Calculates the market cap in ETH
+ * @param tokenPrice Token price in ETH
+ * @param totalSupply Total supply as string or number
+ * @returns Market cap in ETH as a number
  */
 export const calculateMarketCap = (
   tokenPrice: number,
   totalSupply: string | number
 ): number => {
-  // Parse totalSupply if it's a string
-  const supply = typeof totalSupply === 'string' ? parseFloat(totalSupply) : totalSupply;
+  try {
+    // Convert totalSupply to number if it's a string
+    const supply = typeof totalSupply === 'string' 
+      ? parseFloat(ethers.utils.formatEther(totalSupply))
+      : totalSupply;
+    
+    return tokenPrice * supply;
+  } catch (error) {
+    console.error("Error calculating market cap:", error);
+    return 0;
+  }
+};
+
+/**
+ * Get all token metrics in one function
+ * @param tokenStats Token statistics from blockchain
+ * @param totalSupply Total token supply
+ * @param capabilityFees Optional capability fees
+ * @returns Object with calculated metrics
+ */
+export const getTokenMetrics = (
+  tokenStats: TokenStats,
+  totalSupply: string,
+  capabilityFees: number = 0
+) => {
+  const tokenPrice = calculateTokenPrice(tokenStats.currentPrice);
+  const marketCap = calculateMarketCap(tokenPrice, totalSupply);
   
-  // Return 0 if invalid inputs
-  if (!tokenPrice || tokenPrice <= 0 || !supply || supply <= 0) return 0;
+  const virtualETH = tokenStats.virtualETH
+    ? parseFloat(ethers.utils.formatEther(tokenStats.virtualETH))
+    : 0;
+    
+  const collectedFees = tokenStats.collectedFees
+    ? parseFloat(ethers.utils.formatEther(tokenStats.collectedFees))
+    : 0;
+    
+  const maturityProgress = calculateMaturityProgress(
+    virtualETH,
+    collectedFees,
+    capabilityFees
+  );
   
-  return tokenPrice * supply;
+  return {
+    tokenPrice,
+    marketCap,
+    virtualETH,
+    collectedFees,
+    maturityProgress,
+    isMigrationEligible: maturityProgress >= 100,
+  };
 };
