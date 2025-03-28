@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -120,7 +121,9 @@ const FetchTokenStats: React.FC = () => {
       try {
         const tokenAbi = [
           "function totalSupply() view returns (uint256)",
-          "function decimals() view returns (uint8)"
+          "function decimals() view returns (uint8)",
+          "function name() view returns (string)",
+          "function symbol() view returns (string)"
         ];
         
         const tokenContract = new ethers.Contract(
@@ -140,12 +143,27 @@ const FetchTokenStats: React.FC = () => {
         }
         
         const formattedSupply = ethers.utils.formatUnits(supply, tokenDecimals);
-        setTotalSupply(parseFloat(formattedSupply).toFixed(4));
+        setTotalSupply(formattedSupply);
         
         const formattedReserve = ethers.utils.formatUnits(formattedStats.tokenReserve, tokenDecimals);
-        setFormattedTokenReserve(parseFloat(formattedReserve).toFixed(4));
+        setFormattedTokenReserve(formattedReserve);
+
+        // Also fetch name and symbol if possible
+        let tokenName = "Unknown Token";
+        let tokenSymbol = "UNKNOWN";
+        
+        try {
+          tokenName = await tokenContract.name();
+          tokenSymbol = await tokenContract.symbol();
+        } catch (error) {
+          console.warn('Could not fetch token name/symbol:', error);
+        }
+        
+        // Add name and symbol to the formattedStats for saving to Supabase
+        formattedStats.name = tokenName;
+        formattedStats.symbol = tokenSymbol;
       } catch (error) {
-        console.error('Error fetching total supply:', error);
+        console.error('Error fetching token details:', error);
         setTotalSupply('Error fetching total supply');
         setFormattedTokenReserve('Error formatting token reserve');
       }
@@ -176,6 +194,9 @@ const FetchTokenStats: React.FC = () => {
     formattedTokenReserve: string | null
   ) => {
     try {
+      console.log('Starting to save token data to Supabase for:', tokenAddress);
+      
+      // Convert big number values to regular numbers
       const virtualEthAmount = parseFloat(ethers.utils.formatEther(tokenStats.virtualETH));
       const collectedFeesAmount = parseFloat(ethers.utils.formatEther(tokenStats.collectedFees));
       const ethReserveAmount = parseFloat(ethers.utils.formatEther(tokenStats.ethReserve));
@@ -183,15 +204,38 @@ const FetchTokenStats: React.FC = () => {
       const tokenPriceUsd = tokenPriceEth * ethPrice;
       const migrationCondition = 2 * virtualEthAmount + capabilityFee;
       
+      console.log('Computed values:', { 
+        virtualEthAmount, 
+        collectedFeesAmount, 
+        ethReserveAmount, 
+        tokenPriceEth, 
+        tokenPriceUsd, 
+        migrationCondition
+      });
+      
+      // Calculate maturity progress
       const maturityProgress = Math.min(
         100,
         (collectedFeesAmount / (migrationCondition || 1)) * 100
       );
 
-      // Calculate market cap and total liquidity
-      const marketCap = totalSupply ? tokenPriceEth * parseFloat(totalSupply) : 0;
+      console.log('Maturity progress:', maturityProgress);
+
+      // Calculate market cap
+      let totalSupplyNumber = 0;
+      if (totalSupply) {
+        totalSupplyNumber = parseFloat(totalSupply);
+      }
+      const marketCap = totalSupplyNumber ? tokenPriceEth * totalSupplyNumber : 0;
       const marketCapUsd = marketCap * ethPrice;
       const totalLiquidityUsd = ethReserveAmount * ethPrice;
+      
+      console.log('Market data:', { 
+        totalSupplyNumber, 
+        marketCap, 
+        marketCapUsd, 
+        totalLiquidityUsd 
+      });
       
       // Calculate remaining maturity days
       const now = Math.floor(Date.now() / 1000);
@@ -199,32 +243,49 @@ const FetchTokenStats: React.FC = () => {
         ? Math.floor((tokenStats.maturityDeadline - now) / 86400) 
         : 0;
 
+      console.log('Token age data:', { 
+        now, 
+        maturityDeadline: tokenStats.maturityDeadline, 
+        remainingMaturityDays 
+      });
+
+      // Parse token reserves
+      let tokenReservesNumber = 0;
+      if (formattedTokenReserve) {
+        tokenReservesNumber = parseFloat(formattedTokenReserve);
+      }
+
+      console.log('Token reserves:', tokenReservesNumber);
+
+      // Prepare data for upsert with explicit type conversions
       const updateData = {
-        token_price: tokenPriceEth,
-        token_price_usd: tokenPriceUsd,
-        collected_fees: collectedFeesAmount,
-        virtual_eth: virtualEthAmount,
-        migration_condition: migrationCondition,
-        capability_fees: capabilityFee,
-        maturity_progress: maturityProgress,
-        market_cap: marketCap,
-        market_cap_usd: marketCapUsd,
-        token_reserves: formattedTokenReserve ? parseFloat(formattedTokenReserve) : 0,
-        eth_reserves: ethReserveAmount,
-        total_liquidity_usd: totalLiquidityUsd,
-        trading_enabled: tokenStats.tradingEnabled,
-        is_migrated: tokenStats.migrated,
-        migration_eligible: tokenStats.migrationEligible,
-        remaining_maturity_time: tokenStats.remainingMaturityTime,
-        remaining_maturity_days: remainingMaturityDays,
-        maturity_deadline: tokenStats.maturityDeadline,
-        total_supply: totalSupply ? parseFloat(totalSupply) : null,
-        creator_address: tokenStats.creator,
+        name: tokenStats.name || 'Unknown Token',
+        symbol: tokenStats.symbol || 'UNKNOWN',
+        token_price: Number(tokenPriceEth) || 0,
+        token_price_usd: Number(tokenPriceUsd) || 0,
+        collected_fees: Number(collectedFeesAmount) || 0,
+        virtual_eth: Number(virtualEthAmount) || 0,
+        migration_condition: Number(migrationCondition) || 0,
+        capability_fees: Number(capabilityFee) || 0,
+        maturity_progress: Number(maturityProgress) || 0,
+        market_cap: Number(marketCap) || 0,
+        market_cap_usd: Number(marketCapUsd) || 0,
+        token_reserves: Number(tokenReservesNumber) || 0,
+        eth_reserves: Number(ethReserveAmount) || 0,
+        total_liquidity_usd: Number(totalLiquidityUsd) || 0,
+        trading_enabled: Boolean(tokenStats.tradingEnabled),
+        is_migrated: Boolean(tokenStats.migrated),
+        migration_eligible: Boolean(tokenStats.migrationEligible),
+        remaining_maturity_time: Number(tokenStats.remainingMaturityTime) || 0,
+        remaining_maturity_days: Number(remainingMaturityDays) || 0,
+        maturity_deadline: Number(tokenStats.maturityDeadline) || 0,
+        total_supply: totalSupplyNumber > 0 ? totalSupplyNumber : null,
+        creator_address: tokenStats.creator || null,
         created_on_chain_at: new Date(tokenStats.creationTimestamp * 1000).toISOString(),
         last_synced_at: new Date().toISOString()
       };
 
-      console.log('Saving token data to Supabase:', updateData);
+      console.log('Prepared data for upsert:', updateData);
 
       // First check if the token exists in the database
       const { data, error: checkError } = await supabase
@@ -243,18 +304,20 @@ const FetchTokenStats: React.FC = () => {
         return;
       }
 
+      console.log('Token check result:', data ? 'Token exists' : 'Token does not exist');
+      
       let result;
       
       // If token doesn't exist, insert it with basic information
       if (!data) {
-        const { error: insertError } = await supabase
+        console.log('Creating new token record...');
+        const { data: insertData, error: insertError } = await supabase
           .from('sciencegents')
           .insert({
             address: tokenAddress,
-            name: 'Unknown Token', // Will be updated later when name is fetched
-            symbol: 'UNKNOWN',     // Will be updated later when symbol is fetched
             ...updateData
-          });
+          })
+          .select();
 
         if (insertError) {
           console.error('Error inserting token:', insertError);
@@ -266,6 +329,8 @@ const FetchTokenStats: React.FC = () => {
           return;
         }
         
+        console.log('Token created successfully:', insertData);
+        
         // Also create a stats record
         const { error: statsError } = await supabase
           .from('sciencegent_stats')
@@ -273,20 +338,25 @@ const FetchTokenStats: React.FC = () => {
             sciencegent_address: tokenAddress,
             volume_24h: 0,
             transactions: 0,
-            holders: 0
+            holders: 0,
+            updated_at: new Date().toISOString()
           });
           
         if (statsError) {
           console.error('Error creating stats record:', statsError);
+        } else {
+          console.log('Stats record created successfully');
         }
         
         result = { status: 'created' };
       } else {
         // If token exists, update it
-        const { error: updateError } = await supabase
+        console.log('Updating existing token record...');
+        const { data: updateResult, error: updateError } = await supabase
           .from('sciencegents')
           .update(updateData)
-          .eq('address', tokenAddress);
+          .eq('address', tokenAddress)
+          .select();
 
         if (updateError) {
           console.error('Error updating token stats:', updateError);
@@ -298,19 +368,23 @@ const FetchTokenStats: React.FC = () => {
           return;
         }
         
+        console.log('Token updated successfully:', updateResult);
         result = { status: 'updated' };
       }
 
       // Record the latest price point in the token's price history
       if (tokenPriceEth > 0) {
         try {
-          const { error: priceRecordError } = await supabase.rpc('add_price_point', {
+          console.log('Recording price point:', tokenPriceEth);
+          const { data: priceData, error: priceRecordError } = await supabase.rpc('add_price_point', {
             token_address: tokenAddress,
             price: tokenPriceEth
           });
           
           if (priceRecordError) {
             console.error('Error recording price point:', priceRecordError);
+          } else {
+            console.log('Price point recorded successfully:', priceData);
           }
         } catch (priceError) {
           console.error('Error calling add_price_point RPC:', priceError);
@@ -321,6 +395,8 @@ const FetchTokenStats: React.FC = () => {
         title: result.status === 'created' ? 'Token Created' : 'Stats Updated',
         description: 'Token statistics successfully saved to database'
       });
+      
+      console.log('Token data save completed successfully');
     } catch (error) {
       console.error('Error in saveTokenStatsToSupabase:', error);
       toast({
@@ -364,7 +440,7 @@ const FetchTokenStats: React.FC = () => {
     try {
       const ethAmount = parseFloat(ethers.utils.formatEther(ethValue));
       const usdPrice = ethAmount * ethPrice;
-      return `$${usdPrice.toFixed(18)}`;
+      return `$${usdPrice.toFixed(8)}`;
     } catch (e) {
       return 'N/A';
     }
@@ -531,7 +607,7 @@ const FetchTokenStats: React.FC = () => {
                       style={{ width: `${tokenStats.maturityProgress}%` }}
                     ></div>
                   </div>
-                  <p className="text-gray-600 mt-1">{tokenStats.maturityProgress?.toFixed(4)}%</p>
+                  <p className="text-gray-600 mt-1">{tokenStats.maturityProgress?.toFixed(2)}%</p>
                 </div>
                 
                 {!tokenStats.migrated ? (
