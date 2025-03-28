@@ -15,6 +15,7 @@ const FetchTokenStats: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [tokenStats, setTokenStats] = useState<TokenStats | null>(null);
   const [success, setSuccess] = useState(false);
+  const [totalSupply, setTotalSupply] = useState<string | null>(null);
 
   // Function to fetch token stats from the blockchain
   const fetchTokenStats = async () => {
@@ -23,6 +24,7 @@ const FetchTokenStats: React.FC = () => {
     setTokenStats(null);
     setSuccess(false);
     setIsLoading(true);
+    setTotalSupply(null);
 
     try {
       // Validate token address
@@ -42,7 +44,7 @@ const FetchTokenStats: React.FC = () => {
         "function getTokenStats(address token) view returns (uint256, uint256, uint256, uint256, bool, address, uint256, uint256, bool, uint256, uint256, uint256, bool)"
       ];
       
-      // Initialize contract interface
+      // Initialize swap contract interface
       const swapContract = new ethers.Contract(
         contractConfig.addresses.ScienceGentsSwap,
         swapAbi,
@@ -87,6 +89,39 @@ const FetchTokenStats: React.FC = () => {
       }
       
       setTokenStats(formattedStats);
+      
+      // Fetch total supply from token contract
+      try {
+        // ERC20 token ABI for totalSupply function
+        const tokenAbi = [
+          "function totalSupply() view returns (uint256)",
+          "function decimals() view returns (uint8)"
+        ];
+        
+        const tokenContract = new ethers.Contract(
+          tokenAddress,
+          tokenAbi,
+          provider
+        );
+        
+        // Get total supply and decimals
+        const supply = await tokenContract.totalSupply();
+        let decimals = 18; // default to 18 decimals
+        
+        try {
+          decimals = await tokenContract.decimals();
+        } catch (error) {
+          console.warn('Could not fetch decimals, using default of 18:', error);
+        }
+        
+        // Format total supply with appropriate decimals
+        const formattedSupply = ethers.utils.formatUnits(supply, decimals);
+        setTotalSupply(formattedSupply);
+      } catch (error) {
+        console.error('Error fetching total supply:', error);
+        setTotalSupply('Error fetching total supply');
+      }
+      
       setSuccess(true);
       console.log('Token stats:', formattedStats);
     } catch (error) {
@@ -154,6 +189,13 @@ const FetchTokenStats: React.FC = () => {
               </Alert>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {totalSupply !== null && (
+                  <div className="bg-gray-50 p-3 rounded-md">
+                    <h3 className="font-medium text-gray-800">Total Supply</h3>
+                    <p className="text-gray-600">{totalSupply} tokens</p>
+                  </div>
+                )}
+                
                 <div className="bg-gray-50 p-3 rounded-md">
                   <h3 className="font-medium text-gray-800">Token Reserves</h3>
                   <p className="text-gray-600">{tokenStats.tokenReserve} tokens</p>
@@ -242,7 +284,7 @@ const FetchTokenStats: React.FC = () => {
         </div>
       </CardContent>
       <CardFooter className="text-xs text-gray-500">
-        Data fetched directly from ScienceGentsSwap contract
+        Data fetched directly from ScienceGentsSwap contract and token contract
       </CardFooter>
     </Card>
   );
