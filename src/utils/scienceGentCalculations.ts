@@ -75,6 +75,34 @@ export const calculateMarketCap = (
 };
 
 /**
+ * Formats a timestamp to a human-readable age string
+ * @param creationTimestamp Creation timestamp (seconds since epoch)
+ * @returns Formatted age string (e.g., "2 days" or "3 months")
+ */
+export const formatAge = (creationTimestamp: number | undefined): string => {
+  if (!creationTimestamp) return 'Unknown';
+  
+  const now = Math.floor(Date.now() / 1000);
+  const diffInSeconds = now - creationTimestamp;
+  
+  // Calculate days, hours, etc.
+  const days = Math.floor(diffInSeconds / (60 * 60 * 24));
+  
+  if (days > 365) {
+    const years = Math.floor(days / 365);
+    return `${years} year${years !== 1 ? 's' : ''}`;
+  } else if (days > 30) {
+    const months = Math.floor(days / 30);
+    return `${months} month${months !== 1 ? 's' : ''}`;
+  } else if (days > 0) {
+    return `${days} day${days !== 1 ? 's' : ''}`;
+  } else {
+    const hours = Math.floor(diffInSeconds / (60 * 60));
+    return `${hours || 1} hour${hours !== 1 ? 's' : ''}`;
+  }
+};
+
+/**
  * Get all token metrics in one function
  * @param tokenStats Token statistics from blockchain
  * @param totalSupply Total token supply

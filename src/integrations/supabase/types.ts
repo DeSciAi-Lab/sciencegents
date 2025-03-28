@@ -232,11 +232,13 @@ export type Database = {
           developer_twitter: string | null
           developer_website: string | null
           domain: string | null
+          eth_reserves: number | null
           id: string
           is_migrated: boolean | null
           last_price_update: string | null
           last_synced_at: string | null
           market_cap: number | null
+          market_cap_usd: number | null
           maturity_deadline: number | null
           maturity_progress: number | null
           migration_condition: number | null
@@ -246,13 +248,17 @@ export type Database = {
           price_change_24h: number | null
           price_usd: number | null
           profile_pic: string | null
+          remaining_maturity_days: number | null
           remaining_maturity_time: number | null
           socials: Json | null
           symbol: string
           token_price: number | null
           token_price_usd: number | null
+          token_reserves: number | null
           total_liquidity: number | null
+          total_liquidity_usd: number | null
           total_supply: number | null
+          trading_enabled: boolean | null
           updated_at: string | null
           virtual_eth: number | null
           website: string | null
@@ -274,11 +280,13 @@ export type Database = {
           developer_twitter?: string | null
           developer_website?: string | null
           domain?: string | null
+          eth_reserves?: number | null
           id?: string
           is_migrated?: boolean | null
           last_price_update?: string | null
           last_synced_at?: string | null
           market_cap?: number | null
+          market_cap_usd?: number | null
           maturity_deadline?: number | null
           maturity_progress?: number | null
           migration_condition?: number | null
@@ -288,13 +296,17 @@ export type Database = {
           price_change_24h?: number | null
           price_usd?: number | null
           profile_pic?: string | null
+          remaining_maturity_days?: number | null
           remaining_maturity_time?: number | null
           socials?: Json | null
           symbol: string
           token_price?: number | null
           token_price_usd?: number | null
+          token_reserves?: number | null
           total_liquidity?: number | null
+          total_liquidity_usd?: number | null
           total_supply?: number | null
+          trading_enabled?: boolean | null
           updated_at?: string | null
           virtual_eth?: number | null
           website?: string | null
@@ -316,11 +328,13 @@ export type Database = {
           developer_twitter?: string | null
           developer_website?: string | null
           domain?: string | null
+          eth_reserves?: number | null
           id?: string
           is_migrated?: boolean | null
           last_price_update?: string | null
           last_synced_at?: string | null
           market_cap?: number | null
+          market_cap_usd?: number | null
           maturity_deadline?: number | null
           maturity_progress?: number | null
           migration_condition?: number | null
@@ -330,13 +344,17 @@ export type Database = {
           price_change_24h?: number | null
           price_usd?: number | null
           profile_pic?: string | null
+          remaining_maturity_days?: number | null
           remaining_maturity_time?: number | null
           socials?: Json | null
           symbol?: string
           token_price?: number | null
           token_price_usd?: number | null
+          token_reserves?: number | null
           total_liquidity?: number | null
+          total_liquidity_usd?: number | null
           total_supply?: number | null
+          trading_enabled?: boolean | null
           updated_at?: string | null
           virtual_eth?: number | null
           website?: string | null

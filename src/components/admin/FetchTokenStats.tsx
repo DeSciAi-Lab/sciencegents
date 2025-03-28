@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,7 +9,7 @@ import { contractConfig } from '@/utils/contractConfig';
 import { TokenStats } from '@/services/scienceGent/types';
 import { AlertCircle, CheckCircle2, RefreshCw } from 'lucide-react';
 import { useEthPriceContext } from '@/context/EthPriceContext';
-import { calculateMaturityProgress } from '@/utils/scienceGentCalculations';
+import { calculateMaturityProgress, calculateTokenPrice } from '@/utils/scienceGentCalculations';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 
@@ -157,7 +158,8 @@ const FetchTokenStats: React.FC = () => {
         tokenAddress, 
         formattedStats, 
         totalSupply, 
-        capabilityFee
+        capabilityFee,
+        formattedTokenReserve
       );
     } catch (error) {
       console.error('Error fetching token stats:', error);
@@ -171,11 +173,13 @@ const FetchTokenStats: React.FC = () => {
     tokenAddress: string, 
     tokenStats: TokenStats, 
     totalSupply: string | null, 
-    capabilityFee: number
+    capabilityFee: number,
+    formattedTokenReserve: string | null
   ) => {
     try {
       const virtualEthAmount = parseFloat(ethers.utils.formatEther(tokenStats.virtualETH));
       const collectedFeesAmount = parseFloat(ethers.utils.formatEther(tokenStats.collectedFees));
+      const ethReserveAmount = parseFloat(ethers.utils.formatEther(tokenStats.ethReserve));
       const tokenPriceEth = parseFloat(ethers.utils.formatEther(tokenStats.currentPrice));
       const tokenPriceUsd = tokenPriceEth * ethPrice;
       const migrationCondition = 2 * virtualEthAmount + capabilityFee;
@@ -185,6 +189,17 @@ const FetchTokenStats: React.FC = () => {
         (collectedFeesAmount / (migrationCondition || 1)) * 100
       );
 
+      // Calculate market cap and total liquidity
+      const marketCap = totalSupply ? tokenPriceEth * parseFloat(totalSupply) : 0;
+      const marketCapUsd = marketCap * ethPrice;
+      const totalLiquidityUsd = ethReserveAmount * ethPrice;
+      
+      // Calculate remaining maturity days
+      const now = Math.floor(Date.now() / 1000);
+      const remainingMaturityDays = tokenStats.maturityDeadline > now 
+        ? Math.floor((tokenStats.maturityDeadline - now) / 86400) 
+        : 0;
+
       const updateData = {
         token_price_usd: tokenPriceUsd,
         token_price: tokenPriceEth,
@@ -193,32 +208,107 @@ const FetchTokenStats: React.FC = () => {
         migration_condition: migrationCondition,
         capability_fees: capabilityFee,
         maturity_progress: maturityProgress,
+        market_cap: marketCap,
+        market_cap_usd: marketCapUsd,
+        token_reserves: formattedTokenReserve ? parseFloat(formattedTokenReserve) : 0,
+        eth_reserves: ethReserveAmount,
+        total_liquidity_usd: totalLiquidityUsd,
+        trading_enabled: tokenStats.tradingEnabled,
+        is_migrated: tokenStats.migrated,
+        migration_eligible: tokenStats.migrationEligible,
+        remaining_maturity_time: tokenStats.remainingMaturityTime,
+        remaining_maturity_days: remainingMaturityDays,
+        maturity_deadline: tokenStats.maturityDeadline,
+        total_supply: totalSupply ? parseFloat(totalSupply) : null,
+        creator_address: tokenStats.creator,
+        created_on_chain_at: new Date(tokenStats.creationTimestamp * 1000).toISOString(),
         last_synced_at: new Date().toISOString()
       };
 
-      const { error } = await supabase
+      // First check if the token exists in the database
+      const { data, error: checkError } = await supabase
         .from('sciencegents')
-        .update(updateData)
-        .eq('address', tokenAddress);
+        .select('address')
+        .eq('address', tokenAddress)
+        .maybeSingle();
 
-      if (error) {
-        console.error('Error updating token stats:', error);
+      if (checkError) {
+        console.error('Error checking if token exists:', checkError);
         toast({
-          title: 'Update Failed',
-          description: 'Could not save token statistics to database',
+          title: 'Check Failed',
+          description: 'Could not verify if token exists in database',
           variant: 'destructive'
         });
-      } else {
-        toast({
-          title: 'Stats Updated',
-          description: 'Token statistics successfully saved'
-        });
+        return;
       }
+
+      let result;
+      
+      // If token doesn't exist, insert it with basic information
+      if (!data) {
+        const { error: insertError } = await supabase
+          .from('sciencegents')
+          .insert({
+            address: tokenAddress,
+            name: 'Unknown Token', // Will be updated later when name is fetched
+            symbol: 'UNKNOWN',     // Will be updated later when symbol is fetched
+            ...updateData
+          });
+
+        if (insertError) {
+          console.error('Error inserting token:', insertError);
+          toast({
+            title: 'Insert Failed',
+            description: 'Could not create new token record',
+            variant: 'destructive'
+          });
+          return;
+        }
+        
+        // Also create a stats record
+        const { error: statsError } = await supabase
+          .from('sciencegent_stats')
+          .insert({
+            sciencegent_address: tokenAddress,
+            volume_24h: 0,
+            transactions: 0,
+            holders: 0
+          });
+          
+        if (statsError) {
+          console.error('Error creating stats record:', statsError);
+        }
+        
+        result = { status: 'created' };
+      } else {
+        // If token exists, update it
+        const { error: updateError } = await supabase
+          .from('sciencegents')
+          .update(updateData)
+          .eq('address', tokenAddress);
+
+        if (updateError) {
+          console.error('Error updating token stats:', updateError);
+          toast({
+            title: 'Update Failed',
+            description: 'Could not update token statistics',
+            variant: 'destructive'
+          });
+          return;
+        }
+        
+        result = { status: 'updated' };
+      }
+
+      toast({
+        title: result.status === 'created' ? 'Token Created' : 'Stats Updated',
+        description: 'Token statistics successfully saved to database'
+      });
     } catch (error) {
       console.error('Error in saveTokenStatsToSupabase:', error);
       toast({
         title: 'Error',
-        description: 'An unexpected error occurred',
+        description: 'An unexpected error occurred when saving data',
         variant: 'destructive'
       });
     }

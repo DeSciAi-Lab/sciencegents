@@ -26,11 +26,9 @@ const MaturityStatusCard: React.FC<MaturityStatusCardProps> = ({
   const { formatEthToUsd } = useEthPriceContext();
   
   // Calculate progress if not provided
-  const maturityProgress = progress || calculateMaturityProgress(
-    virtualEth,
-    collectedFees,
-    capabilityFees
-  );
+  const maturityProgress = progress !== undefined ? 
+    progress : 
+    calculateMaturityProgress(virtualEth, collectedFees, capabilityFees);
   
   // Calculate threshold (2× virtualETH + capability fees)
   const migrationThreshold = (2 * virtualEth) + capabilityFees;
@@ -94,18 +92,22 @@ const MaturityStatusCard: React.FC<MaturityStatusCardProps> = ({
               <div className="bg-gray-50 p-2 rounded">
                 <div className="text-gray-500">Virtual ETH</div>
                 <div className="font-medium">{virtualEth.toFixed(4)} ETH</div>
+                <div className="text-xs text-gray-400">{formatEthToUsd(virtualEth)}</div>
               </div>
               <div className="bg-gray-50 p-2 rounded">
                 <div className="text-gray-500">Capability Fees</div>
                 <div className="font-medium">{capabilityFees.toFixed(4)} ETH</div>
+                <div className="text-xs text-gray-400">{formatEthToUsd(capabilityFees)}</div>
               </div>
               <div className="bg-gray-50 p-2 rounded">
                 <div className="text-gray-500">Collected Fees</div>
                 <div className="font-medium">{collectedFees.toFixed(4)} ETH</div>
+                <div className="text-xs text-gray-400">{formatEthToUsd(collectedFees)}</div>
               </div>
               <div className="bg-gray-50 p-2 rounded">
                 <div className="text-gray-500">Threshold</div>
                 <div className="font-medium">{migrationThreshold.toFixed(4)} ETH</div>
+                <div className="text-xs text-gray-400">{formatEthToUsd(migrationThreshold)}</div>
               </div>
             </div>
           )}
