@@ -1,4 +1,3 @@
-
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import { Badge } from '@/components/ui/badge';
@@ -119,7 +118,7 @@ const InfoTab: React.FC<InfoTabProps> = ({ activeTab, scienceGent }) => {
               {developer.github && (
                 <Button size="sm" variant="outline" className="h-8" asChild>
                   <a href={developer.github} target="_blank" rel="noopener noreferrer">
-                    <GitHub className="h-4 w-4 mr-1" />
+                    <Github className="h-4 w-4 mr-1" />
                     GitHub
                   </a>
                 </Button>
