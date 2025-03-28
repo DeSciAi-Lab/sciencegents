@@ -26,8 +26,12 @@ const MaturityTracker: React.FC<MaturityTrackerProps> = ({
   // Calculate the required fees for migration
   const requiredFees = virtualETH * 2 + capabilityFees;
   
-  // Use the maturity_progress value directly from props instead of calculating it
-  const progress = maturityProgress || 0;
+  // Use the provided maturity progress or calculate it if not provided
+  const progress = maturityProgress || calculateMaturityProgress(
+    virtualETH,
+    collectedFees,
+    capabilityFees
+  );
   
   // Format remaining time if provided
   const formatRemainingTime = (seconds?: number) => {

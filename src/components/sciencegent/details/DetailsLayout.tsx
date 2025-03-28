@@ -43,7 +43,7 @@ const DetailsLayout: React.FC<DetailsLayoutProps> = ({
                 <div className="mt-6">
                   <div className="flex items-center mb-2">
                     <div className="text-xl font-bold flex items-center gap-2">
-                      <span>{symbol}/ETH</span>
+                      <span>TICKER/ETH</span>
                       <span className="text-sm text-gray-500">▼</span>
                     </div>
                   </div>

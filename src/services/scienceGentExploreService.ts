@@ -147,9 +147,6 @@ export const fetchScienceGents = async (): Promise<ScienceGentListItem[]> => {
       const volumeScore = Math.min(5, Math.max(3, 3 + (item.stats?.[0]?.volume_24h || 0) / 1000));
       const maturityScore = item.is_migrated ? 5 : (item.migration_eligible ? 4 : 3);
       const rating = Math.round((volumeScore + maturityScore) / 2);
-      
-      // Assume a fixed ETH price in USD for conversion (e.g., 3000 USD per ETH)
-      const ETH_PRICE_USD = 3000;
 
       return {
         id: item.id,
@@ -158,8 +155,8 @@ export const fetchScienceGents = async (): Promise<ScienceGentListItem[]> => {
         profilePic: item.profile_pic,
         marketCap: item.market_cap || 0,
         tokenPrice: item.token_price || 0,
-        marketCapUsd: item.market_cap_usd || (item.market_cap ? item.market_cap * ETH_PRICE_USD : 0),
-        tokenPriceUsd: item.token_price_usd || (item.token_price ? item.token_price * ETH_PRICE_USD : 0),
+        marketCapUsd: item.market_cap_usd || item.market_cap * (ethers.utils.parseEther("1") / 1e18 || 0),
+        tokenPriceUsd: item.token_price_usd || item.token_price * (ethers.utils.parseEther("1") / 1e18 || 0),
         age: ageDisplay,
         roi,
         domain: item.domain || "General",

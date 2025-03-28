@@ -59,6 +59,7 @@ const TokenStatistics: React.FC<TokenStatisticsProps> = ({
     return <Skeleton className="h-[400px] w-full" />;
   }
 
+  // Format values from raw data
   const formatTokenValue = (rawValue: string | null, decimals: number = 18) => {
     if (!rawValue) return 0;
     try {
@@ -70,14 +71,17 @@ const TokenStatistics: React.FC<TokenStatisticsProps> = ({
   };
 
   const {
+    // Basic token information
     name = scienceGent.name || "Unknown Token",
     symbol = scienceGent.symbol || "UNKNOWN",
     
+    // Use raw values and format them
     tokenPrice = formatTokenValue(scienceGent.token_price_raw) || 0,
     totalSupply = formatTokenValue(scienceGent.total_supply_raw, scienceGent.token_decimals) || 0,
     virtualETH = formatTokenValue(scienceGent.virtual_eth_raw) || 0,
     collectedFees = formatTokenValue(scienceGent.collected_fees_raw) || 0,
     
+    // Use pre-calculated values from Supabase
     marketCap = scienceGent.market_cap || 0,
     marketCapUsd = scienceGent.market_cap_usd || 0,
     tokenPriceUsd = scienceGent.token_price_usd || 0,
@@ -93,10 +97,12 @@ const TokenStatistics: React.FC<TokenStatisticsProps> = ({
     createdOnChainAt = scienceGent.created_on_chain_at
   } = scienceGent;
 
+  // If age is not available but createdOnChainAt is, calculate age
   const ageDisplay = age ? `${age} days` : createdOnChainAt ? 
     `${Math.floor((Date.now() - new Date(createdOnChainAt).getTime()) / (1000 * 60 * 60 * 24))} days` : 
     'Unknown';
   
+  // Calculate migration status
   const getMigrationStatus = () => {
     if (isMigrated) {
       return {
@@ -106,7 +112,10 @@ const TokenStatistics: React.FC<TokenStatisticsProps> = ({
       };
     }
     
-    if (maturityProgress >= 100) {
+    // Use the utility function to calculate maturity progress
+    const calculatedProgress = calculateMaturityProgress(virtualETH, collectedFees, capabilityFees);
+    
+    if (calculatedProgress >= 100) {
       return {
         text: "Ready for Migration",
         color: "bg-blue-100 text-blue-800",
@@ -123,11 +132,13 @@ const TokenStatistics: React.FC<TokenStatisticsProps> = ({
 
   const migrationStatus = getMigrationStatus();
   
+  // Get Uniswap link for the token
   const getUniswapLink = () => {
     if (!scienceGent.address) return "#";
     return `https://app.uniswap.org/explore/tokens/ethereum_sepolia/${scienceGent.address.toLowerCase()}`;
   };
 
+  // Format numbers for display
   const formatNumber = (value: number, decimals: number = 2) => {
     if (value === 0) return '0';
     if (value < 0.000001) return value.toExponential(decimals);
@@ -146,6 +157,7 @@ const TokenStatistics: React.FC<TokenStatisticsProps> = ({
     return `$${formatNumber(value, 2)}`;
   };
 
+  // Render price change indicator with arrow
   const renderPriceChangeIndicator = () => {
     if (!priceChange24h) return null;
     
@@ -161,6 +173,7 @@ const TokenStatistics: React.FC<TokenStatisticsProps> = ({
     );
   };
 
+  // Token price display with 24h change indicator
   const tokenPriceDisplay = () => {
     const priceFormatted = `${tokenPrice.toFixed(8)} ETH`;
     const usdFormatted = tokenPriceUsd ? 
@@ -178,6 +191,7 @@ const TokenStatistics: React.FC<TokenStatisticsProps> = ({
     );
   };
 
+  // Market Cap display in ETH and USD
   const marketCapDisplay = () => {
     const ethFormatted = `${marketCap.toFixed(2)} ETH`;
     const usdFormatted = marketCapUsd ? 

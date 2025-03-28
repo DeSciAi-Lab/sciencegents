@@ -17,8 +17,8 @@ const ScienceGentMaturityStatus: React.FC<ScienceGentMaturityStatusProps> = ({
   isMigrated,
   capabilityFees = 1
 }) => {
-  // Use the maturity_progress directly from props
-  const progress = maturityProgress || 0;
+  // If values are not defined, use defaults
+  const progress = maturityProgress || 75;
   const vETH = virtualETH || 1;
   const fees = collectedFees || 0;
   const totalRequiredFees = (2 * vETH) + capabilityFees;
