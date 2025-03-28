@@ -25,10 +25,8 @@ const MaturityStatusCard: React.FC<MaturityStatusCardProps> = ({
 }) => {
   const { formatEthToUsd } = useEthPriceContext();
   
-  // Calculate progress if not provided
-  const maturityProgress = progress !== undefined ? 
-    progress : 
-    calculateMaturityProgress(virtualEth, collectedFees, capabilityFees);
+  // Use the provided progress directly instead of calculating it
+  const maturityProgress = progress !== undefined ? progress : 0;
   
   // Calculate threshold (2× virtualETH + capability fees)
   const migrationThreshold = (2 * virtualEth) + capabilityFees;
