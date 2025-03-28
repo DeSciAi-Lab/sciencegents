@@ -6,9 +6,10 @@ import AdminSkeleton from '@/components/admin/AdminSkeleton';
 import CapabilityManagementCard from '@/components/admin/CapabilityManagementCard';
 import FeatureCard from '@/components/admin/FeatureCard';
 import ScienceGentSync from '@/components/admin/ScienceGentSync';
+import FetchTokenStats from '@/components/admin/FetchTokenStats';
 import NavbarLayout from '@/components/layout/NavbarLayout';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
-import { RefreshCcw, Layers, Settings } from 'lucide-react';
+import { RefreshCcw, Layers, Settings, BarChart } from 'lucide-react';
 
 const Admin: React.FC = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -41,6 +42,7 @@ const Admin: React.FC = () => {
               <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
               <TabsTrigger value="capabilities">Capabilities</TabsTrigger>
               <TabsTrigger value="sciencegents">ScienceGents</TabsTrigger>
+              <TabsTrigger value="tokenStats">Token Stats</TabsTrigger>
               <TabsTrigger value="settings">Settings</TabsTrigger>
             </TabsList>
             
@@ -63,6 +65,14 @@ const Admin: React.FC = () => {
                   actionLabel="Go to Capabilities"
                 />
                 <FeatureCard 
+                  title="Fetch Token Stats"
+                  description="Get detailed statistics for ScienceGent tokens"
+                  icon={BarChart}
+                  comingSoon={false}
+                  onAction={() => setActiveTab("tokenStats")}
+                  actionLabel="Go to Token Stats"
+                />
+                <FeatureCard 
                   title="Platform Settings"
                   description="Configure platform parameters and fees"
                   icon={Settings}
@@ -81,6 +91,12 @@ const Admin: React.FC = () => {
             <TabsContent value="sciencegents">
               <div className="grid grid-cols-1 gap-6">
                 <ScienceGentSync />
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="tokenStats">
+              <div className="grid grid-cols-1 gap-6">
+                <FetchTokenStats />
               </div>
             </TabsContent>
             
