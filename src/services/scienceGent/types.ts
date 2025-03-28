@@ -54,6 +54,9 @@ export interface TokenStats {
   tokenAge?: number;
   remainingMaturityTime?: number;
   maturityProgress?: number;
+  // Adding missing properties that we're using in FetchTokenStats.tsx
+  name?: string;
+  symbol?: string;
 }
 
 // Capability details as retrieved from blockchain
