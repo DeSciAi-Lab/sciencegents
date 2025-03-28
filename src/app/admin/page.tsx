@@ -9,8 +9,8 @@ const AdminPage = () => {
       <h1 className="text-3xl font-bold mb-8">Admin Dashboard</h1>
       
       <div className="grid grid-cols-1 gap-8">
-        <TokenStatsDebugger />
         <FetchTokenStats />
+        <TokenStatsDebugger />
       </div>
     </div>
   );

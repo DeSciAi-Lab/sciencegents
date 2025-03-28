@@ -9,6 +9,7 @@ import { AlertCircle, RefreshCw } from 'lucide-react';
 import { ethers } from 'ethers';
 import { useEthPriceContext } from '@/context/EthPriceContext';
 import { Separator } from '@/components/ui/separator';
+import { Badge } from '@/components/ui/badge';
 
 const TokenStatsDebugger: React.FC = () => {
   const [tokenAddress, setTokenAddress] = useState('0x9F25D367eB822a2D5A214A964f95FAD49532805B');
@@ -27,6 +28,8 @@ const TokenStatsDebugger: React.FC = () => {
         throw new Error('Invalid Ethereum address');
       }
       
+      console.log('Fetching token data from Supabase for:', tokenAddress);
+      
       // Fetch from Supabase
       const { data, error } = await supabase
         .from('sciencegents')
@@ -34,19 +37,30 @@ const TokenStatsDebugger: React.FC = () => {
           *,
           sciencegent_stats:sciencegent_stats(*)
         `)
-        .eq('address', tokenAddress)
+        .eq('address', tokenAddress.toLowerCase())
         .single();
       
       if (error) {
-        throw error;
+        // Try with uppercase address if lowercase fails
+        const { data: upperData, error: upperError } = await supabase
+          .from('sciencegents')
+          .select(`
+            *,
+            sciencegent_stats:sciencegent_stats(*)
+          `)
+          .eq('address', tokenAddress)
+          .single();
+          
+        if (upperError) {
+          throw new Error(`Token not found in database: ${upperError.message}`);
+        }
+        
+        setTokenData(upperData);
+        console.log('Token data from Supabase (uppercase):', upperData);
+      } else {
+        setTokenData(data);
+        console.log('Token data from Supabase (lowercase):', data);
       }
-      
-      if (!data) {
-        throw new Error('Token not found in database');
-      }
-      
-      setTokenData(data);
-      console.log('Token data from Supabase:', data);
     } catch (error) {
       console.error('Error fetching token stats:', error);
       setError(error.message || 'Failed to fetch token statistics');
@@ -91,6 +105,25 @@ const TokenStatsDebugger: React.FC = () => {
     return String(value);
   };
   
+  // Function to determine if a field is missing or has issues
+  const isFieldMissing = (key: string, value: any): boolean => {
+    if (value === null || value === undefined) return true;
+    
+    // Check for numeric fields with value 0 that are likely not stored correctly
+    const importantNumericFields = [
+      'token_price', 'market_cap', 'collected_fees', 'maturity_progress',
+      'total_liquidity', 'virtual_eth', 'eth_reserves', 'token_reserves',
+      'capability_fees', 'migration_condition'
+    ];
+    
+    if (importantNumericFields.includes(key) && 
+        (value === 0 || value === '0' || value === 0.0)) {
+      return true;
+    }
+    
+    return false;
+  };
+  
   return (
     <Card className="w-full">
       <CardHeader>
@@ -133,8 +166,16 @@ const TokenStatsDebugger: React.FC = () => {
                   {Object.entries(tokenData)
                     .filter(([key]) => key !== 'sciencegent_stats')
                     .map(([key, value]) => (
-                      <div key={key} className="bg-gray-50 p-3 rounded-md">
-                        <p className="text-sm font-medium text-gray-700">{key}</p>
+                      <div 
+                        key={key} 
+                        className={`p-3 rounded-md ${isFieldMissing(key, value) ? 'bg-red-50 border border-red-200' : 'bg-gray-50'}`}
+                      >
+                        <p className="text-sm font-medium text-gray-700 flex items-center justify-between">
+                          {key}
+                          {isFieldMissing(key, value) && (
+                            <Badge variant="outline" className="text-red-500 border-red-200 bg-red-50">Missing</Badge>
+                          )}
+                        </p>
                         <p className="text-sm text-gray-600 break-all">
                           {formatField(key, value)}
                         </p>
@@ -152,8 +193,16 @@ const TokenStatsDebugger: React.FC = () => {
                     {Object.entries(tokenData.sciencegent_stats[0])
                       .filter(([key]) => key !== 'price_history')
                       .map(([key, value]) => (
-                        <div key={key} className="bg-blue-50 p-3 rounded-md">
-                          <p className="text-sm font-medium text-gray-700">{key}</p>
+                        <div 
+                          key={key} 
+                          className={`p-3 rounded-md ${isFieldMissing(key, value) ? 'bg-red-50 border border-red-200' : 'bg-blue-50'}`}
+                        >
+                          <p className="text-sm font-medium text-gray-700 flex items-center justify-between">
+                            {key}
+                            {isFieldMissing(key, value) && (
+                              <Badge variant="outline" className="text-red-500 border-red-200 bg-red-50">Missing</Badge>
+                            )}
+                          </p>
                           <p className="text-sm text-gray-600 break-all">
                             {formatField(key, value)}
                           </p>

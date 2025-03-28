@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -27,6 +26,8 @@ const FetchTokenStats: React.FC = () => {
 
   const fetchCapabilityFee = async (provider: ethers.providers.Web3Provider, tokenAddress: string) => {
     try {
+      console.log('Fetching capability fee for token:', tokenAddress);
+      
       const factoryAbi = [
         "function calculateTotalCapabilityFeeOfToken(address token) view returns (uint256)"
       ];
@@ -38,7 +39,9 @@ const FetchTokenStats: React.FC = () => {
       );
       
       const fee = await factoryContract.calculateTotalCapabilityFeeOfToken(tokenAddress);
-      return parseFloat(ethers.utils.formatEther(fee));
+      const formattedFee = parseFloat(ethers.utils.formatEther(fee));
+      console.log('Capability fee:', formattedFee);
+      return formattedFee;
     } catch (error) {
       console.error('Error fetching capability fee:', error);
       return 0;
@@ -64,6 +67,8 @@ const FetchTokenStats: React.FC = () => {
         throw new Error('No Ethereum provider detected. Please install MetaMask.');
       }
 
+      console.log('Starting to fetch stats for token:', tokenAddress);
+      
       const provider = new ethers.providers.Web3Provider(window.ethereum);
       
       const swapAbi = [
@@ -76,7 +81,9 @@ const FetchTokenStats: React.FC = () => {
         provider
       );
       
+      console.log('Calling getTokenStats for:', tokenAddress);
       const stats = await swapContract.getTokenStats(tokenAddress);
+      console.log('Raw stats from blockchain:', stats);
       
       const formattedStats: TokenStats = {
         tokenReserve: stats[0].toString(),
@@ -93,6 +100,8 @@ const FetchTokenStats: React.FC = () => {
         currentPrice: stats[11].toString(),
         migrationEligible: stats[12]
       };
+      
+      console.log('Formatted stats:', formattedStats);
       
       const fee = await fetchCapabilityFee(provider, tokenAddress);
       setCapabilityFee(fee);
@@ -116,8 +125,7 @@ const FetchTokenStats: React.FC = () => {
         formattedStats.remainingMaturityTime = 0;
       }
       
-      setTokenStats(formattedStats);
-      
+      // Add token name and symbol
       try {
         const tokenAbi = [
           "function totalSupply() view returns (uint256)",
@@ -132,44 +140,50 @@ const FetchTokenStats: React.FC = () => {
           provider
         );
         
-        const supply = await tokenContract.totalSupply();
-        let tokenDecimals = 18;
+        console.log('Fetching token details...');
         
-        try {
-          tokenDecimals = await tokenContract.decimals();
-          setDecimals(tokenDecimals);
-        } catch (error) {
-          console.warn('Could not fetch decimals, using default of 18:', error);
-        }
-        
-        const formattedSupply = ethers.utils.formatUnits(supply, tokenDecimals);
-        setTotalSupply(formattedSupply);
-        
-        const formattedReserve = ethers.utils.formatUnits(formattedStats.tokenReserve, tokenDecimals);
-        setFormattedTokenReserve(formattedReserve);
-
-        // Also fetch name and symbol if possible
         let tokenName = "Unknown Token";
         let tokenSymbol = "UNKNOWN";
         
         try {
           tokenName = await tokenContract.name();
           tokenSymbol = await tokenContract.symbol();
+          console.log('Token name/symbol:', tokenName, tokenSymbol);
         } catch (error) {
           console.warn('Could not fetch token name/symbol:', error);
         }
         
-        // Add name and symbol to the formattedStats for saving to Supabase
+        // Add name and symbol to the formattedStats
         formattedStats.name = tokenName;
         formattedStats.symbol = tokenSymbol;
+        
+        const supply = await tokenContract.totalSupply();
+        let tokenDecimals = 18;
+        
+        try {
+          tokenDecimals = await tokenContract.decimals();
+          setDecimals(tokenDecimals);
+          console.log('Token decimals:', tokenDecimals);
+        } catch (error) {
+          console.warn('Could not fetch decimals, using default of 18:', error);
+        }
+        
+        const formattedSupply = ethers.utils.formatUnits(supply, tokenDecimals);
+        setTotalSupply(formattedSupply);
+        console.log('Total supply:', formattedSupply);
+        
+        const formattedReserve = ethers.utils.formatUnits(formattedStats.tokenReserve, tokenDecimals);
+        setFormattedTokenReserve(formattedReserve);
+        console.log('Formatted token reserve:', formattedReserve);
       } catch (error) {
         console.error('Error fetching token details:', error);
         setTotalSupply('Error fetching total supply');
         setFormattedTokenReserve('Error formatting token reserve');
       }
       
+      setTokenStats(formattedStats);
       setSuccess(true);
-      console.log('Token stats:', formattedStats);
+      console.log('Token stats ready for display:', formattedStats);
       
       await saveTokenStatsToSupabase(
         tokenAddress, 
@@ -196,15 +210,15 @@ const FetchTokenStats: React.FC = () => {
     try {
       console.log('Starting to save token data to Supabase for:', tokenAddress);
       
-      // Convert big number values to regular numbers
-      const virtualEthAmount = parseFloat(ethers.utils.formatEther(tokenStats.virtualETH));
-      const collectedFeesAmount = parseFloat(ethers.utils.formatEther(tokenStats.collectedFees));
-      const ethReserveAmount = parseFloat(ethers.utils.formatEther(tokenStats.ethReserve));
-      const tokenPriceEth = parseFloat(ethers.utils.formatEther(tokenStats.currentPrice));
+      // Convert big number values to regular numbers with explicit type handling
+      const virtualEthAmount = parseFloat(ethers.utils.formatEther(tokenStats.virtualETH)) || 0;
+      const collectedFeesAmount = parseFloat(ethers.utils.formatEther(tokenStats.collectedFees)) || 0;
+      const ethReserveAmount = parseFloat(ethers.utils.formatEther(tokenStats.ethReserve)) || 0;
+      const tokenPriceEth = parseFloat(ethers.utils.formatEther(tokenStats.currentPrice)) || 0;
       const tokenPriceUsd = tokenPriceEth * ethPrice;
       const migrationCondition = 2 * virtualEthAmount + capabilityFee;
       
-      console.log('Computed values:', { 
+      console.log('Computed values for Supabase:', { 
         virtualEthAmount, 
         collectedFeesAmount, 
         ethReserveAmount, 
@@ -285,7 +299,7 @@ const FetchTokenStats: React.FC = () => {
         last_synced_at: new Date().toISOString()
       };
 
-      console.log('Prepared data for upsert:', updateData);
+      console.log('Data prepared for Supabase upsert:', updateData);
 
       // First check if the token exists in the database
       const { data, error: checkError } = await supabase
@@ -397,6 +411,48 @@ const FetchTokenStats: React.FC = () => {
       });
       
       console.log('Token data save completed successfully');
+      
+      // After saving, get the data from Supabase to verify it was stored correctly
+      setTimeout(async () => {
+        try {
+          const { data: verifyData, error: verifyError } = await supabase
+            .from('sciencegents')
+            .select('*')
+            .eq('address', tokenAddress)
+            .single();
+            
+          if (verifyError) {
+            console.error('Error verifying saved data:', verifyError);
+          } else {
+            console.log('Verification - Data in Supabase:', verifyData);
+            // Compare important fields
+            const fieldsToCheck = [
+              'token_price', 'collected_fees', 'virtual_eth', 'market_cap', 
+              'maturity_progress', 'token_reserves', 'eth_reserves'
+            ];
+            
+            const issues = fieldsToCheck.filter(field => {
+              const expectedValue = updateData[field as keyof typeof updateData];
+              const actualValue = verifyData[field as keyof typeof verifyData];
+              
+              // Basic comparison, ignoring small floating point differences
+              if (typeof expectedValue === 'number' && typeof actualValue === 'number') {
+                return Math.abs(expectedValue - actualValue) > 0.000001;
+              }
+              
+              return expectedValue !== actualValue;
+            });
+            
+            if (issues.length > 0) {
+              console.warn('Some fields may not have been saved correctly:', issues);
+            } else {
+              console.log('All fields verified to be saved correctly');
+            }
+          }
+        } catch (verifyError) {
+          console.error('Exception during verification:', verifyError);
+        }
+      }, 2000);
     } catch (error) {
       console.error('Error in saveTokenStatsToSupabase:', error);
       toast({
@@ -646,6 +702,7 @@ const FetchTokenStats: React.FC = () => {
       <CardFooter className="text-xs text-gray-500 flex flex-col items-start">
         <p>Data fetched directly from ScienceGentsSwap contract and token contract</p>
         <p className="mt-1">Current ETH price: ${ethPrice.toFixed(2)}</p>
+        <p className="mt-1">After fetching, check the Token Stats Debugger below to verify stored data</p>
       </CardFooter>
     </Card>
   );
