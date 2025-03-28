@@ -1,4 +1,21 @@
-# Welcome to your Lovable project
+# ScienceGents Token Dashboard
+
+## Recent Updates
+
+### Token Statistics Integration (March 2025)
+
+We recently enhanced the application with better token statistics integration:
+
+- **Token Age Display**: Added display of token age in days throughout the app
+- **USD Value Integration**: Using direct market_cap_usd and token_price_usd values from the database
+- **Bulk Synchronization**: Added 'Sync All ScienceGents' button in admin dashboard with progress tracking
+- **UI Improvements**: Better formatting, consistent display of token values, and enhanced error handling
+
+See the full [CHANGELOG.md](./CHANGELOG.md) for detailed release notes.
+
+## Overview
+
+The ScienceGents Token Dashboard provides a comprehensive interface for managing and monitoring ScienceGent tokens on the blockchain. Users can explore tokens, view detailed statistics, and perform various operations.
 
 ## Project info
 

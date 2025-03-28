@@ -1,0 +1,181 @@
+{
+  "hash": "3f21e28c",
+  "configHash": "c1a5ca36",
+  "lockfileHash": "b9855f3c",
+  "browserHash": "c5e27892",
+  "optimized": {
+    "react/jsx-dev-runtime": {
+      "src": "../../node_modules/react/jsx-dev-runtime.js",
+      "file": "react_jsx-dev-runtime.js",
+      "fileHash": "81a430ad",
+      "needsInterop": true
+    },
+    "react": {
+      "src": "../../node_modules/react/index.js",
+      "file": "react.js",
+      "fileHash": "09b9bbe5",
+      "needsInterop": true
+    },
+    "react-dom/client": {
+      "src": "../../node_modules/react-dom/client.js",
+      "file": "react-dom_client.js",
+      "fileHash": "35373bc5",
+      "needsInterop": true
+    },
+    "wagmi": {
+      "src": "../../node_modules/wagmi/dist/esm/exports/index.js",
+      "file": "wagmi.js",
+      "fileHash": "562c5a35",
+      "needsInterop": false
+    },
+    "@tanstack/react-query": {
+      "src": "../../node_modules/@tanstack/react-query/build/modern/index.js",
+      "file": "@tanstack_react-query.js",
+      "fileHash": "70c5d989",
+      "needsInterop": false
+    },
+    "react-router-dom": {
+      "src": "../../node_modules/react-router-dom/dist/index.js",
+      "file": "react-router-dom.js",
+      "fileHash": "866b1f11",
+      "needsInterop": false
+    },
+    "wagmi/chains": {
+      "src": "../../node_modules/wagmi/dist/esm/exports/chains.js",
+      "file": "wagmi_chains.js",
+      "fileHash": "36c16369",
+      "needsInterop": false
+    },
+    "wagmi/connectors": {
+      "src": "../../node_modules/wagmi/dist/esm/exports/connectors.js",
+      "file": "wagmi_connectors.js",
+      "fileHash": "058bcdc2",
+      "needsInterop": false
+    },
+    "lucide-react": {
+      "src": "../../node_modules/lucide-react/dist/esm/lucide-react.js",
+      "file": "lucide-react.js",
+      "fileHash": "e3e811ce",
+      "needsInterop": false
+    }
+  },
+  "chunks": {
+    "dist-FVG7QB7T": {
+      "file": "dist-FVG7QB7T.js"
+    },
+    "secp256k1-BW4KCQ3G": {
+      "file": "secp256k1-BW4KCQ3G.js"
+    },
+    "ccip-CNHDLHJP": {
+      "file": "ccip-CNHDLHJP.js"
+    },
+    "dist-SL7QOKWH": {
+      "file": "dist-SL7QOKWH.js"
+    },
+    "dist-5HNF5VPF": {
+      "file": "dist-5HNF5VPF.js"
+    },
+    "chunk-35YKZJSE": {
+      "file": "chunk-35YKZJSE.js"
+    },
+    "index.es-C6AJHDDN": {
+      "file": "index__es-C6AJHDDN.js"
+    },
+    "chunk-FYS4FHAD": {
+      "file": "chunk-FYS4FHAD.js"
+    },
+    "chunk-TEHE3LLO": {
+      "file": "chunk-TEHE3LLO.js"
+    },
+    "secp256k1-P2EZIDCO": {
+      "file": "secp256k1-P2EZIDCO.js"
+    },
+    "ccip-T6R6QDJI": {
+      "file": "ccip-T6R6QDJI.js"
+    },
+    "native-Q7GJUMZB": {
+      "file": "native-Q7GJUMZB.js"
+    },
+    "chunk-3CBAWQRI": {
+      "file": "chunk-3CBAWQRI.js"
+    },
+    "dist-RHRYIPWW": {
+      "file": "dist-RHRYIPWW.js"
+    },
+    "chunk-WHKQA2E7": {
+      "file": "chunk-WHKQA2E7.js"
+    },
+    "dist-VZTO566G": {
+      "file": "dist-VZTO566G.js"
+    },
+    "chunk-SG6UKOUG": {
+      "file": "chunk-SG6UKOUG.js"
+    },
+    "chunk-5VHUUPRP": {
+      "file": "chunk-5VHUUPRP.js"
+    },
+    "chunk-A4GMWHWS": {
+      "file": "chunk-A4GMWHWS.js"
+    },
+    "chunk-YXGWAGP3": {
+      "file": "chunk-YXGWAGP3.js"
+    },
+    "metamask-sdk-LJOUSP2A": {
+      "file": "metamask-sdk-LJOUSP2A.js"
+    },
+    "chunk-K4ZBQAQX": {
+      "file": "chunk-K4ZBQAQX.js"
+    },
+    "esm-MCNVCNBK": {
+      "file": "esm-MCNVCNBK.js"
+    },
+    "chunk-G7BQWPNQ": {
+      "file": "chunk-G7BQWPNQ.js"
+    },
+    "chunk-O4OUIRJB": {
+      "file": "chunk-O4OUIRJB.js"
+    },
+    "chunk-2N5KDUXU": {
+      "file": "chunk-2N5KDUXU.js"
+    },
+    "chunk-B3U4XA7Z": {
+      "file": "chunk-B3U4XA7Z.js"
+    },
+    "chunk-KCSSUP23": {
+      "file": "chunk-KCSSUP23.js"
+    },
+    "chunk-TU4ELKOX": {
+      "file": "chunk-TU4ELKOX.js"
+    },
+    "chunk-4JB4Q5MT": {
+      "file": "chunk-4JB4Q5MT.js"
+    },
+    "chunk-C6I6ZGJS": {
+      "file": "chunk-C6I6ZGJS.js"
+    },
+    "chunk-LNHBLBI5": {
+      "file": "chunk-LNHBLBI5.js"
+    },
+    "chunk-5M3NA3KI": {
+      "file": "chunk-5M3NA3KI.js"
+    },
+    "chunk-SWUJO2GM": {
+      "file": "chunk-SWUJO2GM.js"
+    },
+    "chunk-EKVMGFHV": {
+      "file": "chunk-EKVMGFHV.js"
+    },
+    "chunk-KRQMJTXE": {
+      "file": "chunk-KRQMJTXE.js"
+    },
+    "chunk-MH4SXD7W": {
+      "file": "chunk-MH4SXD7W.js"
+    },
+    "chunk-LEJNOBVI": {
+      "file": "chunk-LEJNOBVI.js"
+    },
+    "chunk-4CFW2BUT": {
+      "file": "chunk-4CFW2BUT.js"
+    }
+  }
+}
