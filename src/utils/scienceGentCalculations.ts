@@ -25,8 +25,9 @@ export const calculateMaturityProgress = (
     // Migration threshold is 2x virtualETH + capability fees
     const targetFees = (2 * vETH) + capFees;
     
-    // Calculate progress percentage, capped at 100%
-    const progress = Math.min(Math.round((fees / targetFees) * 100), 100);
+    // Calculate progress percentage with full precision (don't round to integer)
+    // Cap at 100% maximum
+    const progress = Math.min((fees / targetFees) * 100, 100);
     
     return progress;
   } catch (error) {

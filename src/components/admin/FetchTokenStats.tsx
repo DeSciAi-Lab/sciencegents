@@ -113,9 +113,10 @@ const FetchTokenStats: React.FC = () => {
       const migrationCondition = 2 * virtualEthAmount + fee;
       
       // Maturity progress = (collectedFees / migrationCondition) * 100
+      // Use max precision here but cap at 100%
       formattedStats.maturityProgress = Math.min(
         100,
-        Math.round((collectedFeesAmount / (migrationCondition || 1)) * 100)
+        (collectedFeesAmount / (migrationCondition || 1)) * 100
       );
       
       // Add derived properties
@@ -203,7 +204,7 @@ const FetchTokenStats: React.FC = () => {
     }
   };
   
-  // Calculate USD values with 18 decimal places for token price
+  // Calculate USD values with 2 decimal places
   const calculateUsdValue = (ethValue: string) => {
     try {
       const ethAmount = parseFloat(ethers.utils.formatEther(ethValue));

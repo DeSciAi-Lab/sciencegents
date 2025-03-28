@@ -43,7 +43,7 @@ const MaturityTracker: React.FC<MaturityTrackerProps> = ({
       };
     }
     
-    if (progress === 100) {
+    if (progress >= 100) {
       return {
         text: "Maturity Reached",
         color: "bg-amber-100 text-amber-800",
@@ -72,7 +72,7 @@ const MaturityTracker: React.FC<MaturityTrackerProps> = ({
     <div className="border rounded-xl p-4">
       <div className="text-center mb-2">
         <div className="text-xl font-medium">Maturity Status</div>
-        <div className="text-2xl font-bold">{status.progress}%</div>
+        <div className="text-2xl font-bold">{status.progress.toFixed(4)}%</div>
       </div>
       <Progress value={status.progress} className="h-2 bg-gray-200" />
       <p className="mt-3 text-sm">
