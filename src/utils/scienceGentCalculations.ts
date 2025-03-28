@@ -59,3 +59,38 @@ export const formatAge = (timestamp: string | number | Date): string => {
   
   return `${diffInYears} year${diffInYears > 1 ? 's' : ''} ${remainingMonths} month${remainingMonths > 1 ? 's' : ''}`;
 };
+
+/**
+ * Calculates token price in USD based on ETH price
+ * 
+ * @param tokenPriceInETH The token price in ETH
+ * @param ethPriceInUSD The current ETH price in USD (optional, default: 3000)
+ * @returns The token price in USD
+ */
+export const calculateTokenPrice = (
+  tokenPriceInETH: number,
+  ethPriceInUSD: number = 3000
+): number => {
+  if (!tokenPriceInETH || tokenPriceInETH <= 0) return 0;
+  return tokenPriceInETH * ethPriceInUSD;
+};
+
+/**
+ * Calculates market cap based on token price and total supply
+ * 
+ * @param tokenPrice The token price in ETH
+ * @param totalSupply The total supply of tokens (as string or number)
+ * @returns The market cap value
+ */
+export const calculateMarketCap = (
+  tokenPrice: number,
+  totalSupply: string | number
+): number => {
+  // Parse totalSupply if it's a string
+  const supply = typeof totalSupply === 'string' ? parseFloat(totalSupply) : totalSupply;
+  
+  // Return 0 if invalid inputs
+  if (!tokenPrice || tokenPrice <= 0 || !supply || supply <= 0) return 0;
+  
+  return tokenPrice * supply;
+};
