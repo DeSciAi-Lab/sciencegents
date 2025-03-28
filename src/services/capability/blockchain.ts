@@ -41,19 +41,21 @@ export const fetchCapabilityDetailsFromBlockchain = async (id: string): Promise<
     const [description, feeInETH, creator] = await factory.getCapabilityDetails(id);
     console.log(`Capability ${id} details retrieved from blockchain`);
     
-    // Convert ETH fee to number for UI display purposes
-    const feeAsEth = ethers.utils.formatEther(feeInETH);
-    const feeAsNumber = parseFloat(feeAsEth);
-    
-    // Return data in CapabilityDetail format
+    // Return data in CapabilityDetail format with additional fields
     return {
       id,
       name: id, // Using the ID as the name since blockchain doesn't store a separate name
       description,
-      feeInETH: feeInETH.toString(), // Convert BigNumber to string
+      feeInETH, // Keep the raw value for conversion later
+      price: parseFloat(ethers.utils.formatEther(feeInETH)), // Add price for UI display
       creator,
       domain: "Unknown", // Default domain
-      price: feeAsNumber // Add calculated price for UI display
+      stats: {
+        usageCount: 0,
+        rating: 4.5,
+        revenue: 0
+      },
+      features: []
     };
   } catch (error) {
     console.error(`Error fetching capability ${id} from blockchain:`, error);

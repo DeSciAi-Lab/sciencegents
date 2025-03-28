@@ -1,30 +1,15 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { RefreshCcw, Check, AlertTriangle, Info, Calendar, DatabaseBackup } from 'lucide-react';
+import { RefreshCcw, Check, AlertTriangle, Info, Calendar } from 'lucide-react';
 import { syncAllScienceGents, syncAllCreationTimestamps } from '@/services/scienceGentDataService';
-import { toast } from '@/hooks/use-toast';
+import { toast } from '@/components/ui/use-toast';
 import { Separator } from '@/components/ui/separator';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Input } from '@/components/ui/input';
-import { supabase } from '@/integrations/supabase/client';
-import { syncSingleScienceGent } from '@/services/scienceGentDataService';
-import { formatAddress } from '@/utils/walletUtils';
 
 interface SyncResult {
   syncCount: number;
   errorCount: number;
-}
-
-interface ScienceGentRow {
-  address: string;
-  name: string;
-  symbol: string;
-  token_price?: number;
-  collected_fees?: number;
-  is_migrated?: boolean;
-  last_synced_at?: string;
 }
 
 const ScienceGentSync = () => {
@@ -36,40 +21,6 @@ const ScienceGentSync = () => {
   const [lastTimestampSyncTime, setLastTimestampSyncTime] = useState<string | null>(null);
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
   const [timestampSyncMessage, setTimestampSyncMessage] = useState<string | null>(null);
-  const [scienceGents, setScienceGents] = useState<ScienceGentRow[]>([]);
-  const [isLoadingScienceGents, setIsLoadingScienceGents] = useState(false);
-  const [filterTerm, setFilterTerm] = useState('');
-  const [syncingToken, setSyncingToken] = useState<string | null>(null);
-
-  // Fetch ScienceGents from Supabase
-  useEffect(() => {
-    const fetchScienceGents = async () => {
-      setIsLoadingScienceGents(true);
-      try {
-        const { data, error } = await supabase
-          .from('sciencegents')
-          .select('address, name, symbol, token_price, collected_fees, is_migrated, last_synced_at')
-          .order('name');
-          
-        if (error) {
-          console.error('Error fetching ScienceGents:', error);
-          toast({
-            title: 'Error',
-            description: 'Failed to load ScienceGents',
-            variant: 'destructive'
-          });
-        } else {
-          setScienceGents(data || []);
-        }
-      } catch (error) {
-        console.error('Error fetching ScienceGents:', error);
-      } finally {
-        setIsLoadingScienceGents(false);
-      }
-    };
-
-    fetchScienceGents();
-  }, []);
 
   const handleSync = async () => {
     try {
@@ -96,49 +47,6 @@ const ScienceGentSync = () => {
       });
     } finally {
       setIsSyncing(false);
-    }
-  };
-
-  const handleSyncScienceGent = async (address: string) => {
-    try {
-      setSyncingToken(address);
-      
-      const success = await syncSingleScienceGent(address);
-      
-      if (success) {
-        toast({
-          title: "Sync Successful",
-          description: `Token ${formatAddress(address)} has been synced from the blockchain.`
-        });
-        
-        // Refresh the data for this token
-        const { data, error } = await supabase
-          .from('sciencegents')
-          .select('address, name, symbol, token_price, collected_fees, is_migrated, last_synced_at')
-          .eq('address', address)
-          .single();
-          
-        if (data && !error) {
-          setScienceGents(prev => 
-            prev.map(sg => sg.address === address ? data : sg)
-          );
-        }
-      } else {
-        toast({
-          title: "Sync Failed",
-          description: `Failed to sync token ${formatAddress(address)}`,
-          variant: "destructive"
-        });
-      }
-    } catch (error) {
-      console.error(`Error syncing token ${address}:`, error);
-      toast({
-        title: "Sync Failed",
-        description: `Error syncing token: ${error.message || "Unknown error"}`,
-        variant: "destructive"
-      });
-    } finally {
-      setSyncingToken(null);
     }
   };
 
@@ -184,13 +92,6 @@ const ScienceGentSync = () => {
     }).format(date);
   };
 
-  // Filter tokens based on search term
-  const filteredTokens = scienceGents.filter(token => 
-    token.name.toLowerCase().includes(filterTerm.toLowerCase()) ||
-    token.symbol.toLowerCase().includes(filterTerm.toLowerCase()) ||
-    token.address.toLowerCase().includes(filterTerm.toLowerCase())
-  );
-
   return (
     <Card>
       <CardHeader>
@@ -200,11 +101,10 @@ const ScienceGentSync = () => {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="space-y-6">
-          <div className="space-y-4">
-            <h3 className="text-md font-medium">Bulk Synchronization</h3>
+        <div className="space-y-4">
+          <div className="flex flex-col space-y-2">
             <p className="text-sm text-muted-foreground">
-              Fetch all ScienceGents from the blockchain and update the database with the latest information.
+              This action will fetch all ScienceGents from the blockchain and update the database with the latest information.
               This process might take some time depending on the number of ScienceGents.
             </p>
             
@@ -238,138 +138,84 @@ const ScienceGentSync = () => {
                 </span>
               </div>
             )}
-            
-            <div className="flex gap-4">
-              <Button 
-                onClick={handleSync}
-                disabled={isSyncing}
-                className="flex-grow"
-              >
-                {isSyncing ? (
-                  <>
-                    <RefreshCcw className="mr-2 h-4 w-4 animate-spin" />
-                    <span>Syncing All...</span>
-                  </>
-                ) : (
-                  <>
-                    <RefreshCcw className="mr-2 h-4 w-4" />
-                    <span>Sync All ScienceGents</span>
-                  </>
-                )}
-              </Button>
-              
-              <Button 
-                onClick={handleTimestampSync}
-                disabled={isSyncingTimestamps}
-                variant="outline"
-              >
-                {isSyncingTimestamps ? (
-                  <>
-                    <Calendar className="mr-2 h-4 w-4 animate-spin" />
-                    <span>Syncing...</span>
-                  </>
-                ) : (
-                  <>
-                    <Calendar className="mr-2 h-4 w-4" />
-                    <span>Sync Timestamps</span>
-                  </>
-                )}
-              </Button>
-            </div>
           </div>
           
-          <Separator />
+          <Button 
+            onClick={handleSync}
+            disabled={isSyncing}
+            className="w-full"
+          >
+            {isSyncing ? (
+              <>
+                <RefreshCcw className="mr-2 h-4 w-4 animate-spin" />
+                <span>Syncing...</span>
+              </>
+            ) : (
+              <>
+                <RefreshCcw className="mr-2 h-4 w-4" />
+                <span>Sync All ScienceGents</span>
+              </>
+            )}
+          </Button>
           
-          <div className="space-y-4">
-            <h3 className="text-md font-medium">Individual Token Sync</h3>
+          <Separator className="my-4" />
+          
+          <div className="flex flex-col space-y-2">
+            <h3 className="text-md font-medium">Creation Timestamp Sync</h3>
             <p className="text-sm text-muted-foreground">
-              Synchronize individual ScienceGent tokens from the blockchain.
-              This will update token price, fees, migration status and other dynamic data.
+              This action will specifically fetch and update the creation timestamps for all ScienceGents.
+              This ensures accurate age calculation for all tokens.
             </p>
             
-            <div className="my-4">
-              <Input
-                placeholder="Search tokens by name, symbol, or address..."
-                value={filterTerm}
-                onChange={(e) => setFilterTerm(e.target.value)}
-                className="max-w-lg"
-              />
-            </div>
+            {timestampSyncMessage && (
+              <div className={`flex items-center gap-2 text-sm p-2 rounded ${
+                timestampSyncMessage.includes("failed") 
+                  ? "bg-red-50 dark:bg-red-950 text-red-600" 
+                  : "bg-blue-50 dark:bg-blue-950 text-blue-600"
+              }`}>
+                <Info size={16} />
+                <span>{timestampSyncMessage}</span>
+              </div>
+            )}
             
-            <div className="rounded-md border overflow-hidden">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Address</TableHead>
-                    <TableHead>Price</TableHead>
-                    <TableHead>Collected Fees</TableHead>
-                    <TableHead>Migrated</TableHead>
-                    <TableHead>Last Synced</TableHead>
-                    <TableHead className="text-right">Action</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {isLoadingScienceGents ? (
-                    <TableRow>
-                      <TableCell colSpan={7} className="text-center py-6 text-muted-foreground">
-                        Loading tokens...
-                      </TableCell>
-                    </TableRow>
-                  ) : filteredTokens.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={7} className="text-center py-6 text-muted-foreground">
-                        No tokens found{filterTerm && ` matching "${filterTerm}"`}
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    filteredTokens.map((token) => (
-                      <TableRow key={token.address}>
-                        <TableCell>
-                          <div className="font-medium">{token.name}</div>
-                          <div className="text-xs text-muted-foreground">{token.symbol}</div>
-                        </TableCell>
-                        <TableCell>
-                          <span className="font-mono text-xs">{formatAddress(token.address)}</span>
-                        </TableCell>
-                        <TableCell>{token.token_price?.toFixed(6) || 'N/A'}</TableCell>
-                        <TableCell>{token.collected_fees?.toFixed(4) || 'N/A'}</TableCell>
-                        <TableCell>
-                          {token.is_migrated ? 
-                            <span className="text-green-600">Yes</span> : 
-                            <span className="text-gray-600">No</span>
-                          }
-                        </TableCell>
-                        <TableCell>
-                          {token.last_synced_at ? formatDateTime(token.last_synced_at) : 'Never'}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            disabled={syncingToken === token.address}
-                            onClick={() => handleSyncScienceGent(token.address)}
-                          >
-                            {syncingToken === token.address ? (
-                              <>
-                                <DatabaseBackup className="mr-1 h-3 w-3 animate-spin" />
-                                <span>Syncing...</span>
-                              </>
-                            ) : (
-                              <>
-                                <DatabaseBackup className="mr-1 h-3 w-3" />
-                                <span>Sync</span>
-                              </>
-                            )}
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </div>
+            {lastTimestampSyncTime && (
+              <div className="text-sm">
+                <p className="font-medium">Last Timestamp Sync: <span className="font-normal">{formatDateTime(lastTimestampSyncTime)}</span></p>
+              </div>
+            )}
+            
+            {lastTimestampSyncResult && (
+              <div className="flex items-center gap-2 text-sm">
+                {lastTimestampSyncResult.errorCount === 0 ? (
+                  <Check size={16} className="text-green-600" />
+                ) : (
+                  <AlertTriangle size={16} className="text-amber-600" />
+                )}
+                <span>
+                  Successfully updated timestamps for {lastTimestampSyncResult.syncCount} ScienceGents 
+                  {lastTimestampSyncResult.errorCount > 0 && ` with ${lastTimestampSyncResult.errorCount} errors`}
+                </span>
+              </div>
+            )}
           </div>
+          
+          <Button 
+            onClick={handleTimestampSync}
+            disabled={isSyncingTimestamps}
+            className="w-full bg-amber-600 hover:bg-amber-700"
+          >
+            {isSyncingTimestamps ? (
+              <>
+                <Calendar className="mr-2 h-4 w-4 animate-spin" />
+                <span>Syncing Timestamps...</span>
+              </>
+            ) : (
+              <>
+                <Calendar className="mr-2 h-4 w-4" />
+                <span>Sync Creation Timestamps</span>
+              </>
+            )}
+          </Button>
         </div>
       </CardContent>
     </Card>

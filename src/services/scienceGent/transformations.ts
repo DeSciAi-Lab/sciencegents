@@ -1,252 +1,214 @@
-import { ethers } from "ethers";
-import { ScienceGentData, TokenStats, FormattedScienceGent } from "./types";
-import { formatDistanceToNow } from "date-fns";
-import { safeFormatEther, safeFormatEtherAsNumber } from "@/utils/ethersUtils";
+
+import { ScienceGentData, TokenStats, FormattedScienceGent } from './types';
+import { ethers } from 'ethers';
+import { 
+  calculateMaturityProgress,
+  calculateTokenPrice,
+  calculateMarketCap
+} from '@/utils/scienceGentCalculations';
 
 /**
- * Calculates maturity progress percentage
- * @param virtualETH Virtual ETH amount
- * @param collectedFees Collected fees
- * @returns Progress percentage (0-100)
+ * Formats a timestamp to a human-readable age string
+ * @param creationTimestamp Creation timestamp (seconds since epoch or ISO string)
+ * @returns Formatted age string (e.g., "2 days" or "3 months")
  */
-export const calculateMaturityProgress = (
-  virtualETH: number | string,
-  collectedFees: number | string
-): number => {
-  try {
-    const vETH = typeof virtualETH === 'string' ? parseFloat(virtualETH) : virtualETH;
-    const fees = typeof collectedFees === 'string' ? parseFloat(collectedFees) : collectedFees;
-    
-    if (isNaN(vETH) || vETH === 0) return 0;
-    
-    // Migration threshold is 2x virtualETH
-    const targetFees = 2 * vETH;
-    const progress = Math.min(Math.round((fees / targetFees) * 100), 100);
-    
-    return isNaN(progress) ? 0 : progress;
-  } catch (error) {
-    console.error("Error calculating maturity progress:", error);
-    return 0;
-  }
-};
-
-/**
- * Safely format ETH value from BigNumber string
- * @param value BigNumber string
- * @returns Formatted ETH value as number or 0 if conversion fails
- */
-export const safeFormatEtherValue = (value: string): number => {
-  return safeFormatEtherAsNumber(value);
-};
-
-/**
- * Format token age based on creation timestamp
- * @param timestamp Creation timestamp from blockchain
- * @returns Formatted age string
- */
-export const formatAge = (timestamp: number | string | Date | null | undefined): string => {
-  if (!timestamp) return 'Unknown';
+export const formatAge = (creationTimestamp: number | string | undefined): string => {
+  if (!creationTimestamp) return 'Unknown';
   
-  try {
-    // Handle different timestamp formats
-    let date: Date;
-    if (timestamp instanceof Date) {
-      date = timestamp;
-    } else if (typeof timestamp === 'number') {
-      date = new Date(timestamp * 1000); // Convert from Unix timestamp
-    } else if (typeof timestamp === 'string') {
-      // Try parsing as ISO string first
-      date = new Date(timestamp);
-      // If invalid or very old date, try parsing as Unix timestamp
-      if (isNaN(date.getTime()) || date.getFullYear() < 2020) {
-        date = new Date(parseInt(timestamp) * 1000);
-      }
-    } else {
-      return 'Unknown';
-    }
-    
-    // Check if date is valid
-    if (isNaN(date.getTime())) {
-      return 'Unknown';
-    }
-    
-    return formatDistanceToNow(date, { addSuffix: false });
-  } catch (error) {
-    console.error("Error formatting age:", error, "from timestamp:", timestamp);
+  // Convert timestamp to Date object
+  let creationDate: Date;
+  if (typeof creationTimestamp === 'number') {
+    creationDate = new Date(creationTimestamp * 1000);
+  } else if (typeof creationTimestamp === 'string') {
+    creationDate = new Date(creationTimestamp);
+  } else {
     return 'Unknown';
+  }
+  
+  const now = new Date();
+  const diffInMs = now.getTime() - creationDate.getTime();
+  
+  // Calculate days, hours, etc.
+  const days = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+  
+  if (days > 365) {
+    const years = Math.floor(days / 365);
+    return `${years} year${years !== 1 ? 's' : ''}`;
+  } else if (days > 30) {
+    const months = Math.floor(days / 30);
+    return `${months} month${months !== 1 ? 's' : ''}`;
+  } else if (days > 0) {
+    return `${days} day${days !== 1 ? 's' : ''}`;
+  } else {
+    const hours = Math.floor(diffInMs / (1000 * 60 * 60));
+    return `${hours || 1} hour${hours !== 1 ? 's' : ''}`;
   }
 };
 
 /**
  * Transforms blockchain data to Supabase format
- * @param data Blockchain ScienceGent data
- * @param stats Token statistics
- * @returns Formatted data for Supabase
+ * @param blockchainData ScienceGent data from blockchain
+ * @param tokenStats Token statistics from blockchain
+ * @returns Object with scienceGent and scienceGentStats data
  */
 export const transformBlockchainToSupabaseFormat = (
-  data: ScienceGentData,
-  stats: TokenStats
+  blockchainData: ScienceGentData,
+  tokenStats: TokenStats
 ) => {
-  try {
-    // Handle socials data
-    const socialsData = data.socials || {};
-    
-    // Safely convert values to prevent overflow errors
-    const tokenPrice = safeFormatEtherAsNumber(stats.currentPrice);
-    const virtualETH = safeFormatEtherAsNumber(stats.virtualETH);
-    const collectedFees = safeFormatEtherAsNumber(stats.collectedFees);
-    
-    // Ensure consistency between migrated and isMigrated properties
-    const isMigrated = data.isMigrated !== undefined ? data.isMigrated : stats.migrated;
-    
-    // Calculate market cap - handle large numbers
-    let marketCap = 0;
-    try {
-      if (data.totalSupply) {
-        // Calculate market cap using formatted totalSupply
-        const totalSupplyFormatted = ethers.utils.formatEther(data.totalSupply);
-        marketCap = tokenPrice * parseFloat(totalSupplyFormatted);
-      }
-    } catch (error) {
-      console.error("Error calculating market cap:", error);
-    }
-
-    // Format timestamps
-    const createdAt = data.createdAt || new Date(data.creationTimestamp * 1000).toISOString();
-    const createdOnChainAt = data.createdOnChainAt || new Date(data.creationTimestamp * 1000).toISOString();
-    
-    // Calculate maturity progress
-    const maturityProgress = calculateMaturityProgress(virtualETH, collectedFees);
-    
-    // Calculate remaining maturity time
-    const currentTime = Math.floor(Date.now() / 1000);
-    const remainingMaturityTime = Math.max(0, stats.maturityDeadline - currentTime);
-    
-    // Ensure agent_fee is a number
-    let agentFee: number | null = null;
-    if (data.agent_fee !== undefined) {
-      if (typeof data.agent_fee === 'string') {
-        agentFee = parseFloat(data.agent_fee);
-        if (isNaN(agentFee)) agentFee = null;
-      } else if (typeof data.agent_fee === 'number') {
-        agentFee = data.agent_fee;
-      }
-    }
-    
-    const scienceGent = {
-      address: data.address,
-      name: data.name,
-      symbol: data.symbol,
-      description: data.description || '',
-      creator_address: data.creator,
-      is_migrated: isMigrated,
-      migration_eligible: stats.migrationEligible,
-      created_on_chain_at: createdOnChainAt,
-      maturity_deadline: stats.maturityDeadline,
-      remaining_maturity_time: remainingMaturityTime,
-      token_price: tokenPrice,
-      market_cap: marketCap,
-      virtual_eth: virtualETH,
-      collected_fees: collectedFees,
-      maturity_progress: maturityProgress,
-      domain: 'General', // Default domain if not provided
-      socials: socialsData,
-      last_synced_at: new Date().toISOString(),
-      // Ensure agent_fee is a number
-      agent_fee: agentFee,
-      // Add these fields if present in the data
-      profile_pic: data.profile_pic,
-      website: data.website,
-      persona: data.persona,
-      developer_name: data.developer_name,
-      developer_email: data.developer_email,
-      bio: data.bio,
-      developer_twitter: data.developer_twitter,
-      developer_telegram: data.developer_telegram,
-      developer_github: data.developer_github,
-      developer_website: data.developer_website
-    };
-    
-    // Stats object for sciencegent_stats table
-    const scienceGentStats = {
-      sciencegent_address: data.address,
-      volume_24h: stats.volume24h ? parseFloat(stats.volume24h) : 0,
-      transactions: stats.transactions || 0,
-      holders: stats.holders || 0,
-      updated_at: new Date().toISOString()
-    };
-    
-    return {
-      scienceGent,
-      scienceGentStats
-    };
-  } catch (error) {
-    console.error("Error transforming blockchain data to Supabase format:", error);
-    throw error;
-  }
-};
-
-/**
- * Transforms Supabase data to a format suitable for UI display
- * @param data Supabase ScienceGent data
- * @returns Formatted data for UI
- */
-export const transformSupabaseToFormattedScienceGent = (
-  data: any
-): FormattedScienceGent => {
-  // Fallback for missing data
-  if (!data) {
-    return {
-      id: '',
-      address: '',
-      name: 'Unknown',
-      symbol: 'UNKNOWN'
-    };
-  }
+  // Calculate current timestamp in seconds
+  const currentTimestamp = Math.floor(Date.now() / 1000);
   
-  // Calculate or use existing maturity progress
-  const maturityProgress = data.maturity_progress || calculateMaturityProgress(
-    data.virtual_eth || 0,
-    data.collected_fees || 0
+  // Calculate token age in seconds
+  const tokenAge = blockchainData.creationTimestamp 
+    ? currentTimestamp - blockchainData.creationTimestamp 
+    : 0;
+  
+  // Calculate remaining maturity time
+  const remainingMaturityTime = blockchainData.maturityDeadline 
+    ? Math.max(0, blockchainData.maturityDeadline - currentTimestamp)
+    : 0;
+  
+  // Calculate token price
+  const tokenPrice = calculateTokenPrice(tokenStats.currentPrice);
+  
+  // Calculate market cap
+  const marketCap = calculateMarketCap(
+    tokenPrice,
+    blockchainData.totalSupply || '0'
   );
   
-  return {
-    id: data.id || data.address,
-    address: data.address,
-    name: data.name,
-    symbol: data.symbol,
-    description: data.description,
-    domain: data.domain,
-    marketCap: data.market_cap,
-    tokenPrice: data.token_price,
-    age: formatAge(data.created_on_chain_at),
-    formattedAge: formatAge(data.created_on_chain_at),
-    maturityStatus: getMigrationStatusText(data),
-    capabilities: data.capabilities ? 
-      (Array.isArray(data.capabilities) ? data.capabilities : []) : 
-      [],
-    isMigrated: data.is_migrated,
-    migrationEligible: data.migration_eligible,
-    virtualETH: data.virtual_eth,
-    collectedFees: data.collected_fees,
-    maturityProgress,
-    remainingMaturityTime: data.remaining_maturity_time
+  // Calculate maturity progress
+  let virtualETH = 0;
+  let collectedFees = 0;
+  
+  if (tokenStats.virtualETH) {
+    virtualETH = parseFloat(ethers.utils.formatEther(tokenStats.virtualETH));
+  }
+  
+  if (tokenStats.collectedFees) {
+    collectedFees = parseFloat(ethers.utils.formatEther(tokenStats.collectedFees));
+  }
+  
+  // Calculate maturity progress using the utility function
+  const maturityProgress = calculateMaturityProgress(
+    virtualETH,
+    collectedFees,
+    blockchainData.capabilityFees || 0
+  );
+  
+  // Main ScienceGent data for the sciencegents table
+  const scienceGent = {
+    address: blockchainData.address,
+    name: blockchainData.name,
+    symbol: blockchainData.symbol,
+    total_supply: blockchainData.totalSupply ? parseFloat(ethers.utils.formatEther(blockchainData.totalSupply)) : null,
+    creator_address: blockchainData.creator,
+    description: blockchainData.description || null,
+    profile_pic: blockchainData.profilePic || null,
+    website: blockchainData.website || null,
+    socials: blockchainData.socialLinks ? JSON.stringify(blockchainData.socialLinks) : null,
+    is_migrated: blockchainData.isMigrated,
+    migration_eligible: tokenStats.migrationEligible,
+    created_on_chain_at: blockchainData.creationTimestamp 
+      ? new Date(blockchainData.creationTimestamp * 1000).toISOString() 
+      : null,
+    maturity_deadline: blockchainData.maturityDeadline || null,
+    remaining_maturity_time: tokenStats.remainingMaturityTime || null,
+    maturity_progress: tokenStats.maturityProgress || 0,
+    token_price: tokenStats.currentPrice ? parseFloat(ethers.utils.formatEther(tokenStats.currentPrice)) : 0,
+    market_cap: calculateMarketCap(
+      parseFloat(ethers.utils.formatEther(tokenStats.currentPrice || '0')),
+      blockchainData.totalSupply || '0'
+    ),
+    virtual_eth: parseFloat(ethers.utils.formatEther(tokenStats.virtualETH || '0')),
+    collected_fees: parseFloat(ethers.utils.formatEther(tokenStats.collectedFees || '0')),
+    last_synced_at: new Date().toISOString(),
+    domain: blockchainData.domain || "General Science",
+    agent_fee: blockchainData.agentFee || 2,
+    persona: blockchainData.persona || null,
+    developer_name: blockchainData.developerName || null,
+    developer_email: blockchainData.developerEmail || null,
+    bio: blockchainData.bio || null,
+    developer_twitter: blockchainData.developerTwitter || null,
+    developer_telegram: blockchainData.developerTelegram || null,
+    developer_github: blockchainData.developerGithub || null,
+    developer_website: blockchainData.developerWebsite || null
   };
+  
+  // Stats data for the sciencegent_stats table
+  const scienceGentStats = {
+    sciencegent_address: blockchainData.address,
+    // Default values for now, can be populated with real data later
+    volume_24h: 0,
+    transactions: 0,
+    holders: 0,
+    updated_at: new Date().toISOString()
+  };
+  
+  return { scienceGent, scienceGentStats };
 };
 
 /**
- * Determine migration status text from token data
- * @param data Token data
- * @returns Status text
+ * Transforms Supabase data to formatted ScienceGent for UI
+ * @param supabaseData ScienceGent data from Supabase
+ * @returns Formatted ScienceGent for UI display
  */
-const getMigrationStatusText = (data: any): string => {
-  if (data.is_migrated) {
-    return 'Migrated';
-  } else if (data.migration_eligible) {
-    return 'Ready for Migration';
-  } else if (data.maturity_progress >= 50) {
-    return 'Near Maturity';
-  } else {
-    return 'Immature';
+export const transformSupabaseToFormattedScienceGent = (
+  supabaseData: any
+): FormattedScienceGent => {
+  if (!supabaseData) return null;
+
+  // Extract capabilities from the supabase data if available
+  const capabilities = supabaseData.capabilities
+    ? supabaseData.capabilities.map(cap => cap.capability_id)
+    : [];
+
+  // Convert socials JSON string to object if needed
+  let socialLinks = {};
+  try {
+    if (supabaseData.socials) {
+      if (typeof supabaseData.socials === 'string') {
+        socialLinks = JSON.parse(supabaseData.socials);
+      } else {
+        socialLinks = supabaseData.socials;
+      }
+    }
+  } catch (e) {
+    console.error("Error parsing social links:", e);
   }
+  
+  // Calculate token age from creation timestamp
+  const creationTimestamp = supabaseData.created_on_chain_at 
+    ? new Date(supabaseData.created_on_chain_at).getTime() / 1000
+    : undefined;
+    
+  // Calculate formatted token age
+  const formattedAge = formatAge(supabaseData.created_on_chain_at);
+  
+  // Create a formatted ScienceGent object for UI
+  return {
+    address: supabaseData.address,
+    name: supabaseData.name,
+    symbol: supabaseData.symbol,
+    description: supabaseData.description,
+    profilePic: supabaseData.profile_pic,
+    website: supabaseData.website,
+    socialLinks,
+    isMigrated: !!supabaseData.is_migrated,
+    totalSupply: supabaseData.total_supply?.toString(),
+    tokenPrice: supabaseData.token_price ? parseFloat(String(supabaseData.token_price)) : 0,
+    marketCap: supabaseData.market_cap ? parseFloat(String(supabaseData.market_cap)) : 0,
+    maturityProgress: supabaseData.maturity_progress || 0,
+    virtualEth: supabaseData.virtual_eth ? parseFloat(String(supabaseData.virtual_eth)) : 0,
+    collectedFees: supabaseData.collected_fees ? parseFloat(String(supabaseData.collected_fees)) : 0,
+    remainingMaturityTime: supabaseData.remaining_maturity_time,
+    creationTimestamp,
+    formattedAge,
+    tokenAge: creationTimestamp ? Math.floor(Date.now() / 1000) - creationTimestamp : 0,
+    migrationEligible: supabaseData.migration_eligible,
+    capabilities,
+    domain: supabaseData.domain || "General Science",
+    agentFee: supabaseData.agent_fee || 2,
+    persona: supabaseData.persona
+  };
 };

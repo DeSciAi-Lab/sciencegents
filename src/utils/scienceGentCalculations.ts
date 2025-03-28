@@ -1,7 +1,6 @@
 
 import { ethers } from 'ethers';
 import { TokenStats } from '@/services/scienceGent/types';
-import { safeFormatEtherAsNumber } from './ethersUtils';
 
 /**
  * Calculates the maturity progress percentage
@@ -17,14 +16,9 @@ export const calculateMaturityProgress = (
 ): number => {
   try {
     // Convert inputs to numbers if they're strings
-    const vETH = typeof virtualETH === 'string' ? 
-      safeFormatEtherAsNumber(virtualETH) : virtualETH;
-    
-    const fees = typeof collectedFees === 'string' ? 
-      safeFormatEtherAsNumber(collectedFees) : collectedFees;
-    
-    const capFees = typeof capabilityFees === 'string' ? 
-      parseFloat(capabilityFees) : capabilityFees;
+    const vETH = typeof virtualETH === 'string' ? parseFloat(virtualETH) : virtualETH;
+    const fees = typeof collectedFees === 'string' ? parseFloat(collectedFees) : collectedFees;
+    const capFees = typeof capabilityFees === 'string' ? parseFloat(capabilityFees) : capabilityFees;
     
     if (vETH === 0) return 0;
     
@@ -49,7 +43,7 @@ export const calculateMaturityProgress = (
 export const calculateTokenPrice = (currentPrice: string): number => {
   try {
     if (!currentPrice) return 0;
-    return safeFormatEtherAsNumber(currentPrice);
+    return parseFloat(ethers.utils.formatEther(currentPrice));
   } catch (error) {
     console.error("Error calculating token price:", error);
     return 0;
@@ -68,25 +62,9 @@ export const calculateMarketCap = (
 ): number => {
   try {
     // Convert totalSupply to number if it's a string
-    let supply: number;
-    
-    if (typeof totalSupply === 'string') {
-      try {
-        // Handle very large numbers which might cause overflow
-        if (totalSupply.length > 15) {
-          console.warn("Total supply too large for precise calculation:", totalSupply);
-          supply = Number.MAX_SAFE_INTEGER / (tokenPrice || 1);
-        } else {
-          supply = safeFormatEtherAsNumber(totalSupply);
-        }
-      } catch (e) {
-        // Fallback if formatEther fails
-        console.warn("Using fallback calculation for large supply:", e);
-        supply = 1000000; // Use a reasonable default
-      }
-    } else {
-      supply = totalSupply;
-    }
+    const supply = typeof totalSupply === 'string' 
+      ? parseFloat(ethers.utils.formatEther(totalSupply))
+      : totalSupply;
     
     return tokenPrice * supply;
   } catch (error) {
@@ -111,11 +89,11 @@ export const getTokenMetrics = (
   const marketCap = calculateMarketCap(tokenPrice, totalSupply);
   
   const virtualETH = tokenStats.virtualETH
-    ? safeFormatEtherAsNumber(tokenStats.virtualETH)
+    ? parseFloat(ethers.utils.formatEther(tokenStats.virtualETH))
     : 0;
     
   const collectedFees = tokenStats.collectedFees
-    ? safeFormatEtherAsNumber(tokenStats.collectedFees)
+    ? parseFloat(ethers.utils.formatEther(tokenStats.collectedFees))
     : 0;
     
   const maturityProgress = calculateMaturityProgress(

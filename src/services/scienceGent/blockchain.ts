@@ -1,10 +1,8 @@
-
 import { ethers } from "ethers";
 import { getProvider } from "@/services/walletService";
 import { contractConfig } from "@/utils/contractConfig";
 import { ScienceGentData, TokenStats } from "./types";
 import { supabase } from "@/integrations/supabase/client";
-import { safeBigNumberToString } from "@/utils/ethersUtils";
 
 /**
  * Fetches ScienceGent data from the blockchain
@@ -46,15 +44,12 @@ export const fetchScienceGentFromBlockchain = async (
       creationTimestamp = Number(tokenDetails[6]);
     }
     
-    // Handle big numbers more safely by keeping them as strings
-    const totalSupplyString = tokenDetails[2].toString();
-    
     // Create ScienceGent data object
     const scienceGentData: ScienceGentData = {
       address: address,
       name: tokenDetails[0],
       symbol: tokenDetails[1],
-      totalSupply: totalSupplyString,
+      totalSupply: tokenDetails[2].toString(),
       creator: tokenDetails[3],
       isMigrated: tokenDetails[5],
       creationTimestamp: creationTimestamp,
@@ -98,7 +93,7 @@ export const fetchTokenStatsFromBlockchain = async (
     // Fetch token stats from swap
     const tokenStats = await swapContract.getTokenStats(address);
     
-    // Always convert BigNumbers to strings to avoid overflow issues
+    // Create TokenStats object - Fix the property name from 'isMigrated' to 'migrated'
     const stats: TokenStats = {
       tokenReserve: tokenStats[0].toString(),
       ethReserve: tokenStats[1].toString(),
@@ -108,7 +103,7 @@ export const fetchTokenStatsFromBlockchain = async (
       creator: tokenStats[5],
       creationTimestamp: tokenStats[6].toNumber(),
       maturityDeadline: tokenStats[7].toNumber(),
-      migrated: tokenStats[8], 
+      migrated: tokenStats[8], // Changed from isMigrated to migrated
       lpUnlockTime: tokenStats[9].toNumber(),
       lockedLPAmount: tokenStats[10].toString(),
       currentPrice: tokenStats[11].toString(),
@@ -361,19 +356,5 @@ export const syncAllCreationTimestampsFromBlockchain = async (): Promise<{ syncC
   } catch (error) {
     console.error("Error in syncAllCreationTimestampsFromBlockchain:", error);
     return { syncCount: 0, errorCount: 1 };
-  }
-};
-
-/**
- * Safely formats a big number string to ETH
- * @param value BigNumber string
- * @returns Formatted ETH value or 0 if conversion fails
- */
-export const safeFormatEther = (value: string): string => {
-  try {
-    return ethers.utils.formatEther(value);
-  } catch (error) {
-    console.error("Error formatting big number:", error);
-    return "0";
   }
 };

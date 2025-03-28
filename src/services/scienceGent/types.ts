@@ -1,88 +1,102 @@
-/**
- * ScienceGent token data from blockchain
- */
+
+// Import ethers for BigNumber type compatibility
+import { BigNumber } from "ethers";
+
+// ScienceGent blockchain data format
 export interface ScienceGentData {
   address: string;
   name: string;
   symbol: string;
-  totalSupply: string; // Stored as string to handle large numbers
+  totalSupply: string;
   creator: string;
-  isMigrated: boolean;
-  creationTimestamp: number;
-  maturityDeadline: number;
-  capabilities: string[];
   description?: string;
-  createdAt?: string;
-  createdOnChainAt?: string;
-  profile_pic?: string;
+  profilePic?: string;
   website?: string;
-  agent_fee?: string | number;
-  socials?: Record<string, string>;
+  socialLinks?: Record<string, string>;
+  tradingEnabled?: boolean;
+  isMigrated: boolean;
+  creationTimestamp?: number;
+  maturityDeadline?: number;
+  capabilities: string[];
+  capabilityFees?: number; // Optional field for total capability fees in ETH
+  adminLockAmount?: string;
+  adminLockRemainingTime?: string;
+  isAdminTokensUnlocked?: boolean;
   persona?: string;
-  developer_name?: string;
-  developer_email?: string;
+  domain?: string;
+  agentFee?: number;
+  // New developer information fields
+  developerName?: string;
+  developerEmail?: string;
   bio?: string;
-  developer_twitter?: string;
-  developer_telegram?: string;
-  developer_github?: string;
-  developer_website?: string;
+  developerTwitter?: string;
+  developerTelegram?: string;
+  developerGithub?: string;
+  developerWebsite?: string;
 }
 
-/**
- * Token statistics from blockchain
- */
+// Token statistics from blockchain
 export interface TokenStats {
-  tokenReserve: string; // Stored as string to handle large numbers
-  ethReserve: string; // Stored as string to handle large numbers
-  virtualETH: string; // Stored as string to handle large numbers
-  collectedFees: string; // Stored as string to handle large numbers
+  tokenReserve: string;
+  ethReserve: string;
+  virtualETH: string;
+  collectedFees: string;
   tradingEnabled: boolean;
   creator: string;
-  creationTimestamp: number;
-  maturityDeadline: number;
-  migrated: boolean;
-  lpUnlockTime: number;
-  lockedLPAmount: string; // Stored as string to handle large numbers
-  currentPrice: string; // Stored as string to handle large numbers
+  creationTimestamp: number; // Changed from string to number
+  maturityDeadline: number; // Changed from string to number
+  migrated: boolean; // Changed from isMigrated to migrated to match contract response
+  lpUnlockTime: number; // Changed from string to number
+  lockedLPAmount: string;
+  currentPrice: string;
   migrationEligible: boolean;
-  volume24h?: string; // Stored as string to handle large numbers
-  transactions?: number;
-  holders?: number;
+  // Derived properties
+  tokenAge?: number;
+  remainingMaturityTime?: number;
+  maturityProgress?: number;
 }
 
-/**
- * Capability details from blockchain
- */
+// Capability details as retrieved from blockchain
 export interface CapabilityDetail {
   id: string;
-  name: string;
   description: string;
-  feeInETH: string; // Stored as string to handle large numbers
+  feeInETH: string; // Fee in wei as string (for large numbers)
   creator: string;
-  domain?: string;
-  price?: number; // Add price property for UI display convenience
+  domain?: string; // Optional field added for categorization
+  // Adding these fields to resolve type errors
+  name?: string;
+  price?: number; // Converted price in ETH (for UI display)
+  stats?: {
+    usageCount: number;
+    rating: number;
+    revenue: number;
+  };
+  features?: string[];
 }
 
-/**
- * Formatted ScienceGent for UI
- */
+// Formatted ScienceGent data for UI display
 export interface FormattedScienceGent {
-  id: string;
   address: string;
   name: string;
   symbol: string;
   description?: string;
-  domain?: string;
-  marketCap?: number;
+  profilePic?: string;
+  website?: string;
+  socialLinks?: Record<string, string>;
+  isMigrated: boolean;
+  totalSupply?: string;
   tokenPrice?: number;
-  age?: string;
-  formattedAge?: string;
-  maturityStatus?: string;
-  capabilities?: string[];
-  isMigrated?: boolean;
-  migrationEligible?: boolean;
-  virtualETH?: number;
-  collectedFees?: number;
+  marketCap?: number;
   maturityProgress?: number;
+  virtualEth?: number;
+  collectedFees?: number;
   remainingMaturityTime?: number;
+  creationTimestamp?: number;
+  migrationEligible?: boolean;
+  capabilities?: string[];
+  tokenAge?: number;
+  persona?: string;
+  domain?: string;
+  agentFee?: number;
+  formattedAge?: string; // Add this property to the interface
 }
