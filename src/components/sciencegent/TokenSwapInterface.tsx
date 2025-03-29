@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { SwapDirection, useTokenSwap } from "@/hooks/useTokenSwap";
 import { ExternalLink, AlertTriangle } from 'lucide-react';
@@ -40,13 +39,11 @@ const TokenSwapInterface: React.FC<TokenSwapInterfaceProps> = ({
     refreshBalances
   } = useTokenSwap(tokenAddress);
 
-  // Reset values when swap direction changes
   useEffect(() => {
     setInputValue('0.0001');
     setOutputValue('0');
   }, [isEthInput]);
 
-  // Update estimates when input changes
   useEffect(() => {
     const updateEstimate = async () => {
       if (!inputValue || parseFloat(inputValue) <= 0) {
@@ -72,16 +69,13 @@ const TokenSwapInterface: React.FC<TokenSwapInterfaceProps> = ({
     return () => clearTimeout(debounceTimer);
   }, [inputValue, isEthInput, estimateTokensFromETH, estimateETHFromTokens]);
 
-  // Handles max button click
   const handleMaxClick = () => {
     if (isEthInput) {
-      // Use 95% of ETH balance to leave room for gas
       const maxAmount = parseFloat(ethBalance) * 0.95;
       if (!isNaN(maxAmount) && maxAmount > 0) {
         setInputValue(maxAmount.toFixed(6));
       }
     } else {
-      // For tokens, can use 100% since gas is paid in ETH
       const maxAmount = parseFloat(tokenBalance);
       if (!isNaN(maxAmount) && maxAmount > 0) {
         setInputValue(maxAmount.toFixed(6));
@@ -89,7 +83,6 @@ const TokenSwapInterface: React.FC<TokenSwapInterfaceProps> = ({
     }
   };
 
-  // Handle swap execution
   const handleSwap = async () => {
     if (!inputValue || parseFloat(inputValue) <= 0) {
       toast({
@@ -102,11 +95,9 @@ const TokenSwapInterface: React.FC<TokenSwapInterfaceProps> = ({
     
     try {
       if (isEthInput) {
-        // Buying tokens with ETH
         const minTokensOut = parseFloat(outputValue) * (1 - slippageTolerance/100);
         await buyTokens(inputValue, minTokensOut.toString());
       } else {
-        // Selling tokens for ETH
         const minEthOut = parseFloat(outputValue) * (1 - slippageTolerance/100);
         await sellTokens(inputValue, minEthOut.toString());
       }
@@ -120,15 +111,12 @@ const TokenSwapInterface: React.FC<TokenSwapInterfaceProps> = ({
     }
   };
 
-  // Toggle between buy and sell modes
   const toggleDirection = () => {
     setIsEthInput(!isEthInput);
   };
 
-  // Check if trading is enabled for this ScienceGent
   const isTradingEnabled = scienceGent?.trading_enabled !== false;
 
-  // If the token is migrated to Uniswap, show a different UI
   if (isMigrated) {
     return (
       <div className="p-4 space-y-4">
@@ -152,13 +140,12 @@ const TokenSwapInterface: React.FC<TokenSwapInterfaceProps> = ({
     );
   }
 
-  // Determine token name to display
   const tokenName = scienceGent?.name || "ScienceGent";
 
   return (
     <div className="space-y-4">
       {!isTradingEnabled && (
-        <Alert variant="warning" className="bg-amber-50 border-amber-200">
+        <Alert variant="default" className="bg-amber-50 border-amber-200">
           <AlertTriangle className="h-4 w-4 text-amber-600" />
           <AlertDescription className="text-amber-800">
             Creator hasn't enabled trading yet. Only the creator can trade at this time.
