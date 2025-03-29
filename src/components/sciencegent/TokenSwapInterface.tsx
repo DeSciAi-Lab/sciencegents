@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { SwapDirection, useTokenSwap } from "@/hooks/useTokenSwap";
-import { ExternalLink } from 'lucide-react';
+import { ExternalLink, AlertTriangle } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from '@/components/ui/use-toast';
@@ -125,6 +125,9 @@ const TokenSwapInterface: React.FC<TokenSwapInterfaceProps> = ({
     setIsEthInput(!isEthInput);
   };
 
+  // Check if trading is enabled for this ScienceGent
+  const isTradingEnabled = scienceGent?.trading_enabled !== false;
+
   // If the token is migrated to Uniswap, show a different UI
   if (isMigrated) {
     return (
@@ -154,6 +157,15 @@ const TokenSwapInterface: React.FC<TokenSwapInterfaceProps> = ({
 
   return (
     <div className="space-y-4">
+      {!isTradingEnabled && (
+        <Alert variant="warning" className="bg-amber-50 border-amber-200">
+          <AlertTriangle className="h-4 w-4 text-amber-600" />
+          <AlertDescription className="text-amber-800">
+            Creator hasn't enabled trading yet. Only the creator can trade at this time.
+          </AlertDescription>
+        </Alert>
+      )}
+      
       <SwapInterface 
         isEthInput={isEthInput}
         toggleDirection={toggleDirection}
