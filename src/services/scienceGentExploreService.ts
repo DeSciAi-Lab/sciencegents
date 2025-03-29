@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { formatDistanceToNow } from "date-fns";
 import { ethers } from "ethers";
@@ -42,6 +43,9 @@ export interface ScienceGentListItem {
   creationTimestamp?: string;
   maturityProgress: number; // Making sure this is required, not optional
 }
+
+// Default ETH price for USD conversions if no live data is available
+const ETH_PRICE_USD = 3000;
 
 /**
  * Fetches ScienceGent data from Supabase for the explore page
@@ -147,6 +151,10 @@ export const fetchScienceGents = async (): Promise<ScienceGentListItem[]> => {
       const volumeScore = Math.min(5, Math.max(3, 3 + (item.stats?.[0]?.volume_24h || 0) / 1000));
       const maturityScore = item.is_migrated ? 5 : (item.migration_eligible ? 4 : 3);
       const rating = Math.round((volumeScore + maturityScore) / 2);
+      
+      // Calculate USD values safely
+      const marketCapUsd = item.market_cap_usd ?? (item.market_cap ? item.market_cap * ETH_PRICE_USD : 0);
+      const tokenPriceUsd = item.token_price_usd ?? (item.token_price ? item.token_price * ETH_PRICE_USD : 0);
 
       return {
         id: item.id,
@@ -155,8 +163,8 @@ export const fetchScienceGents = async (): Promise<ScienceGentListItem[]> => {
         profilePic: item.profile_pic,
         marketCap: item.market_cap || 0,
         tokenPrice: item.token_price || 0,
-        marketCapUsd: item.market_cap_usd || item.market_cap * (ethers.utils.parseEther("1") / 1e18 || 0),
-        tokenPriceUsd: item.token_price_usd || item.token_price * (ethers.utils.parseEther("1") / 1e18 || 0),
+        marketCapUsd,
+        tokenPriceUsd,
         age: ageDisplay,
         roi,
         domain: item.domain || "General",

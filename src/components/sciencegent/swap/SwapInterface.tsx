@@ -55,12 +55,12 @@ const SwapInterface: React.FC<SwapInterfaceProps> = ({
   onMaxClick,
   onSwap
 }) => {
-  const { ethPriceUSD } = useEthPrice();
+  const { ethPrice } = useEthPrice();
   
   // Calculate USD values
   const calculateUsdValue = (ethAmount: string): string => {
-    if (!ethAmount || isNaN(parseFloat(ethAmount)) || !ethPriceUSD) return "$0.00";
-    return `$${(parseFloat(ethAmount) * ethPriceUSD).toFixed(2)}`;
+    if (!ethAmount || isNaN(parseFloat(ethAmount)) || !ethPrice) return "$0.00";
+    return `$${(parseFloat(ethAmount) * ethPrice).toFixed(2)}`;
   };
   
   // Formats for display
