@@ -217,6 +217,7 @@ export type Database = {
       sciencegents: {
         Row: {
           address: string
+          age: number | null
           agent_fee: number | null
           bio: string | null
           capability_fees: number | null
@@ -246,7 +247,6 @@ export type Database = {
           name: string
           persona: string | null
           price_change_24h: number | null
-          price_usd: number | null
           profile_pic: string | null
           remaining_maturity_days: number | null
           remaining_maturity_time: number | null
@@ -265,6 +265,7 @@ export type Database = {
         }
         Insert: {
           address: string
+          age?: number | null
           agent_fee?: number | null
           bio?: string | null
           capability_fees?: number | null
@@ -294,7 +295,6 @@ export type Database = {
           name: string
           persona?: string | null
           price_change_24h?: number | null
-          price_usd?: number | null
           profile_pic?: string | null
           remaining_maturity_days?: number | null
           remaining_maturity_time?: number | null
@@ -313,6 +313,7 @@ export type Database = {
         }
         Update: {
           address?: string
+          age?: number | null
           agent_fee?: number | null
           bio?: string | null
           capability_fees?: number | null
@@ -342,7 +343,6 @@ export type Database = {
           name?: string
           persona?: string | null
           price_change_24h?: number | null
-          price_usd?: number | null
           profile_pic?: string | null
           remaining_maturity_days?: number | null
           remaining_maturity_time?: number | null

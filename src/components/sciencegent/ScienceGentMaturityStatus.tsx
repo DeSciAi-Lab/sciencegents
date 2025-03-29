@@ -18,7 +18,7 @@ const ScienceGentMaturityStatus: React.FC<ScienceGentMaturityStatusProps> = ({
   capabilityFees = 1
 }) => {
   // If values are not defined, use defaults
-  const progress = maturityProgress || 75;
+  const progress = maturityProgress || 0;
   const vETH = virtualETH || 1;
   const fees = collectedFees || 0;
   const totalRequiredFees = (2 * vETH) + capabilityFees;
@@ -51,15 +51,15 @@ const ScienceGentMaturityStatus: React.FC<ScienceGentMaturityStatusProps> = ({
       <div className="grid grid-cols-3 gap-2 mt-4">
         <div className="bg-gray-50 border rounded p-2 text-center">
           <p className="text-xs text-gray-500">Users</p>
-          <p className="font-medium">1273</p>
+          <p className="font-medium">{scienceGent?.users_count || "0"}</p>
         </div>
         <div className="bg-gray-50 border rounded p-2 text-center">
           <p className="text-xs text-gray-500">Interactions</p>
-          <p className="font-medium">1273</p>
+          <p className="font-medium">{scienceGent?.interaction_count || "0"}</p>
         </div>
         <div className="bg-gray-50 border rounded p-2 text-center">
           <p className="text-xs text-gray-500">Revenue</p>
-          <p className="font-medium">1273</p>
+          <p className="font-medium">{scienceGent?.revenue || "0"}</p>
         </div>
       </div>
     </div>
