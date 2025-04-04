@@ -1,6 +1,5 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Checkbox } from '@/components/ui/checkbox';
 import { 
   Table, 
   TableBody, 
@@ -146,7 +145,7 @@ const ScienceGentTable: React.FC<ScienceGentTableProps> = ({
   // Loading row placeholder
   const renderLoadingRow = () => (
     <TableRow>
-      <TableCell colSpan={12} className="h-24 text-center">
+      <TableCell colSpan={11} className="h-24 text-center">
         <div className="flex flex-col items-center justify-center">
           <svg className="animate-spin h-6 w-6 text-gray-500 mb-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
@@ -163,9 +162,6 @@ const ScienceGentTable: React.FC<ScienceGentTableProps> = ({
       <Table>
         <TableHeader>
           <TableRow className="bg-gray-50 border-y border-gray-200">
-            <TableHead className="w-[50px] pl-4">
-              <Checkbox />
-            </TableHead>
             <TableHead className="w-[80px]">Logo</TableHead>
             <TableHead className="w-[250px]">
               {renderSortableHeader('NAME', 'name')}
@@ -186,7 +182,7 @@ const ScienceGentTable: React.FC<ScienceGentTableProps> = ({
             renderLoadingRow()
           ) : scienceGents.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={12} className="h-24 text-center">
+              <TableCell colSpan={11} className="h-24 text-center">
                 <p className="text-gray-500">No ScienceGents found</p>
               </TableCell>
             </TableRow>
@@ -197,9 +193,6 @@ const ScienceGentTable: React.FC<ScienceGentTableProps> = ({
                 className="cursor-pointer hover:bg-gray-50 border-b border-gray-100"
                 onClick={() => navigate(`/sciencegent/${gent.address}`)}
               >
-                <TableCell className="pl-4">
-                  <Checkbox onClick={(e) => e.stopPropagation()} />
-                </TableCell>
                 <TableCell>
                   <div
                     className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-medium ${

@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useParams, Navigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -6,7 +5,6 @@ import { Wallet, Loader2 } from "lucide-react";
 import NavbarLayout from '@/components/layout/NavbarLayout';
 import DashboardTabs from '@/components/dashboard/DashboardTabs';
 import { useWallet } from '@/hooks/useWallet';
-import DashboardHeader from '@/components/dashboard/DashboardHeader';
 
 const Dashboard = () => {
   const { tab } = useParams();
@@ -71,7 +69,6 @@ const Dashboard = () => {
   return (
     <NavbarLayout>
       <div className="container mx-auto px-4 py-6 flex-grow">
-        <DashboardHeader userName="User Name" />
         <div className="bg-white rounded-lg border overflow-hidden">
           <DashboardTabs initialTab={initialTab} />
         </div>

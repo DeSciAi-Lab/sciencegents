@@ -282,6 +282,78 @@ const ScienceGentDetailView: React.FC<ScienceGentDetailViewProps> = ({
     }
   };
   
+  const handleUpdateDetailedDescription = async () => {
+    if (!detailedDescription.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter a valid description",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    setIsSubmitting(true);
+    try {
+      // Update description in Supabase
+      const { error } = await supabase
+        .from('sciencegents')
+        .update({ description: detailedDescription })
+        .eq('address', scienceGent.address);
+        
+      if (error) throw error;
+      
+      toast({
+        title: "Success",
+        description: "Description updated successfully",
+      });
+    } catch (error) {
+      console.error("Error updating description:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update description",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+  
+  const handleUpdatePersona = async () => {
+    if (!persona.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter a valid persona",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    setIsSubmitting(true);
+    try {
+      // Update persona in Supabase
+      const { error } = await supabase
+        .from('sciencegents')
+        .update({ persona: persona })
+        .eq('address', scienceGent.address);
+        
+      if (error) throw error;
+      
+      toast({
+        title: "Success",
+        description: "Persona updated successfully",
+      });
+    } catch (error) {
+      console.error("Error updating persona:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update persona",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+  
   const renderRating = (rating: number, capabilityId: string) => {
     const stars = [];
     for (let i = 1; i <= 5; i++) {
@@ -422,7 +494,7 @@ const ScienceGentDetailView: React.FC<ScienceGentDetailViewProps> = ({
                 value={detailedDescription}
                 onChange={(e) => setDetailedDescription(e.target.value)}
               />
-              <Button className="mt-3" onClick={() => {}} disabled={isSubmitting}>Update</Button>
+              <Button className="mt-3" onClick={handleUpdateDetailedDescription} disabled={isSubmitting}>Update</Button>
             </div>
             
             <div>
@@ -432,7 +504,7 @@ const ScienceGentDetailView: React.FC<ScienceGentDetailViewProps> = ({
                 value={persona}
                 onChange={(e) => setPersona(e.target.value)}
               />
-              <Button className="mt-3" onClick={() => {}} disabled={isSubmitting}>Update</Button>
+              <Button className="mt-3" onClick={handleUpdatePersona} disabled={isSubmitting}>Update</Button>
             </div>
             
             <div>

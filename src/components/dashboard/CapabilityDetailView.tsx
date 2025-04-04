@@ -1,11 +1,11 @@
-
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { ArrowLeft, Star, Upload, Info, Plus } from "lucide-react";
 import { UserCapability } from '@/hooks/useUserDashboard';
+import { supabase } from '@/integrations/supabase/client';
 
 interface CapabilityDetailViewProps {
   capability: UserCapability;
@@ -16,6 +16,51 @@ const CapabilityDetailView: React.FC<CapabilityDetailViewProps> = ({
   capability, 
   onBack 
 }) => {
+  const [usageCount, setUsageCount] = useState<number>(0);
+  const [isLoading, setIsLoading] = useState(true);
+  const [revenue, setRevenue] = useState<number>(0);
+
+  useEffect(() => {
+    const fetchUsageCount = async () => {
+      try {
+        setIsLoading(true);
+        // Count distinct sciencegent_address entries for this capability
+        const { data, error, count } = await supabase
+          .from('sciencegent_capabilities')
+          .select('sciencegent_address', { count: 'exact' })
+          .eq('capability_id', capability.id);
+
+        if (error) throw error;
+        
+        const currentUsageCount = count || 0;
+        setUsageCount(currentUsageCount);
+
+        // Fetch capability price
+        const { data: capabilityData, error: priceError } = await supabase
+          .from('capabilities')
+          .select('price')
+          .eq('id', capability.id)
+          .single();
+
+        if (priceError) throw priceError;
+
+        // Calculate revenue
+        const price = capabilityData?.price || 0;
+        const calculatedRevenue = currentUsageCount * price;
+        setRevenue(calculatedRevenue);
+
+      } catch (error) {
+        console.error('Error fetching usage count and revenue:', error);
+        setUsageCount(0);
+        setRevenue(0);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchUsageCount();
+  }, [capability.id]);
+
   const renderRating = (rating: number) => {
     const stars = [];
     for (let i = 1; i <= 5; i++) {
@@ -68,12 +113,24 @@ const CapabilityDetailView: React.FC<CapabilityDetailViewProps> = ({
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
               <div className="bg-gray-50 p-3 rounded-md">
                 <div className="text-sm text-muted-foreground">Agents using</div>
-                <div className="text-xl font-semibold">{capability.usageCount || 8}</div>
+                <div className="text-xl font-semibold">
+                  {isLoading ? (
+                    <div className="animate-pulse bg-gray-200 h-6 w-12 rounded"></div>
+                  ) : (
+                    usageCount
+                  )}
+                </div>
               </div>
               
               <div className="bg-gray-50 p-3 rounded-md">
                 <div className="text-sm text-muted-foreground">Revenue</div>
-                <div className="text-xl font-semibold">{capability.revenue || 67800} DSI</div>
+                <div className="text-xl font-semibold">
+                  {isLoading ? (
+                    <div className="animate-pulse bg-gray-200 h-6 w-24 rounded"></div>
+                  ) : (
+                    `${revenue} ETH`
+                  )}
+                </div>
               </div>
               
               <div className="bg-gray-50 p-3 rounded-md">
