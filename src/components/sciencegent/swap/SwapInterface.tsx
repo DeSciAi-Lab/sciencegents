@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { ChevronDown, ArrowDown, Settings2 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
@@ -21,6 +20,7 @@ interface SwapInterfaceProps {
   // Token and balance info
   tokenSymbol: string;
   tokenName: string;
+  tokenLogo?: string;
   ethBalance: string;
   tokenBalance: string;
   
@@ -34,6 +34,10 @@ interface SwapInterfaceProps {
   slippageTolerance: number;
   onSlippageChange: (value: number) => void;
   
+  // Pool data
+  ethReserve?: string;
+  tokenReserve?: string;
+  
   // Actions
   onMaxClick: () => void;
   onSwap: () => void;
@@ -44,6 +48,7 @@ const SwapInterface: React.FC<SwapInterfaceProps> = ({
   toggleDirection,
   tokenSymbol,
   tokenName,
+  tokenLogo,
   ethBalance,
   tokenBalance,
   inputValue,
@@ -52,6 +57,8 @@ const SwapInterface: React.FC<SwapInterfaceProps> = ({
   isPending,
   slippageTolerance,
   onSlippageChange,
+  ethReserve = "0",
+  tokenReserve = "0",
   onMaxClick,
   onSwap
 }) => {
@@ -61,6 +68,55 @@ const SwapInterface: React.FC<SwapInterfaceProps> = ({
   const calculateUsdValue = (ethAmount: string): string => {
     if (!ethAmount || isNaN(parseFloat(ethAmount)) || !ethPrice) return "$0.00";
     return `$${(parseFloat(ethAmount) * ethPrice).toFixed(2)}`;
+  };
+  
+  // Calculate token price based on reserves
+  const calculateTokenPrice = () => {
+    const ethRes = parseFloat(ethReserve);
+    const tokenRes = parseFloat(tokenReserve);
+    
+    if (ethRes <= 0 || tokenRes <= 0) {
+      // If reserves aren't available, try to calculate from swap rate
+      if (parseFloat(outputValue) > 0 && parseFloat(inputValue) > 0) {
+        if (isEthInput) {
+          // ETH to Token: input is ETH, output is token
+          const ethAmount = parseFloat(inputValue);
+          const tokenAmount = parseFloat(outputValue);
+          const price = ethAmount / tokenAmount;
+          return {
+            ethPrice: price,
+            usdPrice: price * ethPrice
+          };
+        } else {
+          // Token to ETH: input is token, output is ETH
+          const tokenAmount = parseFloat(inputValue);
+          const ethAmount = parseFloat(outputValue);
+          const price = ethAmount / tokenAmount;
+          return {
+            ethPrice: price,
+            usdPrice: price * ethPrice
+          };
+        }
+      }
+      return { ethPrice: 0, usdPrice: 0 };
+    }
+    
+    // Calculate based on reserves: eth_reserve/token_reserve
+    const priceInEth = ethRes / tokenRes;
+    const priceInUsd = priceInEth * ethPrice;
+    
+    return {
+      ethPrice: priceInEth,
+      usdPrice: priceInUsd
+    };
+  };
+  
+  // Format price with appropriate decimal places
+  const formatPrice = (price: number): string => {
+    if (price === 0) return "0.000000000";
+    
+    // Always display 9 decimal places for consistency
+    return price.toFixed(9);
   };
   
   // Formats for display
@@ -73,13 +129,17 @@ const SwapInterface: React.FC<SwapInterfaceProps> = ({
   // The top token is either ETH (when buying) or the token (when selling)
   const TopToken = () => (
     <div className="flex items-center gap-1 bg-white border rounded-full px-3 py-2">
-      <div className="w-8 h-8 rounded-full flex items-center justify-center overflow-hidden">
+      <div className="w-8 h-8 rounded-full flex items-center justify-center overflow-hidden bg-white">
         {isEthInput ? (
-          <img src="https://ethereum.org/favicon-32x32.png" alt="ETH" className="w-5 h-5" />
+          <img src="/assets/ethereum-logo.svg" alt="ETH" className="w-5 h-8 object-contain" />
         ) : (
-          <div className="w-full h-full bg-teal-500 text-white flex items-center justify-center">
-            <span className="text-lg">{tokenSymbol.charAt(0)}</span>
-          </div>
+          tokenLogo ? (
+            <img src={tokenLogo} alt={tokenSymbol} className="w-full h-full object-cover" />
+          ) : (
+            <div className="w-full h-full bg-teal-500 text-white flex items-center justify-center">
+              <span className="text-lg">{tokenSymbol.charAt(0)}</span>
+            </div>
+          )
         )}
       </div>
       <span className="font-medium">{isEthInput ? "ETH" : tokenSymbol}</span>
@@ -90,19 +150,26 @@ const SwapInterface: React.FC<SwapInterfaceProps> = ({
   // The bottom token is either the token (when buying) or ETH (when selling)
   const BottomToken = () => (
     <div className="flex items-center gap-1 bg-white border rounded-full px-3 py-2">
-      <div className="w-8 h-8 rounded-full flex items-center justify-center overflow-hidden">
+      <div className="w-8 h-8 rounded-full flex items-center justify-center overflow-hidden bg-white">
         {!isEthInput ? (
-          <img src="https://ethereum.org/favicon-32x32.png" alt="ETH" className="w-5 h-5" />
+          <img src="/assets/ethereum-logo.svg" alt="ETH" className="w-5 h-8 object-contain" />
         ) : (
-          <div className="w-full h-full bg-teal-500 text-white flex items-center justify-center">
-            <span className="text-lg">{tokenSymbol.charAt(0)}</span>
-          </div>
+          tokenLogo ? (
+            <img src={tokenLogo} alt={tokenSymbol} className="w-full h-full object-cover" />
+          ) : (
+            <div className="w-full h-full bg-teal-500 text-white flex items-center justify-center">
+              <span className="text-lg">{tokenSymbol.charAt(0)}</span>
+            </div>
+          )
         )}
       </div>
       <span className="font-medium">{!isEthInput ? "ETH" : tokenSymbol}</span>
       <ChevronDown className="h-4 w-4 ml-1" />
     </div>
   );
+  
+  // Get current token price
+  const tokenPrice = calculateTokenPrice();
   
   return (
     <div className="space-y-4">
@@ -193,18 +260,18 @@ const SwapInterface: React.FC<SwapInterfaceProps> = ({
             {isEthInput ? 'Buying...' : 'Selling...'}
           </>
         ) : (
-          'Review'
+          isEthInput ? 'Buy' : 'Sell'
         )}
       </Button>
       
       {/* Token Conversion Rate */}
-      <div className="text-xs text-center text-gray-500 mt-2">
-        {isEthInput ? 
-          `1 ETH = ${parseFloat(outputValue) > 0 && parseFloat(inputValue) > 0 ? 
-            (parseFloat(outputValue) / parseFloat(inputValue)).toFixed(6) : '0'} ${tokenSymbol}` : 
-          `1 ${tokenSymbol} = ${parseFloat(outputValue) > 0 && parseFloat(inputValue) > 0 ? 
-            (parseFloat(outputValue) / parseFloat(inputValue)).toFixed(6) : '0'} ETH`
-        } ({calculateUsdValue('1')})
+      <div className="text-sm text-center text-gray-700 mt-3 font-medium">
+        <div className="border border-gray-200 rounded-md py-2 px-3 bg-gray-50">
+          1 {tokenSymbol} = {formatPrice(tokenPrice.ethPrice)} ETH
+          <div className="text-xs text-gray-500 mt-1">
+            ${formatPrice(tokenPrice.usdPrice)}
+          </div>
+        </div>
       </div>
     </div>
   );

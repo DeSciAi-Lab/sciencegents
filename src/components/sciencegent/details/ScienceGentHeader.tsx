@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -12,6 +11,7 @@ interface ScienceGentHeaderProps {
 
 const ScienceGentHeader: React.FC<ScienceGentHeaderProps> = ({ scienceGent, address }) => {
   const [copied, setCopied] = useState(false);
+  const [showFullDescription, setShowFullDescription] = useState(false);
 
   const copyToClipboard = (text: string) => {
     if (!text) return;
@@ -43,7 +43,19 @@ const ScienceGentHeader: React.FC<ScienceGentHeaderProps> = ({ scienceGent, addr
   const symbol = scienceGent?.symbol || "TICKER";
   const domain = scienceGent?.domain || "General";
   const name = scienceGent?.name || "ScienceGent Name";
-  const description = scienceGent?.description || "Description ----- ---- ----- ------ ----- ------ ---";
+  const description = scienceGent?.description || "Meet Scienegent23. it is is a quantum simulation assistant that can simulate fermions and aswer your question with in detail calculation and simulated results";
+  
+  // Truncate description if it's too long
+  const maxLength = 150;
+  const shouldTruncate = description.length > maxLength;
+  const truncatedDescription = shouldTruncate && !showFullDescription
+    ? `${description.substring(0, maxLength)}...`
+    : description;
+
+  // Toggle description length
+  const toggleDescription = () => {
+    setShowFullDescription(!showFullDescription);
+  };
 
   return (
     <div className="flex flex-col md:flex-row items-start gap-4">
@@ -69,10 +81,9 @@ const ScienceGentHeader: React.FC<ScienceGentHeaderProps> = ({ scienceGent, addr
         <div className="flex flex-wrap items-center gap-2 mb-2">
           <h1 className="text-2xl font-bold">{name}</h1>
           <Badge className="ml-1 bg-gray-100 text-gray-800 font-medium border-0 rounded">${symbol}</Badge>
-          <div className="text-xs font-bold text-gray-500 ml-1 uppercase">STICKER</div>
         </div>
 
-        <div className="flex flex-wrap items-center mb-2 gap-2">
+        <div className="flex flex-wrap items-center mb-4 gap-2">
           <div className="flex items-center bg-gray-100 rounded px-2 py-1">
             <span className="text-sm text-gray-600 mr-1">{formatAddress(address || '')}</span>
             <button 
@@ -124,9 +135,16 @@ const ScienceGentHeader: React.FC<ScienceGentHeaderProps> = ({ scienceGent, addr
           </div>
         </div>
 
-        <div className="bg-white border rounded-full px-4 py-1.5 text-sm text-gray-600 max-w-3xl">
-          {description}
-          <button className="text-blue-500 ml-1 text-xs">see more</button>
+        <div className="text-sm text-gray-600 max-w-3xl">
+          {truncatedDescription}
+          {shouldTruncate && (
+            <button 
+              className="text-blue-500 ml-1 text-sm font-medium"
+              onClick={toggleDescription}
+            >
+              see more
+            </button>
+          )}
         </div>
       </div>
     </div>

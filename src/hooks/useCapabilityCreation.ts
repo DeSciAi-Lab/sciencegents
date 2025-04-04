@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ethers } from 'ethers';
@@ -9,6 +8,7 @@ import { checkIfWalletIsConnected } from '@/utils/walletUtils';
 import { CapabilityFormValues } from '@/utils/formSchemas';
 import { upsertCapabilityToSupabase } from '@/services/capability';
 import { useWallet } from '@/hooks/useWallet';
+import { supabase } from '@/integrations/supabase/client';
 
 export const useCapabilityCreation = () => {
   const navigate = useNavigate();
@@ -91,8 +91,26 @@ export const useCapabilityCreation = () => {
       try {
         await upsertCapabilityToSupabase(capabilityObj, true);
         console.log("Capability added to Supabase");
+
+        // Update developer's created_capabilities array
+        const { data: existingProfile } = await supabase
+          .from('developer_profiles')
+          .select('created_capabilities')
+          .eq('wallet_address', values.creatorAddress.toLowerCase())
+          .single();
+
+        if (existingProfile) {
+          const updatedCapabilities = [...(existingProfile.created_capabilities || []), values.id];
+          
+          await supabase
+            .from('developer_profiles')
+            .update({
+              created_capabilities: updatedCapabilities
+            } as any) // Cast to any to bypass type checking
+            .eq('wallet_address', values.creatorAddress.toLowerCase());
+        }
       } catch (error) {
-        console.error("Error adding capability to Supabase:", error);
+        console.error("Error updating Supabase:", error);
       }
       
       // Refresh capabilities data

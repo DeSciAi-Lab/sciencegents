@@ -1,9 +1,9 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { formatDistanceToNow } from "date-fns";
 import { ethers } from "ethers";
 import { getProvider } from "@/services/walletService";
 import { contractConfig } from "@/utils/contractConfig";
+import { fetchTokenStats24h } from "@/services/tradeService";
 
 // Mock ABIs for development until we have the real ones
 // These will be replaced with actual ABIs from the contract config once available
@@ -38,10 +38,10 @@ export interface ScienceGentListItem {
   priceChange24h: number;
   rating: number;
   maturityStatus: string;
-  isCurated?: boolean;
+  isCurated: boolean;
   capabilities?: string[];
   creationTimestamp?: string;
-  maturityProgress: number; // Making sure this is required, not optional
+  maturityProgress: number;
 }
 
 // Default ETH price for USD conversions if no live data is available
@@ -78,6 +78,9 @@ export const fetchScienceGents = async (): Promise<ScienceGentListItem[]> => {
         agent_fee,
         total_supply,
         age,
+        is_curated,
+        rating,
+        interactions_count,
         stats:sciencegent_stats(volume_24h, transactions, holders, trade_volume_eth)
       `)
       .order('market_cap', { ascending: false });
@@ -95,7 +98,7 @@ export const fetchScienceGents = async (): Promise<ScienceGentListItem[]> => {
     console.log(`Found ${data.length} ScienceGents`);
 
     // Format the data for the UI
-    const formattedData = data.map(item => {
+    const formattedData = await Promise.all(data.map(async item => {
       // Calculate ROI (simplified calculation for now)
       const virtualEth = item.virtual_eth || 0;
       const volume = item.stats?.[0]?.volume_24h || 0;
@@ -108,7 +111,8 @@ export const fetchScienceGents = async (): Promise<ScienceGentListItem[]> => {
       // Calculate age from created_on_chain_at or age field if available
       let ageDisplay = "unknown";
       if (item.age) {
-        ageDisplay = `${item.age} days`;
+        // If the 'age' field already contains 'days', don't append 'days' again
+        ageDisplay = String(item.age).includes('days') ? String(item.age) : `${item.age} days`;
       } else if (item.created_on_chain_at) {
         try {
           // Calculate age in days from creation timestamp
@@ -145,16 +149,37 @@ export const fetchScienceGents = async (): Promise<ScienceGentListItem[]> => {
 
       // Calculate revenue for demo purposes based on market cap and agent fee
       const agentFee = item.agent_fee || 2;
-      const revenue = Math.floor(item.market_cap * 0.1 * agentFee);
+      // Use interactions_count to calculate revenue instead of market cap
+      // Use type assertion to work around TypeScript error
+      const interactionsCount = (item as any).interactions_count || 0;
+      const revenue = interactionsCount * agentFee;
       
       // Rating based on transaction volume and maturity
-      const volumeScore = Math.min(5, Math.max(3, 3 + (item.stats?.[0]?.volume_24h || 0) / 1000));
-      const maturityScore = item.is_migrated ? 5 : (item.migration_eligible ? 4 : 3);
-      const rating = Math.round((volumeScore + maturityScore) / 2);
+      let rating = item.rating;
+      // If rating is not set in the database, calculate it dynamically
+      if (rating === null || rating === undefined) {
+        const volumeScore = Math.min(5, Math.max(3, 3 + (item.stats?.[0]?.volume_24h || 0) / 1000));
+        const maturityScore = item.is_migrated ? 5 : (item.migration_eligible ? 4 : 3);
+        rating = Math.round((volumeScore + maturityScore) / 2);
+      }
       
       // Calculate USD values safely
       const marketCapUsd = item.market_cap_usd ?? (item.market_cap ? item.market_cap * ETH_PRICE_USD : 0);
       const tokenPriceUsd = item.token_price_usd ?? (item.token_price ? item.token_price * ETH_PRICE_USD : 0);
+
+      // Fetch 24h stats from trade service for more accurate data
+      let volume24h = item.stats?.[0]?.volume_24h || 0;
+      let priceChange24h = item.price_change_24h || 0;
+      
+      try {
+        const stats24h = await fetchTokenStats24h(item.address);
+        if (stats24h) {
+          volume24h = stats24h.volume_24h || volume24h;
+          priceChange24h = stats24h.price_change_percentage_24h || priceChange24h;
+        }
+      } catch (error) {
+        console.error(`Error fetching 24h stats for ${item.name}:`, error);
+      }
 
       return {
         id: item.id,
@@ -172,16 +197,16 @@ export const fetchScienceGents = async (): Promise<ScienceGentListItem[]> => {
         isMigrated: item.is_migrated || false,
         migrationEligible: item.migration_eligible || false,
         symbol: item.symbol || `${item.name.substring(0, 3).toUpperCase()}`,
-        volume24h: item.stats?.[0]?.volume_24h || 0,
+        volume24h,
         revenue: revenue,
-        priceChange24h: item.price_change_24h || 0,
+        priceChange24h,
         rating,
         maturityStatus,
-        isCurated: Math.random() > 0.7, // Random for demo, will update with real data
+        isCurated: item.is_curated !== null ? item.is_curated : false,
         creationTimestamp: item.created_at,
         maturityProgress: item.maturity_progress || 0
       };
-    });
+    }));
 
     return formattedData;
   } catch (error) {
@@ -241,7 +266,7 @@ export const fetchTokenBlockchainDetails = async (tokenAddress: string) => {
 };
 
 /**
- * Filters ScienceGents based on search query and domain
+ * Filters ScienceGents based on search query and active filter
  */
 export const filterScienceGents = (
   scienceGents: ScienceGentListItem[],
@@ -250,11 +275,18 @@ export const filterScienceGents = (
 ): ScienceGentListItem[] => {
   let result = [...scienceGents];
   
-  // Apply domain filter if it's a domain
-  if (activeFilter !== 'all' && ['chemistry', 'genomics', 'physics', 'materials science', 'protein analysis', 'drug discovery', 'general'].includes(activeFilter)) {
-    result = result.filter(gent => 
-      gent.domain.toLowerCase() === activeFilter.toLowerCase()
-    );
+  // Apply domain filter if it's not 'all'
+  // Note: removed hardcoded domain check since domains come from the Supabase domains table
+  if (activeFilter !== 'all') {
+    // First check if it's one of the category filters
+    const categoryFilters = ['curated', 'uncurated', 'migrated', 'ready', 'immature', 'researcher', 'reviewer', 'assistant'];
+    
+    if (!categoryFilters.includes(activeFilter)) {
+      // If not a category filter, assume it's a domain filter
+      result = result.filter(gent => 
+        gent.domain && gent.domain.toLowerCase() === activeFilter.toLowerCase()
+      );
+    }
   }
   
   // Apply curation filter

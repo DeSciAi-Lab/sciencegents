@@ -1,22 +1,48 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
+import { createScienceGentAssistant } from '@/services/scienceGentService/createAssistant';
+import { ScienceGentData } from '@/services/scienceGent/types';
+import { sendChatRequest } from '@/services/chatService';
 
 export interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
+  id?: string;
+  timestamp?: string;
 }
+
+// Convert the existing ChatMessage array to the updated format
+const formatMessages = (messages: ChatMessage[]): ChatMessage[] => {
+  return messages.map(msg => ({
+    role: msg.role,
+    content: msg.content,
+    id: msg.id || crypto.randomUUID(),
+    timestamp: msg.timestamp || new Date().toISOString()
+  }));
+};
 
 const useScienceGentChat = (
   scienceGentAddress: string,
-  scienceGent: any
+  scienceGent?: ScienceGentData | null
 ) => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isInitializing, setIsInitializing] = useState(true);
   const [assistantId, setAssistantId] = useState<string | null>(null);
+  
+  useEffect(() => {
+    console.log('initializing useScienceGentChat', { 
+      scienceGentAddress, 
+      scienceGent: scienceGent ? {
+        name: scienceGent.name,
+        hasPersona: Boolean(scienceGent?.persona),
+        personaLength: scienceGent?.persona?.length,
+        capabilities: scienceGent?.capabilities
+      } : 'none'
+    });
+  }, [scienceGentAddress, scienceGent]);
   
   // Load chat history and check for existing assistant on mount
   useEffect(() => {
@@ -64,131 +90,159 @@ const useScienceGentChat = (
     }
   }, [messages, scienceGentAddress]);
   
-  // Track user interactions
+  // Function to track user interactions
   const trackInteraction = async (content: string) => {
-    if (!scienceGentAddress) return;
-    
     try {
-      await supabase.from('user_interactions').insert({
-        user_address: 'anonymous', // Replace with actual user address when available
-        sciencegent_address: scienceGentAddress,
-        interaction_type: 'chat',
-        interaction_data: { message_length: content.length }
-      });
-      
-      // Update chat count in sciencegent_stats using the edge function
-      try {
-        const response = await supabase.functions.invoke('increment_chat_count', {
-          body: { sciencegent_address: scienceGentAddress }
+      // Insert into user_interactions table
+      const { error } = await supabase
+        .from('user_interactions')
+        .insert({
+          sciencegent_address: scienceGentAddress,
+          user_address: 'anonymous', // Replace with actual user address when available
+          interaction_type: 'chat',
+          interaction_data: { message: content }
         });
         
-        if (response.error) {
-          console.error('Failed to update chat count:', response.error);
+      if (error) throw error;
+      
+      // Try to increment the interactions_count in sciencegents table
+      try {
+        console.log('Incrementing interaction count for address:', scienceGentAddress);
+        
+        // First check the current count
+        const { data: checkData, error: checkError } = await supabase
+          .from('sciencegents')
+          .select('*')  // Select all columns to avoid TypeScript errors
+          .eq('address', scienceGentAddress)
+          .single();
+        
+        // Get the current count (if it exists)
+        const currentCount = checkData ? 
+          // @ts-ignore - TypeScript doesn't know about this column yet
+          (checkData.interactions_count || 0) : 0;
+          
+        console.log('Current interactions count:', currentCount);
+        
+        // Update the count directly using a simple update
+        // We're using the `any` type to bypass TypeScript's type checking
+        const updateResult = await supabase
+          .from('sciencegents')
+          .update({ 
+            // Specify the column and new value
+            interactions_count: currentCount + 1 
+          } as any)  // Type assertion to bypass TypeScript
+          .eq('address', scienceGentAddress);
+          
+        if (updateResult.error) {
+          console.error('Error updating interactions_count:', updateResult.error);
+        } else {
+          console.log('Successfully incremented interactions count for', scienceGentAddress);
+          
+          // Verify the update
+          const { data: verifyData } = await supabase
+            .from('sciencegents')
+            .select('*')
+            .eq('address', scienceGentAddress)
+            .single();
+            
+            // @ts-ignore - TypeScript doesn't know about this column yet
+            console.log('Updated interactions count:', verifyData?.interactions_count || 0);
         }
-      } catch (err) {
-        console.error('Failed to invoke increment_chat_count function:', err);
-        // Non-critical error, we'll continue with the chat
+      } catch (updateErr) {
+        console.error('Error in interactions_count update process:', updateErr);
       }
-    } catch (e) {
-      console.error('Error tracking interaction:', e);
-      // Non-critical error, don't show to user
+    } catch (err) {
+      console.error('Error tracking interaction:', err);
     }
   };
   
-  // Function to send message to the Edge Function API
-  const sendMessage = async (content: string) => {
-    if (!content.trim() || !scienceGentAddress) return;
-    
+  const sendMessage = async (
+    message: string,
+    onMessageResponse?: (response: string) => void
+  ) => {
     try {
+      if (!scienceGentAddress) {
+        console.error('No scienceGentAddress provided');
+        return;
+      }
+
+      // Debug persona information
+      const personaValue = scienceGent?.persona;
+      console.log('Persona debug:', {
+        exists: Boolean(personaValue),
+        type: typeof personaValue,
+        value: personaValue ? (personaValue.length > 50 ? personaValue.substring(0, 50) + '...' : personaValue) : null,
+        length: personaValue?.length
+      });
+
+      // Add the new message to the message list
+      const userMessage: ChatMessage = {
+        content: message,
+        role: 'user',
+        id: crypto.randomUUID(),
+        timestamp: new Date().toISOString(),
+      };
+
+      setMessages((prev) => [...prev, userMessage]);
       setIsLoading(true);
       setError(null);
-      
-      // Add user message to the state immediately
-      const userMessage: ChatMessage = { role: 'user', content };
-      setMessages(prev => [...prev, userMessage]);
-      
+
       // Track this interaction (but don't wait for it)
-      trackInteraction(content).catch(err => {
+      trackInteraction(message).catch(err => {
         console.error('Error tracking interaction:', err);
         // Non-critical, continue with chat
       });
-      
-      // Get the persona from the scienceGent if available
-      const persona = scienceGent?.persona || '';
-      
-      // Log the persona for debugging
-      if (persona) {
-        console.log("Using persona from scienceGent:", persona.substring(0, 100) + "...");
-      } else {
-        console.log("No persona found in scienceGent object. Falling back to description.");
-      }
-      
-      // Fetch capabilities to enhance persona
-      const { data: capabilityLinks } = await supabase
-        .from('sciencegent_capabilities')
-        .select('capability_id')
-        .eq('sciencegent_address', scienceGentAddress);
-        
-      const capabilityIds = capabilityLinks?.map(link => link.capability_id) || [];
-      
-      let capabilities: any[] = [];
-      if (capabilityIds.length > 0) {
-        const { data } = await supabase
-          .from('capabilities')
-          .select('*')
-          .in('id', capabilityIds);
-          
-        capabilities = data || [];
-      }
-      
-      // Prepare the capabilities string
-      const capabilitiesText = capabilities.length > 0 
-        ? `${capabilities.map(cap => 
-            `- ${cap.name}: ${cap.description}`
-          ).join('\n')}` 
-        : '';
-      
-      // Call the Edge Function with scienceGentAddress and assistantId (if exists)
-      const response = await supabase.functions.invoke('generateChatResponse', {
-        body: {
-          messages: [...messages, userMessage],
-          scienceGentName: scienceGent?.name || 'ScienceGent',
-          persona: persona,
-          capabilities: capabilitiesText,
-          scienceGentAddress,
-          assistantId // Pass the existing assistantId if we have one
-        }
-      });
-      
-      if (response.error) {
-        throw new Error(response.error.message || "Error from edge function");
-      }
-      
-      const data = response.data;
-      if (!data || !data.message) {
-        throw new Error('Invalid response from AI');
-      }
-      
-      // Store the assistantId if it's returned and we don't have it yet
-      if (data.assistantId && !assistantId) {
-        setAssistantId(data.assistantId);
-        console.log("New assistant created with ID:", data.assistantId);
-      }
-      
-      // Add AI response to messages
-      const assistantMessage: ChatMessage = { 
-        role: 'assistant', 
-        content: data.message
+
+      // Use the new chat service instead of making direct API call
+      const payload = {
+        messages: [...messages, userMessage].map((m) => ({
+          content: m.content,
+          role: m.role,
+        })),
+        scienceGentAddress,
+        scienceGentName: scienceGent?.name,
+        persona: scienceGent?.persona || '',
+        capabilities: scienceGent?.capabilities || [],
+        assistantId, // Pass the assistant ID if we already created one
       };
-      
+
+      console.log('Sending chat request with payload:', {
+        messageCount: payload.messages.length,
+        scienceGentAddress: payload.scienceGentAddress,
+        scienceGentName: payload.scienceGentName,
+        personaLength: payload.persona?.length,
+        capabilitiesCount: payload.capabilities?.length,
+        assistantId: payload.assistantId
+      });
+
+      // Call the chat service
+      const response = await sendChatRequest(payload);
+
+      // Update assistant ID if it was created on the server
+      if (response.assistantId) {
+        setAssistantId(response.assistantId);
+      }
+
+      // Add the AI's response to the message list
+      const assistantMessage: ChatMessage = {
+        content: response.message,
+        role: 'assistant',
+        id: crypto.randomUUID(),
+        timestamp: new Date().toISOString(),
+      };
+
       setMessages(prev => [...prev, assistantMessage]);
       
-    } catch (err: any) {
-      console.error('Error in chat:', err);
-      setError(err.message || 'Failed to get a response');
+      if (onMessageResponse) {
+        onMessageResponse(response.message);
+      }
+      
+    } catch (error) {
+      console.error('Error in sendMessage:', error);
+      setError(error instanceof Error ? error.message : 'An error occurred');
       toast({
         title: "Chat Error",
-        description: err.message || 'Failed to get a response',
+        description: error instanceof Error ? error.message : 'An error occurred',
         variant: "destructive"
       });
     } finally {

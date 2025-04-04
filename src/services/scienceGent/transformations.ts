@@ -1,4 +1,3 @@
-
 import { ScienceGentData, TokenStats, FormattedScienceGent } from './types';
 import { ethers } from 'ethers';
 import { 
@@ -60,12 +59,12 @@ export const transformBlockchainToSupabaseFormat = (
   
   // Calculate token age in seconds
   const tokenAge = blockchainData.creationTimestamp 
-    ? currentTimestamp - blockchainData.creationTimestamp 
+    ? currentTimestamp - parseInt(blockchainData.creationTimestamp, 10) 
     : 0;
   
   // Calculate remaining maturity time
   const remainingMaturityTime = blockchainData.maturityDeadline 
-    ? Math.max(0, blockchainData.maturityDeadline - currentTimestamp)
+    ? Math.max(0, parseInt(blockchainData.maturityDeadline, 10) - currentTimestamp)
     : 0;
   
   // Calculate token price

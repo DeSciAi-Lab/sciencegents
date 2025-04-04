@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import './App.css';
 
@@ -15,8 +15,14 @@ import Admin from './pages/Admin';
 import NotFound from './pages/NotFound';
 
 import { EthPriceProvider } from './context/EthPriceContext';
+import { initializeDefaultDomains } from './services/domains';
 
 function App() {
+  // Initialize domains on app start
+  useEffect(() => {
+    initializeDefaultDomains().catch(console.error);
+  }, []);
+
   return (
     <EthPriceProvider>
       <Routes>

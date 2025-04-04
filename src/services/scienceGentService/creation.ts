@@ -153,7 +153,9 @@ export const createScienceGent = async (formData: ScienceGentFormData & { transa
             developer_twitter: formData.developerTwitter || "",
             developer_telegram: formData.developerTelegram || "",
             developer_github: formData.developerGithub || "",
-            developer_website: formData.developerWebsite || ""
+            developer_website: formData.developerWebsite || "",
+            is_curated: formData.applyForCuration ? false : null,
+            rating: null
           });
         
         if (error) {

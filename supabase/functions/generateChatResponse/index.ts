@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.33.2";
 import OpenAI from "https://esm.sh/openai@4.0.0";
@@ -38,6 +37,11 @@ serve(async (req) => {
       assistantId
     } = requestData;
     
+    // Log incoming data for debugging
+    console.log(`Processing request for ScienceGent: ${scienceGentName} (${scienceGentAddress})`);
+    console.log(`Persona data received:`, persona ? `${persona.substring(0, 50)}...` : 'No persona data');
+    console.log(`Capabilities data received:`, capabilities ? 'Has capabilities' : 'No capabilities');
+    
     // Validate essential inputs
     if (!messages || !scienceGentAddress) {
       return new Response(
@@ -48,8 +52,6 @@ serve(async (req) => {
         }
       );
     }
-    
-    console.log(`Processing request for ScienceGent: ${scienceGentName} (${scienceGentAddress})`);
     
     // Try to get existing assistant from the database if not provided in request
     let finalAssistantId = assistantId;

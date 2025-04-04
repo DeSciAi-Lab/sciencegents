@@ -1,15 +1,15 @@
-
 import { CapabilityFormValues } from '@/utils/formSchemas';
+import { getAllDomains, Domain } from '@/services/domains';
 
-export const domains = [
-  "Chemistry",
-  "Physics",
-  "Biochemistry",
-  "Materials Science",
-  "Protein Analysis",
-  "Drug Discovery",
-  "Genomics"
-];
+export const getDomains = async (): Promise<Domain[]> => {
+  try {
+    return await getAllDomains();
+  } catch (error) {
+    console.error('Error fetching domains:', error);
+    // Return empty array on error
+    return [];
+  }
+};
 
 export const validateCapabilityForm = (formData: Partial<CapabilityFormValues>): Record<string, string> => {
   const errors: Record<string, string> = {};

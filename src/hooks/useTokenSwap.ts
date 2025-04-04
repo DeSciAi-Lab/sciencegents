@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useTokenBalances } from './swap/useTokenBalances';
 import { useSwapCalculations } from './swap/useSwapCalculations';
@@ -14,7 +13,9 @@ export const useTokenSwap = (tokenAddress: string) => {
   const { 
     tokenBalance, 
     ethBalance, 
-    tokenPrice, 
+    tokenPrice,
+    ethReserve,
+    tokenReserve,
     refreshBalances,
     isPending: isBalanceLoading 
   } = useTokenBalances(tokenAddress);
@@ -86,6 +87,8 @@ export const useTokenSwap = (tokenAddress: string) => {
     tokenBalance,
     ethBalance,
     tokenPrice,
+    ethReserve,
+    tokenReserve,
     refreshBalances,
     
     // Calculations

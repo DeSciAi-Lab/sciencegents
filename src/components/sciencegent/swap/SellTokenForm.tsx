@@ -77,17 +77,26 @@ const SellTokenForm: React.FC<SellTokenFormProps> = ({
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     
-    if (value.replace(/\D/g, '').length > 12) {
+    // Allow any positive number
+    if (value === '' || value === '0' || value === '0.') {
+      onInputChange(value);
+      setIsAmountSimplified(false);
       return;
     }
-    
-    const decimalParts = value.split('.');
-    if (decimalParts.length > 1 && decimalParts[1].length > 4) {
-      return;
+
+    // Convert to number and validate
+    const numValue = parseFloat(value);
+    if (isNaN(numValue) || numValue < 0) return;
+
+    // For large numbers, automatically simplify
+    if (numValue > 1e9) {
+      const roundedValue = Math.floor(numValue).toString();
+      onInputChange(roundedValue);
+      setIsAmountSimplified(true);
+    } else {
+      onInputChange(value);
+      setIsAmountSimplified(false);
     }
-    
-    setIsAmountSimplified(false);
-    onInputChange(value);
   };
 
   const handleRoundClick = () => {

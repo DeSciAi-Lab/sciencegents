@@ -84,3 +84,46 @@ Simply open [Lovable](https://lovable.dev/projects/b82aa3c6-c599-4e8a-90da-28a57
 ## I want to use a custom domain - is that possible?
 
 We don't support custom domains (yet). If you want to deploy your project under your own domain then we recommend using Netlify. Visit our docs for more details: [Custom domains](https://docs.lovable.dev/tips-tricks/custom-domain/)
+
+## Domain Management
+
+The application uses a domains table in Supabase to store scientific domains for ScienceGents and capabilities. We've provided several options to initialize this table:
+
+### Option 1: Using the Supabase SQL Editor (Recommended)
+
+1. Go to your Supabase project
+2. Navigate to the SQL Editor
+3. Copy the contents of `scripts/migrations/init-domains-auto-uuid.sql`
+4. Paste it into the SQL Editor and run it
+
+This script will:
+- Create the domains table if it doesn't exist
+- Insert default domains with auto-generated UUIDs
+- Set up the necessary permissions
+
+### Option 2: Using the Node.js Script
+
+1. Make sure you have the following environment variables set:
+   - `NEXT_PUBLIC_SUPABASE_URL`
+   - `SUPABASE_SERVICE_ROLE_KEY`
+
+2. Create the required database function in Supabase:
+   ```sql
+   CREATE OR REPLACE FUNCTION exec_sql(sql_query TEXT)
+   RETURNS VOID AS $$
+   BEGIN
+     EXECUTE sql_query;
+   END;
+   $$ LANGUAGE plpgsql SECURITY DEFINER;
+   ```
+
+3. Run the migration script:
+   ```sh
+   node scripts/apply-domain-migration.js
+   ```
+
+### Troubleshooting
+
+If you experience any issues, you can also try:
+- Using `scripts/migrations/init-domains-direct.sql` which includes explicit UUIDs
+- Directly querying the database using the Supabase dashboard

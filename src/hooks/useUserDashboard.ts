@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from "@/components/ui/use-toast";
+import { fetchTokenStats24h } from '@/services/tradeService';
 
 export interface DashboardScienceGent {
   address: string;
@@ -14,10 +15,21 @@ export interface DashboardScienceGent {
   description?: string;
   profilePic?: string;
   tokenPrice?: number;
+  tokenPriceUsd?: number;
   priceChange24h?: number;
   virtualETH?: number;
   collectedFees?: number;
   capabilities?: string[];
+  agent_fee?: number;
+  detailed_description?: string;
+  persona?: string;
+  users?: number;
+  interactions?: number;
+  holders?: number;
+  age?: string;
+  created_at?: string;
+  rating?: number;
+  volume24h?: number;
 }
 
 export interface UserCapability {
@@ -111,55 +123,151 @@ export const useUserDashboard = () => {
         const provider = new ethers.providers.Web3Provider(window.ethereum);
         
         try {
-          // Get user's created ScienceGents from Supabase
-          const { data: createdScienceGents, error: scienceGentsError } = await supabase
-            .from('sciencegents')
-            .select('*')
-            .eq('creator_address', account);
-            
-          if (scienceGentsError) {
-            console.error("Error fetching ScienceGents from Supabase:", scienceGentsError);
-          }
+          // Get the address in lowercase for case-insensitive comparison
+          const normalizedAddress = account.toLowerCase();
           
-          if (createdScienceGents && createdScienceGents.length > 0) {
-            console.log("Fetched ScienceGents from Supabase:", createdScienceGents);
+          console.log("Fetching ScienceGents created by address:", normalizedAddress);
+          
+          // Directly query sciencegents table where creator matches the wallet address
+            const { data: createdScienceGents, error: scienceGentsError } = await supabase
+              .from('sciencegents')
+              .select('*')
+            .eq('creator_address', normalizedAddress);
+              
+            if (scienceGentsError) {
+              console.error("Error fetching ScienceGents from Supabase:", scienceGentsError);
+            throw scienceGentsError;
+            }
             
-            const formattedScienceGents = createdScienceGents.map(sg => ({
-              address: sg.address,
-              name: sg.name || 'Unknown Token',
-              symbol: sg.symbol || '???',
-              marketCap: sg.market_cap || 0,
-              tradingEnabled: sg.is_migrated || false,
-              isMigrated: sg.is_migrated || false,
-              maturityProgress: sg.maturity_progress || 0,
-              tokenPrice: sg.token_price || 0,
-              priceChange24h: sg.price_change_24h || 0,
-              description: sg.description || '',
-              profilePic: sg.profile_pic || '',
-              virtualETH: sg.virtual_eth || 0,
-              collectedFees: sg.collected_fees || 0,
-              domain: sg.domain || 'General',
-              capabilities: []
-            }));
-            
-            // Get capabilities for each ScienceGent
-            for (const sg of formattedScienceGents) {
-              const { data: capabilityData } = await supabase
+            if (createdScienceGents && createdScienceGents.length > 0) {
+              console.log("Fetched ScienceGents from Supabase:", createdScienceGents);
+              
+            const formattedScienceGents = await Promise.all(createdScienceGents.map(async (sg) => {
+              // Fetch market cap and other trading data
+              let marketCap = sg.market_cap || 0;
+              // Get token price the same way as in the explore page
+              const tokenPrice = sg.token_price || 0;
+              const tokenPriceUsd = sg.token_price_usd || (tokenPrice * 3000); // Using same ETH_PRICE_USD constant as explore page
+              let priceChange24h = 0;
+              let volume24h = 0;
+              
+              // Get 24h price change data using the same method as the explore page
+              try {
+                const stats24h = await fetchTokenStats24h(sg.address);
+                if (stats24h) {
+                  priceChange24h = stats24h.price_change_percentage_24h || 0;
+                  volume24h = stats24h.volume_24h || 0;
+                } else {
+                  // Fallback only if fetchTokenStats24h returns null (not used in explore page)
+                  const { data: priceData } = await supabase
+                    .from('trades')
+                    .select('price_in_usd')
+                    .eq('token_id', sg.address)
+                    .order('time', { ascending: false })
+                    .limit(1);
+                    
+                  if (priceData && priceData.length > 0) {
+                    const latestPrice = priceData[0].price_in_usd;
+                    
+                    // Get price from 24h ago
+                    const yesterday = new Date();
+                    yesterday.setDate(yesterday.getDate() - 1);
+                    
+                    const { data: oldPriceData } = await supabase
+                      .from('trades')
+                      .select('price_in_usd')
+                      .eq('token_id', sg.address)
+                      .lt('time', yesterday.toISOString())
+                      .order('time', { ascending: false })
+                      .limit(1);
+                      
+                    if (oldPriceData && oldPriceData.length > 0) {
+                      const oldPrice = oldPriceData[0].price_in_usd;
+                      priceChange24h = ((latestPrice - oldPrice) / oldPrice) * 100;
+                    }
+                  }
+                }
+              } catch (priceError) {
+                console.error("Error fetching price data:", priceError);
+              }
+              
+              // Calculate maturity progress (based on completion status, age, etc.)
+              const createdAt = new Date(sg.created_at || new Date());
+              const now = new Date();
+              const ageInDays = Math.ceil((now.getTime() - createdAt.getTime()) / (1000 * 60 * 60 * 24));
+              // Use only the raw maturity_progress value from Supabase
+              const maturityProgress = sg.maturity_progress;
+              
+              // Get capabilities for this ScienceGent
+              const { data: capabilityLinks } = await supabase
                 .from('sciencegent_capabilities')
                 .select('capability_id')
                 .eq('sciencegent_address', sg.address);
                 
-              if (capabilityData && capabilityData.length > 0) {
-                sg.capabilities = capabilityData.map(cap => cap.capability_id);
+              const capabilities = capabilityLinks?.map(link => link.capability_id) || [];
+              
+              // Get domain information
+              let domain = sg.domain || "General Science";
+              if (!domain) {
+                // Try to get domain from the domains table by matching the domain value
+                const { data: domainData } = await supabase
+                  .from('domains')
+                  .select('name')
+                  .eq('name', sg.domain || 'General Science')
+                  .single();
+                  
+                if (domainData) {
+                  domain = domainData.name;
+                }
               }
-            }
-            
-            setUserScienceGents(formattedScienceGents);
+              
+              // Calculate revenue for demo purposes based on interactions_count and agent_fee
+              const interactionsCount = (sg as any).interactions_count || 0;
+              const agentFee = sg.agent_fee || 3; // Default agent fee of 3
+              const revenue = interactionsCount * agentFee;
+              
+              // Use only the raw rating from Supabase with no fallbacks
+              const rating = sg.rating;
+              
+              // Format the ScienceGent data
+              return {
+                address: sg.address,
+                name: sg.name || 'Unnamed ScienceGent',
+                symbol: sg.symbol || 'SG',
+                marketCap: marketCap,
+                tradingEnabled: sg.is_migrated || false,
+                isMigrated: sg.is_migrated || false,
+                maturityProgress: maturityProgress,
+                tokenPrice: tokenPrice,
+                tokenPriceUsd: tokenPriceUsd,
+                priceChange24h: priceChange24h,
+                description: sg.description || '',
+                profilePic: sg.profile_pic || '',
+                virtualETH: sg.virtual_eth || 0,
+                collectedFees: revenue, // Use calculated revenue based on interactions
+                domain: domain,
+                capabilities: capabilities,
+                created_at: sg.created_at,
+                age: `${ageInDays} day${ageInDays !== 1 ? 's' : ''}`,
+                agent_fee: sg.agent_fee || 3,
+                detailed_description: sg.description || '',
+                persona: sg.persona || '',
+                users: (sg as any).users || 0,
+                interactions: (sg as any).interactions || 0,
+                holders: (sg as any).holders || 0,
+                rating: rating,
+                volume24h: volume24h
+              };
+            }));
+              
+              setUserScienceGents(formattedScienceGents);
           } else {
-            console.log("No ScienceGents found for address:", account);
+            console.log("No ScienceGents found for creator address:", normalizedAddress);
+            setUserScienceGents([]);
           }
-        } catch (tokenError) {
-          console.error("Error fetching created ScienceGents:", tokenError);
+        } catch (scienceGentError) {
+          console.error("Error fetching created ScienceGents:", scienceGentError);
+          setUserScienceGents([]);
         }
         
         try {
@@ -304,13 +412,173 @@ export const useUserDashboard = () => {
     };
   }, []);
 
+  // Add a function to refresh the data manually
+  const refreshData = async () => {
+    if (account) {
+      setIsLoading(true);
+      try {
+        // Connect to provider
+        if (!window.ethereum) {
+          throw new Error("No Ethereum provider detected");
+        }
+        
+        const provider = new ethers.providers.Web3Provider(window.ethereum);
+        
+        // Fetch ScienceGents
+        const normalizedAddress = account.toLowerCase();
+        
+        const { data: createdScienceGents, error: scienceGentsError } = await supabase
+          .from('sciencegents')
+          .select('*')
+          .eq('creator_address', normalizedAddress);
+          
+        if (scienceGentsError) {
+          console.error("Error fetching ScienceGents from Supabase:", scienceGentsError);
+          throw scienceGentsError;
+        }
+        
+        if (createdScienceGents && createdScienceGents.length > 0) {
+          console.log("Fetched ScienceGents from Supabase:", createdScienceGents);
+          
+          const formattedScienceGents = await Promise.all(createdScienceGents.map(async (sg) => {
+            // Fetch market cap and other trading data
+            let marketCap = sg.market_cap || 0;
+            // Get token price the same way as in the explore page
+            const tokenPrice = sg.token_price || 0;
+            const tokenPriceUsd = sg.token_price_usd || (tokenPrice * 3000); // Using same ETH_PRICE_USD constant as explore page
+            let priceChange24h = 0;
+            let volume24h = 0;
+            
+            // Get 24h price change data using the same method as the explore page
+            try {
+              const stats24h = await fetchTokenStats24h(sg.address);
+              if (stats24h) {
+                priceChange24h = stats24h.price_change_percentage_24h || 0;
+                volume24h = stats24h.volume_24h || 0;
+              } else {
+                // Fallback only if fetchTokenStats24h returns null (not used in explore page)
+                const { data: priceData } = await supabase
+                  .from('trades')
+                  .select('price_in_usd')
+                  .eq('token_id', sg.address)
+                  .order('time', { ascending: false })
+                  .limit(1);
+                  
+                if (priceData && priceData.length > 0) {
+                  const latestPrice = priceData[0].price_in_usd;
+                  
+                  // Get price from 24h ago
+                  const yesterday = new Date();
+                  yesterday.setDate(yesterday.getDate() - 1);
+                  
+                  const { data: oldPriceData } = await supabase
+                    .from('trades')
+                    .select('price_in_usd')
+                    .eq('token_id', sg.address)
+                    .lt('time', yesterday.toISOString())
+                    .order('time', { ascending: false })
+                    .limit(1);
+                    
+                  if (oldPriceData && oldPriceData.length > 0) {
+                    const oldPrice = oldPriceData[0].price_in_usd;
+                    priceChange24h = ((latestPrice - oldPrice) / oldPrice) * 100;
+                  }
+                }
+              }
+            } catch (priceError) {
+              console.error("Error fetching price data:", priceError);
+            }
+            
+            // Calculate maturity progress (based on completion status, age, etc.)
+            const createdAt = new Date(sg.created_at || new Date());
+            const now = new Date();
+            const ageInDays = Math.ceil((now.getTime() - createdAt.getTime()) / (1000 * 60 * 60 * 24));
+            // Use only the raw maturity_progress value from Supabase
+            const maturityProgress = sg.maturity_progress;
+            
+            // Get capabilities for this ScienceGent
+            const { data: capabilityLinks } = await supabase
+              .from('sciencegent_capabilities')
+              .select('capability_id')
+              .eq('sciencegent_address', sg.address);
+              
+            const capabilities = capabilityLinks?.map(link => link.capability_id) || [];
+            
+            // Get domain information
+            let domain = sg.domain || "General Science";
+            if (!domain) {
+              // Try to get domain from the domains table by matching the domain value
+              const { data: domainData } = await supabase
+                .from('domains')
+                .select('name')
+                .eq('name', sg.domain || 'General Science')
+                .single();
+                
+              if (domainData) {
+                domain = domainData.name;
+              }
+            }
+            
+            // Calculate revenue for demo purposes based on interactions_count and agent_fee
+            const interactionsCount = (sg as any).interactions_count || 0;
+            const agentFee = sg.agent_fee || 3; // Default agent fee of 3
+            const revenue = interactionsCount * agentFee;
+            
+            // Use only the raw rating from Supabase with no fallbacks
+            const rating = sg.rating;
+            
+            // Format the ScienceGent data
+            return {
+              address: sg.address,
+              name: sg.name || 'Unnamed ScienceGent',
+              symbol: sg.symbol || 'SG',
+              marketCap: marketCap,
+              tradingEnabled: sg.is_migrated || false,
+              isMigrated: sg.is_migrated || false,
+              maturityProgress: maturityProgress,
+              tokenPrice: tokenPrice,
+              tokenPriceUsd: tokenPriceUsd,
+              priceChange24h: priceChange24h,
+              description: sg.description || '',
+              profilePic: sg.profile_pic || '',
+              virtualETH: sg.virtual_eth || 0,
+              collectedFees: revenue, // Use calculated revenue based on interactions
+              domain: domain,
+              capabilities: capabilities,
+              created_at: sg.created_at,
+              age: `${ageInDays} day${ageInDays !== 1 ? 's' : ''}`,
+              agent_fee: sg.agent_fee || 3,
+              detailed_description: sg.description || '',
+              persona: sg.persona || '',
+              users: (sg as any).users || 0,
+              interactions: (sg as any).interactions || 0,
+              holders: (sg as any).holders || 0,
+              rating: rating,
+              volume24h: volume24h
+            };
+          }));
+          
+          setUserScienceGents(formattedScienceGents);
+        } else {
+          console.log("No ScienceGents found for creator address:", normalizedAddress);
+          setUserScienceGents([]);
+        }
+      } catch (error) {
+        console.error("Error refreshing data:", error);
+        setIsLoading(false);
+      }
+    }
+  };
+
+  // Return the refresh function along with other values
   return {
     account,
-    isLoading,
     isConnected,
+    isLoading,
     userScienceGents,
     userCapabilities,
     userInvestments,
-    connectWallet
+    connectWallet,
+    refreshData
   };
 };

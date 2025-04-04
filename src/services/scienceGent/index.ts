@@ -1,4 +1,3 @@
-
 // Export blockchain-related functions
 import { 
   fetchScienceGentFromBlockchain,
@@ -14,6 +13,16 @@ import {
   fetchScienceGentFromSupabase
 } from './supabase';
 
+// Export token stats functions
+import {
+  fetchTokenStats,
+  fetchTokenDataFromSupabase,
+  saveTokenStatsToSupabase,
+  syncAllTokenStats,
+  TokenStatsUpdateData,
+  FetchedTokenStats
+} from './tokenStats';
+
 // Export types
 export type {
   ScienceGentData,
@@ -21,6 +30,12 @@ export type {
   CapabilityDetail,
   FormattedScienceGent
 } from './types';
+
+// Export token stats types
+export type {
+  TokenStatsUpdateData,
+  FetchedTokenStats
+};
 
 // Export transformation functions
 export {
@@ -37,7 +52,12 @@ export {
   fetchCreationTimestampFromBlockchain,
   syncAllCreationTimestampsFromBlockchain,
   saveScienceGentToSupabase,
-  fetchScienceGentFromSupabase
+  fetchScienceGentFromSupabase,
+  // Export new token stats functions
+  fetchTokenStats,
+  fetchTokenDataFromSupabase,
+  saveTokenStatsToSupabase,
+  syncAllTokenStats
 };
 
 /**

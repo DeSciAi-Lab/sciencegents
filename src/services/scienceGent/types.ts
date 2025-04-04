@@ -1,4 +1,3 @@
-
 // Import ethers for BigNumber type compatibility
 import { BigNumber } from "ethers";
 
@@ -43,10 +42,10 @@ export interface TokenStats {
   collectedFees: string;
   tradingEnabled: boolean;
   creator: string;
-  creationTimestamp: number; // Changed from string to number
-  maturityDeadline: number; // Changed from string to number
+  creationTimestamp: string; // Changed from number to string
+  maturityDeadline: string; // Changed from number to string
   migrated: boolean; // Changed from isMigrated to migrated to match contract response
-  lpUnlockTime: number; // Changed from string to number
+  lpUnlockTime: string; // Changed from number to string
   lockedLPAmount: string;
   currentPrice: string;
   migrationEligible: boolean;

@@ -1,4 +1,3 @@
-
 export interface ScienceGent {
   id: string;
   name: string;
@@ -33,6 +32,9 @@ export interface ScienceGent {
   isMatured?: boolean;
   maturityProgress?: number;
   remainingMaturityTime?: number;
+  isCurated?: boolean;
+  rating?: number;
+  numberOfRatings?: number;
 }
 
 export interface ScienceGentFormData {
@@ -58,4 +60,5 @@ export interface ScienceGentFormData {
   developerTelegram?: string;
   developerGithub?: string;
   developerWebsite?: string;
+  applyForCuration?: boolean;
 }

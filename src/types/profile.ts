@@ -1,4 +1,3 @@
-
 /**
  * Interface representing a developer profile
  */
@@ -12,6 +11,8 @@ export interface DeveloperProfile {
   developer_github?: string;
   developer_website?: string;
   additional_social_links?: SocialLink[];
+  created_sciencegents?: string[];
+  created_capabilities?: string[];
   created_at?: string;
   updated_at?: string;
 }

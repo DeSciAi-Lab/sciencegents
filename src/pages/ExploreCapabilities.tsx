@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Search, X, Beaker, Activity, Database, Cog, Plus } from 'lucide-react';
@@ -10,14 +9,34 @@ import { getAllCapabilities } from '@/data/capabilities';
 import { Capability } from '@/types/capability';
 import { Skeleton } from '@/components/ui/skeleton';
 import CapabilityCard from '@/components/capability/CapabilityCard';
+import { Domain, getAllDomains } from '@/services/domains';
 
 const ExploreCapabilities = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDomain, setSelectedDomain] = useState<string | null>(null);
   const [capabilities, setCapabilities] = useState<Capability[]>([]);
+  const [domains, setDomains] = useState<Domain[]>([]);
   const [loading, setLoading] = useState(true);
+  const [domainsLoading, setDomainsLoading] = useState(true);
   const [sortBy, setSortBy] = useState<'created' | 'revenue' | 'usage'>('created');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+  
+  // Fetch domains from Supabase
+  useEffect(() => {
+    const fetchDomains = async () => {
+      try {
+        setDomainsLoading(true);
+        const domainsData = await getAllDomains();
+        setDomains(domainsData);
+      } catch (error) {
+        console.error('Error fetching domains:', error);
+      } finally {
+        setDomainsLoading(false);
+      }
+    };
+    
+    fetchDomains();
+  }, []);
   
   useEffect(() => {
     const fetchCapabilities = async () => {
@@ -33,8 +52,6 @@ const ExploreCapabilities = () => {
     
     fetchCapabilities();
   }, []);
-  
-  const domains = Array.from(new Set(capabilities.map(cap => cap.domain)));
   
   const filteredCapabilities = capabilities.filter(capability => {
     const matchesSearch = 
@@ -80,13 +97,39 @@ const ExploreCapabilities = () => {
     setSortDirection('desc');
   };
 
-  const domainButtons = [
-    { name: 'Chemistry', color: 'bg-emerald-500 hover:bg-emerald-600', icon: <Beaker size={16} className="text-white" /> },
-    { name: 'Protein Analysis', color: 'bg-blue-500 hover:bg-blue-600', icon: <Activity size={16} className="text-white" /> },
-    { name: 'Material Science', color: 'bg-purple-500 hover:bg-purple-600', icon: <Database size={16} className="text-white" /> },
-    { name: 'QM Simulations', color: 'bg-cyan-500 hover:bg-cyan-600', icon: <Cog size={16} className="text-white" /> },
-    { name: 'Molecular Dynamics', color: 'bg-indigo-500 hover:bg-indigo-600', icon: <Beaker size={16} className="text-white" /> }
-  ];
+  // Get a color for each domain based on domain name
+  const getDomainColor = (domain: string) => {
+    // Simple hash function to convert domain name to consistent color
+    const hash = domain.split('').reduce((acc, char) => {
+      return char.charCodeAt(0) + ((acc << 5) - acc);
+    }, 0);
+    
+    // Map to a set of predefined colors based on the hash
+    const colors = [
+      'bg-emerald-500 hover:bg-emerald-600',
+      'bg-blue-500 hover:bg-blue-600',
+      'bg-purple-500 hover:bg-purple-600',
+      'bg-cyan-500 hover:bg-cyan-600',
+      'bg-indigo-500 hover:bg-indigo-600',
+      'bg-amber-500 hover:bg-amber-600',
+      'bg-pink-500 hover:bg-pink-600',
+      'bg-lime-500 hover:bg-lime-600',
+      'bg-red-500 hover:bg-red-600',
+      'bg-teal-500 hover:bg-teal-600',
+    ];
+    
+    const index = Math.abs(hash) % colors.length;
+    return colors[index];
+  };
+  
+  // Get icon for each domain
+  const getDomainIcon = (domain: string) => {
+    if (domain.toLowerCase().includes('chemistry')) return <Beaker size={16} className="text-white" />;
+    if (domain.toLowerCase().includes('protein')) return <Activity size={16} className="text-white" />;
+    if (domain.toLowerCase().includes('material')) return <Database size={16} className="text-white" />;
+    if (domain.toLowerCase().includes('quantum') || domain.toLowerCase().includes('simulation')) return <Cog size={16} className="text-white" />;
+    return <Beaker size={16} className="text-white" />;
+  };
   
   return (
     <div className="min-h-screen flex flex-col">
@@ -171,6 +214,7 @@ const ExploreCapabilities = () => {
             <Button
               className="bg-rose-500 hover:bg-rose-600 text-white px-4 py-2 rounded-md flex items-center gap-2 h-10"
               size="sm"
+              onClick={() => setSelectedDomain(null)}
             >
               <div className="w-5 h-5 rounded-full bg-white flex items-center justify-center text-rose-500">
                 <Plus size={14} />
@@ -178,24 +222,26 @@ const ExploreCapabilities = () => {
               <span>All</span>
             </Button>
             
-            {domainButtons.map((domain, index) => (
+            {domains.map((domain) => (
               <Button
-                key={index}
-                className={`${domain.color} text-white px-4 py-2 rounded-md flex items-center gap-2 h-10`}
+                key={domain.id}
+                className={`${getDomainColor(domain.name)} text-white px-4 py-2 rounded-md flex items-center gap-2 h-10 ${
+                  selectedDomain === domain.name ? 'ring-2 ring-white' : ''
+                }`}
                 size="sm"
                 onClick={() => setSelectedDomain(domain.name)}
               >
-                {domain.icon}
+                {getDomainIcon(domain.name)}
                 <span>{domain.name}</span>
               </Button>
             ))}
           </div>
           
           {/* Capability Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          <div className="masonry-grid">
             {loading ? (
               Array.from({ length: 8 }).map((_, index) => (
-                <div key={index} className="bg-white p-4 rounded-md border">
+                <div key={index} className="masonry-item bg-white p-4 rounded-md border">
                   <div className="flex justify-between mb-2">
                     <Skeleton className="h-6 w-3/4" />
                     <Skeleton className="h-6 w-1/6" />
@@ -213,12 +259,13 @@ const ExploreCapabilities = () => {
                 <Link 
                   key={capability.id}
                   to={`/capability/${capability.id}`}
+                  className="masonry-item"
                 >
                   <CapabilityCard capability={capability} />
                 </Link>
               ))
             ) : (
-              <div className="col-span-4 text-center py-8">
+              <div className="col-span-full text-center py-8">
                 <p className="text-muted-foreground">No capabilities found matching your search.</p>
               </div>
             )}
@@ -230,5 +277,40 @@ const ExploreCapabilities = () => {
     </div>
   );
 };
+
+// Add custom CSS for masonry layout
+const styles = `
+.masonry-grid {
+  column-count: 1;
+  column-gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+@media (min-width: 768px) {
+  .masonry-grid {
+    column-count: 3;
+  }
+}
+
+@media (min-width: 1024px) {
+  .masonry-grid {
+    column-count: 4;
+  }
+}
+
+.masonry-item {
+  break-inside: avoid;
+  margin-bottom: 1.5rem;
+  display: block;
+}
+`;
+
+// Add style tag to the document
+if (typeof document !== 'undefined') {
+  const styleSheet = document.createElement('style');
+  styleSheet.type = 'text/css';
+  styleSheet.innerText = styles;
+  document.head.appendChild(styleSheet);
+}
 
 export default ExploreCapabilities;

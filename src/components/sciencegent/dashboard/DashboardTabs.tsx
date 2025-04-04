@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LoadingStatus } from '@/hooks/useScienceGentDetails';
@@ -139,12 +138,6 @@ const DashboardTabs: React.FC<DashboardTabsProps> = ({
                   >
                     Holders
                   </TabsTrigger>
-                  <TabsTrigger 
-                    value="transactions"
-                    className="rounded-none px-6 py-2 text-sm data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:bg-white"
-                  >
-                    Transactions
-                  </TabsTrigger>
                 </TabsList>
               </div>
             
@@ -159,12 +152,16 @@ const DashboardTabs: React.FC<DashboardTabsProps> = ({
                     </div>
                     <Skeleton className="h-64 w-full" />
                   </div>
-                ) : (
+                ) : scienceGentData ? (
                   <TradeTab 
                     address={address} 
                     scienceGentData={scienceGentData}
                     activeTab={activeTradingTab}
                   />
+                ) : (
+                  <div className="text-center text-red-500 p-4">
+                    Could not load ScienceGent data. Please refresh.
+                  </div>
                 )}
               </div>
             </Tabs>

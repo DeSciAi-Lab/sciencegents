@@ -25,6 +25,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuCheckboxItem,
 } from "@/components/ui/dropdown-menu";
+import { getAllDomains, Domain } from '@/services/domains';
 
 const Explore = () => {
   const navigate = useNavigate();
@@ -32,6 +33,8 @@ const Explore = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [scienceGents, setScienceGents] = useState<ScienceGentListItem[]>([]);
   const [filteredGents, setFilteredGents] = useState<ScienceGentListItem[]>([]);
+  const [domains, setDomains] = useState<Domain[]>([]);
+  const [domainsLoading, setDomainsLoading] = useState(true);
   
   const [activeFilter, setActiveFilter] = useState('all');
   const [sortBy, setSortBy] = useState<keyof ScienceGentListItem>('marketCap');
@@ -45,12 +48,7 @@ const Explore = () => {
   const filterCategories = {
     domain: [
       { label: 'All Domains', value: 'all' },
-      { label: 'Chemistry', value: 'chemistry' },
-      { label: 'Physics', value: 'physics' },
-      { label: 'Genomics', value: 'genomics' },
-      { label: 'Materials Science', value: 'materials science' },
-      { label: 'Drug Discovery', value: 'drug discovery' },
-      { label: 'General', value: 'general' },
+      ...domains.map(domain => ({ label: domain.name, value: domain.name.toLowerCase() }))
     ],
     curation: [
       { label: 'All', value: 'all' },
@@ -62,24 +60,18 @@ const Explore = () => {
       { label: 'Migrated', value: 'migrated' },
       { label: 'Ready', value: 'ready' },
       { label: 'Immature', value: 'immature' },
-    ],
-    roles: [
-      { label: 'All Roles', value: 'all' },
-      { label: 'Researcher', value: 'researcher' },
-      { label: 'Assistant', value: 'assistant' },
-      { label: 'Reviewer', value: 'reviewer' },
     ]
   };
   
   const [activeFilters, setActiveFilters] = useState({
     domain: 'all',
     curation: 'all',
-    maturity: 'all',
-    roles: 'all'
+    maturity: 'all'
   });
 
   useEffect(() => {
     fetchData();
+    fetchDomains();
   }, []);
 
   useEffect(() => {
@@ -103,10 +95,6 @@ const Explore = () => {
       filtered = filtered.filter(gent => gent.migrationEligible && !gent.isMigrated);
     } else if (activeFilters.maturity === 'immature') {
       filtered = filtered.filter(gent => !gent.migrationEligible && !gent.isMigrated);
-    }
-    
-    if (activeFilters.roles !== 'all') {
-      filtered = filtered.filter(() => Math.random() > 0.3);
     }
     
     if (searchQuery) {
@@ -183,8 +171,7 @@ const Explore = () => {
     setActiveFilters({
       domain: 'all',
       curation: 'all',
-      maturity: 'all',
-      roles: 'all'
+      maturity: 'all'
     });
   };
 
@@ -245,6 +232,18 @@ const Explore = () => {
     );
   };
 
+  const fetchDomains = async () => {
+    try {
+      setDomainsLoading(true);
+      const domainsData = await getAllDomains();
+      setDomains(domainsData);
+    } catch (error) {
+      console.error('Error fetching domains:', error);
+    } finally {
+      setDomainsLoading(false);
+    }
+  };
+
   return (
     <NavbarLayout>
       <div className="container max-w-full px-6 py-4">
@@ -291,7 +290,6 @@ const Explore = () => {
               
               {renderFilterButton('Curation', 'curation')}
               {renderFilterButton('Maturity', 'maturity')}
-              {renderFilterButton('Roles', 'roles')}
               {renderFilterButton('Domain', 'domain')}
               
               {hasActiveFilters() && (

@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { ethers } from 'ethers';
 import { contractConfig } from '@/utils/contractConfig';
@@ -7,6 +6,8 @@ export const useTokenBalances = (tokenAddress: string) => {
   const [tokenBalance, setTokenBalance] = useState<string>('0');
   const [ethBalance, setEthBalance] = useState<string>('0');
   const [tokenPrice, setTokenPrice] = useState<string>('0');
+  const [ethReserve, setEthReserve] = useState<string>('0');
+  const [tokenReserve, setTokenReserve] = useState<string>('0');
   const [isPending, setIsPending] = useState(false);
 
   // Refresh balances function
@@ -40,7 +41,7 @@ export const useTokenBalances = (tokenAddress: string) => {
       const balance = await tokenContract.balanceOf(account);
       setTokenBalance(ethers.utils.formatUnits(balance, 18));
       
-      // Get token price
+      // Get token price and reserves
       const swapContract = new ethers.Contract(
         contractConfig.addresses.ScienceGentsSwap,
         [
@@ -50,11 +51,21 @@ export const useTokenBalances = (tokenAddress: string) => {
       );
       
       const stats = await swapContract.getTokenStats(tokenAddress);
+      // Format and set values:
+      // tokenReserve is at index 0
+      // ethReserve is at index 1
       // currentPrice is at index 11
-      const price = stats[11];
       
-      if (price) {
-        setTokenPrice(ethers.utils.formatEther(price));
+      if (stats[0]) {
+        setTokenReserve(ethers.utils.formatEther(stats[0]));
+      }
+      
+      if (stats[1]) {
+        setEthReserve(ethers.utils.formatEther(stats[1]));
+      }
+      
+      if (stats[11]) {
+        setTokenPrice(ethers.utils.formatEther(stats[11]));
       }
     } catch (error) {
       console.error('Error refreshing balances:', error);
@@ -83,6 +94,8 @@ export const useTokenBalances = (tokenAddress: string) => {
     tokenBalance,
     ethBalance,
     tokenPrice,
+    ethReserve,
+    tokenReserve,
     refreshBalances,
     isPending
   };

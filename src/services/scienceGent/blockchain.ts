@@ -101,10 +101,10 @@ export const fetchTokenStatsFromBlockchain = async (
       collectedFees: tokenStats[3].toString(),
       tradingEnabled: tokenStats[4],
       creator: tokenStats[5],
-      creationTimestamp: tokenStats[6].toNumber(),
-      maturityDeadline: tokenStats[7].toNumber(),
-      migrated: tokenStats[8], // Changed from isMigrated to migrated
-      lpUnlockTime: tokenStats[9].toNumber(),
+      creationTimestamp: tokenStats[6].toString(),
+      maturityDeadline: tokenStats[7].toString(),
+      migrated: tokenStats[8],
+      lpUnlockTime: tokenStats[9].toString(),
       lockedLPAmount: tokenStats[10].toString(),
       currentPrice: tokenStats[11].toString(),
       migrationEligible: tokenStats[12]

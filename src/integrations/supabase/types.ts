@@ -235,6 +235,7 @@ export type Database = {
           domain: string | null
           eth_reserves: number | null
           id: string
+          is_curated: boolean | null
           is_migrated: boolean | null
           last_price_update: string | null
           last_synced_at: string | null
@@ -245,9 +246,11 @@ export type Database = {
           migration_condition: number | null
           migration_eligible: boolean | null
           name: string
+          number_of_ratings: number | null
           persona: string | null
           price_change_24h: number | null
           profile_pic: string | null
+          rating: number | null
           remaining_maturity_days: number | null
           remaining_maturity_time: number | null
           socials: Json | null
@@ -283,6 +286,7 @@ export type Database = {
           domain?: string | null
           eth_reserves?: number | null
           id?: string
+          is_curated?: boolean | null
           is_migrated?: boolean | null
           last_price_update?: string | null
           last_synced_at?: string | null
@@ -293,9 +297,11 @@ export type Database = {
           migration_condition?: number | null
           migration_eligible?: boolean | null
           name: string
+          number_of_ratings?: number | null
           persona?: string | null
           price_change_24h?: number | null
           profile_pic?: string | null
+          rating?: number | null
           remaining_maturity_days?: number | null
           remaining_maturity_time?: number | null
           socials?: Json | null
@@ -331,6 +337,7 @@ export type Database = {
           domain?: string | null
           eth_reserves?: number | null
           id?: string
+          is_curated?: boolean | null
           is_migrated?: boolean | null
           last_price_update?: string | null
           last_synced_at?: string | null
@@ -341,9 +348,11 @@ export type Database = {
           migration_condition?: number | null
           migration_eligible?: boolean | null
           name?: string
+          number_of_ratings?: number | null
           persona?: string | null
           price_change_24h?: number | null
           profile_pic?: string | null
+          rating?: number | null
           remaining_maturity_days?: number | null
           remaining_maturity_time?: number | null
           socials?: Json | null
@@ -385,6 +394,54 @@ export type Database = {
           interaction_type?: string
           sciencegent_address?: string
           user_address?: string
+        }
+        Relationships: []
+      }
+      trades: {
+        Row: {
+          id: string
+          token_id: string
+          price_in_usd: number
+          volume: number
+          time: string
+        }
+        Insert: {
+          id?: string
+          token_id: string
+          price_in_usd: number
+          volume: number
+          time?: string
+        }
+        Update: {
+          id?: string
+          token_id?: string
+          price_in_usd?: number
+          volume?: number
+          time?: string
+        }
+        Relationships: []
+      }
+      domains: {
+        Row: {
+          id: string
+          name: string
+          created_at: string | null
+          creator_address: string | null
+          custom: boolean | null
+        }
+        Insert: {
+          id: string
+          name: string
+          created_at?: string | null
+          creator_address?: string | null
+          custom?: boolean | null
+        }
+        Update: {
+          id?: string
+          name?: string
+          created_at?: string | null
+          creator_address?: string | null
+          custom?: boolean | null
         }
         Relationships: []
       }

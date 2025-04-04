@@ -97,10 +97,8 @@ const TokenStatistics: React.FC<TokenStatisticsProps> = ({
     createdOnChainAt = scienceGent.created_on_chain_at
   } = scienceGent;
 
-  // If age is not available but createdOnChainAt is, calculate age
-  const ageDisplay = age ? `${age} days` : createdOnChainAt ? 
-    `${Math.floor((Date.now() - new Date(createdOnChainAt).getTime()) / (1000 * 60 * 60 * 24))} days` : 
-    'Unknown';
+  // Use stored age value
+  const ageDisplay = age ? `${age} days` : 'Unknown';
   
   // Calculate migration status
   const getMigrationStatus = () => {

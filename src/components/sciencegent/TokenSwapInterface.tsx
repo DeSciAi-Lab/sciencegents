@@ -5,6 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from '@/components/ui/use-toast';
 import SwapInterface from './swap/SwapInterface';
+import MaturityStatusCard from './MaturityStatusCard';
+import ScienceGentCapabilities from './ScienceGentCapabilities';
+import { useEnableTrading } from '@/hooks/useEnableTrading';
+import { useAccount } from 'wagmi';
 
 interface TokenSwapInterfaceProps {
   tokenAddress: string;
@@ -26,6 +30,9 @@ const TokenSwapInterface: React.FC<TokenSwapInterfaceProps> = ({
   const [outputValue, setOutputValue] = useState<string>('0');
   const [slippageTolerance, setSlippageTolerance] = useState<number>(1); // 1% default slippage
   
+  const { address: connectedWalletAddress } = useAccount();
+  const { enableTrading, isPending: isEnablingTrading } = useEnableTrading(tokenAddress);
+  
   const {
     buyTokens,
     sellTokens,
@@ -36,6 +43,8 @@ const TokenSwapInterface: React.FC<TokenSwapInterfaceProps> = ({
     tokenBalance,
     ethBalance,
     tokenPrice,
+    ethReserve,
+    tokenReserve,
     refreshBalances
   } = useTokenSwap(tokenAddress);
 
@@ -116,6 +125,16 @@ const TokenSwapInterface: React.FC<TokenSwapInterfaceProps> = ({
   };
 
   const isTradingEnabled = scienceGent?.trading_enabled !== false;
+  const isCreator = connectedWalletAddress && 
+    scienceGent?.creator_address && 
+    connectedWalletAddress.toLowerCase() === scienceGent.creator_address.toLowerCase();
+
+  const handleEnableTrading = async () => {
+    if (isCreator) {
+      await enableTrading();
+      await refreshBalances(); // Refresh data after enabling trading
+    }
+  };
 
   if (isMigrated) {
     return (
@@ -141,15 +160,32 @@ const TokenSwapInterface: React.FC<TokenSwapInterfaceProps> = ({
   }
 
   const tokenName = scienceGent?.name || "ScienceGent";
+  const tokenLogo = scienceGent?.profile_pic || null;
 
   return (
     <div className="space-y-4">
       {!isTradingEnabled && (
         <Alert variant="default" className="bg-amber-50 border-amber-200">
           <AlertTriangle className="h-4 w-4 text-amber-600" />
-          <AlertDescription className="text-amber-800">
-            Creator hasn't enabled trading yet. Only the creator can trade at this time.
-          </AlertDescription>
+          <div className="flex flex-col space-y-2 w-full">
+            <AlertDescription className="text-amber-800">
+              {isCreator 
+                ? "You haven't enabled trading yet. Only you can trade at this time."
+                : "Creator hasn't enabled trading yet. Only the creator can trade at this time."}
+            </AlertDescription>
+            
+            {isCreator && (
+              <Button 
+                variant="default" 
+                size="sm" 
+                className="bg-amber-600 hover:bg-amber-700 text-white w-fit self-end"
+                onClick={handleEnableTrading}
+                disabled={isEnablingTrading}
+              >
+                {isEnablingTrading ? 'Enabling...' : 'Enable Trading'}
+              </Button>
+            )}
+          </div>
         </Alert>
       )}
       
@@ -158,8 +194,11 @@ const TokenSwapInterface: React.FC<TokenSwapInterfaceProps> = ({
         toggleDirection={toggleDirection}
         tokenSymbol={tokenSymbol}
         tokenName={tokenName}
+        tokenLogo={tokenLogo}
         ethBalance={ethBalance}
         tokenBalance={tokenBalance}
+        ethReserve={ethReserve}
+        tokenReserve={tokenReserve}
         inputValue={inputValue}
         outputValue={outputValue}
         onInputChange={setInputValue}
@@ -175,6 +214,19 @@ const TokenSwapInterface: React.FC<TokenSwapInterfaceProps> = ({
           {error}
         </div>
       )}
+      
+      {/* Maturity Status */}
+      <MaturityStatusCard 
+        progress={scienceGent?.maturity_progress}
+        virtualEth={scienceGent?.virtual_eth || 0}
+        capabilityFees={scienceGent?.capability_fees || 0.004}
+        collectedFees={scienceGent?.collected_fees || 0}
+        migrationCondition={scienceGent?.migration_condition}
+        compact={true}
+      />
+      
+      {/* Capabilities */}
+      <ScienceGentCapabilities scienceGent={scienceGent} />
     </div>
   );
 };

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import AccessDenied from '@/components/admin/AccessDenied';
@@ -10,6 +9,7 @@ import FetchTokenStats from '@/components/admin/FetchTokenStats';
 import NavbarLayout from '@/components/layout/NavbarLayout';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
 import { RefreshCcw, Layers, Settings, BarChart } from 'lucide-react';
+import UpdateDeveloperData from '@/components/admin/UpdateDeveloperData';
 
 const Admin: React.FC = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -106,6 +106,7 @@ const Admin: React.FC = () => {
               </div>
             </TabsContent>
           </Tabs>
+          <UpdateDeveloperData />
         </div>
       </div>
     </NavbarLayout>

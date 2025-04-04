@@ -1,12 +1,16 @@
-
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { LoadingStatus } from '@/hooks/useScienceGentDetails';
 import NavbarLayout from '@/components/layout/NavbarLayout';
 import ScienceGentHeader from './ScienceGentHeader';
 import PriceOverview from './PriceOverview';
 import TokenSwapInterface from '../TokenSwapInterface';
 import ScienceGentDetailsDashboard from '../ScienceGentDetailsDashboard';
-import ScienceGentStatsCards from './ScienceGentStatsCards';
+import SecondaryStatsCards from './SecondaryStatsCards';
+import TokenPriceDisplay from '../TokenPriceDisplay';
+import PriceChangeDisplay from '../PriceChangeDisplay';
+import MarketCapDisplay from '../MarketCapDisplay';
+import LiquidityDisplay from '../LiquidityDisplay';
+import { fetchTokenStats24h } from '@/services/tradeService';
 
 interface DetailsLayoutProps {
   scienceGent: any;
@@ -24,6 +28,32 @@ const DetailsLayout: React.FC<DetailsLayoutProps> = ({
   refreshData
 }) => {
   const symbol = scienceGent?.symbol || "TICKER";
+  const [stats24h, setStats24h] = useState<{
+    high_24h: number;
+    low_24h: number;
+    volume_24h: number;
+    price_change_percentage_24h: number;
+  } | null>(null);
+  const [loading24hStats, setLoading24hStats] = useState(false);
+
+  useEffect(() => {
+    const loadStats24h = async () => {
+      if (!address) return;
+      
+      setLoading24hStats(true);
+      try {
+        const stats = await fetchTokenStats24h(address);
+        console.log('Fetched 24h stats:', stats);
+        setStats24h(stats);
+      } catch (error) {
+        console.error('Error fetching 24h stats:', error);
+      } finally {
+        setLoading24hStats(false);
+      }
+    };
+    
+    loadStats24h();
+  }, [address]);
   
   return (
     <NavbarLayout>
@@ -33,21 +63,82 @@ const DetailsLayout: React.FC<DetailsLayoutProps> = ({
           <div className="bg-white rounded-lg border overflow-hidden">
             <div className="grid md:grid-cols-3">
               <div className="md:col-span-2 p-5">
+                {/* Header with title, address and description */}
                 <ScienceGentHeader scienceGent={scienceGent} address={address} />
                 
+                {/* Secondary stats (Holders, Txns, Users, etc.) */}
                 <div className="mt-4">
-                  <ScienceGentStatsCards scienceGent={scienceGent} />
+                  <SecondaryStatsCards scienceGent={scienceGent} isLoading={status === 'loading'} />
                 </div>
                 
-                {/* Price graph and overview */}
+                {/* Price stats and chart section */}
                 <div className="mt-6">
-                  <div className="flex items-center mb-2">
-                    <div className="text-xl font-bold flex items-center gap-2">
-                      <span>{symbol}/ETH</span>
-                      <span className="text-sm text-gray-500">▼</span>
+                  {/* Price stats row with left-aligned labels */}
+                  <div className="grid grid-cols-7 mb-2">
+                    <div className="p-2 rounded-sm bg-gray-50">
+                      <div className="text-sm font-medium">Price</div>
+                      <div className="font-bold">
+                        <TokenPriceDisplay tokenAddress={address} />
+                      </div>
+                    </div>
+                    
+                    <div className="ml-4">
+                      <div className="text-sm font-medium">24h Change</div>
+                      <div className="font-bold">
+                        <PriceChangeDisplay tokenAddress={address} />
+                      </div>
+                    </div>
+                    
+                    <div className="ml-4">
+                      <div className="text-sm font-medium">Market Cap</div>
+                      <div className="font-bold">
+                        <MarketCapDisplay tokenAddress={address} />
+                      </div>
+                    </div>
+                    
+                    <div className="ml-4">
+                      <div className="text-sm font-medium">Liquidity</div>
+                      <div className="font-bold">
+                        <LiquidityDisplay tokenAddress={address} />
+                      </div>
+                    </div>
+                    
+                    <div className="ml-4">
+                      <div className="text-sm font-medium">24h volume</div>
+                      <div className="font-bold">
+                        {loading24hStats ? (
+                          <span className="text-gray-400">Loading...</span>
+                        ) : (
+                          stats24h?.volume_24h ? `$${stats24h.volume_24h.toFixed(2)}` : "N/A"
+                        )}
+                      </div>
+                    </div>
+                    
+                    <div className="ml-4">
+                      <div className="text-sm font-medium">24h high</div>
+                      <div className="font-bold">
+                        {loading24hStats ? (
+                          <span className="text-gray-400">Loading...</span>
+                        ) : (
+                          stats24h?.high_24h ? `$${stats24h.high_24h.toFixed(8)}` : "N/A"
+                        )}
+                      </div>
+                    </div>
+                    
+                    <div className="ml-4">
+                      <div className="text-sm font-medium">24h low</div>
+                      <div className="font-bold">
+                        {loading24hStats ? (
+                          <span className="text-gray-400">Loading...</span>
+                        ) : (
+                          stats24h?.low_24h ? `$${stats24h.low_24h.toFixed(8)}` : "N/A"
+                        )}
+                      </div>
                     </div>
                   </div>
-                  <PriceOverview scienceGent={scienceGent} />
+                  
+                  {/* Chart */}
+                  <PriceOverview tokenId={address} />
                 </div>
               </div>
               

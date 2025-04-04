@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { ScienceGentFormData } from '@/types/sciencegent';
 import { Capability } from '@/types/capability';
@@ -7,6 +6,7 @@ import { calculateTotalCapabilityFeesSynchronous } from '../utils';
 import { CreationStatus } from '@/hooks/useScienceGentCreation';
 import { DeveloperProfile } from '@/types/profile';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useEthPriceContext } from '@/context/EthPriceContext';
 
 interface ReviewAndLaunchProps {
   formData: ScienceGentFormData;
@@ -29,6 +29,7 @@ const ReviewAndLaunch: React.FC<ReviewAndLaunchProps> = ({
 }) => {
   const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null);
   const [tradingFeeAmount, setTradingFeeAmount] = useState<string>("0");
+  const { ethPrice } = useEthPriceContext();
   
   // Calculate total capability fees
   const totalCapabilityFees = calculateTotalCapabilityFeesSynchronous(
@@ -61,6 +62,31 @@ const ReviewAndLaunch: React.FC<ReviewAndLaunchProps> = ({
       return () => URL.revokeObjectURL(url);
     }
   }, [formData.profileImage]);
+  
+  // Calculate token price function
+  const calculateTokenPrice = (initialLiquidity?: string, totalSupply?: string) => {
+    if (!initialLiquidity || !totalSupply) {
+      return { ethPrice: "0.000000000000", usdPrice: "0.000000000000" };
+    }
+    
+    const liquidityEth = parseFloat(initialLiquidity);
+    const supply = parseFloat(totalSupply);
+    
+    if (liquidityEth <= 0 || supply <= 0) {
+      return { ethPrice: "0.000000000000", usdPrice: "0.000000000000" };
+    }
+    
+    // Direct calculation without 0.99 factor
+    const priceInEth = liquidityEth / supply;
+    const priceInUsd = (liquidityEth * ethPrice) / supply;
+    
+    return {
+      ethPrice: priceInEth.toFixed(12),
+      usdPrice: priceInUsd.toFixed(12)
+    };
+  };
+
+  const tokenPrices = calculateTokenPrice(formData.initialLiquidity, formData.totalSupply);
   
   const handleLaunch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -167,21 +193,24 @@ const ReviewAndLaunch: React.FC<ReviewAndLaunchProps> = ({
             </p>
           </div>
           
-          {/* Initial Liquidity */}
-          <div className="bg-orange-50 rounded-md p-4 border border-orange-100">
-            <h3 className="font-medium text-gray-700 mb-2">Initial Liquidity</h3>
-            <p className="text-lg font-medium">{formData.initialLiquidity} virtual ETH</p>
-            <p className="text-sm text-gray-500">
-              Initial Price: {
-                formData.initialLiquidity && formData.totalSupply
-                  ? (parseFloat(formData.initialLiquidity) / (parseFloat(formData.totalSupply) * 0.99)).toFixed(8)
-                  : "0.00000000"
-              } ETH
-            </p>
-            <p className="text-sm text-gray-500 mt-2">
-              virtualETH is a synthetic representation of ETH used to initialize your token's price. 
-              You don't need to deposit real ETH until your token is ready to migrate to a public DEX.
-            </p>
+          {/* Initial Liquidity & Price Section */}
+          <div className="flex flex-col gap-2 border-b border-gray-200 pb-4">
+            <div className="flex justify-between">
+              <span className="font-medium">Initial Liquidity:</span>
+              <span>{formData.initialLiquidity} ETH</span>
+            </div>
+            
+            <div className="flex justify-between">
+              <span className="font-medium">Token Price:</span>
+              <div className="flex flex-col space-y-1 min-w-[250px] text-right font-mono">
+                <div>{tokenPrices.ethPrice} ETH</div>
+                <div>${tokenPrices.usdPrice}</div>
+              </div>
+            </div>
+            
+            <div className="text-xs text-gray-500 mt-1">
+              This virtual ETH is used for price initialization only.
+            </div>
           </div>
           
           {/* Developer Information Section */}

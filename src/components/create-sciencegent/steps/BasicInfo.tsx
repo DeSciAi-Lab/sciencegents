@@ -1,11 +1,13 @@
-
-import React from 'react';
-import { Image } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Image, Plus } from 'lucide-react';
 import { ScienceGentFormData } from '@/types/sciencegent';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
+import { getAllDomains, createDomain, Domain } from '@/services/domains';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 interface BasicInfoProps {
   formData: ScienceGentFormData;
@@ -14,14 +16,63 @@ interface BasicInfoProps {
   handleSelectChange?: (name: string, value: string) => void;
 }
 
-const domains = ["General Science", "Chemistry", "Physics", "Biology", "Biochemistry", "Materials Science", "Protein Analysis", "Drug Discovery", "Genomics"];
-
 const BasicInfo: React.FC<BasicInfoProps> = ({
   formData,
   handleInputChange,
   handleFileChange,
   handleSelectChange
 }) => {
+  const [domains, setDomains] = useState<Domain[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [newDomain, setNewDomain] = useState('');
+  const [isCreatingDomain, setIsCreatingDomain] = useState(false);
+  const [popoverOpen, setPopoverOpen] = useState(false);
+
+  // Fetch domains on component mount
+  useEffect(() => {
+    const fetchDomains = async () => {
+      try {
+        setLoading(true);
+        const domainsData = await getAllDomains();
+        setDomains(domainsData);
+      } catch (error) {
+        console.error('Error fetching domains:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDomains();
+  }, []);
+
+  // Handle creating a new domain
+  const handleCreateDomain = async () => {
+    if (!newDomain.trim()) return;
+    
+    try {
+      setIsCreatingDomain(true);
+      const createdDomain = await createDomain(newDomain);
+      
+      if (createdDomain) {
+        // Add to domains list
+        setDomains(prev => [...prev, createdDomain]);
+        
+        // Select the new domain
+        if (handleSelectChange) {
+          handleSelectChange('domain', createdDomain.name);
+        }
+        
+        // Clear input and close popover
+        setNewDomain('');
+        setPopoverOpen(false);
+      }
+    } catch (error) {
+      console.error('Error creating domain:', error);
+    } finally {
+      setIsCreatingDomain(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -67,21 +118,55 @@ const BasicInfo: React.FC<BasicInfoProps> = ({
         
         <div>
           <Label htmlFor="domain">Domain</Label>
-          <Select 
-            value={formData.domain || "General Science"} 
-            onValueChange={value => handleSelectChange?.("domain", value)}
-          >
-            <SelectTrigger className="w-full mt-2" id="domain">
-              <SelectValue placeholder="e.g. Biochemistry" />
-            </SelectTrigger>
-            <SelectContent>
-              {domains.map(domain => (
-                <SelectItem key={domain} value={domain}>
-                  {domain}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="flex gap-2 mt-2">
+            <Select 
+              value={formData.domain || ""} 
+              onValueChange={value => handleSelectChange?.("domain", value)}
+              disabled={loading}
+            >
+              <SelectTrigger className="flex-1" id="domain">
+                <SelectValue placeholder="Select a domain" />
+              </SelectTrigger>
+              <SelectContent>
+                {domains.map(domain => (
+                  <SelectItem key={domain.id} value={domain.name}>
+                    {domain.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            
+            <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
+              <PopoverTrigger asChild>
+                <Button 
+                  variant="outline" 
+                  size="icon" 
+                  className="flex-shrink-0"
+                  disabled={loading}
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-80">
+                <div className="space-y-4">
+                  <h4 className="font-medium">Add Custom Domain</h4>
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="e.g. Quantum Physics"
+                      value={newDomain}
+                      onChange={e => setNewDomain(e.target.value)}
+                    />
+                    <Button 
+                      onClick={handleCreateDomain} 
+                      disabled={isCreatingDomain || !newDomain.trim()}
+                    >
+                      Add
+                    </Button>
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
+          </div>
         </div>
       </div>
       

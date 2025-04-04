@@ -13,6 +13,7 @@ import { ScienceGentListItem } from '@/services/scienceGentExploreService';
 import { Star, ArrowDown, ArrowUp, ExternalLink, Copy } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useEthPriceContext } from '@/context/EthPriceContext';
+import { formatNumber, formatPercent, shortenNumber } from '@/utils/formatters';
 
 interface ScienceGentTableProps {
   scienceGents: ScienceGentListItem[];
@@ -58,6 +59,9 @@ const ScienceGentTable: React.FC<ScienceGentTableProps> = ({
             style={{ width: `${displayProgress}%` }}
           />
         </div>
+        <div className="text-xs text-gray-500 text-center mt-1">
+          {displayProgress.toFixed(2)}%
+        </div>
       </div>
     );
   };
@@ -92,22 +96,57 @@ const ScienceGentTable: React.FC<ScienceGentTableProps> = ({
     navigator.clipboard.writeText(text);
   };
 
-  // Convert ETH price to USD
-  const ethToUsd = (ethValue: number, usdValue?: number): string => {
-    // If we have a direct USD value from the database, use that
-    if (usdValue !== undefined) {
-      return usdValue.toFixed(3);
+  // Format Market Cap display - matches details page format
+  const formatMarketCap = (value: number): string => {
+    if (value === 0) return '$0.00';
+    
+    if (value < 1000) {
+      return `$${value.toFixed(2)}`;
+    } else if (value < 1000000) {
+      return `$${(value / 1000).toFixed(2)}k`;
+    } else if (value < 1000000000) {
+      return `$${(value / 1000000).toFixed(2)}M`;
+    } else {
+      return `$${(value / 1000000000).toFixed(2)}B`;
+    }
+  };
+
+  // Format price to match details page (more precision for small values)
+  const formatPrice = (value: number): string => {
+    if (value === 0) return '$0.00000000';
+    
+    // Use more decimal places for very small values
+    if (value < 0.0001) {
+      return `$${value.toFixed(8)}`;
+    } else if (value < 0.01) {
+      return `$${value.toFixed(6)}`;
+    } else if (value < 1) {
+      return `$${value.toFixed(4)}`;
     }
     
-    // Otherwise, calculate it using the current ETH price
-    if (!ethPrice) return (ethValue * 1500).toFixed(3); // Fallback conversion
-    return (ethValue * ethPrice).toFixed(3);
+    return `$${value.toFixed(2)}`;
+  };
+
+  // Format 24h volume to match details page
+  const formatVolume = (value: number): string => {
+    if (value === 0) return '$0.00';
+    
+    if (value < 10) {
+      return `$${value.toFixed(2)}`;
+    } else if (value < 1000) {
+      return `$${value.toFixed(2)}`;
+    } else if (value < 10000) {
+      return `$${value.toFixed(2)}`;
+    } else {
+      // For larger values, use k/M formatting
+      return formatMarketCap(value);
+    }
   };
 
   // Loading row placeholder
   const renderLoadingRow = () => (
     <TableRow>
-      <TableCell colSpan={13} className="h-24 text-center">
+      <TableCell colSpan={12} className="h-24 text-center">
         <div className="flex flex-col items-center justify-center">
           <svg className="animate-spin h-6 w-6 text-gray-500 mb-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
@@ -136,10 +175,9 @@ const ScienceGentTable: React.FC<ScienceGentTableProps> = ({
             <TableHead>Rating</TableHead>
             <TableHead>Maturity</TableHead>
             <TableHead>Domain</TableHead>
-            <TableHead>{renderSortableHeader('Market cap (USD)', 'marketCapUsd')}</TableHead>
+            <TableHead>{renderSortableHeader('Market cap', 'marketCapUsd')}</TableHead>
             <TableHead>24h Chg</TableHead>
             <TableHead>24h vol</TableHead>
-            <TableHead>Price (ETH)</TableHead>
             <TableHead>Price (USD)</TableHead>
           </TableRow>
         </TableHeader>
@@ -148,7 +186,7 @@ const ScienceGentTable: React.FC<ScienceGentTableProps> = ({
             renderLoadingRow()
           ) : scienceGents.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={13} className="h-24 text-center">
+              <TableCell colSpan={12} className="h-24 text-center">
                 <p className="text-gray-500">No ScienceGents found</p>
               </TableCell>
             </TableRow>
@@ -205,8 +243,8 @@ const ScienceGentTable: React.FC<ScienceGentTableProps> = ({
                     </div>
                   </div>
                 </TableCell>
-                <TableCell>{gent.age}</TableCell>
-                <TableCell>{gent.revenue} DSI</TableCell>
+                <TableCell>{gent.age === 'unknown' ? 'unknown' : gent.age}</TableCell>
+                <TableCell>{formatNumber(gent.revenue, 0)} DSI</TableCell>
                 <TableCell>{renderRating(gent.rating)}</TableCell>
                 <TableCell>{renderMaturityProgress(gent.maturityProgress)}</TableCell>
                 <TableCell>
@@ -215,17 +253,15 @@ const ScienceGentTable: React.FC<ScienceGentTableProps> = ({
                   </Badge>
                 </TableCell>
                 <TableCell>
-                  {gent.marketCapUsd 
-                    ? `$${gent.marketCapUsd > 1000 ? `${(gent.marketCapUsd/1000).toFixed(0)}k` : gent.marketCapUsd.toFixed(2)}`
-                    : `${gent.marketCap > 1000 ? `${(gent.marketCap/1000).toFixed(0)}k` : gent.marketCap.toFixed(2)} ETH`
-                  }
+                  {formatMarketCap(gent.marketCapUsd || gent.marketCap * (ethPrice || 3000))}
                 </TableCell>
                 <TableCell className={`${gent.priceChange24h >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {gent.priceChange24h >= 0 ? '+' : ''}{gent.priceChange24h}%
+                  {formatPercent(gent.priceChange24h)}
                 </TableCell>
-                <TableCell>{gent.volume24h > 1000 ? `${(gent.volume24h/1000).toFixed(0)}k` : gent.volume24h}</TableCell>
-                <TableCell>{gent.tokenPrice.toFixed(3)} ETH</TableCell>
-                <TableCell>${ethToUsd(gent.tokenPrice, gent.tokenPriceUsd)}</TableCell>
+                <TableCell>{formatVolume(gent.volume24h)}</TableCell>
+                <TableCell>
+                  {formatPrice(gent.tokenPriceUsd || gent.tokenPrice * (ethPrice || 3000))}
+                </TableCell>
               </TableRow>
             ))
           )}

@@ -1,13 +1,76 @@
-
 import { useState, useCallback } from 'react';
 import { ethers } from 'ethers';
 import { toast } from '@/components/ui/use-toast';
 import { contractConfig } from '@/utils/contractConfig';
 import { recordTokenSwap } from '@/services/priceHistoryService';
+import { supabase } from '@/integrations/supabase/client';
+import { fetchTokenStats } from '@/services/scienceGent';
+
+// Function to log trade to Supabase
+const logTradeToSupabase = async (
+  tokenId: string,
+  priceInUsd: number,
+  volume: number, // Negative for sell, positive for buy
+  tradeType: 'buy' | 'sell',
+  ethAmount: number,
+  valueInUsd: number,
+  maker: string
+) => {
+  try {
+    const { data, error } = await supabase
+      .from('trades')
+      .insert({
+        token_id: tokenId,
+        price_in_usd: priceInUsd,
+        volume: volume,
+        time: new Date().toISOString(),
+        trade_type: tradeType,
+        eth_amount: ethAmount,
+        value_in_usd: valueInUsd,
+        maker: maker
+      });
+    
+    if (error) {
+      console.error('Error logging trade to Supabase:', error);
+    }
+  } catch (e) {
+    console.error('Exception while logging trade to Supabase:', e);
+  }
+};
 
 export const useSwapTransactions = (tokenAddress: string, onSuccess: () => Promise<void>) => {
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Helper function to safely parse token amounts
+  const safeParseTokenAmount = (amount: string): ethers.BigNumber => {
+    try {
+      // Always floor the amount to remove decimals entirely
+      const numericValue = parseFloat(amount);
+      if (isNaN(numericValue)) {
+        console.error("Invalid input amount for parseFloat:", amount);
+        throw new Error("Invalid token amount");
+      }
+      const wholeNumberString = Math.floor(numericValue).toString();
+      
+      // Convert the whole number string to a BigNumber
+      const bn = ethers.BigNumber.from(wholeNumberString);
+      
+      // Multiply by 10^18 to scale to Wei (assuming 18 decimals)
+      const weiMultiplier = ethers.BigNumber.from(10).pow(18);
+      return bn.mul(weiMultiplier);
+
+    } catch (error) {
+      console.error('Error parsing final floored amount with explicit multiplication:', error);
+      toast({
+        title: "Amount Error",
+        description: "Could not process the token amount. Please enter a valid number.",
+        variant: "destructive",
+      });
+      // Return 0 as a safe fallback
+      return ethers.BigNumber.from(0);
+    }
+  };
 
   // Function to buy tokens with ETH
   const buyTokens = useCallback(async (ethAmount: string, minTokensOut: string): Promise<boolean> => {
@@ -28,7 +91,7 @@ export const useSwapTransactions = (tokenAddress: string, onSuccess: () => Promi
       );
       
       const ethAmountWei = ethers.utils.parseEther(ethAmount);
-      const minTokensOutWei = ethers.utils.parseEther(minTokensOut);
+      const minTokensOutWei = safeParseTokenAmount(minTokensOut);
       
       const toastId = toast({
         title: "Preparing Transaction",
@@ -47,21 +110,46 @@ export const useSwapTransactions = (tokenAddress: string, onSuccess: () => Promi
       });
       
       const receipt = await tx.wait();
+
+      // Get current ETH price in USD
+      const ethPriceResponse = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd');
+      const ethPriceData = await ethPriceResponse.json();
+      const ethPriceUSD = ethPriceData.ethereum.usd;
+
+      // Calculate price in USD
+      const priceInUsd = parseFloat(ethAmount) * ethPriceUSD / parseFloat(minTokensOut);
+      const usdValue = parseFloat(ethAmount) * ethPriceUSD;
+      
+      // Log trade to Supabase
+      await logTradeToSupabase(
+        tokenAddress,
+        priceInUsd,
+        parseFloat(minTokensOut), // Volume (positive for buy)
+        'buy',                     // Trade Type
+        parseFloat(ethAmount),     // ETH Amount
+        usdValue,                  // Value in USD
+        userAddress                // Maker
+      );
       
       toast({
         title: "Purchase Successful",
-        description: `You have successfully purchased approximately ${parseFloat(minTokensOut).toFixed(6)} tokens.`,
+        description: `You have successfully purchased approximately ${minTokensOut} tokens for ${ethAmount} ETH.`,
       });
       
       // Record the trade for price history
       await recordTokenSwap(
         tokenAddress,
-        true, // isBuy
+        true, // isBuy = true for buy
         minTokensOut, // approximate token amount
         ethAmount,
         tx.hash,
         userAddress
       );
+      
+      // Update token stats in the background
+      fetchTokenStats(tokenAddress, ethPriceUSD, false).catch(err => {
+        console.error('Error updating token stats after purchase:', err);
+      });
       
       await onSuccess();
       return true;
@@ -113,137 +201,114 @@ export const useSwapTransactions = (tokenAddress: string, onSuccess: () => Promi
         signer
       );
       
-      // Parse token amount safely without showing errors for large numbers
-      let tokenAmountWei;
-      try {
-        // For large integers without decimals
-        if (!tokenAmount.includes('.') && tokenAmount.length > 15) {
-          const tokenAmountBN = ethers.BigNumber.from(tokenAmount);
-          tokenAmountWei = tokenAmountBN.mul(ethers.constants.WeiPerEther);
-        } 
-        // For large decimal numbers
-        else if (tokenAmount.includes('.') && tokenAmount.length > 15) {
-          // For large decimals, round to a reasonable precision (6 decimals)
-          const parts = tokenAmount.split('.');
-          const integerPart = parts[0];
-          const decimalPart = parts[1].substring(0, 6); // Keep only 6 decimal places
-          const roundedAmount = `${integerPart}.${decimalPart}`;
-          tokenAmountWei = ethers.utils.parseEther(roundedAmount);
-          
-          console.log("Using rounded decimal amount:", roundedAmount);
-        }
-        // Standard parsing for reasonable numbers
-        else {
-          tokenAmountWei = ethers.utils.parseEther(tokenAmount);
-        }
-      } catch (parseError) {
-        console.error('Error parsing token amount:', parseError);
-        
-        // Fallback strategy for extreme cases - use a simplified integer amount
-        try {
-          const numValue = Math.floor(parseFloat(tokenAmount));
-          const simpleAmount = numValue.toString();
-          
-          // For very large integers
-          if (simpleAmount.length > 15) {
-            const tokenAmountBN = ethers.BigNumber.from(simpleAmount);
-            tokenAmountWei = tokenAmountBN.mul(ethers.constants.WeiPerEther);
-          } else {
-            tokenAmountWei = ethers.utils.parseEther(simpleAmount);
-          }
-          
-          // Notify user but continue the transaction
-          toast({
-            title: "Amount Simplified",
-            description: "The token amount was simplified to prevent errors. Decimal places were removed.",
-            variant: "default",
-          });
-        } catch (fallbackError) {
-          console.error('Even fallback parsing failed:', fallbackError);
-          throw new Error("Unable to process this token amount. Please try a smaller or simpler amount (with fewer decimal places).");
-        }
-      }
+      // Parse token amount using our safe parser
+      const tokenAmountWei = safeParseTokenAmount(tokenAmount);
       
+      // Safely parse minEthOut, truncating decimals to 18 places
+      let minEthOutWei: ethers.BigNumber;
+      try {
+        const ethParts = minEthOut.split('.');
+        const ethIntegerPart = ethParts[0];
+        const ethDecimalPart = ethParts[1] || '';
+        const truncatedEthDecimal = ethDecimalPart.slice(0, 18);
+        const truncatedEthAmount = ethDecimalPart ? `${ethIntegerPart}.${truncatedEthDecimal}` : ethIntegerPart;
+        minEthOutWei = ethers.utils.parseEther(truncatedEthAmount);
+      } catch (parseError) {
+        console.error("Error parsing minEthOut:", parseError);
+        toast({
+          title: "Amount Error",
+          description: "Could not process the minimum ETH amount. Please ensure it is valid.",
+          variant: "destructive",
+        });
+        // Use 0 as fallback if parsing fails, though this might cause reverts if slippage is high
+        minEthOutWei = ethers.BigNumber.from(0);
+      }
+
       toast({
         title: "Preparing Transaction",
         description: "Approve token spending in your wallet...",
       });
       
       // Execute approve transaction
-      try {
-        const approveTx = await tokenContract.approve(
-          contractConfig.addresses.ScienceGentsSwap,
-          tokenAmountWei
-        );
-        
-        toast({
-          title: "Approval Submitted",
-          description: "Approval is being processed...",
-        });
-        
-        await approveTx.wait();
-      } catch (approveError: any) {
-        // Don't show decimal places error if the approve transaction itself succeeded
-        // The error could be coming from our UI parsing but the transaction might work
-        if (!approveError.message?.includes('user rejected')) {
-          console.warn("Approve had an error but might have succeeded, continuing with sell:", approveError);
-        } else {
-          throw approveError; // Rethrow user rejections
-        }
-      }
+      const approveTx = await tokenContract.approve(
+        contractConfig.addresses.ScienceGentsSwap,
+        tokenAmountWei
+      );
       
-      // Now sell the tokens - continue even if there was a non-rejection error in approve
-      // since the transaction could have gone through successfully
+      toast({
+        title: "Approval Submitted",
+        description: "Approval is being processed...",
+      });
+      
+      await approveTx.wait();
+      
+      // Now sell the tokens
       const swapContract = new ethers.Contract(
         contractConfig.addresses.ScienceGentsSwap,
         ['function sellTokens(address,uint256,uint256)'],
         signer
       );
       
-      const minEthOutWei = ethers.utils.parseEther(minEthOut);
-      
       toast({
         title: "Confirm Sale",
         description: "Confirm the sale transaction in your wallet...",
       });
       
-      try {
-        const tx = await swapContract.sellTokens(
-          tokenAddress,
-          tokenAmountWei,
-          minEthOutWei
-        );
-        
-        toast({
-          title: "Transaction Submitted",
-          description: "Your sale is being processed...",
-        });
-        
-        const receipt = await tx.wait();
-        
-        toast({
-          title: "Sale Successful",
-          description: `You have successfully sold tokens for approximately ${parseFloat(minEthOut).toFixed(6)} ETH.`,
-        });
-        
-        // Clear any error that might have been set during the approval phase
-        setError(null);
-        
-        // Record the trade for price history
-        await recordTokenSwap(
-          tokenAddress,
-          false, // isBuy = false for sell
-          tokenAmount,
-          minEthOut, // approximate ETH amount
-          tx.hash,
-          userAddress
-        );
-        
-        await onSuccess();
-        return true;
-      } catch (sellError: any) {
-        throw sellError; // Rethrow any errors from the actual sell transaction
-      }
+      const tx = await swapContract.sellTokens(
+        tokenAddress,
+        tokenAmountWei,
+        minEthOutWei
+      );
+      
+      toast({
+        title: "Transaction Submitted",
+        description: "Your sale is being processed...",
+      });
+      
+      const receipt = await tx.wait();
+
+      // Get current ETH price in USD
+      const ethPriceResponse = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd');
+      const ethPriceData = await ethPriceResponse.json();
+      const ethPriceUSD = ethPriceData.ethereum.usd;
+
+      // Calculate price in USD
+      const priceInUsd = parseFloat(minEthOut) * ethPriceUSD / parseFloat(tokenAmount);
+      const usdValue = parseFloat(minEthOut) * ethPriceUSD;
+      
+      // Log trade to Supabase
+      await logTradeToSupabase(
+        tokenAddress,
+        priceInUsd,
+        -parseFloat(tokenAmount), // Volume (negative for sell)
+        'sell',                    // Trade Type
+        parseFloat(minEthOut),   // ETH Amount
+        usdValue,                 // Value in USD
+        userAddress               // Maker
+      );
+      
+      toast({
+        title: "Sale Successful",
+        description: `You have successfully sold ${tokenAmount} tokens for approximately ${parseFloat(minEthOut).toFixed(6)} ETH.`,
+      });
+      
+      // Record the trade for price history
+      await recordTokenSwap(
+        tokenAddress,
+        false, // isBuy = false for sell
+        tokenAmount,
+        minEthOut, // approximate ETH amount
+        tx.hash,
+        userAddress
+      );
+      
+      // Update token stats in the background
+      fetchTokenStats(tokenAddress, ethPriceUSD, false).catch(err => {
+        console.error('Error updating token stats after sale:', err);
+      });
+      
+      await onSuccess();
+      return true;
     } catch (e: any) {
       console.error('Error selling tokens:', e);
       
@@ -257,24 +322,18 @@ export const useSwapTransactions = (tokenAddress: string, onSuccess: () => Promi
         errorMsg = 'Insufficient token balance for this transaction.';
       } else if (errorMsg.includes('slippage')) {
         errorMsg = 'Transaction would result in too much slippage. Try a smaller amount or increase slippage tolerance.';
-      } else if (errorMsg.includes('NUMERIC_FAULT') || errorMsg.includes('fractional component') || errorMsg.includes('decimal places')) {
-        // For decimal place errors, don't show the error if we might have already sent the transaction
-        if (isPending) {
-          errorMsg = null; // Don't show error, the transaction might be in progress
-        } else {
-          errorMsg = 'The token amount is too large or has too many decimal places. Try using a rounded number without decimal places.';
-        }
+      } else if (errorMsg.includes('NUMERIC_FAULT') || errorMsg.includes('fractional component')) {
+        // Generic message as we now auto-floor the input
+        errorMsg = 'Could not process the token amount. Please ensure it is a valid number.';
       }
       
-      if (errorMsg) {
-        setError(errorMsg);
-        
-        toast({
-          title: "Sale Failed",
-          description: errorMsg,
-          variant: "destructive",
-        });
-      }
+      setError(errorMsg);
+      
+      toast({
+        title: "Sale Failed",
+        description: errorMsg,
+        variant: "destructive",
+      });
       
       return false;
     } finally {

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useCapabilityWizard } from '../CapabilityWizardContext';
 import { Button } from '@/components/ui/button';
@@ -10,6 +9,7 @@ import { upsertCapabilityToSupabase } from '@/services/capability/supabase';
 import { registerCapabilityOnBlockchain } from '@/services/capability/blockchain';
 import { toast } from '@/components/ui/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { supabase } from '@/integrations/supabase/client';
 
 const Review: React.FC = () => {
   const {
@@ -96,6 +96,28 @@ const Review: React.FC = () => {
       
       // Save to database
       await upsertCapabilityToSupabase(capabilityData, true);
+
+      // Update developer's created_capabilities array
+      try {
+        const { data: existingProfile } = await supabase
+          .from('developer_profiles')
+          .select('created_capabilities')
+          .eq('wallet_address', creatorAddress.toLowerCase())
+          .single();
+
+        if (existingProfile) {
+          const updatedCapabilities = [...(existingProfile.created_capabilities || []), id];
+          
+          await supabase
+            .from('developer_profiles')
+            .update({
+              created_capabilities: updatedCapabilities
+            } as any) // Cast to any to bypass type checking
+            .eq('wallet_address', creatorAddress.toLowerCase());
+        }
+      } catch (error) {
+        console.error('Error updating developer profile:', error);
+      }
       
       setIsSuccess(true);
       toast({
@@ -151,7 +173,7 @@ const Review: React.FC = () => {
             variant="default"
             asChild
           >
-            <a href={`/capabilities/${id}`}>
+            <a href={`/capability/${id}`}>
               View Capability
             </a>
           </Button>

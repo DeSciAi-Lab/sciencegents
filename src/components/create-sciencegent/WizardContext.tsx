@@ -1,10 +1,13 @@
-
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ScienceGentFormData } from '@/types/sciencegent';
 import { validateStep, wizardSteps } from '@/components/create-sciencegent/utils';
 import useScienceGentCreation, { CreationStatus } from '@/hooks/useScienceGentCreation';
 import { useDeveloperProfile } from '@/hooks/useDeveloperProfile';
+import { fetchTokenStats } from '@/services/scienceGent';
+import { useEthPriceContext } from '@/context/EthPriceContext';
+import { toast } from '@/components/ui/use-toast';
+import { useWallet } from '@/hooks/useWallet';
 
 // Keys for localStorage
 const FORM_DATA_KEY = 'sciencegent_wizard_form_data';
@@ -26,7 +29,8 @@ const initialFormData: ScienceGentFormData = {
   agentFee: '2',
   persona: '',
   selectedCapabilities: [],
-  initialLiquidity: ''
+  initialLiquidity: '',
+  applyForCuration: false
 };
 
 interface WizardContextType {
@@ -58,6 +62,9 @@ const WizardContext = createContext<WizardContextType | undefined>(undefined);
 export const WizardProvider: React.FC<{children: React.ReactNode}> = ({ children }) => {
   const navigate = useNavigate();
   const [isInitialized, setIsInitialized] = useState(false);
+  const { ethPrice } = useEthPriceContext();
+  const [isUpdatingTokenStats, setIsUpdatingTokenStats] = useState(false);
+  const { isConnected } = useWallet(); // Get wallet connection status
   
   // Get saved form data and current step from localStorage
   const getSavedFormData = (): ScienceGentFormData => {
@@ -103,7 +110,8 @@ export const WizardProvider: React.FC<{children: React.ReactNode}> = ({ children
     createToken,
     launchFee,
     approveDSI,
-    isDSIApproved
+    isDSIApproved,
+    resetCreation
   } = useScienceGentCreation();
 
   // Load saved data on component mount
@@ -166,14 +174,53 @@ export const WizardProvider: React.FC<{children: React.ReactNode}> = ({ children
   // Navigate to details page when token is successfully synced
   useEffect(() => {
     if (status === CreationStatus.Success && tokenAddress && !isSyncing) {
-      // Small delay to show success state before redirecting
-      const redirectTimer = setTimeout(() => {
-        navigate(`/sciencegent/${tokenAddress}`);
-      }, 2000);
+      // Update token statistics before redirecting
+      setIsUpdatingTokenStats(true);
       
-      return () => clearTimeout(redirectTimer);
+      const updateTokenStats = async () => {
+        try {
+          // Use our reusable token stats service to update token data
+          console.log("Updating token statistics using reusable service:", tokenAddress);
+          const result = await fetchTokenStats(tokenAddress, ethPrice);
+          
+          if (result.success) {
+            toast({
+              title: "Token Statistics Updated",
+              description: `Updated ${result.data.name} (${result.data.symbol}) statistics from blockchain`
+            });
+          } else {
+            console.error("Failed to update token statistics:", result.error);
+          }
+        } catch (error) {
+          console.error("Error updating token statistics:", error);
+        } finally {
+          setIsUpdatingTokenStats(false);
+          
+          // Now redirect to details page
+          navigate(`/sciencegent/${tokenAddress}`);
+        }
+      };
+      
+      updateTokenStats();
     }
-  }, [status, tokenAddress, isSyncing, navigate]);
+  }, [status, tokenAddress, isSyncing, navigate, ethPrice]);
+
+  // Reset wizard state when wallet disconnects
+  useEffect(() => {
+    if (!isConnected && (
+      status === CreationStatus.WaitingConfirmation || 
+      status === CreationStatus.Creating ||
+      status === CreationStatus.ApprovingDSI
+    )) {
+      console.log("Wallet disconnected while in creation process, resetting wizard...");
+      resetWizard();
+      toast({
+        title: "Process Interrupted",
+        description: "Your wallet has been disconnected. Please reconnect to continue.",
+        variant: "destructive"
+      });
+    }
+  }, [isConnected, status]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -218,12 +265,18 @@ export const WizardProvider: React.FC<{children: React.ReactNode}> = ({ children
     }
   };
   
-  // Add a reset function to clear the form
   const resetWizard = () => {
+    // Reset form data
+    setFormData(initialFormData);
+    // Reset to first step
+    setCurrentStep(1);
+    // Clear localStorage
     localStorage.removeItem(FORM_DATA_KEY);
     localStorage.removeItem(CURRENT_STEP_KEY);
-    setFormData(initialFormData);
-    setCurrentStep(1);
+    // Reset creation state
+    resetCreation();
+    setIsLaunching(false);
+    setIsUpdatingTokenStats(false);
   };
 
   const handleApproveAndLaunch = async () => {
@@ -279,7 +332,7 @@ export const WizardProvider: React.FC<{children: React.ReactNode}> = ({ children
       error,
       transactionHash,
       tokenAddress,
-      isSyncing,
+      isSyncing: isSyncing || isUpdatingTokenStats, // Include token stats updating in loading state
       isDSIApproved,
       isCheckingAllowance,
       developerProfile,

@@ -1,10 +1,9 @@
-
 import React, { useState, useEffect } from 'react';
 import { ScienceGentFormData } from '@/types/sciencegent';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Info } from 'lucide-react';
-import { useEthPriceContext, formatEthToUsd } from '@/context/EthPriceContext';
+import { useEthPriceContext } from '@/context/EthPriceContext';
 
 interface LiquiditySettingsProps {
   formData: ScienceGentFormData;
@@ -12,26 +11,35 @@ interface LiquiditySettingsProps {
 }
 
 const LiquiditySettings: React.FC<LiquiditySettingsProps> = ({ formData, handleInputChange }) => {
-  const [tokenPrice, setTokenPrice] = useState<string>("0.000000");
+  const [tokenPriceEth, setTokenPriceEth] = useState<string>("0.000000000000");
+  const [tokenPriceUsd, setTokenPriceUsd] = useState<string>("0.000000000000");
   const { ethPrice } = useEthPriceContext();
   
-  // Calculate token price whenever initialLiquidity changes
+  // Calculate token price whenever initialLiquidity or totalSupply changes
   useEffect(() => {
     if (formData.initialLiquidity && formData.totalSupply) {
       const liquidityEth = parseFloat(formData.initialLiquidity);
       const totalSupply = parseFloat(formData.totalSupply);
       
-      // 99% of tokens go to liquidity pool
-      const tokensInPool = totalSupply * 0.99;
-      
-      if (liquidityEth > 0 && tokensInPool > 0) {
-        const price = liquidityEth / tokensInPool;
-        setTokenPrice(price.toFixed(8));
+      if (liquidityEth > 0 && totalSupply > 0) {
+        // Calculate ETH price directly using initial liquidity / total supply
+        const priceEth = liquidityEth / totalSupply;
+        setTokenPriceEth(priceEth.toFixed(12));
+        
+        // Calculate USD price as initial liquidity * ETH price / total supply
+        if (ethPrice) {
+          const priceUsd = (liquidityEth * ethPrice) / totalSupply;
+          setTokenPriceUsd(priceUsd.toFixed(12));
+        }
       } else {
-        setTokenPrice("0.000000");
+        setTokenPriceEth("0.000000000000");
+        setTokenPriceUsd("0.000000000000");
       }
+    } else {
+      setTokenPriceEth("0.000000000000");
+      setTokenPriceUsd("0.000000000000");
     }
-  }, [formData.initialLiquidity, formData.totalSupply]);
+  }, [formData.initialLiquidity, formData.totalSupply, ethPrice]);
 
   return (
     <div className="space-y-8">
@@ -60,18 +68,24 @@ const LiquiditySettings: React.FC<LiquiditySettingsProps> = ({ formData, handleI
         <div>
           <Label htmlFor="tokenPrice">Price</Label>
           <div className="flex items-center gap-2 mt-2">
-            <Input
-              id="tokenPrice"
-              type="text"
-              placeholder="e.g. 0.00000000202 ETH"
-              value={`${tokenPrice} ETH`}
-              readOnly
-              className="bg-gray-50"
-            />
-            <div className="bg-gray-100 border border-gray-300 px-4 py-2 rounded">
-              {formatEthToUsd(parseFloat(tokenPrice), ethPrice)}
+            <div className="flex-1">
+              <Input
+                id="tokenPriceEth"
+                type="text"
+                readOnly
+                className="bg-gray-50 w-full font-mono"
+                value={`${tokenPriceEth} ETH`}
+              />
+            </div>
+            <div className="flex-1">
+              <div className="bg-gray-100 border border-gray-300 px-4 py-2 rounded w-full h-10 flex items-center font-mono">
+                ${tokenPriceUsd}
+              </div>
             </div>
           </div>
+          <p className="text-xs text-gray-500 mt-1">
+            Token price = Initial Liquidity ÷ Total Supply
+          </p>
         </div>
       </div>
       

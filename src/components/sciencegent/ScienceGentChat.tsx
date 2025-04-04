@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -8,6 +7,7 @@ import { Bot, Send, User, Trash2, ExternalLink, Info, Search, Edit, ThumbsUp, Th
 import { ScrollArea } from "@/components/ui/scroll-area";
 import useScienceGentChat from '@/hooks/useScienceGentChat';
 import { Skeleton } from "@/components/ui/skeleton";
+import ReactMarkdown from 'react-markdown';
 import {
   Tooltip,
   TooltipContent,
@@ -27,19 +27,201 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import RatingScienceGent from './RatingScienceGent';
+import { toast } from "@/components/ui/use-toast";
+import { supabase } from '@/integrations/supabase/client';
 
 interface ScienceGentChatProps {
   scienceGent: any;
   address: string;
 }
 
+// Function to generate prompt suggestions based on the ScienceGent's persona
+const generatePromptSuggestions = async (persona: string, name: string) => {
+  try {
+    // Default suggestions in case the API call fails
+    const defaultSuggestions = [
+      "What research areas do you specialize in?",
+      "Can you explain your core capabilities?",
+      "How can you help with scientific research?",
+      "What's your background in science?"
+    ];
+    
+    if (!process.env.NEXT_PUBLIC_OPENAI_API_KEY) {
+      console.log('OpenAI API key not found, using default suggestions');
+      return defaultSuggestions;
+    }
+    
+    const truncatedPersona = persona?.substring(0, 500) || `A scientific assistant named ${name} specializing in research and academic work`;
+    
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.NEXT_PUBLIC_OPENAI_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: 'gpt-3.5-turbo',
+        messages: [
+          {
+            role: 'system',
+            content: 'You generate relevant prompt suggestions for users to ask an AI assistant. Provide 4 short, specific questions (under 50 characters each) that would be interesting to ask this assistant based on their persona.'
+          },
+          {
+            role: 'user',
+            content: `Generate 4 interesting prompt suggestions for users to ask an AI assistant with this persona: "${truncatedPersona}". Make the suggestions concise, specific, and focused on the assistant's expertise areas.`
+          }
+        ],
+        temperature: 0.7,
+        max_tokens: 150
+      })
+    });
+    
+    if (!response.ok) {
+      console.error('Error generating prompt suggestions:', await response.text());
+      return defaultSuggestions;
+    }
+    
+    const data = await response.json();
+    const suggestionsText = data.choices[0].message.content;
+    
+    // Parse the response - expected format is a list of 4 suggestions
+    // We'll handle various formats including numbered lists, bullet points, etc.
+    let suggestions = suggestionsText
+      .split(/\d+\.\s|\n-\s|\n\*\s|\n/)  // Split by common list formats
+      .map(s => s.trim())
+      .filter(s => s.length > 0 && s.length < 60);  // Filter empty strings and long suggestions
+    
+    // If we couldn't extract 4 suggestions, use the defaults
+    if (suggestions.length < 2) {
+      return defaultSuggestions;
+    }
+    
+    // Limit to 4 suggestions
+    return suggestions.slice(0, 4);
+  } catch (error) {
+    console.error('Error generating prompt suggestions:', error);
+    return [
+      "What research areas do you specialize in?",
+      "Can you explain your core capabilities?",
+      "How can you help with scientific research?",
+      "What's your background in science?"
+    ];
+  }
+};
+
 const ScienceGentChat: React.FC<ScienceGentChatProps> = ({ scienceGent, address }) => {
   const [inputMessage, setInputMessage] = useState('');
-  const [showPersona, setShowPersona] = useState(false);
+  const [showPrompts, setShowPrompts] = useState(true);
   const { messages, isLoading, sendMessage, clearChat, isInitializing, hasAssistant } = useScienceGentChat(address, scienceGent);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
-  const [showPrompts, setShowPrompts] = useState(true);
+  const [hasRated, setHasRated] = useState(false);
+  const [shouldShowRating, setShouldShowRating] = useState(false);
+  const [capabilityNames, setCapabilityNames] = useState<string[]>([]);
+  const [promptSuggestions, setPromptSuggestions] = useState<string[]>([
+    "What research areas do you specialize in?",
+    "Can you explain your core capabilities?",
+    "How can you help with scientific research?",
+    "What's your background in science?"
+  ]);
+  const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
+  // Add state for tracking message feedback
+  const [messageFeedback, setMessageFeedback] = useState<Record<string, 'like' | 'dislike' | null>>({});
+  const [copyStatus, setCopyStatus] = useState<Record<string, boolean>>({});
+
+  // Generate prompt suggestions based on persona
+  useEffect(() => {
+    const fetchPromptSuggestions = async () => {
+      if (!scienceGent?.persona) return;
+      
+      setIsLoadingSuggestions(true);
+      try {
+        const suggestions = await generatePromptSuggestions(
+          scienceGent.persona,
+          scienceGent?.name || 'ScienceGent'
+        );
+        setPromptSuggestions(suggestions);
+      } catch (error) {
+        console.error('Error fetching prompt suggestions:', error);
+      } finally {
+        setIsLoadingSuggestions(false);
+      }
+    };
+    
+    fetchPromptSuggestions();
+  }, [scienceGent?.persona, scienceGent?.name]);
+
+  // Check if user has already rated and if they've chatted
+  useEffect(() => {
+    // Check if user has already rated this ScienceGent
+    const userHasRated = localStorage.getItem(`rated_${address}`) === 'true';
+    setHasRated(userHasRated);
+    
+    // Determine if we should show the rating component
+    // Only show after first message and if not already rated
+    const hasMessages = messages.length > 0 && messages.some(m => m.role === 'user');
+    setShouldShowRating(hasMessages && !userHasRated);
+  }, [address, messages]);
+
+  // Fetch capability names if needed
+  useEffect(() => {
+    const fetchCapabilityNames = async () => {
+      try {
+        console.log('Attempting to fetch capabilities for ScienceGent with address:', address);
+        
+        // Get the capability IDs associated with this ScienceGent
+        const { data: capabilityLinks, error: linksError } = await supabase
+          .from('sciencegent_capabilities')
+          .select('capability_id')
+          .eq('sciencegent_address', address);
+          
+        if (linksError) {
+          console.error('Error fetching capability links:', linksError);
+          return;
+        }
+        
+        if (!capabilityLinks || capabilityLinks.length === 0) {
+          console.log('No capabilities found for this ScienceGent');
+          return;
+        }
+        
+        // Extract the capability IDs
+        const capabilityIds = capabilityLinks.map(link => link.capability_id);
+        console.log('Found capability IDs:', capabilityIds);
+        
+        // Fetch the detailed information for each capability
+        // Using a SQL query to ensure we get the name field
+        const { data: capabilities, error: capabilitiesError } = await supabase
+          .from('capabilities')
+          .select('id, name, description')
+          .in('id', capabilityIds);
+        
+        if (capabilitiesError) {
+          console.error('Error fetching capability details:', capabilitiesError);
+          return;
+        }
+        
+        console.log('Raw capabilities data from database:', capabilities);
+        
+        if (capabilities && capabilities.length > 0) {
+          // Extract just the names from the capabilities data
+          const names = capabilities.map(cap => cap.name || cap.id);
+          console.log('Extracted capability names:', names);
+          setCapabilityNames(names);
+        } else {
+          console.log('No capability details found in database');
+        }
+      } catch (err) {
+        console.error('Error processing capabilities:', err);
+      }
+    };
+    
+    if (address) {
+      console.log('Fetching capabilities for address:', address);
+      fetchCapabilityNames();
+    }
+  }, [address]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -70,16 +252,49 @@ const ScienceGentChat: React.FC<ScienceGentChatProps> = ({ scienceGent, address 
     }
   };
 
-  const hasPersona = Boolean(scienceGent?.persona);
   const capabilitiesCount = scienceGent?.capabilities?.length || 0;
 
-  // Sample prompt suggestions
-  const promptSuggestions = [
-    "Show me the temperature today",
-    "Why does it rain",
-    "Do you feel different because of weather",
-    "What kind of clouds are there"
-  ];
+  // Handle the thumbs up action
+  const handleThumbsUp = (messageId: string) => {
+    setMessageFeedback(prev => ({
+      ...prev,
+      [messageId]: prev[messageId] === 'like' ? null : 'like'
+    }));
+  };
+
+  // Handle the thumbs down action
+  const handleThumbsDown = (messageId: string) => {
+    setMessageFeedback(prev => ({
+      ...prev,
+      [messageId]: prev[messageId] === 'dislike' ? null : 'dislike'
+    }));
+  };
+
+  // Handle the copy to clipboard action
+  const handleCopy = (messageId: string, content: string) => {
+    navigator.clipboard.writeText(content)
+      .then(() => {
+        setCopyStatus(prev => ({ ...prev, [messageId]: true }));
+        toast({
+          title: "Copied to clipboard",
+          duration: 2000
+        });
+        
+        // Reset copy status after 2 seconds
+        setTimeout(() => {
+          setCopyStatus(prev => ({ ...prev, [messageId]: false }));
+        }, 2000);
+      })
+      .catch(err => {
+        console.error('Failed to copy: ', err);
+        toast({
+          title: "Failed to copy",
+          description: "Please try again",
+          variant: "destructive",
+          duration: 2000
+        });
+      });
+  };
 
   if (isInitializing) {
     return (
@@ -92,142 +307,29 @@ const ScienceGentChat: React.FC<ScienceGentChatProps> = ({ scienceGent, address 
   }
 
   return (
-    <div className="flex h-[700px]">
-      {/* Left Sidebar */}
-      <div className="w-64 bg-gray-50 rounded-l-lg border-r overflow-hidden flex flex-col">
-        <div className="p-4 bg-white flex items-center space-x-2 border-b">
-          <Avatar className="h-8 w-8 bg-purple-100">
-            <Bot className="h-4 w-4 text-purple-500" />
-          </Avatar>
-          <div>
-            <p className="font-medium text-sm">Agent Chat</p>
-          </div>
-          <Button variant="ghost" size="icon" className="ml-auto h-8 w-8">
-            <Search className="h-4 w-4" />
-          </Button>
-        </div>
-
-        <Button variant="default" className="mx-4 mt-4 bg-black text-white hover:bg-gray-800">
-          <PencilLine className="h-4 w-4 mr-2" /> New chat
-        </Button>
-
-        <ScrollArea className="flex-grow px-4 py-4">
-          <div className="space-y-6">
-            <div>
-              <h3 className="text-xs font-medium mb-2 text-gray-500">Today</h3>
-              <div className="space-y-1">
-                {messages.length > 0 && (
-                  <div className="bg-white/50 rounded-md p-2 hover:bg-white transition-colors">
-                    <p className="text-xs truncate">
-                      <Bot className="h-3 w-3 inline mr-1 text-purple-500" />
-                      Current Chat
-                    </p>
-                  </div>
-                )}
-                <div className="bg-white/50 rounded-md p-2 hover:bg-white transition-colors">
-                  <p className="text-xs truncate">
-                    <Bot className="h-3 w-3 inline mr-1 text-blue-500" />
-                    Molecular Analysis
-                  </p>
-                </div>
-                <div className="bg-white/50 rounded-md p-2 hover:bg-white transition-colors">
-                  <p className="text-xs truncate">
-                    <Bot className="h-3 w-3 inline mr-1 text-green-500" />
-                    Bose-Einstein Simulation
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <h3 className="text-xs font-medium mb-2 text-gray-500">Previous 7 days</h3>
-              <div className="space-y-1">
-                <div className="bg-white/50 rounded-md p-2 hover:bg-white transition-colors">
-                  <p className="text-xs truncate">
-                    <Bot className="h-3 w-3 inline mr-1 text-orange-500" />
-                    Research question about...
-                  </p>
-                </div>
-                <div className="bg-white/50 rounded-md p-2 hover:bg-white transition-colors">
-                  <p className="text-xs truncate">
-                    <Bot className="h-3 w-3 inline mr-1 text-red-500" />
-                    Protein folding analysis...
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <h3 className="text-xs font-medium mb-2 text-gray-500">Capabilities</h3>
-              <div className="space-y-1">
-                <div className="bg-white/50 rounded-md p-2 hover:bg-white transition-colors">
-                  <p className="text-xs">Chat</p>
-                </div>
-                <div className="bg-white/50 rounded-md p-2 hover:bg-white transition-colors">
-                  <p className="text-xs">Molecular Vision</p>
-                </div>
-                <div className="bg-white/50 rounded-md p-2 hover:bg-white transition-colors">
-                  <p className="text-xs">LLAMPS</p>
-                </div>
-                <div className="bg-white/50 rounded-md p-2 hover:bg-white transition-colors">
-                  <p className="text-xs">Bose-Einstein Simulation</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </ScrollArea>
-
-        <div className="p-4 border-t bg-white mt-auto">
-          <div className="flex items-center gap-2">
-            <Avatar className="h-8 w-8">
-              <img src="https://avatars.githubusercontent.com/u/124599?v=4" alt="User" />
-            </Avatar>
-            <div className="flex-1">
-              <p className="text-xs font-medium truncate">{formatAddress(address)}</p>
-            </div>
-            <Button variant="ghost" size="sm" className="text-xs px-2">
-              Upgrade
-            </Button>
-          </div>
-        </div>
-      </div>
-
-      {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col">
-        {/* Chat info and actions */}
+    <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-lg border overflow-hidden">
+      <div className="h-[700px] flex flex-col">
+        {/* Header with capabilities */}
         <div className="flex justify-between items-center p-4 border-b">
           <div className="flex items-center gap-2">
             <h2 className="font-medium">
-              {scienceGent?.name || 'ScienceGent'} <Edit className="h-4 w-4 inline ml-1 text-gray-400" />
+              {scienceGent?.name || 'ScienceGent'}
             </h2>
           </div>
           
-          <div className="flex items-center gap-2">
-            {hasAssistant && (
-              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                Active AI
+          <div className="flex items-center gap-2 flex-wrap justify-end">
+            {/* Display capabilities in the header */}
+            <div className="flex items-center mr-4 flex-wrap">
+              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 mr-2 mb-1">
+                Chat: Active
               </Badge>
-            )}
-            {hasPersona && (
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="gap-1"
-                      onClick={() => setShowPersona(!showPersona)}
-                    >
-                      <Info className="h-4 w-4" />
-                      Persona
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>View this ScienceGent's custom persona</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            )}
+              {capabilityNames.map((capability, index) => (
+                <Badge key={index} variant="outline" className="bg-gray-50 text-gray-700 border-gray-200 mr-2 mb-1">
+                  {capability}: Inactive
+                </Badge>
+              ))}
+            </div>
+            
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button variant="ghost" size="sm">
@@ -251,39 +353,24 @@ const ScienceGentChat: React.FC<ScienceGentChatProps> = ({ scienceGent, address 
           </div>
         </div>
         
-        {/* Persona display */}
-        {showPersona && scienceGent?.persona && (
-          <Card className="m-4 bg-slate-50">
-            <CardContent className="p-4">
-              <h4 className="text-sm font-semibold mb-1">Custom Persona</h4>
-              <p className="text-sm text-muted-foreground whitespace-pre-line">
-                {scienceGent.persona.length > 500 
-                  ? scienceGent.persona.substring(0, 500) + "..." 
-                  : scienceGent.persona}
-              </p>
-            </CardContent>
-          </Card>
-        )}
-        
         {/* Messages Area */}
-        <ScrollArea className="flex-grow p-4">
+        <ScrollArea className="flex-grow p-4 relative">
           {messages.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-center p-4">
               <Bot className="h-12 w-12 text-muted-foreground mb-4" />
               <h3 className="text-lg font-medium mb-2">Start a conversation</h3>
-              <p className="text-sm text-muted-foreground max-w-md">
-                This ScienceGent is ready to assist you with scientific questions and tasks
-                {capabilitiesCount > 0 ? ` using its ${capabilitiesCount} specialized capabilities` : ''}.
-              </p>
             </div>
           ) : (
             <div className="space-y-6">
+              {messages.map((message, index) => (
+                <div key={message.id || index}>
+                  {message.role === 'user' ? (
               <div className="bg-blue-50 p-4 rounded-lg">
                 <p className="text-blue-800 text-sm">
-                  Does Oxygen have paramagnetic behaviour in Bose-Einstein Condesate state?
+                        {message.content}
                 </p>
               </div>
-
+                  ) : (
               <div className="flex gap-3">
                 <Avatar className="h-8 w-8 mt-1 bg-science-100">
                   <Bot className="h-4 w-4 text-science-500" />
@@ -292,35 +379,46 @@ const ScienceGentChat: React.FC<ScienceGentChatProps> = ({ scienceGent, address 
                   <p className="font-medium text-sm mb-3">
                     {scienceGent?.name || 'ScienceGent'}
                   </p>
-                  <div className="prose prose-sm max-w-none">
-                    <p className="mb-4">Yes, oxygen (O₂) exhibits paramagnetic behavior under normal conditions due to its unpaired electrons. However, in a Bose-Einstein Condensate (BEC) state, the behavior becomes more complex:</p>
-                    
-                    <p className="mb-2">
-                      <strong>Standard oxygen (O₂) molecules:</strong> Have two unpaired electrons giving them paramagnetic properties.
-                    </p>
-                    
-                    <p className="mb-2">
-                      <strong>In BEC state:</strong> Oxygen would need to be cooled to extremely low temperatures (near absolute zero). At these temperatures, the quantum mechanical properties dominate and all particles occupy the lowest quantum state.
-                    </p>
-                    
-                    <p className="mb-2">
-                      <strong>Quantum effects:</strong> The magnetic behavior in a BEC becomes governed by quantum statistics rather than classical paramagnetism.
-                    </p>
+                        <div className="prose prose-sm prose-headings:font-bold prose-headings:text-gray-900 prose-p:text-gray-700 prose-a:text-blue-600 prose-pre:bg-gray-100 prose-pre:p-2 prose-pre:rounded prose-code:text-blue-600 prose-code:bg-gray-100 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:text-sm prose-li:text-gray-700 max-w-none">
+                          <ReactMarkdown className="break-words">
+                            {message.content}
+                          </ReactMarkdown>
                   </div>
                   
                   <div className="flex justify-end mt-4 gap-2">
-                    <Button variant="outline" size="sm" className="h-7">
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className={`h-7 ${messageFeedback[message.id || index] === 'like' ? 'bg-green-100 text-green-700 border-green-200' : ''}`}
+                            onClick={() => handleThumbsUp(message.id || index.toString())}
+                          >
                       <ThumbsUp className="h-3 w-3 mr-1" />
                     </Button>
-                    <Button variant="outline" size="sm" className="h-7">
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className={`h-7 ${messageFeedback[message.id || index] === 'dislike' ? 'bg-red-100 text-red-700 border-red-200' : ''}`}
+                            onClick={() => handleThumbsDown(message.id || index.toString())}
+                          >
                       <ThumbsDown className="h-3 w-3 mr-1" />
                     </Button>
-                    <Button variant="outline" size="sm" className="h-7">
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="h-7"
+                            onClick={() => handleCopy(message.id || index.toString(), message.content)}
+                          >
+                            {copyStatus[message.id || index] ? 
+                              <Check className="h-3 w-3 mr-1 text-green-500" /> : 
                       <Copy className="h-3 w-3 mr-1" />
+                            }
                     </Button>
                   </div>
                 </div>
               </div>
+                  )}
+                </div>
+              ))}
               <div ref={messagesEndRef} />
             </div>
           )}
@@ -336,7 +434,12 @@ const ScienceGentChat: React.FC<ScienceGentChatProps> = ({ scienceGent, address 
               </Button>
             </div>
             <div className="flex flex-wrap gap-2">
-              {promptSuggestions.map((prompt, index) => (
+              {isLoadingSuggestions ? (
+                <div className="w-full flex justify-center py-2">
+                  <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                </div>
+              ) : (
+                promptSuggestions.map((prompt, index) => (
                 <Button 
                   key={index} 
                   variant="outline" 
@@ -346,7 +449,8 @@ const ScienceGentChat: React.FC<ScienceGentChatProps> = ({ scienceGent, address 
                 >
                   {prompt}
                 </Button>
-              ))}
+                ))
+              )}
             </div>
           </div>
         )}

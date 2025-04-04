@@ -1,4 +1,3 @@
-
 import { toast } from '@/components/ui/use-toast';
 import { 
   syncScienceGent,
@@ -67,6 +66,9 @@ export const syncAllScienceGents = async (): Promise<{ syncCount: number; errorC
       description: `Successfully synced ${successCount} of ${totalTokens} ScienceGents`
     });
     
+    // Update all token ages after sync
+    await updateTokenAges();
+    
     return { syncCount: successCount, errorCount };
   } catch (error) {
     console.error("Error syncing all ScienceGents:", error);
@@ -133,5 +135,44 @@ export const syncAllCreationTimestamps = async (): Promise<{ syncCount: number; 
       variant: "destructive"
     });
     return { syncCount: 0, errorCount: 1 };
+  }
+};
+
+/**
+ * Updates age values for all tokens in the database
+ */
+export const updateTokenAges = async () => {
+  try {
+    // Fetch all tokens with created_on_chain_at
+    const { data: tokens, error } = await supabase
+      .from('sciencegents')
+      .select('id, created_on_chain_at');
+
+    if (error) {
+      console.error('Error fetching tokens:', error);
+      return;
+    }
+
+    // Update age for each token
+    for (const token of tokens) {
+      if (token.created_on_chain_at) {
+        const creationDate = new Date(token.created_on_chain_at);
+        const currentDate = new Date();
+        const ageInMilliseconds = currentDate.getTime() - creationDate.getTime();
+        const ageInDays = Math.floor(ageInMilliseconds / (1000 * 60 * 60 * 24));
+
+        // Update the age in the database
+        const { error: updateError } = await supabase
+          .from('sciencegents')
+          .update({ age: ageInDays })
+          .eq('id', token.id);
+
+        if (updateError) {
+          console.error(`Error updating age for token ${token.id}:`, updateError);
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Error updating token ages:', error);
   }
 };

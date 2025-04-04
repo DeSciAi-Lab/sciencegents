@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { DeveloperProfile, SocialLink } from "@/types/profile";
 import { Json } from "@/integrations/supabase/types";
@@ -55,6 +54,8 @@ export const fetchDeveloperProfile = async (walletAddress: string): Promise<Deve
       developer_github: data.developer_github,
       developer_website: data.developer_website,
       additional_social_links: socialLinks,
+      created_sciencegents: data.created_sciencegents || [],
+      created_capabilities: data.created_capabilities || [],
       created_at: data.created_at,
       updated_at: data.updated_at
     };
@@ -103,6 +104,8 @@ export const upsertDeveloperProfile = async (profile: DeveloperProfile): Promise
       developer_github: profile.developer_github || null,
       developer_website: profile.developer_website || null,
       additional_social_links: socialLinksForSupabase as unknown as Json,
+      created_sciencegents: profile.created_sciencegents || [],
+      created_capabilities: profile.created_capabilities || [],
       updated_at: new Date().toISOString() // Ensure updated_at is set
     };
     
@@ -173,6 +176,8 @@ export const upsertDeveloperProfile = async (profile: DeveloperProfile): Promise
       developer_github: transformedData.developer_github,
       developer_website: transformedData.developer_website,
       additional_social_links: socialLinks,
+      created_sciencegents: transformedData.created_sciencegents || [],
+      created_capabilities: transformedData.created_capabilities || [],
       created_at: transformedData.created_at,
       updated_at: transformedData.updated_at
     };

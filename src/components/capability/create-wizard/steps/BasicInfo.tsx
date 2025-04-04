@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useCapabilityWizard } from '../CapabilityWizardContext';
 import { useWallet } from '@/hooks/useWallet';
 import { Button } from '@/components/ui/button';
@@ -8,6 +7,8 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { X, Plus, Upload } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Domain, getAllDomains, createDomain } from '@/services/domains';
 
 const BasicInfo: React.FC = () => {
   const {
@@ -34,6 +35,11 @@ const BasicInfo: React.FC = () => {
   const { address, isConnected } = useWallet();
   const [newSocialType, setNewSocialType] = useState('');
   const [newSocialUrl, setNewSocialUrl] = useState('');
+  const [domains, setDomains] = useState<Domain[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [newDomain, setNewDomain] = useState('');
+  const [isCreatingDomain, setIsCreatingDomain] = useState(false);
+  const [popoverOpen, setPopoverOpen] = useState(false);
   
   // Set creator address from wallet if connected
   React.useEffect(() => {
@@ -41,6 +47,23 @@ const BasicInfo: React.FC = () => {
       setCreatorAddress(address);
     }
   }, [isConnected, address, creatorAddress, setCreatorAddress]);
+  
+  // Fetch domains on component mount
+  useEffect(() => {
+    const fetchDomains = async () => {
+      try {
+        setLoading(true);
+        const domainsData = await getAllDomains();
+        setDomains(domainsData);
+      } catch (error) {
+        console.error('Error fetching domains:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDomains();
+  }, []);
   
   // Handle display image upload
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -52,6 +75,32 @@ const BasicInfo: React.FC = () => {
   // Handle domain selection
   const handleDomainChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setDomain(e.target.value);
+  };
+  
+  // Handle creating a new domain
+  const handleCreateDomain = async () => {
+    if (!newDomain.trim()) return;
+    
+    try {
+      setIsCreatingDomain(true);
+      const createdDomain = await createDomain(newDomain, address);
+      
+      if (createdDomain) {
+        // Add to domains list
+        setDomains(prev => [...prev, createdDomain]);
+        
+        // Select the new domain
+        setDomain(createdDomain.name);
+        
+        // Clear input and close popover
+        setNewDomain('');
+        setPopoverOpen(false);
+      }
+    } catch (error) {
+      console.error('Error creating domain:', error);
+    } finally {
+      setIsCreatingDomain(false);
+    }
   };
   
   // Add custom social link
@@ -134,21 +183,58 @@ const BasicInfo: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <Label htmlFor="domain" className="mb-1 block">Scientific Domain</Label>
-          <select
-            id="domain"
-            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-            value={domain}
-            onChange={handleDomainChange}
-          >
-            <option value="" disabled>Select a domain</option>
-            <option value="Chemistry">Chemistry</option>
-            <option value="Physics">Physics</option>
-            <option value="Biochemistry">Biochemistry</option>
-            <option value="Materials Science">Materials Science</option>
-            <option value="Protein Analysis">Protein Analysis</option>
-            <option value="Drug Discovery">Drug Discovery</option>
-            <option value="Genomics">Genomics</option>
-          </select>
+          <div className="flex gap-2">
+            <select
+              id="domain"
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              value={domain}
+              onChange={handleDomainChange}
+              disabled={loading}
+            >
+              <option value="" disabled>Select a domain</option>
+              {domains.map(domain => (
+                <option key={domain.id} value={domain.name}>
+                  {domain.name}
+                </option>
+              ))}
+            </select>
+            
+            <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
+              <PopoverTrigger asChild>
+                <Button 
+                  type="button"
+                  variant="outline" 
+                  size="icon" 
+                  className="flex-shrink-0"
+                  disabled={loading}
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-80">
+                <div className="space-y-4">
+                  <h4 className="font-medium">Add Custom Domain</h4>
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="e.g. Quantum Physics"
+                      value={newDomain}
+                      onChange={e => setNewDomain(e.target.value)}
+                    />
+                    <Button 
+                      type="button"
+                      onClick={handleCreateDomain} 
+                      disabled={isCreatingDomain || !newDomain.trim()}
+                    >
+                      Add
+                    </Button>
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
+          </div>
+          <p className="text-xs text-gray-500 mt-1">
+            Select a domain or add a custom one
+          </p>
         </div>
         
         <div>

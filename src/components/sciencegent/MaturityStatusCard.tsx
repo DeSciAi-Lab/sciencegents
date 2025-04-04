@@ -1,9 +1,13 @@
-
 import React from 'react';
 import { Card } from '@/components/ui/card';
 import { useEthPriceContext } from '@/context/EthPriceContext';
 import { Info } from 'lucide-react';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { 
+  Tooltip, 
+  TooltipContent, 
+  TooltipTrigger, 
+  TooltipProvider 
+} from '@/components/ui/tooltip';
 import { calculateMaturityProgress } from '@/utils/scienceGentCalculations';
 
 interface MaturityStatusCardProps {
@@ -13,6 +17,7 @@ interface MaturityStatusCardProps {
   virtualEth?: number;
   capabilityFees?: number;
   collectedFees?: number;
+  migrationCondition?: number;
 }
 
 const MaturityStatusCard: React.FC<MaturityStatusCardProps> = ({ 
@@ -21,7 +26,8 @@ const MaturityStatusCard: React.FC<MaturityStatusCardProps> = ({
   className = '',
   virtualEth = 0,
   capabilityFees = 0,
-  collectedFees = 0
+  collectedFees = 0,
+  migrationCondition
 }) => {
   const { formatEthToUsd } = useEthPriceContext();
   
@@ -30,8 +36,13 @@ const MaturityStatusCard: React.FC<MaturityStatusCardProps> = ({
     progress : 
     calculateMaturityProgress(virtualEth, collectedFees, capabilityFees);
   
-  // Calculate threshold (2× virtualETH + capability fees)
-  const migrationThreshold = (2 * virtualEth) + capabilityFees;
+  // Calculate threshold (2× virtualETH + capability fees) if not provided
+  const calculatedMigrationThreshold = (2 * virtualEth) + capabilityFees;
+  
+  // Use provided migrationCondition if available, otherwise use calculated value
+  const migrationThreshold = migrationCondition !== undefined ? 
+    migrationCondition : 
+    calculatedMigrationThreshold;
   
   // Determine color based on progress
   const getColorClass = () => {
@@ -44,24 +55,25 @@ const MaturityStatusCard: React.FC<MaturityStatusCardProps> = ({
   // Determine status text
   const getStatusText = () => {
     if (maturityProgress >= 100) return 'Ready for migration';
-    return `${Math.floor(maturityProgress)}% complete`;
+    return `${maturityProgress.toFixed(2)}% complete`;
   };
 
   return (
     <div className={`border rounded-lg p-4 ${className}`}>
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-lg font-semibold">Maturity Status</h3>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <button className="text-gray-400 hover:text-gray-600">
-              <Info className="h-4 w-4" />
-            </button>
-          </TooltipTrigger>
-          <TooltipContent className="max-w-xs">
-            <p>A ScienceGent becomes eligible for migration to external DEX when collected trading fees
-            reach the migration threshold (2× virtualETH + capability fees).</p>
-          </TooltipContent>
-        </Tooltip>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button className="text-gray-400 hover:text-gray-600">
+                <Info className="h-4 w-4" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent className="max-w-xs">
+              <p>The ScienceGent will become eligible to migrate to Uniswap on generating {migrationThreshold?.toFixed(4)} ETH in trading fee (2× virtualETH + capability fees).</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       </div>
       
       <div className="mb-3">
