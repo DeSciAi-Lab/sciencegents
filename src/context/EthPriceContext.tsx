@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, ReactNode, useState, useEffect } from 'react';
 import { useEthPrice } from '@/hooks/useEthPrice';
 
@@ -17,8 +16,8 @@ export const EthPriceProvider: React.FC<{ children: ReactNode }> = ({ children }
   const { ethPrice, isLoading, error, refreshEthPrice } = useEthPrice();
 
   /**
-   * Formats ETH value to USD with appropriate scaling (k, M)
-   * @param ethValue The amount in ETH
+   * Formats BNB value to USD with appropriate scaling (k, M)
+   * @param ethValue The amount in BNB
    * @returns Formatted USD string (e.g. $1.23k, $4.56M)
    */
   const formatEthToUsd = (ethValue: number): string => {
@@ -37,21 +36,21 @@ export const EthPriceProvider: React.FC<{ children: ReactNode }> = ({ children }
   };
 
   /**
-   * Formats ETH value with appropriate scaling (k, M)
-   * @param value The amount in ETH
-   * @returns Formatted ETH string (e.g. 1.23k ETH, 4.56M ETH)
+   * Formats BNB value with appropriate scaling (k, M)
+   * @param value The amount in BNB
+   * @returns Formatted BNB string (e.g. 1.23k BNB, 4.56M BNB)
    */
   const formatEthPrice = (value: number): string => {
-    if (!value || isNaN(value)) return '0 ETH';
+    if (!value || isNaN(value)) return '0 BNB';
     
     if (value >= 1000000) {
-      return `${(value / 1000000).toFixed(2)}M ETH`;
+      return `${(value / 1000000).toFixed(2)}M BNB`;
     } else if (value >= 1000) {
-      return `${(value / 1000).toFixed(2)}K ETH`;
+      return `${(value / 1000).toFixed(2)}K BNB`;
     } else if (value < 0.0001) {
-      return `${value.toExponential(2)} ETH`;
+      return `${value.toExponential(2)} BNB`;
     }
-    return `${value.toFixed(4)} ETH`;
+    return `${value.toFixed(4)} BNB`;
   };
   
   const contextValue = {
@@ -96,14 +95,14 @@ export const formatEthToUsd = (ethValue: number, ethPrice: number): string => {
 
 // For backward compatibility
 export const formatEthPrice = (value: number): string => {
-  if (!value || isNaN(value)) return '0 ETH';
+  if (!value || isNaN(value)) return '0 BNB';
   
   if (value >= 1000000) {
-    return `${(value / 1000000).toFixed(2)}M ETH`;
+    return `${(value / 1000000).toFixed(2)}M BNB`;
   } else if (value >= 1000) {
-    return `${(value / 1000).toFixed(2)}K ETH`;
+    return `${(value / 1000).toFixed(2)}K BNB`;
   } else if (value < 0.0001) {
-    return `${value.toExponential(2)} ETH`;
+    return `${value.toExponential(2)} BNB`;
   }
-  return `${value.toFixed(4)} ETH`;
+  return `${value.toFixed(4)} BNB`;
 };

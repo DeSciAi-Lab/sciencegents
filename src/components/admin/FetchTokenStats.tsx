@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { TokenStats } from '@/services/scienceGent/types';
+import { TokenStats, ScienceGentData } from '@/services/scienceGent';
 import { AlertCircle, CheckCircle2, RefreshCw } from 'lucide-react';
 import { useEthPriceContext } from '@/context/EthPriceContext';
 import { fetchTokenStats, fetchTokenDataFromSupabase, syncAllTokenStats } from '@/services/scienceGent';
@@ -15,7 +15,7 @@ const FetchTokenStats: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [tokenStats, setTokenStats] = useState<TokenStats | null>(null);
-  const [supabaseData, setSupabaseData] = useState<any>(null);
+  const [supabaseData, setSupabaseData] = useState<ScienceGentData | null>(null);
   const [success, setSuccess] = useState(false);
   const { ethPrice } = useEthPriceContext();
   const [syncingAll, setSyncingAll] = useState(false);
@@ -82,8 +82,8 @@ const FetchTokenStats: React.FC = () => {
       // Use the reusable service to fetch and save token stats
       const result = await fetchTokenStats(address, ethPrice);
       
-      if (!result.success) {
-        throw new Error(result.error);
+      if (!result.success || !result.data) {
+        throw new Error(result.error || 'Failed to fetch token data');
       }
       
       // Set the token stats and Supabase data
@@ -126,22 +126,17 @@ const FetchTokenStats: React.FC = () => {
     return priceInUsd < 0.01 ? priceInUsd.toExponential(4) : priceInUsd.toFixed(4);
   };
 
-  // Calculate total liquidity
+  // Calculate total liquidity - Remove this function as it references ethReserve
   const calculateTotalLiquidity = () => {
-    if (!tokenStats) return '0';
-    
-    const ethReserve = parseFloat(ethers.utils.formatEther(tokenStats.ethReserve));
-    return (ethReserve * ethPrice).toFixed(2);
+    // We'll use supabaseData instead
+    if (!supabaseData || !supabaseData.eth_reserves) return '0';
+    return (supabaseData.eth_reserves * ethPrice).toFixed(2);
   };
 
-  // Calculate market cap
+  // Calculate market cap - Update to use only supabaseData
   const calculateMarketCap = () => {
-    if (!tokenStats) return '0';
-    
-    const priceInEth = parseFloat(ethers.utils.formatEther(tokenStats.currentPrice));
-    return supabaseData?.total_supply 
-      ? (supabaseData.total_supply * priceInEth * ethPrice).toFixed(2)
-      : '0';
+    if (!supabaseData || !supabaseData.token_price || !supabaseData.total_supply) return '0';
+    return (supabaseData.total_supply * supabaseData.token_price * ethPrice).toFixed(2);
   };
 
   // Format ETH display value
