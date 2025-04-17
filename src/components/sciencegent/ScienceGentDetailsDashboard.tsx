@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { LoadingStatus } from '@/hooks/useScienceGentDetails';
 import DashboardTabs from './dashboard/DashboardTabs';
@@ -33,7 +32,6 @@ const ScienceGentDetailsDashboard: React.FC<ScienceGentDetailsDashboardProps> = 
 
   // Make sure scienceGentData exists and is not null or undefined
   if (!scienceGentData) {
-    console.error('ScienceGentData is null or undefined');
     return <ErrorDashboard address={address} />;
   }
 

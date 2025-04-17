@@ -442,7 +442,7 @@ const ScienceGentDetailView: React.FC<ScienceGentDetailViewProps> = ({
                       {renderRating(capability.rating, capability.id)}
                     </div>
                     <p className="text-sm">{capability.name}</p>
-                  </div>
+              </div>
                 ))}
                 
                 {capabilities.length === 0 && (
@@ -469,7 +469,7 @@ const ScienceGentDetailView: React.FC<ScienceGentDetailViewProps> = ({
                     onChange={(e) => setRemoveCapabilityId(e.target.value)}
                   />
                   <Button variant="destructive" onClick={handleRemoveCapability} disabled={isSubmitting}>Remove</Button>
-                </div>
+              </div>
               </div>
             </div>
             
@@ -485,7 +485,7 @@ const ScienceGentDetailView: React.FC<ScienceGentDetailViewProps> = ({
                 />
                 <Button onClick={handleUpdateAgentFee} disabled={isSubmitting}>Update</Button>
               </div>
-            </div>
+                </div>
             
             <div>
               <h4 className="font-medium mb-3">4. Update the Detailed Markdown Description</h4>
@@ -495,7 +495,7 @@ const ScienceGentDetailView: React.FC<ScienceGentDetailViewProps> = ({
                 onChange={(e) => setDetailedDescription(e.target.value)}
               />
               <Button className="mt-3" onClick={handleUpdateDetailedDescription} disabled={isSubmitting}>Update</Button>
-            </div>
+                </div>
             
             <div>
               <h4 className="font-medium mb-3">5. Update Persona</h4>
@@ -505,7 +505,7 @@ const ScienceGentDetailView: React.FC<ScienceGentDetailViewProps> = ({
                 onChange={(e) => setPersona(e.target.value)}
               />
               <Button className="mt-3" onClick={handleUpdatePersona} disabled={isSubmitting}>Update</Button>
-            </div>
+              </div>
             
             <div>
               <h4 className="font-medium mb-3">Refresh Token Stats</h4>

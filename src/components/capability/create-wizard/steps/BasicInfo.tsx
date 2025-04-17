@@ -121,32 +121,6 @@ const BasicInfo: React.FC = () => {
   return (
     <div className="space-y-6">
       <div className="flex items-start gap-4">
-        <div>
-          <label htmlFor="display-image-upload" className="cursor-pointer">
-            <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center border-2 border-dashed border-gray-300 hover:border-blue-500 transition-colors">
-              {displayImage ? (
-                <Avatar className="w-16 h-16">
-                  <AvatarImage 
-                    src={URL.createObjectURL(displayImage)} 
-                    alt="Display" 
-                    className="object-cover" 
-                  />
-                  <AvatarFallback>DP</AvatarFallback>
-                </Avatar>
-              ) : (
-                <Upload className="h-6 w-6 text-gray-400" />
-              )}
-            </div>
-          </label>
-          <input
-            id="display-image-upload"
-            type="file"
-            className="hidden"
-            accept="image/*"
-            onChange={handleImageUpload}
-          />
-        </div>
-        
         <div className="flex-1">
           <h2 className="text-xl font-semibold mb-4">Basic Information</h2>
           <p className="text-sm text-gray-500 mb-2">
@@ -249,23 +223,66 @@ const BasicInfo: React.FC = () => {
               value={price}
               onChange={(e) => setPrice(e.target.value)}
             />
-            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500">
-              ETH
-            </span>
           </div>
+          <p className="text-xs text-gray-500 mt-1">
+            Fee charged per use of your capability
+          </p>
         </div>
       </div>
-      
+
       <div>
         <Label htmlFor="description" className="mb-1 block">Description</Label>
         <Textarea
           id="description"
-          placeholder="Describe what your capability does and how it can help ScienceGents..."
-          rows={3}
+          placeholder="Describe what your capability does..."
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          className="resize-none"
+          className="min-h-[100px]"
         />
+        <p className="text-xs text-gray-500 mt-1">
+          Provide a clear and concise description of your capability's functionality
+        </p>
+      </div>
+
+      <div>
+        <Label htmlFor="display-image" className="mb-1 block">Display Picture (optional)</Label>
+        <div className="mt-1 flex items-center gap-4">
+          <label
+            htmlFor="display-image-upload"
+            className="flex flex-col items-center justify-center w-32 h-32 rounded-lg border-2 border-dashed border-gray-300 hover:border-blue-500 transition-colors cursor-pointer bg-gray-50"
+          >
+            {displayImage ? (
+              <Avatar className="w-full h-full rounded-lg">
+                <AvatarImage 
+                  src={URL.createObjectURL(displayImage)} 
+                  alt="Display" 
+                  className="object-cover rounded-lg" 
+                />
+                <AvatarFallback>DP</AvatarFallback>
+              </Avatar>
+            ) : (
+              <div className="flex flex-col items-center gap-2 text-gray-500">
+                <Upload className="h-8 w-8" />
+                <span className="text-sm text-center">Click to upload<br/>(under 1MB)</span>
+              </div>
+            )}
+          </label>
+          <input
+            id="display-image-upload"
+            type="file"
+            className="hidden"
+            accept="image/*"
+            onChange={handleImageUpload}
+          />
+          <div className="flex-1">
+            <p className="text-sm text-gray-500">
+              Add a visual representation of your capability. This will be displayed in the marketplace and capability details.
+            </p>
+            <p className="text-xs text-gray-400 mt-1">
+              Recommended: Square image, at least 400x400px. Maximum size: 1MB
+            </p>
+          </div>
+        </div>
       </div>
       
       <div>

@@ -9,6 +9,10 @@ import MaturityStatusCard from './MaturityStatusCard';
 import ScienceGentCapabilities from './ScienceGentCapabilities';
 import { useEnableTrading } from '@/hooks/useEnableTrading';
 import { useAccount } from 'wagmi';
+import { ethers } from 'ethers';
+import { contractConfig } from '@/utils/contractConfig';
+import { fetchTokenStats } from '@/services/scienceGent/tokenStats';
+import { useEthPriceContext } from '@/context/EthPriceContext';
 
 interface TokenSwapInterfaceProps {
   tokenAddress: string;
@@ -29,9 +33,11 @@ const TokenSwapInterface: React.FC<TokenSwapInterfaceProps> = ({
   const [inputValue, setInputValue] = useState<string>('0.0001');
   const [outputValue, setOutputValue] = useState<string>('0');
   const [slippageTolerance, setSlippageTolerance] = useState<number>(1); // 1% default slippage
+  const [actualTradingEnabled, setActualTradingEnabled] = useState<boolean | null>(null);
   
   const { address: connectedWalletAddress } = useAccount();
   const { enableTrading, isPending: isEnablingTrading } = useEnableTrading(tokenAddress);
+  const { ethPrice } = useEthPriceContext();
   
   const {
     buyTokens,
@@ -47,6 +53,36 @@ const TokenSwapInterface: React.FC<TokenSwapInterfaceProps> = ({
     tokenReserve,
     refreshBalances
   } = useTokenSwap(tokenAddress);
+
+  // Check actual trading enabled status from the blockchain
+  const checkTradingEnabled = async () => {
+    try {
+      if (typeof window === 'undefined' || !window.ethereum || !tokenAddress) return;
+      
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const swapAbi = [
+        "function getTokenStats(address token) view returns (uint256, uint256, uint256, uint256, bool, address, uint256, uint256, bool, uint256, uint256, uint256, bool)"
+      ];
+      
+      const swapContract = new ethers.Contract(
+        contractConfig.addresses.ScienceGentsSwap,
+        swapAbi,
+        provider
+      );
+      
+      const stats = await swapContract.getTokenStats(tokenAddress);
+      // tradingEnabled is the 5th element (index 4) in the returned array
+      const tradingEnabled = stats[4];
+      setActualTradingEnabled(tradingEnabled);
+    } catch (error) {
+      console.error('Error checking trading status:', error);
+    }
+  };
+
+  // Check trading status on mount and when tokenAddress changes
+  useEffect(() => {
+    checkTradingEnabled();
+  }, [tokenAddress]);
 
   useEffect(() => {
     setInputValue('0.0001');
@@ -93,15 +129,16 @@ const TokenSwapInterface: React.FC<TokenSwapInterfaceProps> = ({
   };
 
   const handleSwap = async () => {
-    if (!inputValue || parseFloat(inputValue) <= 0) {
+    if (!inputValue || parseFloat(inputValue) <= 0 || !tokenAddress || !ethPrice) {
       toast({
-        title: "Invalid amount",
-        description: "Please enter a valid amount to swap",
+        title: "Invalid input",
+        description: "Please ensure valid amount, token address, and ETH price are available.",
         variant: "destructive"
       });
       return;
     }
     
+    let swapSuccess = false;
     try {
       if (isEthInput) {
         const minTokensOut = parseFloat(outputValue) * (1 - slippageTolerance/100);
@@ -110,13 +147,37 @@ const TokenSwapInterface: React.FC<TokenSwapInterfaceProps> = ({
         const minEthOut = parseFloat(outputValue) * (1 - slippageTolerance/100);
         await sellTokens(inputValue, minEthOut.toString());
       }
-    } catch (err) {
+      swapSuccess = true; // Mark swap as potentially successful
+      
+      toast({ // Add a temporary success toast (can be removed later)
+          title: "Swap Submitted",
+          description: "Transaction sent to the network.",
+      });
+
+    } catch (err: any) {
       console.error('Swap error:', err);
+      // Use more specific error message if available
+      const message = err?.shortMessage || err?.message || "There was an error executing the swap. Please try again.";
       toast({
         title: "Swap Failed",
-        description: "There was an error executing the swap. Please try again.",
+        description: message.length > 100 ? message.substring(0, 97) + '...' : message,
         variant: "destructive"
       });
+    }
+
+    // --- Update Supabase after successful swap submission --- 
+    if (swapSuccess) {
+        console.log(`Swap possibly successful for ${tokenAddress}, triggering background stats update...`);
+        try {
+            // Call fetchTokenStats to update Supabase - ignore the result
+            await fetchTokenStats(tokenAddress, ethPrice);
+            console.log(`Background stats update initiated for ${tokenAddress}.`);
+            // Optionally refresh balances locally after a short delay
+            setTimeout(() => refreshBalances(), 1000);
+        } catch (statsError) {
+            console.error(`Background stats update failed for ${tokenAddress}:`, statsError);
+            // Optional: Notify user if background update fails, but don't block UI
+        }
     }
   };
 
@@ -124,15 +185,29 @@ const TokenSwapInterface: React.FC<TokenSwapInterfaceProps> = ({
     setIsEthInput(!isEthInput);
   };
 
-  const isTradingEnabled = scienceGent?.trading_enabled !== false;
+  // Determine if trading is enabled from blockchain data first, fallback to prop
+  const isTradingEnabled = actualTradingEnabled !== null 
+    ? actualTradingEnabled 
+    : scienceGent?.trading_enabled !== false;
+
   const isCreator = connectedWalletAddress && 
     scienceGent?.creator_address && 
     connectedWalletAddress.toLowerCase() === scienceGent.creator_address.toLowerCase();
 
   const handleEnableTrading = async () => {
     if (isCreator) {
-      await enableTrading();
-      await refreshBalances(); // Refresh data after enabling trading
+      const success = await enableTrading();
+      if (success) {
+        // Immediately update the UI state
+        setActualTradingEnabled(true);
+        // Refresh balances and other data
+        await refreshBalances();
+        // Show success message
+        toast({
+          title: "Trading Enabled",
+          description: "Trading has been successfully enabled for this token."
+        });
+      }
     }
   };
 

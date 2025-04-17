@@ -3,6 +3,7 @@ import { ethers } from 'ethers';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from "@/components/ui/use-toast";
 import { fetchTokenStats24h } from '@/services/tradeService';
+import { fetchCapabilityIdsFromBlockchain, fetchCapabilityDetailsFromBlockchain } from '@/services/capability/blockchain';
 
 export interface DashboardScienceGent {
   address: string;
@@ -271,37 +272,113 @@ export const useUserDashboard = () => {
         }
         
         try {
-          // Get user's created capabilities from Supabase
-          const { data: createdCapabilities, error: capabilitiesError } = await supabase
-            .from('capabilities')
-            .select('*')
-            .eq('creator', account);
-            
-          if (capabilitiesError) {
-            console.error("Error fetching capabilities from Supabase:", capabilitiesError);
-          }
+          // NEW APPROACH: Get user's created capabilities from blockchain first
+          // Use the lowercase version of account for case-insensitive comparison
+          const normalizedWalletAddress = account.toLowerCase();
+          console.log("Fetching capabilities created by address:", normalizedWalletAddress);
           
-          if (createdCapabilities && createdCapabilities.length > 0) {
-            console.log("Fetched capabilities from Supabase:", createdCapabilities);
+          // Get all registered capability IDs from the blockchain
+          const allCapabilityIds = await fetchCapabilityIdsFromBlockchain();
+          
+          if (allCapabilityIds && allCapabilityIds.length > 0) {
+            console.log("Fetched capability IDs from blockchain:", allCapabilityIds);
             
-            const formattedCapabilities = createdCapabilities.map(cap => ({
-              id: cap.id,
-              name: cap.name || cap.id,
-              domain: cap.domain || 'Unknown',
-              revenue: cap.revenue || 0,
-              usageCount: cap.usage_count || 0,
-              price: cap.price || 0,
-              description: cap.description || '',
-              rating: cap.rating || 4.0,
-              displayImage: cap.display_image || null
-            }));
+            // Filter capabilities by creator (since the blockchain returns all capabilities)
+            const userCapabilityDetailsPromises = allCapabilityIds.map(async (id) => {
+              try {
+                const blockchainDetails = await fetchCapabilityDetailsFromBlockchain(id);
+                // Check if this capability was created by the current user
+                if (blockchainDetails.creator && blockchainDetails.creator.toLowerCase() === normalizedWalletAddress) {
+                  return blockchainDetails;
+                }
+                return null;
+              } catch (error) {
+                console.error(`Error fetching blockchain details for capability ${id}:`, error);
+                return null;
+              }
+            });
             
-            setUserCapabilities(formattedCapabilities);
+            // Wait for all promises to resolve and filter out nulls
+            const userCapabilityDetails = (await Promise.all(userCapabilityDetailsPromises)).filter(Boolean);
+            
+            if (userCapabilityDetails.length > 0) {
+              console.log("User capabilities from blockchain:", userCapabilityDetails);
+              
+              // Now fetch additional details from Supabase for these capabilities
+              const capabilityIds = userCapabilityDetails.map(cap => cap.id);
+              
+              const { data: supabaseCapabilities, error: capabilitiesError } = await supabase
+                .from('capabilities')
+                .select('*')
+                .in('id', capabilityIds);
+                
+              if (capabilitiesError) {
+                console.error("Error fetching capabilities from Supabase:", capabilitiesError);
+              }
+              
+              // Combine blockchain and Supabase data (blockchain is source of truth for creator)
+              const formattedCapabilities = userCapabilityDetails.map(blockchainCap => {
+                // Find matching Supabase record if it exists
+                const supabaseRecord = supabaseCapabilities?.find(sc => sc.id === blockchainCap.id);
+                
+                return {
+                  id: blockchainCap.id,
+                  name: (supabaseRecord?.name || blockchainCap.name || blockchainCap.id),
+                  domain: (supabaseRecord?.domain || blockchainCap.domain || 'Unknown'),
+                  revenue: (supabaseRecord?.revenue || 0),
+                  usageCount: (supabaseRecord?.usage_count || 0),
+                  price: blockchainCap.price || (supabaseRecord?.price || 0),
+                  description: (supabaseRecord?.description || blockchainCap.description || ''),
+                  rating: (supabaseRecord?.rating || 4.0),
+                  displayImage: (supabaseRecord?.display_image || null)
+                };
+              });
+              
+              setUserCapabilities(formattedCapabilities);
+            } else {
+              console.log("No capabilities found for address:", normalizedWalletAddress);
+              setUserCapabilities([]);
+            }
           } else {
-            console.log("No capabilities found for address:", account);
+            console.log("No capabilities found on blockchain");
+            setUserCapabilities([]);
           }
         } catch (capabilityError) {
           console.error("Error fetching created capabilities:", capabilityError);
+          setUserCapabilities([]);
+          
+          // Fallback to original method if blockchain approach fails
+          try {
+            // Get user's created capabilities directly from Supabase as fallback
+            const { data: createdCapabilities, error: capabilitiesError } = await supabase
+              .from('capabilities')
+              .select('*')
+              .eq('creator', account);
+              
+            if (capabilitiesError) {
+              console.error("Error fetching capabilities from Supabase (fallback):", capabilitiesError);
+            }
+            
+            if (createdCapabilities && createdCapabilities.length > 0) {
+              console.log("Fetched capabilities from Supabase (fallback):", createdCapabilities);
+              
+              const formattedCapabilities = createdCapabilities.map(cap => ({
+                id: cap.id,
+                name: cap.name || cap.id,
+                domain: cap.domain || 'Unknown',
+                revenue: cap.revenue || 0,
+                usageCount: cap.usage_count || 0,
+                price: cap.price || 0,
+                description: cap.description || '',
+                rating: cap.rating || 4.0,
+                displayImage: cap.display_image || null
+              }));
+              
+              setUserCapabilities(formattedCapabilities);
+            }
+          } catch (fallbackError) {
+            console.error("Error with fallback capability fetch:", fallbackError);
+          }
         }
         
         try {
@@ -563,8 +640,85 @@ export const useUserDashboard = () => {
           console.log("No ScienceGents found for creator address:", normalizedAddress);
           setUserScienceGents([]);
         }
+
+        // Add capability refresh using blockchain approach
+        try {
+          // Use the lowercase version of account for case-insensitive comparison
+          console.log("Refreshing capabilities created by address:", normalizedAddress);
+          
+          // Get all registered capability IDs from the blockchain
+          const allCapabilityIds = await fetchCapabilityIdsFromBlockchain();
+          
+          if (allCapabilityIds && allCapabilityIds.length > 0) {
+            console.log("Fetched capability IDs from blockchain:", allCapabilityIds);
+            
+            // Filter capabilities by creator (since the blockchain returns all capabilities)
+            const userCapabilityDetailsPromises = allCapabilityIds.map(async (id) => {
+              try {
+                const blockchainDetails = await fetchCapabilityDetailsFromBlockchain(id);
+                // Check if this capability was created by the current user
+                if (blockchainDetails.creator && blockchainDetails.creator.toLowerCase() === normalizedAddress) {
+                  return blockchainDetails;
+                }
+                return null;
+              } catch (error) {
+                console.error(`Error fetching blockchain details for capability ${id}:`, error);
+                return null;
+              }
+            });
+            
+            // Wait for all promises to resolve and filter out nulls
+            const userCapabilityDetails = (await Promise.all(userCapabilityDetailsPromises)).filter(Boolean);
+            
+            if (userCapabilityDetails.length > 0) {
+              console.log("User capabilities from blockchain:", userCapabilityDetails);
+              
+              // Now fetch additional details from Supabase for these capabilities
+              const capabilityIds = userCapabilityDetails.map(cap => cap.id);
+              
+              const { data: supabaseCapabilities, error: capabilitiesError } = await supabase
+                .from('capabilities')
+                .select('*')
+                .in('id', capabilityIds);
+                
+              if (capabilitiesError) {
+                console.error("Error fetching capabilities from Supabase:", capabilitiesError);
+              }
+              
+              // Combine blockchain and Supabase data (blockchain is source of truth for creator)
+              const formattedCapabilities = userCapabilityDetails.map(blockchainCap => {
+                // Find matching Supabase record if it exists
+                const supabaseRecord = supabaseCapabilities?.find(sc => sc.id === blockchainCap.id);
+                
+                return {
+                  id: blockchainCap.id,
+                  name: (supabaseRecord?.name || blockchainCap.name || blockchainCap.id),
+                  domain: (supabaseRecord?.domain || blockchainCap.domain || 'Unknown'),
+                  revenue: (supabaseRecord?.revenue || 0),
+                  usageCount: (supabaseRecord?.usage_count || 0),
+                  price: blockchainCap.price || (supabaseRecord?.price || 0),
+                  description: (supabaseRecord?.description || blockchainCap.description || ''),
+                  rating: (supabaseRecord?.rating || 4.0),
+                  displayImage: (supabaseRecord?.display_image || null)
+                };
+              });
+              
+              setUserCapabilities(formattedCapabilities);
+            } else {
+              console.log("No capabilities found for address:", normalizedAddress);
+              setUserCapabilities([]);
+            }
+          } else {
+            console.log("No capabilities found on blockchain");
+            setUserCapabilities([]);
+          }
+        } catch (capabilityError) {
+          console.error("Error refreshing capabilities:", capabilityError);
+          setUserCapabilities([]);
+        }
       } catch (error) {
         console.error("Error refreshing data:", error);
+      } finally {
         setIsLoading(false);
       }
     }

@@ -14,8 +14,8 @@ export interface ScienceGentData {
   socialLinks?: Record<string, string>;
   tradingEnabled?: boolean;
   isMigrated: boolean;
-  creationTimestamp?: number;
-  maturityDeadline?: number;
+  creationTimestamp: string; // Changed from number to string
+  maturityDeadline: string; // Changed from number to string
   capabilities: string[];
   capabilityFees?: number; // Optional field for total capability fees in ETH
   adminLockAmount?: string;

@@ -5,9 +5,10 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { TokenStats } from '@/services/scienceGent/types';
+import { FetchedTokenStats } from '@/services/scienceGent/tokenStats';
 import { AlertCircle, CheckCircle2, RefreshCw } from 'lucide-react';
 import { useEthPriceContext } from '@/context/EthPriceContext';
-import { fetchTokenStats, fetchTokenDataFromSupabase, syncAllTokenStats } from '@/services/scienceGent';
+import { fetchTokenStats, fetchTokenDataFromSupabase, syncAllTokenStats } from '@/services/scienceGent/tokenStats';
 import { toast } from '@/components/ui/use-toast';
 
 const FetchTokenStats: React.FC = () => {
@@ -80,7 +81,7 @@ const FetchTokenStats: React.FC = () => {
       }
 
       // Use the reusable service to fetch and save token stats
-      const result = await fetchTokenStats(address, ethPrice);
+      const result: FetchedTokenStats = await fetchTokenStats(address, ethPrice);
       
       if (!result.success) {
         throw new Error(result.error);
@@ -89,10 +90,26 @@ const FetchTokenStats: React.FC = () => {
       // Set the token stats and Supabase data
       setTokenStats(result.tokenStats || null);
       setSupabaseData(result.data);
-      setSuccess(true);
+        setSuccess(true);
     } catch (error) {
-      console.error('Error fetching token stats:', error);
-      setError(error.message || 'Failed to fetch token statistics');
+      console.error('Caught error object:', error);
+      let errorMessage = 'Failed to fetch token statistics';
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      } else if (error && typeof error === 'object' && 'message' in error && typeof error.message === 'string') {
+        errorMessage = error.message;
+      } else {
+        try {
+          const errorString = JSON.stringify(error);
+          errorMessage = errorString.length > 100 ? errorString.substring(0, 97) + '...' : errorString;
+        } catch (stringifyError) {
+          console.error('Could not stringify the caught error object.');
+        }
+      }
+      console.error('Error fetching token stats:', errorMessage);
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }

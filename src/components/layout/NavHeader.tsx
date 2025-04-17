@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Heart } from 'lucide-react';
@@ -6,10 +5,16 @@ import { Button } from '@/components/ui/button';
 import WalletConnect from '@/components/WalletConnect';
 import { isAdminWallet } from '@/services/walletService';
 import { useEffect, useState } from 'react';
+import { NavLink } from 'react-router-dom';
+import { useWallet } from '@/hooks/useWallet';
+import { Wallet } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 const NavHeader: React.FC = () => {
   const location = useLocation();
   const [isAdmin, setIsAdmin] = useState(false);
+  const { isConnected, address, connect, disconnect } = useWallet();
 
   // Check if current wallet is admin
   useEffect(() => {
@@ -28,6 +33,11 @@ const NavHeader: React.FC = () => {
       };
     }
   }, []);
+
+  const formatAddress = (addr: string | undefined): string => {
+    if (!addr) return '';
+    return `${addr.substring(0, 6)}...${addr.substring(addr.length - 4)}`;
+  };
 
   return (
     <header className="fixed top-0 left-0 right-0 z-40 bg-white shadow-sm border-b">
@@ -68,6 +78,14 @@ const NavHeader: React.FC = () => {
             >
               Capabilities
             </Link>
+            <NavLink
+              to="/faucet"
+              className={({ isActive }) => 
+                `transition-colors hover:text-foreground/80 ${isActive ? 'text-foreground' : 'text-foreground/60'}`
+              }
+            >
+              Faucet
+            </NavLink>
             
             {/* Admin Link - Only show if connected wallet is admin */}
             {isAdmin && (
@@ -109,6 +127,32 @@ const NavHeader: React.FC = () => {
             </Button>
 
             <WalletConnect />
+
+            {isConnected && address ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="flex items-center gap-2">
+                    <Wallet className="h-4 w-4" />
+                    {formatAddress(address)}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link to="/dashboard">Dashboard</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={disconnect}>
+                    Disconnect Wallet
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <Button onClick={connect} className="flex items-center gap-2">
+                <Wallet className="h-4 w-4" />
+                Connect Wallet
+              </Button>
+            )}
           </div>
         </div>
       </div>

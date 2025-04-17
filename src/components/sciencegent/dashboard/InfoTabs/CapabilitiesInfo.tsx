@@ -1,13 +1,16 @@
-
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { useNavigate } from 'react-router-dom';
+import { ExternalLink } from 'lucide-react';
 
 interface CapabilitiesInfoProps {
   scienceGent: any;
 }
 
 const CapabilitiesInfo: React.FC<CapabilitiesInfoProps> = ({ scienceGent }) => {
+  const navigate = useNavigate();
+  
   // Function to process capabilities into a standard format
   const processCapabilities = () => {
     if (!scienceGent?.capabilities) return [];
@@ -63,6 +66,10 @@ const CapabilitiesInfo: React.FC<CapabilitiesInfoProps> = ({ scienceGent }) => {
     return descriptions[id] || 'Advanced scientific capability';
   };
   
+  const handleCapabilityClick = (capabilityId: string) => {
+    navigate(`/capability/${capabilityId}`);
+  };
+  
   const capabilities = processCapabilities();
   
   return (
@@ -76,11 +83,18 @@ const CapabilitiesInfo: React.FC<CapabilitiesInfoProps> = ({ scienceGent }) => {
           {capabilities.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {capabilities.map((capability: any) => (
-                <Card key={capability.id} className="border shadow-sm">
+                <Card 
+                  key={capability.id} 
+                  className="border shadow-sm hover:shadow-md transition-shadow cursor-pointer group"
+                  onClick={() => handleCapabilityClick(capability.id)}
+                >
                   <CardContent className="p-4">
                     <div className="flex justify-between items-start">
                       <div>
-                        <h4 className="font-medium">{capability.name}</h4>
+                        <div className="flex items-center gap-1">
+                          <h4 className="font-medium">{capability.name}</h4>
+                          <ExternalLink className="h-3 w-3 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </div>
                         <p className="text-sm text-muted-foreground mt-1">{capability.description}</p>
                       </div>
                       <Badge variant="outline">{capability.id}</Badge>

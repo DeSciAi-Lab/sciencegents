@@ -13,6 +13,7 @@ import ExploreCapabilities from './pages/ExploreCapabilities';
 import CapabilityDetails from './pages/CapabilityDetails';
 import Admin from './pages/Admin';
 import NotFound from './pages/NotFound';
+import FaucetPage from './pages/FaucetPage';
 
 import { EthPriceProvider } from './context/EthPriceContext';
 import { initializeDefaultDomains } from './services/domains';
@@ -36,6 +37,7 @@ function App() {
         <Route path="/capability/:id" element={<CapabilityDetails />} />
         <Route path="/create-capability" element={<CreateCapability />} />
         <Route path="/admin" element={<Admin />} />
+        <Route path="/faucet" element={<FaucetPage />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </EthPriceProvider>

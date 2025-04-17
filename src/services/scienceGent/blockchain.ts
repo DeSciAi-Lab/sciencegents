@@ -33,15 +33,34 @@ export const fetchScienceGentFromBlockchain = async (
     // Fetch token details from factory
     const tokenDetails = await factoryContract.getTokenDetails(address);
     
+    // --- DEBUG LOG --- 
+    // Log the raw creator address returned by the contract at index 3
+    console.log(`DEBUG: Raw creator address from tokenDetails[3] for ${address}:`, tokenDetails[3]);
+    // --- END DEBUG LOG ---
+    
     // Fetch token capabilities
     const capabilities = await factoryContract.getTokenCapabilitiesPage(address, 0, 100);
     
-    // Process timestamp
-    let creationTimestamp = 0;
-    if (tokenDetails[6] && typeof tokenDetails[6] === 'object' && tokenDetails[6]._isBigNumber) {
-      creationTimestamp = tokenDetails[6].toNumber();
-    } else if (tokenDetails[6]) {
-      creationTimestamp = Number(tokenDetails[6]);
+    // Process timestamp safely
+    let creationTimestampStr = "0";
+    if (tokenDetails[6]) {
+      try {
+        // Prefer toString() for BigNumbers
+        creationTimestampStr = tokenDetails[6].toString(); 
+      } catch (e) {
+          console.warn("Could not convert creationTimestamp to string:", tokenDetails[6]);
+      }
+    }
+
+    // Process maturity deadline safely
+    let maturityDeadlineStr = "0";
+    if (tokenDetails[7]) {
+        try {
+            // Prefer toString() for BigNumbers
+            maturityDeadlineStr = tokenDetails[7].toString(); 
+        } catch (e) {
+            console.warn("Could not convert maturityDeadline to string:", tokenDetails[7]);
+        }
     }
     
     // Create ScienceGent data object
@@ -52,8 +71,8 @@ export const fetchScienceGentFromBlockchain = async (
       totalSupply: tokenDetails[2].toString(),
       creator: tokenDetails[3],
       isMigrated: tokenDetails[5],
-      creationTimestamp: creationTimestamp,
-      maturityDeadline: tokenDetails[7]?.toNumber() || 0,
+      creationTimestamp: creationTimestampStr,
+      maturityDeadline: maturityDeadlineStr,
       capabilities: capabilities || []
     };
     
