@@ -2,13 +2,18 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Copy, Check, Twitter, Github, Globe, AtSign } from 'lucide-react';
+import { Copy, Check, Twitter, Github, Globe, AtSign, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { fetchCapabilityById } from '@/services/capability/supabase';
 import { fetchScienceGentFromSupabase } from '@/services/scienceGent/supabase';
+import { fetchCapabilityIdsFromBlockchain, fetchCapabilityDetailsFromBlockchain } from '@/services/capability/blockchain';
+import { fetchScienceGentFromBlockchain } from '@/services/scienceGent/blockchain';
+import { ethers } from 'ethers';
+import { contractConfig } from '@/utils/contractConfig';
+import { getProvider } from '@/services/walletService';
 
 interface DeveloperInfoProps {
   scienceGent: any;
@@ -59,6 +64,7 @@ const DeveloperInfo: React.FC<DeveloperInfoProps> = ({ scienceGent }) => {
   const [developerProfile, setDeveloperProfile] = useState<DeveloperProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [profileNotFound, setProfileNotFound] = useState(false);
   
   // State for list data
   const [heldScienceGents, setHeldScienceGents] = useState<ScienceGentListItem[]>([]);
@@ -74,13 +80,14 @@ const DeveloperInfo: React.FC<DeveloperInfoProps> = ({ scienceGent }) => {
     const fetchDeveloperProfile = async () => {
       if (!scienceGent?.creator_address) {
         setIsLoading(false);
-        setError("No creator address available");
+        setProfileNotFound(true);
         return;
       }
 
       try {
         setIsLoading(true);
         setError(null);
+        setProfileNotFound(false);
         
         const { data, error } = await supabase
           .from('developer_profiles')
@@ -90,13 +97,28 @@ const DeveloperInfo: React.FC<DeveloperInfoProps> = ({ scienceGent }) => {
         
         if (error) {
           console.error("Error fetching developer profile:", error);
-          setError("Failed to load developer data");
+          if (error.code === 'PGRST116') {
+            console.log("Developer profile not found in Supabase.");
+            setProfileNotFound(true);
+            setDeveloperProfile({
+              bio: scienceGent.bio || null,
+              wallet_address: scienceGent.creator_address,
+              developer_name: scienceGent.developer_name || "Unknown Developer",
+              developer_twitter: scienceGent.developer_twitter || null,
+              developer_github: scienceGent.developer_github || null,
+              developer_website: scienceGent.developer_website || null,
+              profile_pic: scienceGent.profile_pic || null
+            });
+          } else {
+            setError("Failed to load developer data. Please try again later.");
+          }
         } else if (data) {
           setDeveloperProfile(data);
         } else {
-          // If no profile found, use some data from scienceGent
+          console.log("Developer profile query returned no data.");
+          setProfileNotFound(true);
           setDeveloperProfile({
-            bio: scienceGent.bio || "(No bio provided)",
+            bio: scienceGent.bio || null,
             wallet_address: scienceGent.creator_address,
             developer_name: scienceGent.developer_name || "Unknown Developer",
             developer_twitter: scienceGent.developer_twitter || null,
@@ -106,15 +128,15 @@ const DeveloperInfo: React.FC<DeveloperInfoProps> = ({ scienceGent }) => {
           });
         }
       } catch (err) {
-        console.error("Error in developer profile fetch:", err);
-        setError("Failed to load developer data");
+        console.error("Exception during developer profile fetch:", err);
+        setError("An unexpected error occurred while loading developer data.");
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchDeveloperProfile();
-  }, [scienceGent?.creator_address]);
+  }, [scienceGent?.creator_address, scienceGent]);
 
   useEffect(() => {
     // Get list data when developer profile is loaded and tab changes
@@ -378,18 +400,177 @@ const DeveloperInfo: React.FC<DeveloperInfoProps> = ({ scienceGent }) => {
     setIsLoadingLists(prev => ({ ...prev, created: true }));
     
     try {
-      // Get tokens created by this developer
+      console.log("Fetching created ScienceGents (Blockchain-first approach)...", developerProfile.wallet_address);
+      const developerWalletAddress = developerProfile.wallet_address.toLowerCase();
+
+      // --- Blockchain Fetching Logic ---
+      let blockchainScienceGents: ScienceGentListItem[] = [];
+      try {
+        const provider = await getProvider();
+        const factoryAbi = [
+          "function getTokenCount() view returns (uint256)",
+          "function getTokensWithPagination(uint256 offset, uint256 limit) view returns (address[], uint256)"
+        ];
+        const factoryContract = new ethers.Contract(
+          contractConfig.addresses.ScienceGentsFactory,
+          factoryAbi,
+          provider
+        );
+
+        const tokenCountBN = await factoryContract.getTokenCount();
+        const tokenCount = tokenCountBN.toNumber();
+        console.log(`Total tokens on blockchain: ${tokenCount}`);
+
+        const batchSize = 50;
+        // Removed unused createdTokenAddresses: string[] = [];
+
+        for (let offset = 0; offset < tokenCount; offset += batchSize) {
+          console.log(`Fetching token batch ${offset} to ${offset + batchSize}`);
+          const [tokenAddresses] = await factoryContract.getTokensWithPagination(offset, batchSize);
+
+          // For each address, check its creator
+          const creatorChecks = tokenAddresses.map(async (address) => {
+            try {
+              const sgData = await fetchScienceGentFromBlockchain(address);
+              
+              // Log the received sgData object
+              console.log(`sgData received for ${address}:`, sgData);
+
+              // --- DETAILED DEBUG LOG --- 
+              if (sgData && sgData.creator) { // Check sgData and sgData.creator exist
+                const blockchainCreator = sgData.creator;
+                console.log(`Comparing for ${address}:`);
+                console.log(`  Chain Creator Raw: ${blockchainCreator} (Type: ${typeof blockchainCreator})`);
+                console.log(`  Profile Address Raw: ${developerWalletAddress} (Type: ${typeof developerWalletAddress})`);
+                
+                // Print Char Codes
+                const printCharCodes = (label: string, str: string | undefined) => {
+                  if (!str) { console.log(`    ${label} Char Codes: undefined`); return; }
+                  const codes = str.split('').map(char => char.charCodeAt(0)).join(' ');
+                  console.log(`    ${label} Char Codes: [${codes}]`);
+                };
+                printCharCodes('Chain Creator', blockchainCreator);
+                printCharCodes('Profile Address', developerWalletAddress);
+
+                // Trim and lowercase for comparison
+                const chainCreatorLower = blockchainCreator.trim().toLowerCase();
+                const profileAddressLower = developerWalletAddress.trim().toLowerCase();
+                console.log(`  Chain Creator Lower (Trimmed): ${chainCreatorLower}`);
+                console.log(`  Profile Address Lower (Trimmed): ${profileAddressLower}`);
+                const comparisonResult = chainCreatorLower === profileAddressLower;
+                console.log(`  Comparison Result (Trimmed): ${comparisonResult}`);
+              } else {
+                  console.log(`sgData or sgData.creator is missing for ${address}`);
+              }
+              // --- END DETAILED DEBUG LOG ---
+
+              // Perform the comparison using trimmed and lowercased values
+              if (sgData && 
+                  sgData.creator && 
+                  developerWalletAddress && 
+                  sgData.creator.trim().toLowerCase() === developerWalletAddress.trim().toLowerCase()) { 
+                
+                // --- SUCCESS LOG --- 
+                console.log(`SUCCESS: Comparison SUCCEEDED for ${address}`);
+                // --- END SUCCESS LOG ---
+
+                console.log(`Found created ScienceGent on blockchain: ${address}`);
+                // Directly return the basic info needed for the list item
+                return {
+                  address: sgData.address,
+                  name: sgData.name || "Unnamed SG", // Add fallback name
+                  symbol: sgData.symbol || "SG",     // Add fallback symbol
+                  // Initialize other fields needed for ScienceGentListItem
+                  market_cap: undefined,
+                  market_cap_usd: undefined,
+                  token_price_usd: undefined,
+                  value_in_usd: undefined,
+                  created_at: undefined,
+                  profile_pic: undefined,
+                  curated: undefined,
+                  logo: undefined,
+                  balance: undefined
+                };
+              }
+            } catch (checkError) {
+              console.error(`Error checking creator for ${address}:`, checkError);
+            }
+            return null;
+          });
+
+          const results = (await Promise.all(creatorChecks)).filter(Boolean);
+          if (results.length > 0) {
+            blockchainScienceGents.push(...results as ScienceGentListItem[]); // Ensure correct type
+          }
+        }
+
+        console.log("Found created ScienceGents on blockchain:", blockchainScienceGents);
+
+      } catch (blockchainError) {
+        console.error("Error fetching ScienceGents from blockchain:", blockchainError);
+        // Don't stop here, continue to Supabase fallback
+        console.log("Proceeding with Supabase fallback for created ScienceGents.");
+        // Ensure blockchainScienceGents is empty so fallback triggers
+        blockchainScienceGents = [];
+      }
+
+      // --- Supabase Fetching & Merging Logic ---
+      if (blockchainScienceGents.length > 0) {
+        // We found tokens on the blockchain, now enrich with Supabase data
+        const createdAddresses = blockchainScienceGents.map(sg => sg.address);
+
+        const { data: supabaseData, error: supabaseError } = await supabase
+          .from('sciencegents')
+          .select('address, name, symbol, market_cap, market_cap_usd, profile_pic, created_at')
+          .in('address', createdAddresses);
+
+        if (supabaseError) {
+          console.error("Error fetching Supabase details for blockchain tokens:", supabaseError);
+          // Use blockchain data as is, providing necessary fallbacks for UI
+          setCreatedScienceGents(blockchainScienceGents.map(sg => ({
+            ...sg,
+            market_cap_usd: sg.market_cap_usd || 0, // Ensure fallback value
+            logo: sg.logo || (sg.name ? sg.name.charAt(0).toUpperCase() : 'S'),
+            curated: sg.curated || false, // Ensure fallback value
+          })));
+        } else {
+          const supabaseMap = new Map(supabaseData.map(item => [item.address, item]));
+          const mergedData = blockchainScienceGents.map(blockchainSg => {
+            const supabaseSg = supabaseMap.get(blockchainSg.address);
+            return {
+              address: blockchainSg.address,
+              name: supabaseSg?.name || blockchainSg.name,
+              symbol: supabaseSg?.symbol || blockchainSg.symbol,
+              market_cap: supabaseSg?.market_cap || 0, // Ensure fallback
+              market_cap_usd: supabaseSg?.market_cap_usd || 0, // Ensure fallback
+              profile_pic: supabaseSg?.profile_pic || null,
+              created_at: supabaseSg?.created_at || null,
+              curated: true, // Assume curated if found via this method
+              logo: (supabaseSg?.name || blockchainSg.name)
+                    ? (supabaseSg?.name || blockchainSg.name).charAt(0).toUpperCase()
+                    : 'S',
+              // Keep other fields from initial blockchain fetch if needed, or null/undefined
+              token_price_usd: undefined,
+              value_in_usd: undefined,
+              balance: undefined
+            };
+          });
+          console.log("Merged created ScienceGents data:", mergedData);
+          setCreatedScienceGents(mergedData);
+        }
+      } else {
+        // Blockchain fetch failed or returned 0, use Supabase as fallback
+        console.log("Using Supabase fallback for created ScienceGents");
       const { data, error } = await supabase
         .from('sciencegents')
         .select('name, symbol, address, market_cap, market_cap_usd, profile_pic, created_at')
-        .eq('creator_address', developerProfile.wallet_address)
+          .eq('creator_address', developerWalletAddress) // Use normalized address
         .order('created_at', { ascending: false });
       
       if (error) {
-        console.error("Error fetching created ScienceGents:", error);
+          console.error("Error fetching created ScienceGents (Supabase fallback):", error);
         setCreatedScienceGents([]);
       } else {
-        // Format the data
         const formattedData = data.map(token => ({
           name: token.name,
           symbol: token.symbol,
@@ -398,16 +579,19 @@ const DeveloperInfo: React.FC<DeveloperInfoProps> = ({ scienceGent }) => {
           market_cap_usd: token.market_cap_usd,
           profile_pic: token.profile_pic,
           created_at: token.created_at,
-          // Mark as curated (could be based on a condition in the future)
           curated: true,
-          // Use first letter of token name as logo fallback
-          logo: token.name ? token.name.charAt(0).toUpperCase() : 'S'
-        }));
-        
+            logo: token.name ? token.name.charAt(0).toUpperCase() : 'S',
+            // Add missing fields for ScienceGentListItem type consistency
+            token_price_usd: undefined,
+            value_in_usd: undefined,
+            balance: undefined
+          }));
+          console.log("Created ScienceGents (Supabase fallback data):", formattedData);
         setCreatedScienceGents(formattedData);
+        }
       }
     } catch (err) {
-      console.error("Error fetching created ScienceGents:", err);
+      console.error("Overall error fetching created ScienceGents:", err);
       setCreatedScienceGents([]);
     } finally {
       setIsLoadingLists(prev => ({ ...prev, created: false }));
@@ -415,29 +599,101 @@ const DeveloperInfo: React.FC<DeveloperInfoProps> = ({ scienceGent }) => {
   };
 
   const fetchCreatedCapabilities = async () => {
-    if (!developerProfile?.wallet_address || !developerProfile.created_capabilities) return;
+    if (!developerProfile?.wallet_address) return;
     
     setIsLoadingLists(prev => ({ ...prev, capabilities: true }));
     
     try {
-      // Fetch each capability by ID
+      // First attempt to fetch capabilities from blockchain
+      console.log("Fetching capabilities from blockchain...");
+      
+      try {
+        // Step 1: Get all capability IDs from the blockchain
+        const allCapabilityIds = await fetchCapabilityIdsFromBlockchain();
+        console.log("All capability IDs from blockchain:", allCapabilityIds);
+      
+        if (allCapabilityIds && allCapabilityIds.length > 0) {
+          // Step 2: Get details of each capability and filter for ones created by this developer
+          const developerWalletAddress = developerProfile.wallet_address.toLowerCase();
+          console.log("Developer wallet address (normalized):", developerWalletAddress);
+          
+          const capabilityPromises = allCapabilityIds.map(async (id) => {
+            try {
+              const blockchainCapDetails = await fetchCapabilityDetailsFromBlockchain(id);
+              
+              // Check if this capability was created by our developer
+              if (blockchainCapDetails && 
+                  blockchainCapDetails.creator && 
+                  blockchainCapDetails.creator.toLowerCase() === developerWalletAddress) {
+                
+                console.log(`Found capability ${id} created by the developer`);
+                
+                // Get additional details from Supabase
+                try {
+                  const supabaseCapDetails = await fetchCapabilityById(id);
+                  
+                  // Combine blockchain and Supabase data, with blockchain as source of truth for creator
+                  return {
+                    id: blockchainCapDetails.id,
+                    name: supabaseCapDetails?.name || blockchainCapDetails.name || blockchainCapDetails.id,
+                    description: supabaseCapDetails?.description || blockchainCapDetails.description || '',
+                    price: blockchainCapDetails.price || (supabaseCapDetails?.price || 0),
+                    usage_count: supabaseCapDetails?.usage_count || 0,
+                    rating: supabaseCapDetails?.rating || 4.0,
+                    revenue: supabaseCapDetails?.revenue || 0,
+                    domain: supabaseCapDetails?.domain || blockchainCapDetails.domain || 'General',
+                    display_image: supabaseCapDetails?.display_image || null
+                  };
+                } catch (supabaseError) {
+                  console.error(`Error fetching Supabase details for capability ${id}:`, supabaseError);
+                  
+                  // If Supabase fetch fails, still return the blockchain data
+                  return {
+                    id: blockchainCapDetails.id,
+                    name: blockchainCapDetails.name || blockchainCapDetails.id,
+                    description: blockchainCapDetails.description || '',
+                    price: blockchainCapDetails.price || 0,
+                    usage_count: 0,
+                    rating: 4.0,
+                    revenue: 0,
+                    domain: blockchainCapDetails.domain || 'General',
+                    display_image: null
+                  };
+                }
+              }
+              return null;
+            } catch (error) {
+              console.error(`Error fetching blockchain details for capability ${id}:`, error);
+              return null;
+            }
+          });
+          
+          const capabilities = await Promise.all(capabilityPromises);
+          const filteredCapabilities = capabilities.filter(Boolean) as CapabilityItem[];
+          
+          console.log("Developer's capabilities from blockchain:", filteredCapabilities);
+          
+          if (filteredCapabilities.length > 0) {
+            setCreatedCapabilities(filteredCapabilities);
+            setIsLoadingLists(prev => ({ ...prev, capabilities: false }));
+            return;
+          }
+          
+          console.log("No capabilities found on blockchain for this developer, trying Supabase fallback");
+        }
+      } catch (blockchainError) {
+        console.error("Error fetching capabilities from blockchain:", blockchainError);
+        console.log("Falling back to Supabase for capability data");
+      }
+      
+      // Fallback: Use Supabase approach if blockchain approach fails or returns no results
+      
+      // Option 1: Look in the developer profile's created_capabilities list
       const capabilityIds = developerProfile.created_capabilities || [];
       
-      if (capabilityIds.length === 0) {
-        // If there are no capabilities, check if there are any created by this developer
-        const { data, error } = await supabase
-          .from('capabilities')
-          .select('id, name, description, price, usage_count, rating, revenue, domain, display_image')
-          .eq('creator', developerProfile.wallet_address)
-          .order('created_at', { ascending: false });
+      if (capabilityIds.length > 0) {
+        console.log("Fetching capabilities from developer profile's created_capabilities list:", capabilityIds);
         
-        if (error) {
-          console.error("Error fetching capabilities by creator:", error);
-          setCreatedCapabilities([]);
-        } else {
-          setCreatedCapabilities(data);
-        }
-      } else {
         // Fetch capabilities by their IDs
         const capabilities = await Promise.all(
           capabilityIds.map(async (id) => {
@@ -462,7 +718,25 @@ const DeveloperInfo: React.FC<DeveloperInfoProps> = ({ scienceGent }) => {
         );
         
         // Filter out null results
-        setCreatedCapabilities(capabilities.filter(Boolean) as CapabilityItem[]);
+        const filteredCapabilities = capabilities.filter(Boolean) as CapabilityItem[];
+        console.log("Capabilities from developer profile:", filteredCapabilities);
+        setCreatedCapabilities(filteredCapabilities);
+      } else {
+        // Option 2: If no capabilities in profile, check if there are any created by this developer in Supabase
+        console.log("Fetching capabilities by creator field in Supabase");
+        const { data, error } = await supabase
+          .from('capabilities')
+          .select('id, name, description, price, usage_count, rating, revenue, domain, display_image')
+          .eq('creator', developerProfile.wallet_address)
+          .order('created_at', { ascending: false });
+        
+        if (error) {
+          console.error("Error fetching capabilities by creator:", error);
+          setCreatedCapabilities([]);
+        } else {
+          console.log("Capabilities from Supabase by creator field:", data);
+          setCreatedCapabilities(data);
+        }
       }
     } catch (err) {
       console.error("Error fetching created capabilities:", err);
@@ -759,6 +1033,18 @@ const DeveloperInfo: React.FC<DeveloperInfoProps> = ({ scienceGent }) => {
           <Alert variant="destructive">
             <AlertDescription>{error}</AlertDescription>
           </Alert>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (profileNotFound && !developerProfile?.developer_name) {
+    return (
+      <Card>
+        <CardContent className="p-6 text-center text-gray-500">
+          <AlertCircle className="mx-auto h-8 w-8 text-gray-400 mb-2" />
+          <p>Developer profile information is not available for this ScienceGent.</p>
+          <p className="text-xs mt-1">(Creator: {formatAddress(scienceGent?.creator_address)})</p>
         </CardContent>
       </Card>
     );
