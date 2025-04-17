@@ -7,7 +7,6 @@ import { isAdminWallet } from '@/services/walletService';
 import { useEffect, useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useWallet } from '@/hooks/useWallet';
-import { Wallet } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
@@ -127,32 +126,6 @@ const NavHeader: React.FC = () => {
             </Button>
 
             <WalletConnect />
-
-            {isConnected && address ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="flex items-center gap-2">
-                    <Wallet className="h-4 w-4" />
-                    {formatAddress(address)}
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
-                    <Link to="/dashboard">Dashboard</Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={disconnect}>
-                    Disconnect Wallet
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            ) : (
-              <Button onClick={connect} className="flex items-center gap-2">
-                <Wallet className="h-4 w-4" />
-                Connect Wallet
-              </Button>
-            )}
           </div>
         </div>
       </div>
