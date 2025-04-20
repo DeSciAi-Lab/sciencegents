@@ -127,3 +127,4 @@ This script will:
 If you experience any issues, you can also try:
 - Using `scripts/migrations/init-domains-direct.sql` which includes explicit UUIDs
 - Directly querying the database using the Supabase dashboard
+
