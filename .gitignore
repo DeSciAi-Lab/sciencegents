@@ -38,3 +38,4 @@ test-*.js
 
 # Local Supabase
 /supabase/.temp
+.vercel
