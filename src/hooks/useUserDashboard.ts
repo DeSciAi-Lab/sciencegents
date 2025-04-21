@@ -350,31 +350,31 @@ export const useUserDashboard = () => {
           // Fallback to original method if blockchain approach fails
           try {
             // Get user's created capabilities directly from Supabase as fallback
-            const { data: createdCapabilities, error: capabilitiesError } = await supabase
-              .from('capabilities')
-              .select('*')
-              .eq('creator', account);
-              
-            if (capabilitiesError) {
-              console.error("Error fetching capabilities from Supabase (fallback):", capabilitiesError);
-            }
+          const { data: createdCapabilities, error: capabilitiesError } = await supabase
+            .from('capabilities')
+            .select('*')
+            .eq('creator', account);
             
-            if (createdCapabilities && createdCapabilities.length > 0) {
+          if (capabilitiesError) {
+              console.error("Error fetching capabilities from Supabase (fallback):", capabilitiesError);
+          }
+          
+          if (createdCapabilities && createdCapabilities.length > 0) {
               console.log("Fetched capabilities from Supabase (fallback):", createdCapabilities);
-              
-              const formattedCapabilities = createdCapabilities.map(cap => ({
-                id: cap.id,
-                name: cap.name || cap.id,
-                domain: cap.domain || 'Unknown',
-                revenue: cap.revenue || 0,
-                usageCount: cap.usage_count || 0,
-                price: cap.price || 0,
-                description: cap.description || '',
-                rating: cap.rating || 4.0,
-                displayImage: cap.display_image || null
-              }));
-              
-              setUserCapabilities(formattedCapabilities);
+            
+            const formattedCapabilities = createdCapabilities.map(cap => ({
+              id: cap.id,
+              name: cap.name || cap.id,
+              domain: cap.domain || 'Unknown',
+              revenue: cap.revenue || 0,
+              usageCount: cap.usage_count || 0,
+              price: cap.price || 0,
+              description: cap.description || '',
+              rating: cap.rating || 4.0,
+              displayImage: cap.display_image || null
+            }));
+            
+            setUserCapabilities(formattedCapabilities);
             }
           } catch (fallbackError) {
             console.error("Error with fallback capability fetch:", fallbackError);

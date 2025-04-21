@@ -215,7 +215,7 @@ const CapabilityDetailView: React.FC<CapabilityDetailViewProps> = ({
       setIsUpdating(false);
     }
   };
-
+  
   return (
     <Card>
       <CardHeader>
@@ -246,9 +246,9 @@ const CapabilityDetailView: React.FC<CapabilityDetailViewProps> = ({
                   className="w-20 h-20 rounded-full object-cover"
                 />
               ) : (
-                <div className="w-20 h-20 rounded-full bg-purple-500 flex items-center justify-center text-white text-2xl font-bold">
-                  {capability.name.charAt(0)}
-                </div>
+            <div className="w-20 h-20 rounded-full bg-purple-500 flex items-center justify-center text-white text-2xl font-bold">
+              {capability.name.charAt(0)}
+            </div>
               )}
               <input
                 id="logo-upload"

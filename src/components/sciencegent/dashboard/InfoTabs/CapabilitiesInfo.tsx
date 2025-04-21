@@ -92,7 +92,7 @@ const CapabilitiesInfo: React.FC<CapabilitiesInfoProps> = ({ scienceGent }) => {
                     <div className="flex justify-between items-start">
                       <div>
                         <div className="flex items-center gap-1">
-                          <h4 className="font-medium">{capability.name}</h4>
+                        <h4 className="font-medium">{capability.name}</h4>
                           <ExternalLink className="h-3 w-3 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
                         </div>
                         <p className="text-sm text-muted-foreground mt-1">{capability.description}</p>

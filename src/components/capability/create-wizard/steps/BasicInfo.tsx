@@ -229,7 +229,7 @@ const BasicInfo: React.FC = () => {
           </p>
         </div>
       </div>
-
+      
       <div>
         <Label htmlFor="description" className="mb-1 block">Description</Label>
         <Textarea
@@ -257,7 +257,7 @@ const BasicInfo: React.FC = () => {
                   src={URL.createObjectURL(displayImage)} 
                   alt="Display" 
                   className="object-cover rounded-lg" 
-                />
+        />
                 <AvatarFallback>DP</AvatarFallback>
               </Avatar>
             ) : (
